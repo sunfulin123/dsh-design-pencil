@@ -87,11 +87,7 @@ pub(super) fn apply(plan: &mut OrchestratorPlan, req: &DesignRequest) -> bool {
         .flatten()
         .map(|task| task.id.clone())
         .collect::<HashSet<_>>();
-    for (index, (screen_name, mut tasks)) in screen_names
-        .into_iter()
-        .zip(buckets.into_iter())
-        .enumerate()
-    {
+    for (index, (screen_name, mut tasks)) in screen_names.into_iter().zip(buckets).enumerate() {
         if tasks.is_empty() {
             let base_id = format!("continuation-screen-{}", index + 1);
             let mut id = base_id.clone();
