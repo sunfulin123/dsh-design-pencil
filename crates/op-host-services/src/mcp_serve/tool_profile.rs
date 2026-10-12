@@ -224,21 +224,28 @@ impl Default for McpScopes {
 pub struct McpAccessProfile {
     /// Refuse every tool whose surface is not shareable.
     pub deny_unshareable_tools: bool,
+    pub deny_standalone_ai: bool,
     pub scopes: McpScopes,
 }
 
 impl McpAccessProfile {
-    /// What the local and managed daemons run under: the whole catalog, full
-    /// authority. Byte-for-byte the behaviour that predates this module.
+    /// The standalone local daemon's whole catalog and full authority.
     pub const UNRESTRICTED: Self = Self {
         deny_unshareable_tools: false,
+        deny_standalone_ai: false,
         scopes: McpScopes::FULL,
+    };
+
+    pub const MANAGED: Self = Self {
+        deny_standalone_ai: true,
+        ..Self::UNRESTRICTED
     };
 
     /// The public multi-account profile.
     pub const fn online(scopes: McpScopes) -> Self {
         Self {
             deny_unshareable_tools: true,
+            deny_standalone_ai: false,
             scopes,
         }
     }
@@ -249,7 +256,8 @@ impl McpAccessProfile {
     /// still see that a write tool exists, and be told why when it calls one.
     /// Hiding it would look like the tool had been removed.
     pub fn lists(&self, tool: &str) -> bool {
-        !self.deny_unshareable_tools || surface_of(tool).is_shareable()
+        !(self.deny_standalone_ai && matches!(tool, "run_design_agent" | "spawn_agents"))
+            && (!self.deny_unshareable_tools || surface_of(tool).is_shareable())
     }
 
     /// Why `tool` may not be called, if it may not.
@@ -257,7 +265,7 @@ impl McpAccessProfile {
     /// Denial ranks above scope: a tool that is off for everyone should say
     /// so rather than suggesting a bigger token would help.
     pub fn refuse(&self, tool: &str) -> Option<ToolRefusal> {
-        if self.deny_unshareable_tools && !surface_of(tool).is_shareable() {
+        if !self.lists(tool) {
             return Some(ToolRefusal::LocalResourceDenied);
         }
         if !self.scopes.allows(access_of(tool)) {

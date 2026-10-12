@@ -37,6 +37,8 @@ jobs:
           cargo test --locked -p op-editor-ui top_bar
           cargo test --locked -p op-editor-ui canvas_rulers
           cargo test --locked -p op-editor-ui toolbar_tooltip
+          cargo test --locked -p op-host-services web_canvas_server
+          cargo test --locked -p op-host-services mcp_serve::tool_profile
           cargo test --locked -p op-host-web --no-default-features --features canvaskit --lib managed_
           cargo build --locked --release -p op-host-web-server
           bash tools/check-wasm-bundle.sh

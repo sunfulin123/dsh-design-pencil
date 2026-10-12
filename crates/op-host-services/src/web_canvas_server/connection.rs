@@ -86,7 +86,11 @@ pub(super) fn serve_one_in_mode<S: Read + Write>(
             state,
             hub,
             mode,
-            mcp_profile: crate::mcp_serve::tool_profile::McpAccessProfile::UNRESTRICTED,
+            mcp_profile: if matches!(mode, ServeMode::Managed) {
+                crate::mcp_serve::tool_profile::McpAccessProfile::MANAGED
+            } else {
+                crate::mcp_serve::tool_profile::McpAccessProfile::UNRESTRICTED
+            },
             rest_identity: None,
             write_barrier: None,
         },
@@ -164,6 +168,16 @@ pub(super) fn dispatch<S: Read + Write>(
             &crate::mcp_serve::rest_error_body(
                 "this route requires Content-Type: application/json",
             ),
+            cors_origin,
+        )?;
+        return Ok(false);
+    }
+    if ctx.mode.excludes_standalone_route(&req.method, &req.path) {
+        let reply = not_found_reply();
+        crate::mcp_serve::write_mcp_http_response_with_origin(
+            stream,
+            reply.status,
+            &reply.body,
             cors_origin,
         )?;
         return Ok(false);

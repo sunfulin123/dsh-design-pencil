@@ -154,6 +154,30 @@ fn tool_search_catalog_uses_the_same_online_surface_filter() {
 }
 
 #[test]
+fn managed_profile_keeps_design_tools_without_internal_model_execution() {
+    let profile = McpAccessProfile::MANAGED;
+    let schemas = tool_search_schemas(profile);
+    let names: Vec<String> = schemas
+        .iter()
+        .filter_map(|schema| schema_name(schema))
+        .collect();
+    for tool in ["run_design_agent", "spawn_agents"] {
+        assert!(!profile.lists(tool), "{tool}");
+        assert_eq!(profile.refuse(tool), Some(ToolRefusal::LocalResourceDenied));
+        assert!(!names.iter().any(|name| name == tool), "{tool}");
+    }
+    for tool in [
+        "batch_design",
+        "get_screenshot",
+        "save_document",
+        "get_design_agent_prompt",
+    ] {
+        assert!(profile.lists(tool), "{tool}");
+        assert_eq!(profile.refuse(tool), None, "{tool}");
+    }
+}
+
+#[test]
 fn online_scene_template_calls_keep_shipped_ids_but_refuse_user_ids() {
     let online = McpAccessProfile::online(McpScopes::FULL);
     assert!(!online.includes_user_scene_templates());

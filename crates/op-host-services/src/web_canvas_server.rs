@@ -463,6 +463,9 @@ pub fn handle_web_canvas_request(
     body: &str,
     state: &mut WebCanvasState,
 ) -> WebReply {
+    if state.mode.excludes_standalone_route(method, path) {
+        return not_found_reply();
+    }
     match (method, path) {
         ("GET", "/api/mcp/server") => WebReply {
             status: "200 OK",

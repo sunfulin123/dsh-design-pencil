@@ -46,6 +46,9 @@ impl CredentialLoad {
 }
 
 pub(crate) fn load_into(state: &mut EditorState) -> CredentialLoad {
+    if state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
+        return load_into_with(state, None, None, storage_set_checked);
+    }
     let settings_raw = storage_get(&super::settings_storage_key());
     let credential_raw = storage_get(&super::credential_storage_key());
     let load = load_into_with(
@@ -72,6 +75,18 @@ pub(super) fn load_into_with<F>(
 where
     F: FnMut(&str, &str) -> bool,
 {
+    if state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
+        return CredentialLoad {
+            loaded: false,
+            write_pending: false,
+            unsupported_version: false,
+            payload_theme: None,
+            settings_write_disabled: true,
+            credential_write_disabled: true,
+            pending_credential_json: None,
+            pending_settings_json: None,
+        };
+    }
     let payload_theme = super::payload_theme_of(settings_raw);
     let stored = apply_stored_snapshots(state, settings_raw, credential_raw);
     let unsupported_settings_version = stored.unsupported_settings_version;
@@ -342,6 +357,9 @@ fn clear_local_credentials(state: &mut EditorState) {
 }
 
 pub(crate) fn save_if_changed(state: &EditorState, before: &mut Fingerprint) -> bool {
+    if state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
+        return false;
+    }
     let saved = save_if_changed_with(state, before, |json| {
         storage_set_checked(&super::settings_storage_key(), json)
     });
@@ -361,6 +379,9 @@ pub(super) fn save_if_changed_with<F>(
 where
     F: FnOnce(&str) -> bool,
 {
+    if state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
+        return false;
+    }
     let next = fingerprint(state);
     if next == *before {
         return false;
@@ -379,6 +400,9 @@ pub(crate) fn save_credentials_if_changed(
     state: &EditorState,
     before: &mut CredentialFingerprint,
 ) -> Option<String> {
+    if state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
+        return None;
+    }
     let had_pending_write = before.write_pending;
     let saved = save_credentials_if_changed_with(state, before, storage_set_checked);
     if saved.is_some() || (had_pending_write && !before.write_pending) {
@@ -403,6 +427,9 @@ pub(super) fn save_credentials_if_changed_with<F>(
 where
     F: FnMut(&str, &str) -> bool,
 {
+    if state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
+        return None;
+    }
     if before.write_pending && !retry_pending_writes(before, &mut persist) {
         return None;
     }

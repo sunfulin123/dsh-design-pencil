@@ -7,10 +7,9 @@
 //! those routes have to be shut off — not by remembering to check at each
 //! call site, but from one table a reviewer can read end to end.
 //!
-//! [`ServeMode`] is that table. `Local` and `Managed` answer exactly as the
-//! daemon always has (every predicate is `true`), so this module cannot
-//! change the behaviour of an existing deployment; `Online` is the only
-//! mode that refuses anything.
+//! [`ServeMode`] keeps local design operations available to the supervising
+//! host. Managed deployments leave account and model services to that host;
+//! online deployments isolate each verified account's document.
 
 /// How this daemon instance is deployed.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -63,14 +62,24 @@ impl ServeMode {
     /// shared deployment would let any account overwrite every other
     /// account's providers and credentials.
     pub const fn allows_settings_persistence(self) -> bool {
-        !self.is_online()
+        matches!(self, Self::Local)
     }
 
     /// The device-login proxy (`/api/auth/*`). The bridge runtime holds ONE
     /// device session per process, so proxying it in a shared deployment
     /// would sign every visitor in as whoever the service account is.
     pub const fn allows_device_login_proxy(self) -> bool {
-        !self.is_online()
+        matches!(self, Self::Local)
+    }
+
+    pub(super) fn excludes_standalone_route(self, method: &str, path: &str) -> bool {
+        matches!(self, Self::Managed)
+            && (path.starts_with("/api/ai/")
+                || path.starts_with("/api/settings/")
+                || path.starts_with(op_editor_core::auth_routes::API_PREFIX)
+                || path.starts_with(op_editor_core::collab_routes::API_PREFIX)
+                || path == op_editor_core::auth_routes::LOADING_PAGE
+                || (method != "GET" && path == "/api/mcp/server"))
     }
 
     /// `GET /api/mcp/indicators`. The agent-indicator registry is a
@@ -289,11 +298,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn local_and_managed_modes_refuse_nothing() {
+    fn local_and_managed_modes_keep_local_design_operations() {
         for mode in [ServeMode::Local, ServeMode::Managed] {
             assert!(mode.allows_local_file_routes(), "{mode:?}");
-            assert!(mode.allows_settings_persistence(), "{mode:?}");
-            assert!(mode.allows_device_login_proxy(), "{mode:?}");
+            assert_eq!(mode.allows_settings_persistence(), mode == ServeMode::Local);
+            assert_eq!(mode.allows_device_login_proxy(), mode == ServeMode::Local);
             assert!(mode.allows_agent_indicator_relay(), "{mode:?}");
             assert!(mode.allows_root_jsonrpc_alias(), "{mode:?}");
             assert!(mode.allows_generic_shutdown(), "{mode:?}");
@@ -304,6 +313,29 @@ mod tests {
             assert!(mode.allows_image_thumb_registry(), "{mode:?}");
             assert!(!mode.is_online(), "{mode:?}");
         }
+    }
+
+    #[test]
+    fn managed_routes_leave_accounts_and_models_to_the_supervisor() {
+        for path in [
+            "/api/ai/models",
+            "/api/settings/credentials",
+            op_editor_core::auth_routes::STATUS,
+            op_editor_core::auth_routes::LOADING_PAGE,
+            op_editor_core::collab_routes::ACTION,
+        ] {
+            assert!(
+                ServeMode::Managed.excludes_standalone_route("POST", path),
+                "{path}"
+            );
+            assert!(
+                !ServeMode::Local.excludes_standalone_route("POST", path),
+                "{path}"
+            );
+        }
+        assert!(!ServeMode::Managed.excludes_standalone_route("GET", "/api/mcp/server"));
+        assert!(ServeMode::Managed.excludes_standalone_route("POST", "/api/mcp/server"));
+        assert!(!ServeMode::Managed.excludes_standalone_route("POST", "/api/mcp/document"));
     }
 
     #[test]

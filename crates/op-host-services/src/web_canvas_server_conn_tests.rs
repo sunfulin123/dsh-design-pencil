@@ -141,28 +141,69 @@ fn serve_one_builtin_model_discovery_route_is_json_not_404() {
 }
 
 #[test]
-fn managed_daemon_accepts_tokenless_native_model_discovery() {
-    let body = r#"{"id":"builtin-1","generation":1,"credential":{}}"#;
-    let request = format!(
-        "POST /api/ai/models/discover HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
-        body.len(),
-        body,
-    );
-    let mut stream = mock_stream(&request);
-    let mut managed = fresh_state();
-    managed.mode = ServeMode::Managed;
-    managed.managed_token = Some("managed-secret".into());
-    let state = Mutex::new(managed);
+fn managed_daemon_serves_design_without_account_or_model_services() {
+    for (method, path, body, expected) in [
+        ("GET", "/api/mcp/server", "", "200 OK"),
+        ("GET", "/api/mcp/document", "", "200 OK"),
+        ("POST", "/api/mcp/document", SYNC_BODY, "200 OK"),
+        ("POST", "/api/ai/models/discover", "{}", "404 Not Found"),
+        ("POST", "/api/ai/stream", "{}", "404 Not Found"),
+        ("POST", "/api/ai/standard", "{}", "404 Not Found"),
+        ("GET", "/api/ai/models", "", "404 Not Found"),
+        (
+            "POST",
+            "/api/settings/credentials",
+            CREDENTIAL_BODY,
+            "404 Not Found",
+        ),
+        (
+            "GET",
+            "/api/settings/credential-policy",
+            "",
+            "404 Not Found",
+        ),
+        (
+            "GET",
+            op_editor_core::auth_routes::STATUS,
+            "",
+            "404 Not Found",
+        ),
+        (
+            "POST",
+            op_editor_core::auth_routes::LOGIN_BEGIN,
+            "{}",
+            "404 Not Found",
+        ),
+        (
+            "GET",
+            op_editor_core::auth_routes::LOADING_PAGE,
+            "",
+            "404 Not Found",
+        ),
+        (
+            "POST",
+            op_editor_core::collab_routes::ACTION,
+            "{}",
+            "404 Not Found",
+        ),
+    ] {
+        let request = format!(
+            "{method} {path} HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len(),
+        );
+        let mut stream = mock_stream(&request);
+        let mut managed = fresh_state();
+        managed.mode = ServeMode::Managed;
+        managed.managed_token = Some("managed-secret".into());
+        let state = Mutex::new(managed);
 
-    serve_one_in_mode(&mut stream, &state, &SseHub::default(), ServeMode::Managed)
-        .expect("serve_one");
+        serve_one_in_mode(&mut stream, &state, &SseHub::default(), ServeMode::Managed)
+            .expect("serve_one");
 
-    let response = String::from_utf8_lossy(&stream.output);
-    assert!(!response.contains("401 Unauthorized"), "{response}");
-    assert!(
-        response.contains("invalid model discovery request"),
-        "{response}"
-    );
+        let response = String::from_utf8_lossy(&stream.output);
+        assert!(response.contains(expected), "{method} {path}: {response}");
+        assert!(!response.contains("sk-browser-only"), "{response}");
+    }
 }
 
 #[test]
