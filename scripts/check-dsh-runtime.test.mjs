@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { chmod, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { indexRuntimePayload } from './dsh-runtime-payload.mjs'
 
 const execute = promisify(execFile)
 const script = fileURLToPath(new URL('./check-dsh-runtime.mjs', import.meta.url))
@@ -54,15 +55,20 @@ process.stdin.on('end', () => server.close(() => process.exit(0)))
     await writeFile(join(root, path), content)
   }
   await chmod(join(root, 'bin/op-host-web-server'), 0o755)
+  const indexed = options.deduplicate ? await indexRuntimePayload(root) : {
+    files: Object.fromEntries(Object.entries(payload).map(([path, content]) => [path, hash(content)])),
+    savedBytes: 0,
+  }
   await writeFile(join(root, 'openpencil-runtime.json'), JSON.stringify({
     schemaVersion: 1, platform: 'darwin-arm64',
     packageName: '@sunfulin123/dsh-design-pencil-darwin-arm64',
     accountPolicy: 'disabled', openPencilVersion: version, openPencilRevision: 'a'.repeat(40),
-    files: Object.fromEntries(Object.entries(payload).map(([path, content]) => [path, hash(content)])),
+    files: indexed.files,
   }))
-  await writeFile(root + '.tar.gz', 'archive-fixture')
-  await writeFile(root + '.tar.gz.sha256', hash('archive-fixture') + '  runtime.tar.gz\n')
-  return { root, run: () => execute(process.execPath, [script, root], {
+  if (options.realArchive) await execute('tar', ['-czf', root + '.tar.gz', '-C', root, '.'])
+  else await writeFile(root + '.tar.gz', 'archive-fixture')
+  await writeFile(root + '.tar.gz.sha256', hash(await readFile(root + '.tar.gz')) + '  runtime.tar.gz\n')
+  return { root, ...indexed, run: () => execute(process.execPath, [script, root], {
     env: { ...process.env, OPENPENCIL_DSH_RUNTIME_VERSION: version }, timeout: 90_000,
   }) }
 }
@@ -92,4 +98,42 @@ test('rejects an incorrect daemon version and cleans up the child', async contex
 test('rejects standalone AI tools in managed discovery', async context => {
   const runtime = await fixture(context, { aiTool: true })
   await assert.rejects(runtime.run(), /run_design_agent/)
+})
+
+test('deduplicated archive preserves paths, hashes, regular files and daemon invocation', async context => {
+  const runtime = await fixture(context, { deduplicate: true, realArchive: true })
+  const editor = 'bin/web-bundle/editor.wasm'
+  const viewer = 'viewer-assets/viewer.wasm'
+  const editorInfo = await lstat(join(runtime.root, editor))
+  const viewerInfo = await lstat(join(runtime.root, viewer))
+  assert.equal(viewerInfo.ino, editorInfo.ino)
+  assert(runtime.savedBytes >= Buffer.byteLength('wasm-fixture'))
+  const unpacked = join(dirname(runtime.root), 'unpacked')
+  await mkdir(unpacked)
+  await execute('tar', ['-xzf', runtime.root + '.tar.gz', '-C', unpacked])
+  assert.equal((await lstat(join(unpacked, viewer))).ino, (await lstat(join(unpacked, editor))).ino)
+  for (const [path, expected] of Object.entries(runtime.files)) {
+    const info = await lstat(join(unpacked, path))
+    assert(info.isFile())
+    assert(!info.isSymbolicLink())
+    assert.equal(hash(await readFile(join(unpacked, path))), expected)
+  }
+  assert.match((await runtime.run()).stdout, /Node runtime smoke passed/)
+})
+
+test('payload indexing preserves distinct executable permissions', async context => {
+  const runtime = await fixture(context)
+  const editor = join(runtime.root, 'bin/web-bundle/editor.wasm')
+  const viewer = join(runtime.root, 'viewer-assets/viewer.wasm')
+  await chmod(viewer, 0o755)
+  await indexRuntimePayload(runtime.root)
+  assert.notEqual((await lstat(viewer)).ino, (await lstat(editor)).ino)
+  assert.equal((await lstat(viewer)).mode & 0o777, 0o755)
+  assert.equal((await lstat(editor)).mode & 0o777, 0o644)
+})
+
+test('payload indexing rejects symlinks', async context => {
+  const runtime = await fixture(context)
+  await symlink('../LICENSE', join(runtime.root, 'resources/linked-license'))
+  await assert.rejects(indexRuntimePayload(runtime.root), /symlink/)
 })

@@ -48,7 +48,7 @@ pub fn run_web_canvas(options: ServeWebOptions) -> Result<()> {
     } else {
         crate::web_credential_policy::from_env()
     };
-    let mut editor = if managed {
+    let editor = if managed {
         startup_editor_from_base_for_web_canvas(EditorState::starter(), path)?
     } else {
         let mut editor = startup_editor_for_web_canvas_with_policy(path, credential_persistence)?;
@@ -63,10 +63,15 @@ pub fn run_web_canvas(options: ServeWebOptions) -> Result<()> {
     // session the desktop GUI may already have persisted. Never on a
     // non-loopback bind outside managed mode — the proxy session belongs
     // to the daemon owner, not to whoever can reach the port.
-    let loopback_bind = matches!(host.as_str(), "127.0.0.1" | "localhost" | "::1");
-    if mode.allows_device_login_proxy() {
-        crate::web_auth::init(&mut editor, loopback_bind);
-    }
+    #[cfg(feature = "standalone-services")]
+    let editor = {
+        let mut editor = editor;
+        let loopback_bind = matches!(host.as_str(), "127.0.0.1" | "localhost" | "::1");
+        if mode.allows_device_login_proxy() {
+            crate::web_auth::init(&mut editor, loopback_bind);
+        }
+        editor
+    };
     let listener = TcpListener::bind((host.as_str(), port))
         .map_err(|e| WebCanvasError::Config(format!("bind {host}:{port}: {e}")))?;
     let local_addr = listener
@@ -156,6 +161,7 @@ pub fn run_web_canvas(options: ServeWebOptions) -> Result<()> {
     }
     // The collaboration pump. It observes `shutdown` itself, so it retires
     // within one tick of the daemon being asked to stop.
+    #[cfg(feature = "standalone-services")]
     if !managed {
         collab_driver::spawn(&state, &hub, &shutdown);
     }

@@ -310,6 +310,7 @@ pub fn parse_codex_models_cache(raw: &str) -> Option<Vec<ModelEntry>> {
 
 /// GitHub Copilot CLI — query the live catalog through the official SDK.
 /// The shared probe applies server-mode argv and delegates framing to the SDK.
+#[cfg(feature = "standalone-ai-sdks")]
 fn discover_copilot() -> Vec<ModelEntry> {
     let Some(exe) = resolve_cli("copilot") else {
         return Vec::new();
@@ -317,6 +318,11 @@ fn discover_copilot() -> Vec<ModelEntry> {
     crate::copilot_sdk_probe::probe_copilot_cli(&exe)
         .map(|probe| probe.models)
         .unwrap_or_default()
+}
+
+#[cfg(not(feature = "standalone-ai-sdks"))]
+fn discover_copilot() -> Vec<ModelEntry> {
+    Vec::new()
 }
 
 /// Extract the first complete top-level JSON object from `s` —

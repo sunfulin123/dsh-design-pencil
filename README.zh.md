@@ -33,6 +33,12 @@
 </p>
 <p align="center"><sub>点击图片观看演示视频</sub></p>
 
+## DSH Design Pencil 分支
+
+本分支仅发布供 DSH 插件调用的 macOS arm64 runtime，不打包独立桌面应用。默认 daemon 构建不包含 Claude/Copilot SDK、账号桥接、P2P 协作传输或原生 Preview 宿主。保留截图和导出所需的原生 raster 渲染，以及 DSH 内的浏览器 Preview、画布编辑、导入导出、文档同步和设计 MCP 工具。AI 执行由 DSH 负责，不需要 OpenPencil 账号或独立模型凭据；托管模式拒绝独立账号、AI、凭据设置和协作路由，并保留浏览器来源校验、父进程生命周期和文档冲突检查。
+
+[Runtime 发布流程](.github/workflows/dsh-runtime-release.yml) 构建 daemon、内嵌编辑器和只读 viewer，并在 `runtime-v*` 标签上发布带源码 revision 和逐文件 SHA-256 的归档。插件只安装并调用固定、校验过的归档，不在 DSH 工作区或运行中的 profile 内编译 Rust/Skia。发行归档将内容和权限都相同的 CanvasKit 与产品资源转为包内硬链接；原路径与校验值不变，解压后仍是普通文件，符号链接继续禁止。CI 的依赖门禁阻止独立服务进入产物，并缓存 workspace 编译结果及版本匹配的 wasm-bindgen。
+
 ## 为什么选择 OpenPencil
 
 <a href="https://fluxionai.world/register?source=github&amp;campaign=github-openpencil&amp;promo=OPENPENCIL" title="Fluxion AI">

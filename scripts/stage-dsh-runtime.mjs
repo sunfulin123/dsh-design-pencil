@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { chmod, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { indexRuntimePayload } from './dsh-runtime-payload.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const version = '0.8.5-synapse.2'
@@ -49,18 +50,8 @@ execFileSync(process.execPath, [
 ], { cwd: root, stdio: 'inherit' })
 await cp(join(root, 'LICENSE'), join(destination, 'LICENSE'))
 await cp(join(root, 'crates/op-host-web/assets/canvaskit/LICENSE'), join(destination, 'viewer-assets/canvaskit/LICENSE'))
-const files = {}
-async function hashTree(directory, prefix = '') {
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name)
-    const relative = prefix + entry.name
-    if (entry.isSymbolicLink()) throw new Error(`Release contains a symlink: ${relative}`)
-    if (entry.isDirectory()) await hashTree(path, relative + '/')
-    else if (entry.isFile()) files[relative] = createHash('sha256').update(await readFile(path)).digest('hex')
-    else throw new Error(`Release contains an unsupported entry: ${relative}`)
-  }
-}
-await hashTree(destination)
+const { files, savedBytes } = await indexRuntimePayload(destination)
+console.log(`Payload deduplication removed ${savedBytes} duplicate bytes.`)
 await writeFile(join(destination, 'openpencil-runtime.json'), JSON.stringify({
   schemaVersion: 1,
   platform,

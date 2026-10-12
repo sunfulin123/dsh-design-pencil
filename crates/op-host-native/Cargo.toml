@@ -34,7 +34,7 @@ default = []
 # input (press/move/release/zoom/keys/IME); the engine paints the chrome
 # through the same `NativeFrameBackend` the desktop uses. Enabled on iOS /
 # Android by the player engine (`op-engine-ffi`).
-widget-host = ["dep:accesskit"]
+widget-host = ["dep:accesskit", "dep:op-auth-bridge", "dep:op-preview-core"]
 # Test-only narrow seams for cross-crate tests (the op-engine-ffi editor
 # pointer-clock suites). Enables op-preview-core's `testing` feature so the
 # live preview runtime hands out CLONED app-state snapshots — never a
@@ -72,7 +72,7 @@ required-features = ["gl-host"]
 [dependencies]
 # Canvas Preview (Play) mode runtime — extracted into its own crate.
 # Feature flag: gl-host enables auto-wire via op-orchestrator (desktop-only).
-op-preview-core = { path = "../op-preview-core" }
+op-preview-core = { path = "../op-preview-core", optional = true }
 
 # Phase 7.3 reorg: openpencil-shell-core dissolved — widget facade /
 # theme / layout scene / scene vars / render-backend / gesture types
@@ -101,7 +101,7 @@ op-editor-core = { path = "../op-editor-core" }
 op-editor-host-core = { path = "../op-editor-host-core", default-features = false }
 # Device-login client bridge — links the proprietary prebuilt library when
 # one exists for the target, else compiles an inert stub (login hidden).
-op-auth-bridge = { path = "../op-auth-bridge" }
+op-auth-bridge = { path = "../op-auth-bridge", optional = true }
 op-i18n = { path = "../op-i18n" }
 # Collaboration runtime — this crate only supplies the `CollabHost` impl for
 # `WidgetHostNative` (the orphan rule requires it to live in one of the two

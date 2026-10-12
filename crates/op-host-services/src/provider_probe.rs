@@ -29,12 +29,14 @@ use crate::provider_probe_models::{
     ClaudeInitResult,
 };
 
+#[cfg(feature = "standalone-ai-sdks")]
 #[path = "provider_probe_copilot.rs"]
 mod copilot;
-#[cfg(test)]
+#[cfg(all(test, feature = "standalone-ai-sdks"))]
 use crate::copilot_sdk_probe::CopilotAuth;
+#[cfg(feature = "standalone-ai-sdks")]
 use copilot::connect_copilot;
-#[cfg(test)]
+#[cfg(all(test, feature = "standalone-ai-sdks"))]
 use copilot::{copilot_connection_info, friendly_copilot_error};
 
 /// Probe result — the TS `ConnectResult` shape plus the install
@@ -141,7 +143,12 @@ pub fn connect_provider(provider: AgentProvider, locale: Locale) -> ProbeOutcome
         AgentProvider::ClaudeCode => connect_claude_code(locale),
         AgentProvider::CodexCli => connect_codex_cli(locale),
         AgentProvider::OpenCode => connect_opencode(locale),
+        #[cfg(feature = "standalone-ai-sdks")]
         AgentProvider::GithubCopilot => connect_copilot(locale),
+        #[cfg(not(feature = "standalone-ai-sdks"))]
+        AgentProvider::GithubCopilot => {
+            ProbeOutcome::failed("Standalone AI SDKs are disabled in this build.".into())
+        }
         AgentProvider::Antigravity => crate::cli_provider_probe::connect_antigravity(),
         AgentProvider::GrokBuild => crate::cli_provider_probe::connect_grok_build(),
         AgentProvider::DeepSeekHarness => crate::cli_provider_probe::connect_deepseek_harness(),

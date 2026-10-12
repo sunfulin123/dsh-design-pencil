@@ -1,19 +1,9 @@
-//! Headless web-canvas daemon — serves the document to the Rust WASM web shell
-//! (`op-host-web`, which runs in a browser and can't bind a socket) and to
-//! external MCP/CLI clients. It is the Rust analog of the TS web app's
-//! `apps/web/server/api/mcp/*` Nitro routes + `setSyncDocument`: it owns the
-//! canonical document in memory and answers the same whole-document REST sync
-//! shape, so a JSON-RPC/REST client (e.g. the `op` CLI or any MCP client) can
-//! drive the Rust *web* canvas the same way it drives the desktop canvas.
+//! Headless document authority for the embedded editor and design MCP clients.
 //!
-//! This module ships the request-handling CORE (`handle_web_canvas_request`,
-//! fully unit-testable without a socket) plus a runnable loop
-//! (`run_web_canvas`, behind
-//! `openpencil-desktop --serve-web <port> [doc] [--host <addr>]`).
-//! Layered on top: an SSE endpoint that streams `version` bumps to connected
-//! shells, static serving of the host page + WASM bundle (`crate::web_static`
-//! — `GET /` and `GET /pkg/*`), and a token-authenticated `openpencil/shutdown`
-//! (same contract as `--mcp-http`) so `op stop` works against this daemon.
+//! Owns the canonical `.op` document, whole-document REST synchronization,
+//! versioned SSE updates, and static UI serving. Managed deployment uses a
+//! parent-owned stdin lease and explicit browser-origin policy; the optional
+//! graceful-shutdown route authenticates its lifecycle token.
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -106,6 +96,7 @@ pub struct WebCanvasState {
     pub(crate) reset_consumed: bool,
     /// In-flight browser device-login flow driven through the auth proxy
     /// endpoints (`/api/auth/login/*`); `None` when no login is running.
+    #[cfg(feature = "standalone-services")]
     pub(crate) auth_login_handle: Option<u64>,
     /// Collaboration runtime + its projection sequence. Idle until a browser
     /// posts a start/join action.
@@ -165,6 +156,7 @@ impl WebCanvasState {
             managed_token: None,
             allow_origins: Vec::new(),
             reset_consumed: false,
+            #[cfg(feature = "standalone-services")]
             auth_login_handle: None,
             collab: collab_state::WebCollabState::default(),
             mode: ServeMode::Local,
@@ -311,6 +303,7 @@ impl WebCanvasState {
                 current_version: self.version,
             });
         };
+        #[cfg(feature = "standalone-services")]
         let version = if self.collab_session_is_active() {
             // Inside the session's local-edit capture: the session core diffs
             // the document and emits precise node operations, so pushing an
@@ -351,6 +344,8 @@ impl WebCanvasState {
         } else {
             self.replace_document(prepared.into_document())
         };
+        #[cfg(not(feature = "standalone-services"))]
+        let version = self.replace_document(prepared.into_document());
         op_pen_loader::apply_editor_meta(&mut self.editor, editor_meta);
         Ok(PushOutcome {
             applied: true,
@@ -701,14 +696,21 @@ pub fn handle_web_canvas_request(
         (_, path) if !state.mode.allows_device_login_proxy() && is_device_login_route(path) => {
             not_found_reply()
         }
+        #[cfg(feature = "standalone-services")]
         ("GET", op_editor_core::auth_routes::STATUS) => crate::web_auth::status(state),
+        #[cfg(feature = "standalone-services")]
         ("GET", op_editor_core::auth_routes::LOGIN_STATUS) => crate::web_auth::login_status(state),
+        #[cfg(feature = "standalone-services")]
         ("POST", op_editor_core::auth_routes::LOGIN_CANCEL) => crate::web_auth::login_cancel(state),
+        #[cfg(feature = "standalone-services")]
         ("POST", op_editor_core::auth_routes::LOGOUT) => crate::web_auth::logout(state),
         // Collaboration: the runtime lives in this daemon, the panel in the
         // browser. See `web_canvas_server/collab_routes.rs`.
+        #[cfg(feature = "standalone-services")]
         ("GET", op_editor_core::collab_routes::STATE) => collab_routes::state(state),
+        #[cfg(feature = "standalone-services")]
         ("POST", op_editor_core::collab_routes::ACTION) => collab_routes::action(body, state),
+        #[cfg(feature = "standalone-services")]
         ("POST", op_editor_core::collab_routes::PRESENCE) => collab_routes::presence(body, state),
         _ => not_found_reply(),
     }
@@ -728,6 +730,7 @@ fn is_device_login_route(path: &str) -> bool {
     path.starts_with(op_editor_core::auth_routes::API_PREFIX)
 }
 
+#[cfg(feature = "standalone-services")]
 mod collab_driver;
 mod document_push;
 #[cfg(test)]
@@ -738,6 +741,7 @@ use document_push::collab_aware_error_reply;
 mod sse_hub;
 pub use sse_hub::SseHub;
 pub(crate) use sse_hub::SseSlot;
+#[cfg(feature = "standalone-services")]
 mod collab_routes;
 pub(crate) mod collab_state;
 mod connect_routes;

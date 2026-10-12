@@ -36,6 +36,8 @@ jobs:
           components: rustfmt
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+        with:
+          cache-workspace-crates: true
       - name: Install validation and WASM tools
         run: brew install ripgrep jq binaryen
       - name: Validate macOS source policies
@@ -46,14 +48,17 @@ jobs:
           bash tools/check-file-line-cap.sh
           bash tools/check-rustls-client-policy.sh
           node --test scripts/check-dsh-runtime.test.mjs
+          node scripts/check-dsh-runtime-dependencies.mjs
       - name: Install locked wasm-bindgen and viewer bundler
         run: |
           version="$(awk '/^name = "wasm-bindgen"$/{found=1; next} found && /^version = /{gsub(/[" ]/,"",$3); print $3; exit}' Cargo.lock)"
-          cargo install wasm-bindgen-cli --version "$version" --locked
+          if ! command -v wasm-bindgen >/dev/null || [[ "$(wasm-bindgen --version)" != "wasm-bindgen $version" ]]; then
+            cargo install wasm-bindgen-cli --version "$version" --locked --force
+          fi
           npm ci --prefix packages/dsh-runtime-build
       - name: Build macOS arm64 daemon
         run: |
-          cargo build --locked --release -p op-host-web-server
+          cargo build --locked --release -p op-host-web-server --no-default-features
       - name: Build embedded editor WASM
         run: bash tools/check-wasm-bundle.sh
       - name: Build viewer WASM
