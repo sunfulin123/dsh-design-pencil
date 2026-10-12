@@ -74,8 +74,10 @@ fn host_locale_override_hides_locale_picker_button() {
 
 #[test]
 fn managed_embed_hides_host_controls_and_keeps_document_tools() {
-    let mut ui = op_editor_core::EditorUiState::default();
-    ui.embed = op_editor_core::EmbedHost::VsCode;
+    let mut ui = op_editor_core::EditorUiState {
+        embed: op_editor_core::EmbedHost::VsCode,
+        ..Default::default()
+    };
     ui.set_host_theme_override(Some(op_editor_core::ThemeMode::Light));
     ui.set_host_locale_override(Some(op_editor_core::Locale::ZhCn));
     ui.account_ui_available = true;

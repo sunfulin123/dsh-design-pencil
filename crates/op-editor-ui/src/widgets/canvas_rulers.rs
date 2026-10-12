@@ -432,10 +432,11 @@ mod tests {
 
     #[test]
     fn ruler_selection_projection_tracks_drag_pan_and_zoom() {
-        let mut viewport = Viewport::default();
-        viewport.pan_x = 50.0;
-        viewport.pan_y = -20.0;
-        viewport.zoom = 2.0;
+        let viewport = Viewport {
+            pan_x: 50.0,
+            pan_y: -20.0,
+            zoom: 2.0,
+        };
         let canvas = Rect::xywh(240.0, 40.0, 700.0, 600.0);
         let bounds = Rect::xywh(-10.0, 30.0, 100.0, 50.0);
         assert_eq!(

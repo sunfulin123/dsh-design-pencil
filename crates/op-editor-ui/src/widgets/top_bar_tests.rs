@@ -564,8 +564,10 @@ fn color_eq(a: Color, b: Color) -> bool {
 
 #[test]
 fn managed_embed_paints_only_document_tools() {
-    let mut ui = EditorUiState::default();
-    ui.embed = op_editor_core::EmbedHost::VsCode;
+    let mut ui = EditorUiState {
+        embed: op_editor_core::EmbedHost::VsCode,
+        ..Default::default()
+    };
     ui.set_host_theme_override(Some(op_editor_core::ThemeMode::Light));
     ui.account_ui_available = true;
     let mut bar = TopBar::for_editor_ui(&ui).with_traffic_controls(false);
