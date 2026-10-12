@@ -96,6 +96,32 @@ export async function checkRuntime(directory) {
     const result = await rpc('tools/call', { name: 'get_document_info', arguments: {} })
     assert.notEqual(result.isError, true, JSON.stringify(result))
     assert(result.content.length > 0)
+    assert(names.includes('batch_design'))
+    const before = await (await request('/api/mcp/document')).json()
+    const design = await rpc('tools/call', {
+      name: 'batch_design', arguments: {
+        script: 'I(null, {type: "frame", name: "DSH runtime smoke", x: 0, y: 0, width: 96, height: 64, fill: "#12a678"});',
+      },
+    })
+    assert.notEqual(design.isError, true, JSON.stringify(design))
+    const after = await (await request('/api/mcp/document')).json()
+    assert(after.version > before.version, 'Design write must advance document version')
+    assert(JSON.stringify(after.document).includes('DSH runtime smoke'), 'Design write must create the frame')
+    for (const format of ['png', 'pdf']) {
+      const label = format.toUpperCase() + ' export'
+      const response = await request('/api/export/' + (format === 'pdf' ? 'pdf' : 'raster'), {
+        method: 'POST', body: JSON.stringify({ format, scale: 1 }),
+      })
+      assert.equal(response.status, 200, label)
+      const exported = await response.json()
+      assert.equal(exported.ok, true, label)
+      assert.equal(exported.mime, format === 'pdf' ? 'application/pdf' : 'image/png', label)
+      const bytes = Buffer.from(exported.dataBase64, 'base64')
+      if (format === 'png') {
+        assert(bytes.length >= 24 && bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')), label)
+        assert(bytes.readUInt32BE(16) > 0 && bytes.readUInt32BE(20) > 0, label)
+      } else assert(bytes.length > 100 && bytes.subarray(0, 5).toString() === '%PDF-', label)
+    }
     for (const path of ['/api/auth/status', '/api/settings/credential-policy', '/api/ai/models']) {
       const response = await request(path)
       assert.equal(response.status, 404, path)

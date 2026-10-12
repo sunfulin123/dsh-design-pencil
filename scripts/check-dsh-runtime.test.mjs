@@ -20,15 +20,30 @@ async function fixture(context, options = {}) {
   const root = join(directory, 'runtime')
   const daemon = `#!/usr/bin/env node
 const { createServer } = require('node:http')
+let version = 0
 const server = createServer(async (request, response) => {
   let result = {}
   if (request.headers.origin === 'https://invalid.example') response.statusCode = 403
+  else if (request.url === '/api/mcp/document') result = {
+    version, document: { children: version ? [{ name: 'DSH runtime smoke' }] : [] },
+  }
+  else if (request.url === '/api/export/raster') {
+    const png = Buffer.alloc(32)
+    Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex').copy(png)
+    png.writeUInt32BE(96, 16)
+    png.writeUInt32BE(64, 20)
+    result = { ok: true, mime: 'image/png', dataBase64: ${options.badPng ? "Buffer.from('not PNG').toString('base64')" : "png.toString('base64')"} }
+  }
+  else if (request.url === '/api/export/pdf') result = {
+    ok: true, mime: 'application/pdf', dataBase64: Buffer.from(${JSON.stringify(options.badPdf ? 'not PDF' : '%PDF-1.7\n' + 'fixture'.repeat(25))}).toString('base64'),
+  }
   else if (request.url === '/mcp') {
     let input = ''
     for await (const chunk of request) input += chunk
     const body = JSON.parse(input)
+    if (body.params?.name === 'batch_design' && ${!options.missingWrite}) version++
     result = { jsonrpc: '2.0', id: body.id, result: body.method === 'tools/list'
-      ? { tools: [{ name: 'get_document_info' }${options.aiTool ? ", { name: 'run_design_agent' }" : ''}] }
+      ? { tools: [{ name: 'get_document_info' }, { name: 'batch_design' }${options.aiTool ? ", { name: 'run_design_agent' }" : ''}] }
       : { content: [{ type: 'text', text: 'document' }] } }
   } else response.statusCode = 404
   response.setHeader('Content-Type', 'application/json')
@@ -98,6 +113,21 @@ test('rejects an incorrect daemon version and cleans up the child', async contex
 test('rejects standalone AI tools in managed discovery', async context => {
   const runtime = await fixture(context, { aiTool: true })
   await assert.rejects(runtime.run(), /run_design_agent/)
+})
+
+test('rejects a design call that does not update the document', async context => {
+  const runtime = await fixture(context, { missingWrite: true })
+  await assert.rejects(runtime.run(), /Design write/)
+})
+
+test('rejects an invalid PNG export', async context => {
+  const runtime = await fixture(context, { badPng: true })
+  await assert.rejects(runtime.run(), /PNG export/)
+})
+
+test('rejects an invalid PDF export', async context => {
+  const runtime = await fixture(context, { badPdf: true })
+  await assert.rejects(runtime.run(), /PDF export/)
 })
 
 test('deduplicated archive preserves paths, hashes, regular files and daemon invocation', async context => {
