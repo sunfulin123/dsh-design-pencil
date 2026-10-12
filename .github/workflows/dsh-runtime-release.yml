@@ -54,6 +54,7 @@ jobs:
         run: |
           cargo test --locked -p op-host-services handshake_line_is_single_line_json
           cargo clippy --locked -p op-host-web-server -p op-host-services -p op-editor-ui -p op-auth-bridge --all-targets -- -D warnings
+          cargo test --locked -p op-host-services cli_probe_support
           cargo test --locked -p op-i18n --lib
           python3 -m unittest tools/test_export_i18n_catalogs.py
           cargo test --locked -p op-auth-bridge fork_has_no_account_backend
