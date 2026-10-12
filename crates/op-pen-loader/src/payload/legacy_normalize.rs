@@ -480,28 +480,26 @@ fn normalize_corner_radius(
             map.insert("cornerRadius".to_string(), serde_json::json!(n));
             *changed = true;
         }
-        Some(Value::Array(entries)) => {
-            // Only rewrite if at least one entry is a `$ref` string (a plain
-            // numeric `[f64; 4]` is already valid; leave it alone).
-            if entries.iter().any(|e| e.is_string()) {
-                let nums: Vec<f64> = entries.iter().filter_map(&resolve_scalar).collect();
-                // The enum's array arm is exactly `[f64; 4]`. Pad/truncate so a
-                // 1- or 2-value Pencil shorthand still lands in a legal shape.
-                let four = match nums.len() {
-                    0 => [0.0; 4],
-                    1 => [nums[0]; 4],
-                    n if n >= 4 => [nums[0], nums[1], nums[2], nums[3]],
-                    _ => {
-                        let mut a = [0.0; 4];
-                        for (i, v) in nums.iter().enumerate() {
-                            a[i] = *v;
-                        }
-                        a
+        // Only rewrite if at least one entry is a `$ref` string (a plain
+        // numeric `[f64; 4]` is already valid; leave it alone).
+        Some(Value::Array(entries)) if entries.iter().any(Value::is_string) => {
+            let nums: Vec<f64> = entries.iter().filter_map(&resolve_scalar).collect();
+            // The enum's array arm is exactly `[f64; 4]`. Pad/truncate so a
+            // 1- or 2-value Pencil shorthand still lands in a legal shape.
+            let four = match nums.len() {
+                0 => [0.0; 4],
+                1 => [nums[0]; 4],
+                n if n >= 4 => [nums[0], nums[1], nums[2], nums[3]],
+                _ => {
+                    let mut a = [0.0; 4];
+                    for (i, v) in nums.iter().enumerate() {
+                        a[i] = *v;
                     }
-                };
-                map.insert("cornerRadius".to_string(), serde_json::json!(four));
-                *changed = true;
-            }
+                    a
+                }
+            };
+            map.insert("cornerRadius".to_string(), serde_json::json!(four));
+            *changed = true;
         }
         _ => {}
     }
