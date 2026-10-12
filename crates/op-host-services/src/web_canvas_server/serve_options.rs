@@ -201,7 +201,9 @@ pub(super) fn parse_serve_web_args_managed<I: Iterator<Item = String>>(
 
 /// Build the single-line handshake JSON printed to stdout in managed mode
 /// once the listener is bound: `{"ok":true,"port":<n>,"token":"<hex32>",
-/// "version":"<crate version>"}`. The supervising process reads exactly one
+/// "version":"<runtime version>"}`. The optional build-time
+/// `OPENPENCIL_DSH_RUNTIME_VERSION` overrides the Cargo package version.
+/// The supervising process reads exactly one
 /// line from the child's stdout to learn the actual bound port (relevant when
 /// `--port 0` requested an OS-assigned port) and the lifecycle token retained
 /// for compatibility and optional graceful shutdown. Ordinary HTTP requests
@@ -209,7 +211,7 @@ pub(super) fn parse_serve_web_args_managed<I: Iterator<Item = String>>(
 pub(crate) fn handshake_json(port: u16, token: &str) -> String {
     format!(
         r#"{{"ok":true,"port":{port},"token":"{token}","version":"{}"}}"#,
-        env!("CARGO_PKG_VERSION")
+        option_env!("OPENPENCIL_DSH_RUNTIME_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
     )
 }
 
