@@ -174,11 +174,13 @@ pub struct TopBar {
     /// desktop enables it when an auth backend is linked, web when the
     /// serving daemon reports one over `/api/auth/status`.
     pub account_button_visible: bool,
-    /// Which embedding container the chrome renders inside. `VsCode` hides
-    /// the file-scoped chrome (open menu, Figma import, centered file
-    /// name/edited/git cluster) and the Maximize button — the host
-    /// workbench already owns those affordances.
+    /// Which embedding container the chrome renders inside. `VsCode` keeps
+    /// native file controls and delegates fullscreen to the host workbench.
     pub embed: op_editor_core::EmbedHost,
+    /// Whether the globe locale picker button is displayed in the top bar.
+    /// Hidden when an embedding host overrides the locale.
+    pub locale_picker_visible: bool,
+    pub host_controls_visible: bool,
 }
 
 impl TopBar {
@@ -208,6 +210,8 @@ impl TopBar {
             account: op_editor_core::AccountState::Anonymous,
             account_button_visible: false,
             embed: op_editor_core::EmbedHost::None,
+            locale_picker_visible: true,
+            host_controls_visible: true,
         }
     }
 
@@ -269,6 +273,9 @@ impl TopBar {
             account: ui.account.clone(),
             account_button_visible: ui.account_ui_available,
             embed: ui.embed,
+            locale_picker_visible: ui.host_locale_override.is_none(),
+            host_controls_visible: !(ui.embed == op_editor_core::EmbedHost::VsCode
+                && ui.host_theme_override.is_some()),
         }
     }
 
@@ -430,12 +437,12 @@ impl TopBar {
             if (file_menu_rect).contains(point) {
                 return Some(TopBarHit::ToggleFileMenu);
             }
-            if (self.import_button_rect(rect)).contains(point) {
-                return Some(TopBarHit::OpenImportMenu);
-            }
             if (self.home_button_rect(rect)).contains(point) {
                 return Some(TopBarHit::Home);
             }
+        }
+        if (self.import_button_rect(rect)).contains(point) {
+            return Some(TopBarHit::OpenImportMenu);
         }
         // Git-panel toggle, just right of the centred file name (desktop
         // only — see `GIT_BUTTON_AVAILABLE`; also hidden inside a VS Code
@@ -478,13 +485,18 @@ impl TopBar {
         if (self.asset_center_button_rect(rect)).contains(point) {
             return Some(TopBarHit::OpenAssetCenter);
         }
+        if !self.host_controls_visible {
+            return None;
+        }
         let sun_rect = self.theme_button_rect(rect);
         if (sun_rect).contains(point) {
             return Some(TopBarHit::ToggleTheme);
         }
-        let globe = self.globe_rect(rect);
-        if (globe).contains(point) {
-            return Some(TopBarHit::ToggleLocale);
+        if self.locale_button_visible() {
+            let globe = self.globe_rect(rect);
+            if (globe).contains(point) {
+                return Some(TopBarHit::ToggleLocale);
+            }
         }
         if self.account_button_visible {
             let account = self.account_button_rect(rect);

@@ -78,6 +78,7 @@ pub struct EditorUiState {
     /// Studio generation-workspace chrome state (docked chat + real
     /// canvas on the same document). Fully transient — never persisted.
     pub workspace: WorkspaceState,
+    pub host_theme_palette: std::collections::BTreeMap<String, String>,
     /// UI locale — TopBar Globe cycles.
     pub locale: Locale,
     /// A runtime catalog selected in the web picker but not installed yet.

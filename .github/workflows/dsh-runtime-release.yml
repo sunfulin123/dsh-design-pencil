@@ -1,0 +1,66 @@
+name: DSH runtime release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['runtime-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.96.0'
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: brew install binaryen
+      - name: Install locked wasm-bindgen and viewer bundler
+        run: |
+          version="$(awk '/^name = "wasm-bindgen"$/{found=1; next} found && /^version = /{gsub(/[" ]/,"",$3); print $3; exit}' Cargo.lock)"
+          cargo install wasm-bindgen-cli --version "$version" --locked
+          npm ci --prefix packages/dsh-runtime-build
+      - name: Validate and build account-free runtime
+        run: |
+          cargo test --locked -p op-i18n --lib
+          python3 -m unittest tools/test_export_i18n_catalogs.py
+          cargo test --locked -p op-auth-bridge fork_has_no_account_backend
+          cargo test --locked -p op-editor-ui top_bar
+          cargo test --locked -p op-editor-ui canvas_rulers
+          cargo test --locked -p op-editor-ui toolbar_tooltip
+          cargo test --locked -p op-host-web --no-default-features --features canvaskit --lib managed_
+          cargo build --locked --release -p op-host-web-server
+          bash tools/check-wasm-bundle.sh
+          bash crates/op-web-sdk/tools/build-wasm.sh
+          node scripts/stage-dsh-runtime.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-design-pencil-runtime
+          path: dist/*.tar.gz*
+          if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/runtime-v')
+    needs: runtime
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dsh-design-pencil-runtime
+          path: dist
+      - name: Publish immutable runtime assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" dist/*.tar.gz* --verify-tag --title "$TAG" --notes "Account-free macOS arm64 editor, daemon, viewer and checksummed resources."

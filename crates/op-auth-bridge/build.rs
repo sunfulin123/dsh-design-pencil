@@ -29,6 +29,10 @@ fn main() {
     println!("cargo:rerun-if-env-changed={DEV_ARCHIVE_ENV}");
     println!("cargo:rerun-if-env-changed={DEV_ABI_VERSION_ENV}");
 
+    if env::var_os("CARGO_FEATURE_ACCOUNT_FREE").is_some() {
+        return;
+    }
+
     let target = env::var("TARGET").unwrap_or_default();
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     // MSVC static libraries follow the `<name>.lib` convention; every

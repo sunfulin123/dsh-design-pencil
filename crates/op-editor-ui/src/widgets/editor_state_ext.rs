@@ -16,10 +16,42 @@ use op_editor_core::editor_ui_state::{EditorUiState, ThemeMode};
 /// Resolve the active editor [`Theme`] from the UI theme mode.
 /// Mirrors the old `Document::theme()`.
 pub fn theme_for(ui: &EditorUiState) -> Theme {
-    match ui.effective_theme_mode() {
+    let mut theme = match ui.effective_theme_mode() {
         ThemeMode::Dark => Theme::dark(),
         ThemeMode::Light => Theme::light(),
+    };
+    macro_rules! apply_palette {
+        ($($field:ident),*) => {
+            $(if let Some(color) = ui.host_theme_palette.get(stringify!($field))
+                .and_then(|value| crate::util::parse_hex_color(value)) {
+                theme.$field = color;
+            })*
+        };
     }
+    apply_palette!(
+        background,
+        foreground,
+        card,
+        card_foreground,
+        popover,
+        popover_foreground,
+        primary,
+        primary_foreground,
+        muted,
+        muted_foreground,
+        border,
+        accent,
+        accent_foreground,
+        secondary,
+        secondary_foreground,
+        input,
+        ring,
+        button_hover,
+        row_selected,
+        row_selected_primary,
+        canvas_surface
+    );
+    theme
 }
 
 /// Translate a chrome string key against the active UI locale.
@@ -306,5 +338,43 @@ pub fn export_format(
         W::Webp => O::Webp,
         W::Svg => O::Svg,
         W::Pdf => O::Pdf,
+    }
+}
+
+#[cfg(test)]
+mod host_palette_tests {
+    use super::*;
+
+    #[test]
+    fn host_palette_overrides_chrome_without_changing_user_theme() {
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let mut ui = EditorUiState {
+                host_theme_palette: [
+                    ("background".into(), "#123456".into()),
+                    ("canvas_surface".into(), "#abcdef".into()),
+                    ("foreground".into(), "invalid".into()),
+                ]
+                .into(),
+                ..Default::default()
+            };
+            ui.set_host_theme_override(Some(mode));
+            let theme = theme_for(&ui);
+            assert_eq!(
+                theme.background,
+                crate::util::parse_hex_color("#123456").unwrap()
+            );
+            assert_eq!(
+                theme.canvas_surface,
+                crate::util::parse_hex_color("#abcdef").unwrap()
+            );
+            assert_eq!(
+                theme.foreground,
+                match mode {
+                    ThemeMode::Light => Theme::light().foreground,
+                    ThemeMode::Dark => Theme::dark().foreground,
+                }
+            );
+            assert_eq!(ui.theme_mode, ThemeMode::Dark);
+        }
     }
 }

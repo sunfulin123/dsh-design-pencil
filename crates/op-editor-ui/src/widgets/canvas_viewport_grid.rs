@@ -80,10 +80,10 @@ fn grid_metrics(rect: Rect, viewport: &DocViewport, theme: &Theme) -> GridMetric
         origin_y: rect.origin.y + viewport.pan_y.rem_euclid(step),
         dot_radius: dot_size / 2.0,
         color: Color {
-            r: theme.muted_foreground.r,
-            g: theme.muted_foreground.g,
-            b: theme.muted_foreground.b,
-            a: 0.18,
+            r: theme.border.r,
+            g: theme.border.g,
+            b: theme.border.b,
+            a: theme.border.a * 0.28,
         },
     }
 }

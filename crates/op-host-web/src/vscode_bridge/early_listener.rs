@@ -194,6 +194,7 @@ mod tests {
             "https://host.example".into(),
             BridgeInbound::Theme {
                 color_scheme: op_editor_core::ThemeMode::Dark,
+                palette: Default::default(),
             },
         );
         assert!(inbox.take_over().is_empty());

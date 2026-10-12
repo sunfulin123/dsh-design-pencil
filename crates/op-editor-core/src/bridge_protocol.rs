@@ -30,6 +30,7 @@ pub enum BridgeInbound {
     },
     Theme {
         color_scheme: ThemeMode,
+        palette: std::collections::BTreeMap<String, String>,
     },
     Locale {
         locale: Locale,
@@ -74,7 +75,14 @@ impl BridgeInbound {
             }
             "op-bridge/theme" => {
                 let color_scheme = color_scheme_from_wire(value.get("colorScheme")?.as_str()?)?;
-                Some(BridgeInbound::Theme { color_scheme })
+                let palette = value
+                    .get("palette")
+                    .and_then(|value| serde_json::from_value(value.clone()).ok())
+                    .unwrap_or_default();
+                Some(BridgeInbound::Theme {
+                    color_scheme,
+                    palette,
+                })
             }
             "op-bridge/locale" => {
                 let locale = locale_from_wire(value.get("locale")?.as_str()?)?;
@@ -223,6 +231,24 @@ mod tests {
     use super::*;
 
     #[test]
+    fn host_palette_preserves_rgba_and_missing_palette_is_compatible() {
+        let Some(BridgeInbound::Theme {
+            color_scheme,
+            palette,
+        }) = BridgeInbound::parse(
+            r##"{"type":"op-bridge/theme","colorScheme":"dark","palette":{"background":"#151517ff","border":"#ffffff20"}}"##,
+        )
+        else {
+            panic!("host palette must parse")
+        };
+        assert_eq!(color_scheme, ThemeMode::Dark);
+        assert_eq!(palette.get("border").unwrap(), "#ffffff20");
+        assert!(matches!(BridgeInbound::parse(
+            r#"{"type":"op-bridge/theme","colorScheme":"light","palette":null}"#,
+        ), Some(BridgeInbound::Theme { color_scheme: ThemeMode::Light, palette }) if palette.is_empty()));
+    }
+
+    #[test]
     fn parse_inbound_messages() {
         assert_eq!(
             BridgeInbound::parse(r#"{"type":"op-bridge/init","token":"t0k"}"#),
@@ -252,13 +278,15 @@ mod tests {
         assert_eq!(
             BridgeInbound::parse(r#"{"type":"op-bridge/theme","colorScheme":"light"}"#),
             Some(BridgeInbound::Theme {
-                color_scheme: ThemeMode::Light
+                color_scheme: ThemeMode::Light,
+                palette: Default::default(),
             })
         );
         assert_eq!(
             BridgeInbound::parse(r#"{"type":"op-bridge/theme","colorScheme":"dark"}"#),
             Some(BridgeInbound::Theme {
-                color_scheme: ThemeMode::Dark
+                color_scheme: ThemeMode::Dark,
+                palette: Default::default(),
             })
         );
         assert_eq!(

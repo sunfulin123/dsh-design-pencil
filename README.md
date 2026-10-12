@@ -33,6 +33,14 @@
 </p>
 <p align="center"><sub>Click the image to watch the demo video</sub></p>
 
+## DSH Design Pencil Fork
+
+This fork owns the Synapse Studio managed-editor customization: host locale and palette, hidden host controls, canvas rulers, sidebar shadows, retained top-bar divider, toolbar hints, and managed file lifecycle. The default `op-auth-bridge` feature is `account-free`: the proprietary login library is not linked, credentials are not restored, and hosted collaboration tickets cannot be issued. Local editing, importing, exporting, rendering, and user-configured model providers do not require an OpenPencil account. Provider credentials, local session authorization, file conflict checks, and collaboration integrity rules remain enforced.
+
+The [runtime release workflow](.github/workflows/dsh-runtime-release.yml) publishes macOS arm64 archives for `runtime-v*` tags. Each archive contains the native daemon, compiled editor, namespaced read-only viewer, CanvasKit, product resources, license, and a manifest identifying the fork commit and SHA-256 of every payload file. Synapse Studio consumes a pinned release archive rather than this Rust source tree. Other platforms are not published by this workflow.
+
+To build an archive on macOS arm64, initialize submodules, install Rust 1.96.0 with the `wasm32-unknown-unknown` target, a lockfile-matched `wasm-bindgen-cli`, Binaryen, and Node 24. Run `npm ci --prefix packages/dsh-runtime-build`, `cargo build --locked --release -p op-host-web-server`, `bash tools/check-wasm-bundle.sh`, `bash crates/op-web-sdk/tools/build-wasm.sh`, and `node scripts/stage-dsh-runtime.mjs` from a committed checkout. Do not configure production collaboration bootstrap URLs for this account-free distribution. The archive and its checksum are written under `dist/`.
+
 ## Why OpenPencil
 
 <table>

@@ -522,6 +522,8 @@ fn icon_only_git_button_centers_glyph_in_hover_rect() {
 struct SvgColorCapture {
     svgs: Vec<Color>,
     fills: Vec<(String, Point2D, f32, f32, Color)>,
+    strokes: Vec<Point2D>,
+    texts: usize,
 }
 
 impl crate::RenderBackend for SvgColorCapture {
@@ -529,13 +531,16 @@ impl crate::RenderBackend for SvgColorCapture {
     fn end_frame(&mut self) {}
     fn fill_rect(&mut self, _: Rect, _: Color) {}
     fn stroke_rect(&mut self, _: Rect, _: Color, _: f32) {}
-    fn draw_text(&mut self, _: &crate::TextLayout, _: Point2D) {}
+    fn draw_text(&mut self, _: &crate::TextLayout, _: Point2D) {
+        self.texts += 1;
+    }
     fn clip_rect(&mut self, _: Rect) {}
     fn stroke_line(&mut self, _: Point2D, _: Point2D, _: Color, _: f32) {}
     fn fill_round_rect(&mut self, _: Rect, _: f32, _: Color) {}
     fn stroke_round_rect(&mut self, _: Rect, _: f32, _: Color, _: f32) {}
-    fn stroke_svg_path(&mut self, _: &str, _: Point2D, _: f32, color: Color, _: f32) {
+    fn stroke_svg_path(&mut self, _: &str, origin: Point2D, _: f32, color: Color, _: f32) {
         self.svgs.push(color);
+        self.strokes.push(origin);
     }
     fn fill_svg_path(&mut self, d: &str, top_left: Point2D, size: f32, viewbox: f32, color: Color) {
         self.fills
@@ -555,6 +560,33 @@ fn color_eq(a: Color, b: Color) -> bool {
         && (a.g - b.g).abs() < 0.001
         && (a.b - b.b).abs() < 0.001
         && (a.a - b.a).abs() < 0.001
+}
+
+#[test]
+fn managed_embed_paints_only_document_tools() {
+    let mut ui = EditorUiState::default();
+    ui.embed = op_editor_core::EmbedHost::VsCode;
+    ui.set_host_theme_override(Some(op_editor_core::ThemeMode::Light));
+    ui.account_ui_available = true;
+    let mut bar = TopBar::for_editor_ui(&ui).with_traffic_controls(false);
+    bar.collab.visible = true;
+    bar.collab.label = "Collaborate".to_string();
+    for width in [600.0, 1200.0] {
+        let rect = Rect::xywh(0.0, 0.0, width, TOP_BAR_HEIGHT);
+        let mut capture = SvgColorCapture::default();
+        bar.paint(&mut PaintCx { backend: &mut capture }, rect);
+        assert_eq!(capture.texts, 0, "title and status labels must not paint");
+        assert!(!capture.strokes.is_empty());
+        assert!(!capture.fills.is_empty(), "import glyph must still paint");
+        let import = bar.import_button_rect(rect);
+        let palette = bar.asset_center_button_rect(rect);
+        for origin in capture.strokes {
+            assert!(
+                origin.x < import.origin.x + import.size.x || origin.x >= palette.origin.x,
+                "hidden icon painted at {origin:?} for width={width}"
+            );
+        }
+    }
 }
 
 #[test]

@@ -246,6 +246,16 @@ impl Toolbar {
         {
             return None;
         }
+        self.find_button(rect, |_, button| button.contains(point)).map(|(hit, _)| hit)
+    }
+
+    pub fn hovered_button_rect(&self, rect: Rect) -> Option<Rect> {
+        let hover = self.hover?;
+        self.find_button(rect, |hit, _| super::editor_state_ext::toolbar_hover(hit) == hover)
+            .map(|(_, button)| button)
+    }
+
+    fn find_button(&self, rect: Rect, matches: impl Fn(ToolbarHit, Rect) -> bool) -> Option<(ToolbarHit, Rect)> {
         let button_x = rect.origin.x + (rect.size.x - BUTTON_SIZE) / 2.0;
         let mut y = rect.origin.y + PAD_TOP;
         let mut prev_was_item = false;
@@ -265,8 +275,9 @@ impl Toolbar {
                         origin: Point2D::new(button_x, y),
                         size: Point2D::new(BUTTON_SIZE, BUTTON_SIZE),
                     };
-                    if button_rect.contains(point) {
-                        return Some(ToolbarHit::Tool(*tool));
+                    let hit = ToolbarHit::Tool(*tool);
+                    if matches(hit, button_rect) {
+                        return Some((hit, button_rect));
                     }
                     y += BUTTON_SIZE;
                     prev_was_item = true;
@@ -279,8 +290,9 @@ impl Toolbar {
                         origin: Point2D::new(button_x, y),
                         size: Point2D::new(BUTTON_SIZE, BUTTON_SIZE),
                     };
-                    if button_rect.contains(point) {
-                        return Some(ToolbarHit::Action(*action));
+                    let hit = ToolbarHit::Action(*action);
+                    if matches(hit, button_rect) {
+                        return Some((hit, button_rect));
                     }
                     y += BUTTON_SIZE;
                     prev_was_item = true;
@@ -296,8 +308,9 @@ impl Toolbar {
                         origin: Point2D::new(button_x, y),
                         size: Point2D::new(BUTTON_SIZE, BUTTON_SIZE + SHAPE_SLOT_BOTTOM_EXTRA),
                     };
-                    if button_rect.contains(point) {
-                        return Some(ToolbarHit::ToggleShapePicker);
+                    let hit = ToolbarHit::ToggleShapePicker;
+                    if matches(hit, button_rect) {
+                        return Some((hit, button_rect));
                     }
                     y += BUTTON_SIZE + SHAPE_SLOT_BOTTOM_EXTRA;
                     prev_was_item = true;
@@ -336,6 +349,24 @@ impl Widget for Toolbar {
     }
 
     fn paint(&self, cx: &mut PaintCx<'_>, rect: Rect) {
+        let dark = self.theme.popover.r + self.theme.popover.g + self.theme.popover.b < 1.5;
+        for (spread, offset, alpha) in [(4.0, 3.0, 0.035), (2.0, 1.0, 0.065)] {
+            cx.backend.fill_round_rect(
+                Rect::xywh(
+                    rect.origin.x - spread,
+                    rect.origin.y + offset - spread,
+                    rect.size.x + spread * 2.0,
+                    rect.size.y + spread * 2.0,
+                ),
+                12.0 + spread,
+                crate::Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: if dark { alpha * 2.0 } else { alpha },
+                },
+            );
+        }
         // Floating column on top of the canvas — paint a translucent
         // popover-ish background so it reads as a panel against any
         // canvas content beneath.
@@ -472,6 +503,42 @@ fn paint_button(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn floating_toolbar_elevation_preserves_hit_bounds() {
+        for theme in [Theme::light(), Theme::dark()] {
+            let mut toolbar = Toolbar::default_set();
+            toolbar.theme = theme;
+            let rect = Rect::xywh(300.0, 60.0, TOOLBAR_WIDTH, toolbar.intrinsic_height());
+            let mut capture = crate::widgets::test_capture_backend::CaptureBackend::default();
+            toolbar.paint(
+                &mut PaintCx {
+                    backend: &mut capture,
+                },
+                rect,
+            );
+            let shadows: Vec<_> = capture
+                .round_fills
+                .iter()
+                .filter(|(fill, _, color)| {
+                    fill.origin.x < rect.origin.x
+                        && fill.size.x > rect.size.x
+                        && color.a > 0.0
+                        && color.a < 0.2
+                })
+                .collect();
+            assert_eq!(
+                shadows.len(),
+                2,
+                "toolbar must paint two soft elevation layers"
+            );
+            assert_eq!(toolbar.hit_test(rect, Point2D::new(299.0, 80.0)), None);
+            assert_eq!(
+                toolbar.hit_test(rect, Point2D::new(322.0, 84.0)),
+                Some(ToolbarHit::Tool(Tool::Select))
+            );
+        }
+    }
 
     #[test]
     fn default_set_has_base_tools_shape_slot_and_actions_no_widgets() {
