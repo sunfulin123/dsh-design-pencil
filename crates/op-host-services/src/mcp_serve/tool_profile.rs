@@ -709,23 +709,24 @@ pub fn denied_tool_names() -> Vec<&'static str> {
 ///
 /// `tools/list` filters each response directly because it also appends
 /// document-specific element tools. `ToolSearch` needs a `'static` catalog,
-/// so the one public-deployment variant is built once from the same
-/// [`McpAccessProfile::lists`] decision and then shared by every request.
-/// Scope does not participate in discovery listing, hence there are exactly
-/// two variants: unrestricted and public/shared.
+/// so catalogs are cached by deployment policy using the same
+/// [`McpAccessProfile::lists`] decision as `tools/list`.
+/// Scope does not participate in discovery listing.
 pub(crate) fn tool_search_schemas(profile: McpAccessProfile) -> &'static [&'static str] {
-    if !profile.deny_unshareable_tools {
+    if !profile.deny_unshareable_tools && !profile.deny_standalone_ai {
         return TOOL_SCHEMAS;
     }
 
-    static ONLINE_SCHEMAS: std::sync::OnceLock<Vec<&'static str>> = std::sync::OnceLock::new();
-    ONLINE_SCHEMAS
+    static CATALOGS: [std::sync::OnceLock<Vec<&'static str>>; 4] =
+        [const { std::sync::OnceLock::new() }; 4];
+    let policy =
+        usize::from(profile.deny_unshareable_tools) * 2 + usize::from(profile.deny_standalone_ai);
+    CATALOGS[policy]
         .get_or_init(|| {
-            let online = McpAccessProfile::online(McpScopes::FULL);
             TOOL_SCHEMAS
                 .iter()
                 .copied()
-                .filter(|schema| schema_name(schema).is_none_or(|name| online.lists(&name)))
+                .filter(|schema| schema_name(schema).is_none_or(|name| profile.lists(&name)))
                 .collect()
         })
         .as_slice()

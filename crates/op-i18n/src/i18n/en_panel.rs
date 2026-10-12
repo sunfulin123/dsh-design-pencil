@@ -6,6 +6,10 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "tooltip.toolbar.showVariables" => "Open variables panel",
+        "tooltip.toolbar.hideVariables" => "Close variables panel",
+        "tooltip.toolbar.showDesign" => "Open design system (Design.md)",
+        "tooltip.toolbar.hideDesign" => "Close design system (Design.md)",
         "imagePanel.searchPlaceholder" => "Search images...",
         "imagePanel.searching" => "Searching...",
         "imagePanel.noResults" => "No results found",

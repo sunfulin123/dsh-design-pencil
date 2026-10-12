@@ -99,7 +99,10 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
             TopBarHit::ToggleTheme,
             TopBarHit::ToggleLocale,
         ] {
-            assert!(!hits.contains(&hidden), "hidden control {hidden:?} at width={width}");
+            assert!(
+                !hits.contains(&hidden),
+                "hidden control {hidden:?} at width={width}"
+            );
         }
         for retained in [
             TopBarHit::ToggleSidebar,
@@ -108,7 +111,10 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
             TopBarHit::OpenExportMenu,
             TopBarHit::TogglePreview,
         ] {
-            assert!(hits.contains(&retained), "missing {retained:?} at width={width}");
+            assert!(
+                hits.contains(&retained),
+                "missing {retained:?} at width={width}"
+            );
         }
     }
 }

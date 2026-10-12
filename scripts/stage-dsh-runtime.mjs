@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const version = '0.8.5-synapse.1'
+const version = '0.8.5-synapse.2'
 const platform = 'darwin-arm64'
 if (process.env.GITHUB_REF_TYPE === 'tag' && process.env.GITHUB_REF_NAME !== `runtime-v${version}`) {
   throw new Error(`Release tag must equal runtime-v${version}`)

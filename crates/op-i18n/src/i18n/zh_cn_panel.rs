@@ -6,6 +6,10 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "tooltip.toolbar.showVariables" => "打开变量面板",
+        "tooltip.toolbar.hideVariables" => "关闭变量面板",
+        "tooltip.toolbar.showDesign" => "打开设计系统（Design.md）",
+        "tooltip.toolbar.hideDesign" => "关闭设计系统（Design.md）",
         "imagePanel.searchPlaceholder" => "搜索图片…",
         "imagePanel.searching" => "搜索中…",
         "imagePanel.noResults" => "未找到结果",

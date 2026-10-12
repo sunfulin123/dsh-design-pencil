@@ -15,7 +15,8 @@ impl op_editor_ui::RenderBackend for PanelPaintCapture {
     }
     fn stroke_rect(&mut self, _: op_editor_ui::Rect, _: op_editor_ui::Color, _: f32) {}
     fn draw_text(&mut self, layout: &op_editor_ui::TextLayout, _: op_editor_ui::Point2D) {
-        self.texts.extend(layout.runs().iter().map(|run| run.content.clone()));
+        self.texts
+            .extend(layout.runs().iter().map(|run| run.content.clone()));
     }
     fn clip_rect(&mut self, _: op_editor_ui::Rect) {}
     fn stroke_line(
@@ -51,12 +52,22 @@ impl op_editor_ui::RenderBackend for PanelPaintCapture {
 fn managed_toolbar_hover_names_the_active_tool() {
     let mut host = WidgetHost::new();
     host.editor_state.editor_ui.embed = op_editor_core::EmbedHost::VsCode;
-    host.editor_state.editor_ui.set_host_theme_override(Some(ThemeMode::Light));
-    host.editor_state.editor_ui.toolbar_hover = Some(op_editor_core::ToolbarHover::Tool(op_editor_core::Tool::Select));
+    host.editor_state
+        .editor_ui
+        .set_host_theme_override(Some(ThemeMode::Light));
+    host.editor_state.editor_ui.toolbar_hover = Some(op_editor_core::ToolbarHover::Tool(
+        op_editor_core::Tool::Select,
+    ));
     let mut capture = PanelPaintCapture::default();
     host.paint_dyn(&mut capture, 1200.0, 800.0);
-    let label = op_editor_ui::widgets::editor_state_ext::translate(&host.editor_state.editor_ui, "toolbar.select");
-    assert!(capture.texts.iter().any(|text| text == label), "active tools must also show a tooltip");
+    let label = op_editor_ui::widgets::editor_state_ext::translate(
+        &host.editor_state.editor_ui,
+        "toolbar.select",
+    );
+    assert!(
+        capture.texts.iter().any(|text| text == label),
+        "active tools must also show a tooltip"
+    );
 }
 
 #[test]
@@ -81,21 +92,37 @@ fn managed_panel_edges_are_borderless_and_cast_only_side_shadows() {
             host.paint_dyn(&mut capture, width, 700.0);
             for boundary in [left - 1.0, property.origin.x] {
                 let point = op_editor_ui::Point2D::new(boundary + 0.5, 100.0);
-                let color = capture.fills.iter().rev()
+                let color = capture
+                    .fills
+                    .iter()
+                    .rev()
                     .find(|(rect, color)| rect.contains(point) && color.a == 1.0)
                     .map(|(_, color)| *color);
-                assert_eq!(color, Some(host.theme.card), "panel edge must not retain a border");
+                assert_eq!(
+                    color,
+                    Some(host.theme.card),
+                    "panel edge must not retain a border"
+                );
             }
             for top_x in [10.0, width - 10.0] {
                 let point = op_editor_ui::Point2D::new(top_x, TOP_BAR_HEIGHT - 0.5);
-                let color = capture.fills.iter().rev()
+                let color = capture
+                    .fills
+                    .iter()
+                    .rev()
                     .find(|(rect, color)| rect.contains(point) && color.a == 1.0)
                     .map(|(_, color)| *color);
-                assert_eq!(color, Some(host.theme.border), "top bar must retain its bottom divider");
+                assert_eq!(
+                    color,
+                    Some(host.theme.border),
+                    "top bar must retain its bottom divider"
+                );
             }
             assert!(
-                !capture.fills.iter().any(|(rect, color)|
-                    rect.origin.y >= TOP_BAR_HEIGHT - 1.0
+                !capture
+                    .fills
+                    .iter()
+                    .any(|(rect, color)| rect.origin.y >= TOP_BAR_HEIGHT - 1.0
                         && rect.origin.y < TOP_BAR_HEIGHT + 6.0
                         && rect.size.x == width
                         && color.a > 0.0

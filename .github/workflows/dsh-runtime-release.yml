@@ -2,27 +2,46 @@ name: DSH runtime release
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
+    branches: [main, synapse-runtime]
     tags: ['runtime-v*']
 
 permissions:
   contents: read
 
+env:
+  RUSTUP_TOOLCHAIN: '1.96.0'
+
 jobs:
   runtime:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+      - name: Install locked version-check dependencies
+        working-directory: packages
+        run: bun install --frozen-lockfile --ignore-scripts
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: '1.96.0'
+          components: rustfmt, clippy
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - name: Validate macOS source policies
+        run: |
+          test "$(uname -m)" = arm64
+          cargo fmt --all -- --check
+          bash tools/check-version-sync.sh
+          bash tools/check-file-line-cap.sh
+          bash tools/check-rustls-client-policy.sh
       - run: brew install binaryen
       - name: Install locked wasm-bindgen and viewer bundler
         run: |
@@ -31,6 +50,7 @@ jobs:
           npm ci --prefix packages/dsh-runtime-build
       - name: Validate and build account-free runtime
         run: |
+          cargo clippy --locked -p op-host-web-server -p op-host-services -p op-editor-ui -p op-auth-bridge --all-targets -- -D warnings
           cargo test --locked -p op-i18n --lib
           python3 -m unittest tools/test_export_i18n_catalogs.py
           cargo test --locked -p op-auth-bridge fork_has_no_account_backend
@@ -42,6 +62,7 @@ jobs:
           cargo test --locked -p op-host-web --no-default-features --features canvaskit --lib managed_
           cargo build --locked --release -p op-host-web-server
           bash tools/check-wasm-bundle.sh
+          OPENPENCIL_SKIP_WASM_BUILD=1 bash tools/check-web-browser-smoke.sh
           bash crates/op-web-sdk/tools/build-wasm.sh
           node scripts/stage-dsh-runtime.mjs
       - uses: actions/upload-artifact@v4
@@ -52,7 +73,7 @@ jobs:
   publish:
     if: startsWith(github.ref, 'refs/tags/runtime-v')
     needs: runtime
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     permissions:
       contents: write
     steps:

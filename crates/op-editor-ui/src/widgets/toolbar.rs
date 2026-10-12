@@ -246,16 +246,23 @@ impl Toolbar {
         {
             return None;
         }
-        self.find_button(rect, |_, button| button.contains(point)).map(|(hit, _)| hit)
+        self.find_button(rect, |_, button| button.contains(point))
+            .map(|(hit, _)| hit)
     }
 
     pub fn hovered_button_rect(&self, rect: Rect) -> Option<Rect> {
         let hover = self.hover?;
-        self.find_button(rect, |hit, _| super::editor_state_ext::toolbar_hover(hit) == hover)
-            .map(|(_, button)| button)
+        self.find_button(rect, |hit, _| {
+            super::editor_state_ext::toolbar_hover(hit) == hover
+        })
+        .map(|(_, button)| button)
     }
 
-    fn find_button(&self, rect: Rect, matches: impl Fn(ToolbarHit, Rect) -> bool) -> Option<(ToolbarHit, Rect)> {
+    fn find_button(
+        &self,
+        rect: Rect,
+        matches: impl Fn(ToolbarHit, Rect) -> bool,
+    ) -> Option<(ToolbarHit, Rect)> {
         let button_x = rect.origin.x + (rect.size.x - BUTTON_SIZE) / 2.0;
         let mut y = rect.origin.y + PAD_TOP;
         let mut prev_was_item = false;

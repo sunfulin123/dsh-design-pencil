@@ -574,7 +574,12 @@ fn managed_embed_paints_only_document_tools() {
     for width in [600.0, 1200.0] {
         let rect = Rect::xywh(0.0, 0.0, width, TOP_BAR_HEIGHT);
         let mut capture = SvgColorCapture::default();
-        bar.paint(&mut PaintCx { backend: &mut capture }, rect);
+        bar.paint(
+            &mut PaintCx {
+                backend: &mut capture,
+            },
+            rect,
+        );
         assert_eq!(capture.texts, 0, "title and status labels must not paint");
         assert!(!capture.strokes.is_empty());
         assert!(!capture.fills.is_empty(), "import glyph must still paint");

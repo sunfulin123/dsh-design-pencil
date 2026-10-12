@@ -10,13 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="./README.md"><b>English</b></a> · <a href="./README.zh.md">简体中文</a> · <a href="./README.zh-TW.md">繁體中文</a> · <a href="./README.ja.md">日本語</a> · <a href="./README.ko.md">한국어</a> · <a href="./README.fr.md">Français</a> · <a href="./README.es.md">Español</a> · <a href="./README.de.md">Deutsch</a> · <a href="./README.pt.md">Português</a> · <a href="./README.ru.md">Русский</a> · <a href="./README.hi.md">हिन्दी</a> · <a href="./README.tr.md">Türkçe</a> · <a href="./README.th.md">ไทย</a> · <a href="./README.vi.md">Tiếng Việt</a> · <a href="./README.id.md">Bahasa Indonesia</a>
+  <a href="./README.md"><b>English</b></a> · <a href="./README.zh.md">简体中文</a> · <a href="./README.zh-TW.md">繁體中文</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/ZSeven-W/openpencil/stargazers"><img src="https://img.shields.io/github/stars/ZSeven-W/openpencil?style=flat&color=cfb537" alt="Stars" /></a>
   <a href="https://github.com/ZSeven-W/openpencil/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ZSeven-W/openpencil?color=64748b" alt="License" /></a>
-  <a href="https://github.com/ZSeven-W/openpencil/actions/workflows/rust-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/ZSeven-W/openpencil/rust-check.yml?label=CI" alt="CI" /></a>
+  <a href="https://github.com/sunfulin123/dsh-design-pencil/actions/workflows/dsh-runtime-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/sunfulin123/dsh-design-pencil/dsh-runtime-release.yml?branch=synapse-runtime&amp;label=macOS%20CI" alt="macOS CI" /></a>
   <a href="https://discord.gg/h9Fmyy6pVh"><img src="https://img.shields.io/badge/Discord-Join%20chat-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
 </p>
 
@@ -39,7 +39,7 @@ This fork owns the Synapse Studio managed-editor customization: host locale and 
 
 The [runtime release workflow](.github/workflows/dsh-runtime-release.yml) publishes macOS arm64 archives for `runtime-v*` tags. Each archive contains the native daemon, compiled editor, namespaced read-only viewer, CanvasKit, product resources, license, and a manifest identifying the fork commit and SHA-256 of every payload file. Synapse Studio consumes a pinned release archive rather than this Rust source tree. Other platforms are not published by this workflow.
 
-Runtime compilation belongs to the macOS arm64 release workflow, not the consuming plugin or desktop profile. Its toolchain is Rust 1.96.0 with the `wasm32-unknown-unknown` target, a lockfile-matched `wasm-bindgen-cli`, Binaryen, and Node 24. The workflow tests managed route and MCP boundaries, embedded credential isolation, and editor customizations before compiling the daemon, editor, and viewer. It stages the archive and checksum under `dist/` from a committed checkout. Consumers need only the pinned, checksummed archive and never download a Skia builder. Do not configure model credentials or production collaboration bootstrap URLs for the managed distribution.
+Runtime compilation belongs to the macOS arm64 release workflow, not the consuming plugin or desktop profile. The workflow pins Rust with the `wasm32-unknown-unknown` target, a lockfile-matched `wasm-bindgen-cli`, Binaryen, and Node 24. Pull requests and source-branch pushes run format, version, file-size, rustls, Clippy, managed route and MCP, embedded credential isolation, editor customization, and browser smoke checks before staging the daemon, editor, and viewer archive and checksum under `dist/` from a committed checkout. Tagged builds publish the verified archive. CI and releases target macOS arm64 only; P2P, mobile, Windows, Linux, and Nix workflows are not part of this distribution. Documentation is maintained in English and Chinese. Consumers need only the pinned, checksummed archive and never download a Skia builder. Do not configure model credentials or production collaboration bootstrap URLs for the managed distribution.
 
 ## Why OpenPencil
 

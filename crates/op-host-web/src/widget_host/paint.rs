@@ -388,13 +388,24 @@ impl WidgetHost {
 
         if op_editor_ui::widgets::canvas_rulers::enabled(&self.editor_state) {
             let overlay = self.node_drag_overlay_for_paint();
-            let ids = self.editor_state.selection.set.iter()
-                .map(|id| id.as_str().to_string()).collect::<Vec<_>>();
+            let ids = self
+                .editor_state
+                .selection
+                .set
+                .iter()
+                .map(|id| id.as_str().to_string())
+                .collect::<Vec<_>>();
             let selection = op_editor_ui::widgets::canvas_rulers::selection_bounds(
-                &self.layout_scene, &ids, overlay.as_ref(),
+                &self.layout_scene,
+                &ids,
+                overlay.as_ref(),
             );
             op_editor_ui::widgets::canvas_rulers::paint(
-                backend, &self.theme, canvas_rect, &self.editor_state.viewport, selection,
+                backend,
+                &self.theme,
+                canvas_rect,
+                &self.editor_state.viewport,
+                selection,
             );
         }
 
@@ -577,9 +588,16 @@ impl WidgetHost {
         }
 
         if canvas_geometry::toolbar_fits(canvas_w) {
-            let mut cx = PaintCx { backend: &mut *backend };
+            let mut cx = PaintCx {
+                backend: &mut *backend,
+            };
             op_editor_ui::widgets::toolbar_tooltip::paint(
-                &mut cx, &self.editor_state, &toolbar, toolbar_rect, viewport_width, viewport_height,
+                &mut cx,
+                &self.editor_state,
+                &toolbar,
+                toolbar_rect,
+                viewport_width,
+                viewport_height,
             );
         }
 

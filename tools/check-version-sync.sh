@@ -182,28 +182,14 @@ validate_top_level_readmes() {
 }
 
 validate_version_sync_ci_readme_paths() {
-    ci_workflow=.github/workflows/version-sync.yml
-    if [[ ! -f "$ci_workflow" ]]; then
+    ci_workflow=.github/workflows/dsh-runtime-release.yml
+    require_statement "$ci_workflow" 'pull_request:' \
+        'runtime CI must validate pull requests'
+    require_statement "$ci_workflow" 'push:' \
+        'runtime CI must validate pushes'
+    if rg --quiet '^[[:space:]]+paths(-ignore)?:' "$ci_workflow"; then
         report_missing "$ci_workflow" \
-            'version-sync CI must run for top-level README changes in pull requests and pushes'
-        return
-    fi
-
-    read -r pull_request_readmes push_readmes < <(
-        awk '
-            /^  pull_request:[[:space:]]*$/ { event = "pull_request"; next }
-            /^  push:[[:space:]]*$/ { event = "push"; next }
-            /^[^[:space:]]/ { event = "" }
-            /^[[:space:]]*-[[:space:]]+"README[*][.]md"[[:space:]]*$/ {
-                if (event == "pull_request") pull_request_count++
-                if (event == "push") push_count++
-            }
-            END { print pull_request_count + 0, push_count + 0 }
-        ' "$ci_workflow"
-    )
-    if [[ "$pull_request_readmes" != 1 || "$push_readmes" != 1 ]]; then
-        report_missing "$ci_workflow" \
-            'version-sync CI must run for top-level README changes in pull requests and pushes'
+            'runtime CI must not filter out README or version-source changes'
     fi
 }
 
@@ -595,70 +581,31 @@ require_regex scripts/install-op.sh \
 reject_example_semver_tokens scripts/package-windows.nsi
 reject_example_semver_tokens scripts/install-op.sh
 
-release_workflow=.github/workflows/rust-release.yml
-require_workflow_job_regex version \
+release_workflow=.github/workflows/dsh-runtime-release.yml
+require_workflow_job_regex runtime \
     '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]+actions/checkout@[0-9a-f]{40}([[:space:]]*#.*)?$' \
-    'version preflight must use an immutable repository checkout'
-require_workflow_job_regex version \
-    '^[[:space:]]*version:[[:space:]]*\$\{\{[[:space:]]*steps[.]version[.]outputs[.]version[[:space:]]*\}\}[[:space:]]*$' \
-    'version preflight must expose the canonical version as a job output'
-require_workflow_job_regex version \
-    '^[[:space:]]*(-[[:space:]]+)?id:[[:space:]]+version[[:space:]]*$' \
-    'version preflight must identify the canonical version step'
-require_workflow_job_regex version \
-    '^[[:space:]]*version=\$\(scripts/workspace-version[.]sh\)[[:space:]]*$' \
-    'release version computation must use the canonical workspace reader'
-require_workflow_job_regex version \
-    '^[[:space:]]*tools/check-op-auth-release-matrix[.]sh[[:space:]]*$' \
-    'release preflight must validate the adopted signed Auth matrix'
-require_workflow_job_regex version \
-    '^[[:space:]]*tools/check-op-auth-prebuilt[.]sh[[:space:]]+--require-hardened[[:space:]]*$' \
-    'release preflight must reject an incomplete or development Auth matrix'
-require_workflow_job_regex version \
-    'refs/heads/v\$version.*refs/tags/v\$version' \
-    'release preflight must validate the exact version branch or tag ref'
-require_workflow_job_regex version \
-    'git rev-parse HEAD.*GITHUB_SHA' \
-    'release preflight must bind the checkout to the event source SHA'
-require_workflow_job_regex version \
-    '^[[:space:]]*echo[[:space:]]+"version=\$version"[[:space:]]+>>[[:space:]]+"\$GITHUB_OUTPUT"[[:space:]]*$' \
-    'release preflight must write the canonical version to GITHUB_OUTPUT'
-require_workflow_job_regex build \
-    '^[[:space:]]*needs:[[:space:]]*version[[:space:]]*$' \
-    'build must depend on the version preflight job'
-require_workflow_job_regex web-docker \
-    '^[[:space:]]*needs:[[:space:]]*version[[:space:]]*$' \
-    'web-docker must depend on the version preflight job'
-require_workflow_job_regex sdk-packages \
-    '^[[:space:]]*needs:[[:space:]]*version[[:space:]]*$' \
-    'sdk-packages must depend on the version preflight job'
-require_workflow_job_regex release-draft \
-    '^[[:space:]]*needs:[[:space:]]*\[version,[[:space:]]*android-release,[[:space:]]*build,[[:space:]]*web-docker,[[:space:]]*sdk-packages,[[:space:]]*vsix\][[:space:]]*$' \
-    'release-draft must preserve artifact dependencies and depend on version preflight'
-require_workflow_job_regex package-managers \
-    '^[[:space:]]*needs:[[:space:]]*\[version,[[:space:]]*release-draft\][[:space:]]*$' \
-    'package-managers must preserve release dependency and depend on version preflight'
-for version_consumer in build web-docker sdk-packages release-draft package-managers; do
-    require_workflow_job_regex "$version_consumer" \
-        'needs[.]version[.]outputs[.]version' \
-        "${version_consumer} must consume the canonical version job output"
-done
-require_workflow_job_regex sdk-packages \
-    'bun[[:space:]]+run[[:space:]]+sync-version:check' \
-    'sdk-packages must verify package versions after installing dependencies'
-reject_matches regex "$release_workflow" \
-    '^[[:space:]]*version[[:space:]]*=.*GITHUB_REF_NAME#v' \
-    'publish paths must consume the canonical version job output'
-reject_matches regex "$release_workflow" \
-    '^[[:space:]]*tag[[:space:]]*=[[:space:]]*"\$GITHUB_REF_NAME"' \
-    'publish paths must not begin an independent two-step tag derivation'
-reject_matches regex "$release_workflow" \
-    '^[[:space:]]*version[[:space:]]*=[[:space:]]*"\$\{tag#v\}"' \
-    'publish paths must consume the canonical version job output'
-reject_matches fixed "$release_workflow" 'echo "OP_VERSION=${GITHUB_REF_NAME#v}"' \
-    'OP_VERSION must not be written directly from the release tag'
-reject_matches fixed "$release_workflow" 'echo "OP_VERSION=${ver:-0.0.0}"' \
-    'OP_VERSION must not use an independent manifest parser or fallback'
+    'runtime CI must use an immutable repository checkout'
+require_workflow_job_regex runtime \
+    '^[[:space:]]*bash[[:space:]]+tools/check-version-sync[.]sh[[:space:]]*$' \
+    'runtime CI must verify canonical workspace and package versions'
+require_workflow_job_regex runtime \
+    'cargo test --locked -p op-auth-bridge fork_has_no_account_backend' \
+    'runtime CI must verify the account-free backend'
+require_workflow_job_regex runtime \
+    'cargo build --locked --release -p op-host-web-server' \
+    'runtime CI must build the locked daemon'
+require_workflow_job_regex runtime \
+    'bash tools/check-wasm-bundle[.]sh' \
+    'runtime CI must validate the editor WASM bundle'
+require_workflow_job_regex runtime \
+    'node scripts/stage-dsh-runtime[.]mjs' \
+    'runtime CI must stage the versioned complete runtime'
+require_workflow_job_regex publish \
+    '^[[:space:]]*needs:[[:space:]]*runtime[[:space:]]*$' \
+    'runtime publication must depend on the validated build'
+require_workflow_job_regex publish \
+    'gh release create.*--verify-tag' \
+    'runtime publication must verify the immutable release tag'
 
 if [[ "$errors" -ne 0 ]]; then
     exit 1
