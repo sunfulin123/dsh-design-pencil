@@ -35,6 +35,8 @@ jobs:
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - name: Install validation and WASM tools
+        run: brew install ripgrep jq binaryen
       - name: Validate macOS source policies
         run: |
           test "$(uname -m)" = arm64
@@ -42,7 +44,6 @@ jobs:
           bash tools/check-version-sync.sh
           bash tools/check-file-line-cap.sh
           bash tools/check-rustls-client-policy.sh
-      - run: brew install binaryen
       - name: Install locked wasm-bindgen and viewer bundler
         run: |
           version="$(awk '/^name = "wasm-bindgen"$/{found=1; next} found && /^version = /{gsub(/[" ]/,"",$3); print $3; exit}' Cargo.lock)"
