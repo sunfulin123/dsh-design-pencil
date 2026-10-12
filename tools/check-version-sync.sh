@@ -589,8 +589,8 @@ require_workflow_job_regex runtime \
     '^[[:space:]]*bash[[:space:]]+tools/check-version-sync[.]sh[[:space:]]*$' \
     'runtime CI must verify canonical workspace and package versions'
 require_workflow_job_regex runtime \
-    'cargo test --locked -p op-auth-bridge fork_has_no_account_backend' \
-    'runtime CI must verify the account-free backend'
+    'node scripts/check-dsh-runtime[.]mjs' \
+    'runtime CI must verify the packaged Node consumer and account-free boundary'
 require_workflow_job_regex runtime \
     'cargo build --locked --release -p op-host-web-server' \
     'runtime CI must build the locked daemon'
