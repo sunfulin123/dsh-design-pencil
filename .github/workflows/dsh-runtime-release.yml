@@ -3,9 +3,10 @@ name: DSH runtime release
 on:
   workflow_dispatch:
   pull_request:
+  release:
+    types: [published]
   push:
     branches: [main]
-    tags: ['runtime-v*']
 
 permissions:
   contents: read
@@ -16,11 +17,18 @@ env:
 
 jobs:
   runtime:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'runtime-v')
     runs-on: macos-15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
           submodules: recursive
+      - name: Validate release tag
+        if: github.event_name == 'release'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: test "$RELEASE_TAG" = "runtime-v${OPENPENCIL_DSH_RUNTIME_VERSION}"
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -73,7 +81,7 @@ jobs:
           path: dist/*.tar.gz*
           if-no-files-found: error
   publish:
-    if: startsWith(github.ref, 'refs/tags/runtime-v')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'runtime-v')
     needs: runtime
     runs-on: macos-15
     permissions:
@@ -83,9 +91,9 @@ jobs:
         with:
           name: dsh-design-pencil-runtime
           path: dist
-      - name: Publish immutable runtime assets
+      - name: Upload validated runtime assets
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" dist/*.tar.gz* --verify-tag --title "$TAG" --notes "Account-free macOS arm64 editor, daemon, viewer and checksummed resources."
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/*.tar.gz*
