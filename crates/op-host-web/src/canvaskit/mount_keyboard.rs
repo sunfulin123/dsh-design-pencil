@@ -45,6 +45,35 @@ pub(super) fn register_keyboard_listeners(
             };
             let prompt_center_open = b.host.editor_state().editor_ui.prompt_center.open;
             let preview_active = b.host.is_preview_active();
+            if preview_active {
+                if starts_space_pan && !b.host.input_active() {
+                    b.host.set_space_pan(true);
+                    crate::repaint_coalescer::request();
+                    evt.prevent_default();
+                    return;
+                }
+                match key.as_str() {
+                    _ if is_mod && b.host.preview_zoom_shortcut(key.as_str()) => {}
+                    "Escape" if !is_mod => b.host.exit_preview(0.0, 0.0),
+                    "Tab" if !is_mod => {
+                        b.host.apply_preview_focus(shift);
+                    }
+                    _ if !is_mod => {
+                        let mut chars = key.chars();
+                        if let (Some(character), None) = (chars.next(), chars.next()) {
+                            if !character.is_control() {
+                                b.host.apply_preview_text(&character.to_string());
+                            }
+                        } else {
+                            b.host.apply_preview_key(key.as_str(), shift);
+                        }
+                    }
+                    _ => {}
+                }
+                crate::repaint_coalescer::request();
+                evt.prevent_default();
+                return;
+            }
             let mut consumed = false;
             if starts_space_pan && !b.host.input_active() {
                 b.host.set_space_pan(true);
@@ -253,13 +282,6 @@ pub(super) fn register_keyboard_listeners(
                 evt.prevent_default();
                 crate::repaint_coalescer::request();
             }
-            // Release the borrow before draining: Enter may have queued a chat
-            // send (apply_send → pending_send) or an image-panel search
-            // (apply_image_panel_send → search_epoch); the drains launch them.
-            drop(b);
-            crate::web_chat::drain_chat_flags(&inner);
-            crate::web_image_panel::drain_image_jobs(&inner);
-            crate::web_builtin_model_discovery::drain_pending_builtin_model_discovery(&inner);
         })?;
     }
 

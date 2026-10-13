@@ -47,17 +47,90 @@ impl AlignAction {
 }
 
 impl EditorState {
+    /// Whether the editable selection already satisfies this alignment in its current reference frame.
+    pub fn is_selection_aligned(&self, action: AlignAction) -> bool {
+        let editable = self.alignment_targets();
+        let children = self.active_children();
+        let bounds: Vec<DocRect> = editable
+            .iter()
+            .filter_map(|id| find_node(children, id).map(aggregate_bounds))
+            .collect();
+        if bounds.is_empty() {
+            return false;
+        }
+        if action.is_distribute() {
+            if bounds.len() < 3 {
+                return false;
+            }
+            let mut centers: Vec<f64> = bounds
+                .iter()
+                .map(|rect| {
+                    if action.is_horizontal() {
+                        rect.x + rect.w / 2.0
+                    } else {
+                        rect.y + rect.h / 2.0
+                    }
+                })
+                .collect();
+            centers.sort_by(f64::total_cmp);
+            let step = (centers[centers.len() - 1] - centers[0]) / (centers.len() - 1) as f64;
+            return centers
+                .iter()
+                .enumerate()
+                .all(|(index, center)| (center - (centers[0] + index as f64 * step)).abs() < 1e-6);
+        }
+        let reference = if editable.len() >= 2 {
+            union_aggregate_bounds(children, &editable)
+        } else {
+            parent_aggregate_bounds(children, &editable[0])
+        };
+        let Some(reference) = reference else {
+            return false;
+        };
+        bounds.iter().all(|rect| {
+            let delta = match action {
+                AlignAction::Left => rect.x - reference.x,
+                AlignAction::CenterH => rect.x + rect.w / 2.0 - reference.x - reference.w / 2.0,
+                AlignAction::Right => rect.x + rect.w - reference.x - reference.w,
+                AlignAction::Top => rect.y - reference.y,
+                AlignAction::CenterV => rect.y + rect.h / 2.0 - reference.y - reference.h / 2.0,
+                AlignAction::Bottom => rect.y + rect.h - reference.y - reference.h,
+                AlignAction::DistributeH | AlignAction::DistributeV => unreachable!(),
+            };
+            delta.abs() < 1e-6
+        })
+    }
+
+    pub fn can_align_selected(&self, action: AlignAction) -> bool {
+        let editable = self.alignment_targets();
+        if action.is_distribute() {
+            return editable.len() >= 3;
+        }
+        match editable.as_slice() {
+            [] => false,
+            [only] => parent_aggregate_bounds(self.active_children(), only).is_some(),
+            _ => true,
+        }
+    }
+
+    fn alignment_targets(&self) -> Vec<NodeId> {
+        let children = self.active_children();
+        self.selection
+            .set
+            .iter()
+            .filter(|id| self.is_editable(id))
+            .filter(|id| !is_ancestor_in_set(children, id, &self.selection.set))
+            .filter(|id| !crate::walkers::is_flow_child_of_flex(children, id))
+            .filter(|id| find_node(children, id).is_some())
+            .cloned()
+            .collect()
+    }
+
     /// Apply alignment or distribution to the active selection.
     /// Returns true when at least one node moved; pushes history
     /// only on real motion.
     pub fn align_selected(&mut self, action: AlignAction) -> bool {
-        let editable: Vec<NodeId> = self
-            .selection
-            .set
-            .iter()
-            .filter(|id| self.is_editable(id))
-            .cloned()
-            .collect();
+        let editable = self.alignment_targets();
         if editable.is_empty() {
             return false;
         }
@@ -276,6 +349,24 @@ mod tests {
             .unwrap()
             .base();
         (base.x.unwrap(), base.y.unwrap())
+    }
+
+    #[test]
+    fn alignment_availability_matches_reference_and_selection_count() {
+        let single = rects(&[(10.0, 20.0, 30.0, 40.0)]);
+        assert!(!single.can_align_selected(AlignAction::CenterV));
+        assert!(!single.can_align_selected(AlignAction::DistributeH));
+        let pair = rects(&[(10.0, 20.0, 30.0, 40.0), (80.0, 90.0, 30.0, 40.0)]);
+        assert!(pair.can_align_selected(AlignAction::CenterV));
+        assert!(!pair.can_align_selected(AlignAction::DistributeH));
+        let triple = rects(&[
+            (10.0, 20.0, 30.0, 40.0),
+            (80.0, 90.0, 30.0, 40.0),
+            (190.0, 180.0, 30.0, 40.0),
+        ]);
+        assert!(triple.can_align_selected(AlignAction::DistributeH));
+        assert!(triple.can_align_selected(AlignAction::DistributeV));
+        assert!(child_in_offset_parent_frame().can_align_selected(AlignAction::CenterV));
     }
 
     #[test]

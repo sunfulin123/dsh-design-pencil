@@ -63,7 +63,7 @@ pub const FOOTER_HEIGHT: f32 = ACTION_BAR_HEIGHT;
 /// below, so the labels keep exactly the room they had.
 const TAB_INSET_X: f32 = 16.0;
 const TAB_INSET_Y: f32 = 5.0;
-const TAB_RADIUS: f32 = 7.0;
+const TAB_RADIUS: f32 = 4.0;
 const TAB_FONT: f32 = 13.0;
 /// Glyph size for a tab in icon mode.
 const TAB_ICON_SIZE: f32 = 14.0;

@@ -19,6 +19,9 @@ use op_editor_ui::{Point2D, Rect};
 const VIEWPORT_W: f32 = 1200.0;
 const VIEWPORT_H: f32 = 800.0;
 
+#[path = "property_panel_press_tests/resize.rs"]
+mod resize;
+
 #[test]
 fn task9_effect_actions_dispatch_background_blur_and_visibility() {
     let mut host = WidgetHost::new();

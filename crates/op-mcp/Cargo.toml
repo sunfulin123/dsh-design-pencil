@@ -11,7 +11,8 @@ name = "op_mcp"
 path = "src/lib.rs"
 
 [features]
-default = []
+default = ["skia-measure"]
+skia-measure = ["op-pen-loader/skia-measure"]
 debug-tools = []
 # Native-only QuickJS script→program expansion for batch_design + the
 # orchestrator. Never enabled by wasm consumers (bundled C engine).
@@ -27,7 +28,7 @@ op-config-store = { path = "../op-config-store" }
 op-design-lint = { path = "../op-design-lint" }
 op-editor-core = { path = "../op-editor-core" }
 op-html = { path = "../op-html" }
-op-pen-loader = { path = "../op-pen-loader" }
+op-pen-loader = { path = "../op-pen-loader", default-features = false }
 # Canonical JSON string escaping (dependency-free, wasm-clean).
 op-util = { path = "../op-util" }
 regex = "1"

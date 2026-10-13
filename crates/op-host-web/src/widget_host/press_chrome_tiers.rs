@@ -75,6 +75,10 @@ impl WidgetHost {
                     StatusBarButton::ZoomIn => {
                         self.status_bar_zoom(true, viewport_width, viewport_height)
                     }
+                    StatusBarButton::PixelGrid => {
+                        let ui = &mut self.editor_state.editor_ui;
+                        ui.pixel_grid_visible = !ui.pixel_grid_visible;
+                    }
                 }
                 self.mark_dirty();
                 return Some(true);

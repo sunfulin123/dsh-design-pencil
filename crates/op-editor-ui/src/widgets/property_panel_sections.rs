@@ -460,6 +460,9 @@ pub fn paint_position_section(
     labels: &PropertyLabels,
     show_radius: bool,
     corner_expanded: bool,
+    alignment_enabled: [bool; 8],
+    alignment_active: [bool; 8],
+    locale: op_editor_core::Locale,
     x: f32,
     y: f32,
     width: f32,
@@ -468,6 +471,18 @@ pub fn paint_position_section(
     let mut y = paint_section_label(cx, theme, labels.position, x, y, width);
     let usable_w = width - PAD_X * 2.0;
     let half_w = (usable_w - 8.0) / 2.0;
+    crate::widgets::align_toolbar::AlignToolbar::for_panel_row(
+        Rect::xywh(
+            x + PAD_X,
+            y,
+            usable_w,
+            crate::widgets::align_toolbar::POSITION_CONTROLS_HEIGHT,
+        ),
+        alignment_enabled,
+    )
+    .with_active_actions(alignment_active)
+    .paint_panel(cx.backend, theme, locale);
+    y += crate::widgets::align_toolbar::POSITION_ACTION_HEIGHT;
     let x_rect = Rect {
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(half_w, INPUT_HEIGHT),

@@ -69,12 +69,27 @@ fn layout_with(aspects: &[f32], offset: f32, actions: SlidesActionState) -> Slid
 }
 
 #[test]
-fn the_tab_row_lays_the_labels_out_at_their_own_widths() {
+fn text_tabs_use_equal_stable_slots() {
+    let row = SlidesTabRow {
+        chat_available: false,
+        ..EN_ROW
+    };
+    let tabs = tabs_at(240.0, LeftPanelTab::Layers, &row);
+    let switched = tabs_at(240.0, LeftPanelTab::Slides, &row);
+    assert!(!tabs.compact);
+    assert_eq!(tabs.layers.size.x, tabs.slides.size.x);
+    assert_eq!(tabs.layers, switched.layers);
+    assert_eq!(tabs.slides, switched.slides);
+    assert_eq!(
+        tabs.slides.origin.x + tabs.slides.size.x,
+        240.0 - RAIL_GUTTER
+    );
+}
+
+#[test]
+fn the_tab_row_tiles_equal_slots_inside_the_rail_gutters() {
     let tabs = SlidesPanelTabs::new(PANEL, LeftPanelTab::Slides, &EN_ROW);
     assert_eq!(tabs.row.size.y, SLIDES_TAB_ROW_HEIGHT);
-    // Agent · Layers · Slides, each as wide as its own label. Equal
-    // thirds made the row read as a segmented control bolted onto the
-    // rail; Pencil's row is three headings sitting on the panel itself.
     let mut previous_right = PANEL.origin.x + RAIL_GUTTER;
     for (rect, label) in [
         (tabs.chat, EN_ROW.chat_label),
@@ -89,12 +104,8 @@ fn the_tab_row_lays_the_labels_out_at_their_own_widths() {
         );
         previous_right = rect.origin.x + rect.size.x + 2.0;
     }
-    // A wider label must claim a wider tab — the whole point of
-    // dropping equal shares.
-    assert!(
-        tabs.slides.size.x > tabs.chat.size.x,
-        "Slides is a longer word than Agent"
-    );
+    assert_eq!(tabs.slides.size.x, tabs.chat.size.x);
+    assert_eq!(tabs.layers.size.x, tabs.chat.size.x);
     // Each tab hit-tests exactly where it paints.
     let mid_y = tabs.row.origin.y + tabs.row.size.y / 2.0;
     for (rect, target) in [
@@ -109,6 +120,28 @@ fn the_tab_row_lays_the_labels_out_at_their_own_widths() {
     }
     // Below the row is nobody's.
     assert_eq!(tabs.hit(Point2D::new(120.0, 200.0)), None);
+}
+
+#[test]
+fn selected_tab_paints_a_primary_underline_without_a_filled_chip() {
+    let tabs = SlidesPanelTabs::new(PANEL, LeftPanelTab::Layers, &EN_ROW);
+    for dark in [false, true] {
+        let theme = Theme::managed(dark);
+        let mut backend = CaptureBackend::default();
+        tabs.paint(
+            &mut PaintCx {
+                backend: &mut backend,
+            },
+            &theme,
+            None,
+            &EN_ROW,
+        );
+        assert_eq!(backend.round_fills.len(), 1);
+        let (indicator, _, color) = backend.round_fills[0];
+        assert_eq!(indicator.size.y, 2.0);
+        assert_eq!(indicator.origin.x, tabs.layers.origin.x + 12.0);
+        assert_eq!(color, theme.primary);
+    }
 }
 
 #[test]

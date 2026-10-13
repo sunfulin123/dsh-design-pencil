@@ -166,6 +166,7 @@ pub enum PropertyPanelAction {
     /// switches `editor_ui.property_tab`.
     SetPropertyTab(op_editor_core::PropertyTab),
     SetFlexLayout(op_editor_core::FlexLayout),
+    AlignSelection(op_editor_core::AlignAction),
     ToggleCornerExpand,
     SetFillRule(jian_ops_schema::node::path::PathFillRule),
     /// Open or close one of the Layer / Fill compositing dropdowns.

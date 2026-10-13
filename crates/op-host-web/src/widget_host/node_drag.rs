@@ -7,6 +7,7 @@
 //! layout transitions + layer-panel scrolling).
 
 use super::WidgetHost;
+use op_editor_core::align_guides::compute_alignment_guides;
 use op_editor_core::host_drag_transitions as core_drag;
 use op_editor_core::NodeId;
 use op_editor_ui::widgets::drag_flow;
@@ -24,6 +25,8 @@ pub(in crate::widget_host) struct NodeDragState {
     pub(in crate::widget_host) moved: bool,
     pub(in crate::widget_host) total_dx: f64,
     pub(in crate::widget_host) total_dy: f64,
+    snap_dx: f32,
+    snap_dy: f32,
     pub(in crate::widget_host) overlay_bounds: Option<Rect>,
 }
 
@@ -112,6 +115,8 @@ impl WidgetHost {
             moved: false,
             total_dx: 0.0,
             total_dy: 0.0,
+            snap_dx: 0.0,
+            snap_dy: 0.0,
             overlay_bounds: None,
         });
     }
@@ -175,10 +180,45 @@ impl WidgetHost {
             d.total_dx = total_dx;
             d.total_dy = total_dy;
         }
-        let dx = (x - drag.last_screen_x) / zoom;
-        let dy = (y - drag.last_screen_y) / zoom;
+        self.refresh_layout_scene();
+        let ids = drag_flow::drag_scene_translate_ids(&self.editor_state);
+        let mut dx = (x - drag.last_screen_x) / zoom - drag.snap_dx;
+        let mut dy = (y - drag.last_screen_y) / zoom - drag.snap_dy;
+        let mut snap_dx = 0.0;
+        let mut snap_dy = 0.0;
+        if let Some(bounds) =
+            op_editor_ui::widgets::canvas_rulers::selection_bounds(&self.layout_scene, &ids, None)
+        {
+            let mut targets = Vec::new();
+            if let Some(page) = self.layout_scene.active_page() {
+                collect_alignment_targets(&page.children, &ids, &mut targets);
+            }
+            let result = compute_alignment_guides(
+                (
+                    (bounds.origin.x + dx) as f64,
+                    (bounds.origin.y + dy) as f64,
+                    bounds.size.x as f64,
+                    bounds.size.y as f64,
+                ),
+                &targets,
+                (4.0 / zoom) as f64,
+            );
+            snap_dx = result.snap_dx as f32;
+            snap_dy = result.snap_dy as f32;
+            self.editor_state.editor_ui.active_guides = result.guides;
+        } else {
+            self.editor_state.editor_ui.active_guides.clear();
+        }
+        dx += snap_dx;
+        dy += snap_dy;
+        if let Some(current) = self.node_drag.as_mut() {
+            current.snap_dx = snap_dx;
+            current.snap_dy = snap_dy;
+            current.last_screen_x = x;
+            current.last_screen_y = y;
+        }
         if dx == 0.0 && dy == 0.0 {
-            return Some(false);
+            return Some(true);
         }
 
         if let Some(drag) = self.node_drag.as_mut() {
@@ -333,5 +373,27 @@ impl WidgetHost {
             node_id: node_id.as_str().to_string(),
             target_origin_doc: overlay_bounds.origin,
         })
+    }
+}
+
+fn collect_alignment_targets(
+    nodes: &[op_editor_ui::layout_scene::SceneNode],
+    moving_ids: &[String],
+    targets: &mut Vec<op_editor_core::align_guides::Aabb>,
+) {
+    for node in nodes {
+        if node.hidden || moving_ids.contains(&node.id) {
+            continue;
+        }
+        let bounds = node.aggregate_bounds();
+        if bounds.size.x > 0.0 && bounds.size.y > 0.0 {
+            targets.push((
+                bounds.origin.x as f64,
+                bounds.origin.y as f64,
+                bounds.size.x as f64,
+                bounds.size.y as f64,
+            ));
+        }
+        collect_alignment_targets(&node.children, moving_ids, targets);
     }
 }

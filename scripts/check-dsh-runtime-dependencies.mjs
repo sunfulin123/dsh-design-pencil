@@ -5,19 +5,22 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const packages = execFileSync('cargo', [
   'tree', '--locked',
-  '-p', 'op-host-web-server',
+  '-p', 'op-dsh-engine', '-p', 'op-host-web',
   '--no-default-features',
-  '--target', 'aarch64-apple-darwin',
+  '--features', 'op-host-web/canvaskit',
+  '--target', 'wasm32-unknown-unknown',
   '--edges', 'normal', '--prefix', 'none', '--format', '{p}',
 ], { cwd: root, encoding: 'utf8' })
 const names = new Set(packages.trim().split('\n').map(line => line.split(' v')[0]))
 const forbidden = [
-  'anthropic-agent-sdk', 'github-copilot-sdk',
+  'agent', 'anthropic-agent-sdk', 'github-copilot-sdk',
   'op-auth-bridge', 'op-collab-host', 'op-collab-transport',
   'op-collab-relay-client', 'op-collab-relay-control-plane',
-  'op-preview-core', 'op-host-desktop', 'winit', 'glutin',
+  'op-host-native', 'op-host-services', 'op-host-web-server',
+  'op-host-desktop', 'op-chat-agent', 'casement', 'winit', 'glutin',
+  'skia-safe', 'skia-bindings', 'tokio', 'reqwest',
 ]
 const included = forbidden.filter(name => names.has(name))
 
 assert.deepEqual(included, [], `DSH runtime includes standalone services: ${included.join(', ')}`)
-console.log(`DSH daemon dependency policy passed (${names.size} packages).`)
+console.log(`DSH WASM dependency policy passed (${names.size} packages).`)

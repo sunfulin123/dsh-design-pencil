@@ -10,6 +10,65 @@ use op_editor_core::Viewport as DocViewport;
 
 const GRID_SPACING: f32 = 32.0;
 
+fn pixel_grid_positions(origin: f32, length: f32, pan: f32, zoom: f32, dpi: f32) -> Vec<f32> {
+    if !origin.is_finite()
+        || !length.is_finite()
+        || !pan.is_finite()
+        || !zoom.is_finite()
+        || !dpi.is_finite()
+        || length <= 0.0
+        || dpi <= 0.0
+        || zoom * dpi < 8.0
+    {
+        return Vec::new();
+    }
+    let first = (-pan / zoom).ceil();
+    let count = (length / zoom).ceil() as usize + 1;
+    (0..count)
+        .map(|index| origin + pan + (first + index as f32) * zoom)
+        .map(|position| ((position * dpi).floor() + 0.5) / dpi)
+        .filter(|position| *position >= origin && *position < origin + length)
+        .collect()
+}
+
+pub(super) fn paint_pixel_grid(cx: &mut PaintCx<'_>, rect: Rect, viewport: &DocViewport) {
+    let dpi = cx.backend.dpi_scale();
+    let color = Color {
+        r: 0.5,
+        g: 0.5,
+        b: 0.5,
+        a: 0.3,
+    };
+    for position in pixel_grid_positions(
+        rect.origin.x,
+        rect.size.x,
+        viewport.pan_x,
+        viewport.zoom,
+        dpi,
+    ) {
+        cx.backend.stroke_line(
+            Point2D::new(position, rect.origin.y),
+            Point2D::new(position, rect.origin.y + rect.size.y),
+            color,
+            1.0 / dpi,
+        );
+    }
+    for position in pixel_grid_positions(
+        rect.origin.y,
+        rect.size.y,
+        viewport.pan_y,
+        viewport.zoom,
+        dpi,
+    ) {
+        cx.backend.stroke_line(
+            Point2D::new(rect.origin.x, position),
+            Point2D::new(rect.origin.x + rect.size.x, position),
+            color,
+            1.0 / dpi,
+        );
+    }
+}
+
 #[derive(Clone, Copy)]
 struct GridMetrics {
     step: f32,
@@ -85,5 +144,24 @@ fn grid_metrics(rect: Rect, viewport: &DocViewport, theme: &Theme) -> GridMetric
             b: theme.border.b,
             a: theme.border.a * 0.28,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pixel_grid_threshold_uses_device_scale_and_aligns_panned_pixels() {
+        assert!(pixel_grid_positions(10.25, 32.0, -1.75, 7.99, 1.0).is_empty());
+        assert!(pixel_grid_positions(10.25, 32.0, -1.75, 3.99, 2.0).is_empty());
+        assert_eq!(
+            pixel_grid_positions(10.25, 32.0, -1.75, 8.0, 1.0),
+            vec![16.5, 24.5, 32.5, 40.5]
+        );
+        assert_eq!(
+            pixel_grid_positions(10.25, 16.0, -1.75, 4.0, 2.0),
+            vec![12.75, 16.75, 20.75, 24.75]
+        );
     }
 }

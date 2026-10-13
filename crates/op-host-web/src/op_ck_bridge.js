@@ -44,6 +44,18 @@ export function setImageCacheFactory(factory) {
   createWebImageCaches = factory;
 }
 
+export function opCkSnapTextRasterOrigin(originX, originY, matrix) {
+  if (!matrix.every(Number.isFinite) || matrix[1] !== 0 || matrix[3] !== 0
+      || matrix[6] !== 0 || matrix[7] !== 0 || matrix[8] !== 1
+      || Math.abs(matrix[0]) < 1e-6 || Math.abs(matrix[4]) < 1e-6) {
+    return [originX, originY];
+  }
+  return [
+    (Math.round(originX * matrix[0] + matrix[2]) - matrix[2]) / matrix[0],
+    (Math.round(originY * matrix[4] + matrix[5]) - matrix[5]) / matrix[4],
+  ];
+}
+
 const CSS_GENERIC_FONT_FAMILIES = new Set([
   'serif',
   'sans-serif',
@@ -143,6 +155,10 @@ const opCkClampUnit = (value, fallback = 0) => {
 export function opCkCreateRuntimeEffectCache(CK) {
   const entries = new Map();
   return {
+    dispose() {
+      for (const entry of entries.values()) entry?.effect.delete();
+      entries.clear();
+    },
     get(sksl) {
       const source = String(sksl);
       if (entries.has(source)) return entries.get(source);
@@ -308,13 +324,23 @@ export function opCkBuildMeshGradientData(x, y, w, h, rows, cols, colors) {
 export async function opCkInit(canvasId) {
   await loadScript('/canvaskit/canvaskit.js');
   const CK = await CanvasKitInit({ locateFile: (f) => '/canvaskit/' + f });
+  const surface = CK.MakeWebGLCanvasSurface(canvasId);
+  if (!surface) throw new Error('CanvasKit: MakeWebGLCanvasSurface returned null');
+  return opCkCreateBridge(CK, surface, document.getElementById(canvasId), {
+    browserTextCanvas: document.createElement('canvas'),
+    createSurface: () => CK.MakeWebGLCanvasSurface(canvasId),
+  });
+}
+
+export function opCkCreateBridge(CK, initialSurface, el, {
+  browserTextCanvas = null,
+  createSurface = (width, height) => CK.MakeSurface(width, height),
+} = {}) {
   if (typeof createWebImageCaches !== 'function') {
     throw new Error('CanvasKit image cache factory was not configured');
   }
-  let surface = CK.MakeWebGLCanvasSurface(canvasId);
-  if (!surface) throw new Error('CanvasKit: MakeWebGLCanvasSurface returned null');
+  let surface = initialSurface;
   let canvas = surface.getCanvas();
-  const el = document.getElementById(canvasId);
   const runtimeEffects = opCkCreateRuntimeEffectCache(CK);
 
   const systemTypefaces = [];
@@ -353,8 +379,7 @@ export async function opCkInit(canvasId) {
     for (const f of registeredFamilyFontCache.values()) f.delete();
     registeredFamilyFontCache.clear();
   };
-  const browserTextCanvas = document.createElement('canvas');
-  const browserTextCtx = browserTextCanvas.getContext('2d', { willReadFrequently: true });
+  const browserTextCtx = browserTextCanvas?.getContext('2d', { willReadFrequently: true }) || null;
   const browserTextCache = new Map();
   const clearBrowserTextCache = () => {
     for (const entry of browserTextCache.values()) {
@@ -633,20 +658,21 @@ export async function opCkInit(canvasId) {
       paint.setAlphaf(a < 0 ? 0 : a > 1 ? 1 : a);
     }
     const ss = entry.ss || 1;
+    const [originX, originY] = opCkSnapTextRasterOrigin(x - 2, y - entry.baseline, canvas.getTotalMatrix());
     if (ss !== 1) {
       // The bitmap is `ss`x oversampled; place it in logical space at
       // (x-2, y-baseline) then scale down by `ss` so its device footprint
       // matches the intended CSS box at native resolution.
       canvas.save();
-      canvas.translate(x - 2, y - entry.baseline);
+      canvas.translate(originX, originY);
       canvas.scale(1 / ss, 1 / ss);
       if (paint) canvas.drawImage(entry.image, 0, 0, paint);
       else canvas.drawImage(entry.image, 0, 0);
       canvas.restore();
     } else if (paint) {
-      canvas.drawImage(entry.image, x - 2, y - entry.baseline, paint);
+      canvas.drawImage(entry.image, originX, originY, paint);
     } else {
-      canvas.drawImage(entry.image, x - 2, y - entry.baseline);
+      canvas.drawImage(entry.image, originX, originY);
     }
     return entry.width;
   };
@@ -1123,7 +1149,22 @@ export async function opCkInit(canvasId) {
     }
   };
 
+  let disposed = false;
   return {
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      clearRegisteredFontCaches();
+      clearBrowserTextCache();
+      for (const path of svgPathCache.values()) path.delete();
+      for (const filter of tintFilterCache.values()) filter.delete();
+      for (const entry of [...systemTypefaces, ...importedTypefaces.values(), ...bundledTypefaces.values()]) entry.tf.delete();
+      cachedFillPaint.delete();
+      cachedStrokePaint.delete();
+      cachedTintPaint.delete();
+      runtimeEffects.dispose();
+      imageCaches.dispose?.();
+    },
     beginFrame() {
       // Discard any leaked save / clip / matrix state from a prior (possibly
       // unbalanced) paint pass, then open a clean frame baseline. This mirrors
@@ -1143,6 +1184,21 @@ export async function opCkInit(canvasId) {
     fillRect(x, y, w, h, r, g, b, a) { const p = fillPaint(r, g, b, a); canvas.drawRect(CK.LTRBRect(x, y, x + w, y + h), p); },
     strokeRect(x, y, w, h, r, g, b, a, sw) { const p = strokePaint(r, g, b, a, sw); canvas.drawRect(CK.LTRBRect(x, y, x + w, y + h), p); },
     fillRoundRect(x, y, w, h, rad, r, g, b, a) { const p = fillPaint(r, g, b, a); canvas.drawRRect(CK.RRectXY(CK.LTRBRect(x, y, x + w, y + h), rad, rad), p); },
+    fillDropShadow(x, y, w, h, radius, blur, r, g, b, a) {
+      const paint = allocFillPaint(r, g, b, a);
+      let mask = null;
+      try {
+        const sigma = blur * 0.5;
+        if (Number.isFinite(sigma) && sigma > 0) {
+          mask = CK.MaskFilter.MakeBlur(CK.BlurStyle.Normal, sigma, false);
+          if (mask) paint.setMaskFilter(mask);
+        }
+        canvas.drawRRect(CK.RRectXY(CK.LTRBRect(x, y, x + w, y + h), radius, radius), paint);
+      } finally {
+        paint.delete();
+        if (mask) mask.delete();
+      }
+    },
     fillRoundRectPerCorner(x, y, w, h, tl, tr, br, bl, r, g, b, a) {
       const rr = Float32Array.of(x, y, x + w, y + h, tl, tl, tr, tr, br, br, bl, bl);
       const p = fillPaint(r, g, b, a); canvas.drawRRect(rr, p);
@@ -1894,6 +1950,22 @@ export async function opCkInit(canvasId) {
       canvas.saveLayer(paint);
       paint.delete();
     },
+    pushBlurLayer(sigma) {
+      if (!Number.isFinite(sigma) || !(sigma > 0)) {
+        canvas.save();
+        return;
+      }
+      const filter = CK.ImageFilter.MakeBlur(sigma, sigma, CK.TileMode.Decal, null);
+      const paint = new CK.Paint();
+      try {
+        paint.setAntiAlias(true);
+        if (filter) paint.setImageFilter(filter);
+        canvas.saveLayer(paint);
+      } finally {
+        paint.delete();
+        if (filter) filter.delete();
+      }
+    },
     pushBackdropBlurLayer(sigma) {
       if (!(sigma > 0) || !CK.ImageFilter || !CK.ImageFilter.MakeBlur) {
         canvas.save();
@@ -1915,7 +1987,8 @@ export async function opCkInit(canvasId) {
     resize(w, h) {
       el.width = w; el.height = h;
       try { surface.delete(); } catch (e) {}
-      surface = CK.MakeWebGLCanvasSurface(canvasId);
+      surface = createSurface(w, h);
+      if (!surface) throw new Error('CanvasKit: surface allocation failed');
       canvas = surface.getCanvas();
     },
     // Set the device-pixel-ratio used to supersample the offscreen text raster.

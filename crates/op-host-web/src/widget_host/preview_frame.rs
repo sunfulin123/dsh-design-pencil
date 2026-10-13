@@ -49,6 +49,9 @@ impl super::WidgetHost {
     /// (as opposed to the Canvas segment, which paints the raw scene at
     /// the editor's own pan/zoom).
     pub(in crate::widget_host) fn device_mode_active(&self) -> bool {
+        if self.managed_preview_active() {
+            return true;
+        }
         self.preview.is_some()
             && matches!(
                 self.editor_state.editor_ui.preview.device,
@@ -59,6 +62,9 @@ impl super::WidgetHost {
     /// Resolve the manual switcher pick, or infer from the framed root's
     /// width (<= 500 logical px reads as a phone).
     pub(in crate::widget_host) fn infer_device_kind(&self) -> PreviewDeviceKind {
+        if self.managed_preview_active() {
+            return self.browser_device_kind();
+        }
         if let Some(pick) = self.preview_manual_pick {
             return pick;
         }
@@ -120,7 +126,7 @@ impl super::WidgetHost {
             self.preview_device_frame = None;
             return;
         };
-        let Some((_root_id, root_rect)) = session.framed_root() else {
+        let Some((_, mut root_rect)) = session.framed_root() else {
             // No framed root yet: keep an empty silhouette so the bezel
             // still paints rather than flashing raw canvas.
             self.preview_device_frame = Some(compute_frame_geometry(
@@ -136,16 +142,37 @@ impl super::WidgetHost {
             self.preview_scroll_y = 0.0;
             return;
         };
+        if self.managed_preview_active() && kind == PreviewDeviceKind::Canvas {
+            root_rect = self.preview_canvas_bounds().unwrap_or(root_rect);
+        }
         let is_phone = kind == PreviewDeviceKind::Phone;
-        let nav = session.pinned_nav_candidate(is_phone);
-        let status = session.pinned_status_bar_candidate(is_phone);
-        let mut frame = compute_frame_geometry(
-            kind,
-            canvas,
-            root_rect,
-            nav.as_ref().map(|(_, rect)| *rect),
-            status.as_ref().map(|(_, rect)| *rect),
-        );
+        let whole_page = self.managed_preview_active() && kind == PreviewDeviceKind::Canvas;
+        let nav = if whole_page {
+            None
+        } else {
+            session.pinned_nav_candidate(is_phone)
+        };
+        let status = if whole_page {
+            None
+        } else {
+            session.pinned_status_bar_candidate(is_phone)
+        };
+        let mut frame = if self.managed_preview_active() {
+            self.browser_frame_geometry(
+                canvas,
+                root_rect,
+                nav.as_ref().map(|(_, rect)| *rect),
+                status.as_ref().map(|(_, rect)| *rect),
+            )
+        } else {
+            compute_frame_geometry(
+                kind,
+                canvas,
+                root_rect,
+                nav.as_ref().map(|(_, rect)| *rect),
+                status.as_ref().map(|(_, rect)| *rect),
+            )
+        };
         if let (Some(pinned), Some((node_id, _))) = (frame.pinned.as_mut(), nav) {
             pinned.node_id = node_id;
         }
@@ -229,6 +256,10 @@ impl super::WidgetHost {
         viewport_w: f32,
         viewport_h: f32,
     ) {
+        if self.managed_preview_active() {
+            self.refresh_preview_device();
+            self.editor_state.editor_ui.preview.device = Some(self.infer_device_kind());
+        }
         if self.preview_manual_pick.is_none() {
             let kind = self.infer_device_kind();
             self.editor_state.editor_ui.preview.device = Some(kind);
@@ -336,7 +367,13 @@ impl super::WidgetHost {
                 None => (steady_frame, 1.0),
             };
 
-        let radius = frame_radius(device_frame.kind) * device_frame.fit;
+        let radius =
+            if self.managed_preview_active() && device_frame.kind != PreviewDeviceKind::Phone {
+                0.0
+            } else {
+                (frame_radius(device_frame.kind) * device_frame.fit)
+                    .min(device_frame.frame.size.x / 8.0)
+            };
         // Line the bezel with the screen's OWN background (falling back
         // to the host's canvas-surface tone) rather than a hardcoded
         // white: the device silhouette is a fixed size that doesn't
@@ -406,6 +443,9 @@ impl super::WidgetHost {
 
         // The outward ring masks square clip bleed without covering the
         // rounded interior; clip it so it cannot touch the TopBar.
+        if self.managed_preview_active() && device_frame.kind != PreviewDeviceKind::Phone {
+            return;
+        }
         backend.save();
         backend.clip_rect(canvas_rect);
         paint_corner_notches(
@@ -632,6 +672,19 @@ impl super::WidgetHost {
     /// Shift+Tab focus traversal. Returns `true` when the runtime emitted
     /// any semantic event.
     pub(in crate::widget_host) fn preview_dispatch_key(&mut self, key: &str, shift: bool) -> bool {
+        if self.managed_preview_active() {
+            match key {
+                "ArrowLeft" => {
+                    self.preview_navigation_step(-1);
+                    return true;
+                }
+                "ArrowRight" => {
+                    self.preview_navigation_step(1);
+                    return true;
+                }
+                _ => {}
+            }
+        }
         // Presenting a deck: the arrow keys move through the slides. They
         // are checked before the runtime sees them because during a
         // presentation that IS what they mean — a slide's widgets are being

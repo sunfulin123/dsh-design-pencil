@@ -112,23 +112,73 @@ pub fn set_selected_text_align(state: &mut EditorState, value: TextAlignValue) {
 }
 
 pub fn set_selected_layout_align(state: &mut EditorState, value: LayoutAlignValue) {
-    let keyword = match value {
+    set_selected_layout_keyword(state, "alignItems", layout_align_keyword(value));
+}
+
+fn layout_align_keyword(value: LayoutAlignValue) -> &'static str {
+    match value {
         LayoutAlignValue::Start => "start",
         LayoutAlignValue::Center => "center",
         LayoutAlignValue::End => "end",
-    };
-    set_selected_layout_keyword(state, "alignItems", keyword);
+    }
 }
 
 pub fn set_selected_layout_justify(state: &mut EditorState, value: LayoutJustifyValue) {
-    let keyword = match value {
+    set_selected_layout_keyword(state, "justifyContent", layout_justify_keyword(value));
+}
+
+fn layout_justify_keyword(value: LayoutJustifyValue) -> &'static str {
+    match value {
         LayoutJustifyValue::Start => "start",
         LayoutJustifyValue::Center => "center",
         LayoutJustifyValue::End => "end",
         LayoutJustifyValue::SpaceBetween => "space_between",
         LayoutJustifyValue::SpaceAround => "space_around",
+    }
+}
+
+pub fn set_selected_layout_alignment(
+    state: &mut EditorState,
+    justify: LayoutJustifyValue,
+    align: LayoutAlignValue,
+) {
+    let container = match state.selected_node() {
+        Some(PenNode::Frame(node)) => &node.container,
+        Some(PenNode::Group(node)) => &node.container,
+        Some(PenNode::Rectangle(node)) => &node.container,
+        _ => return,
     };
-    set_selected_layout_keyword(state, "justifyContent", keyword);
+    let expected_align =
+        jian_ops_schema::node::container::AlignItems::from_css(layout_align_keyword(align));
+    use jian_ops_schema::node::container::JustifyContent;
+    let expected_justify = Some(match justify {
+        LayoutJustifyValue::Start => JustifyContent::Start,
+        LayoutJustifyValue::Center => JustifyContent::Center,
+        LayoutJustifyValue::End => JustifyContent::End,
+        LayoutJustifyValue::SpaceBetween => JustifyContent::SpaceBetween,
+        LayoutJustifyValue::SpaceAround => JustifyContent::SpaceAround,
+    });
+    if container.align_items == expected_align && container.justify_content == expected_justify {
+        return;
+    }
+    let id = state.selection.anchor.clone();
+    if !id.is_real() {
+        return;
+    }
+    let before = state.snapshot_for_history();
+    for (property, keyword) in [
+        ("justifyContent", layout_justify_keyword(justify)),
+        ("alignItems", layout_align_keyword(align)),
+    ] {
+        state.apply(op_editor_core::EditorCommand::SetNodeLayoutProp {
+            node_id: id.clone(),
+            property: property.to_string(),
+            value: op_editor_core::LayoutPropValue::Keyword(keyword.to_string()),
+        });
+    }
+    if state.snapshot_for_history() != before {
+        state.history_push_past(before);
+    }
 }
 
 pub fn set_selected_text_vertical_align(state: &mut EditorState, value: TextVerticalAlignValue) {

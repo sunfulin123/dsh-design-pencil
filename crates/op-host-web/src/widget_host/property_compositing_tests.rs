@@ -9,6 +9,77 @@ use op_editor_ui::widgets::PropertyPanelAction;
 const VIEWPORT_W: f32 = 1200.0;
 const VIEWPORT_H: f32 = 800.0;
 
+#[test]
+fn web_layout_alignment_is_one_reversible_edit_and_same_value_is_inert() {
+    let mut host = WidgetHost::new();
+    seed(
+        &mut host,
+        r##"{"version":"1.0.0","children":[
+        {"type":"frame","id":"frame","width":300,"height":200,"layout":"vertical"}
+    ]}"##,
+    );
+    host.editor_state.set_single_selection(NodeId::new("frame"));
+    let before = host.editor_state.snapshot_for_history();
+    let action = PropertyPanelAction::SetLayoutAlignment {
+        justify: op_editor_ui::widgets::property_panel_action::LayoutJustifyValue::End,
+        align: op_editor_ui::widgets::property_panel_action::LayoutAlignValue::Center,
+    };
+    host.apply_property_action(action.clone());
+    assert_eq!(host.editor_state.history.past.len(), 1);
+    let after = host.editor_state.snapshot_for_history();
+    assert_ne!(before, after);
+    host.apply_property_action(action);
+    assert_eq!(host.editor_state.history.past.len(), 1);
+    assert!(host.editor_state.undo());
+    assert_eq!(host.editor_state.snapshot_for_history(), before);
+}
+
+#[test]
+fn web_position_alignment_moves_selection_and_undoes_once() {
+    let mut host = WidgetHost::new();
+    seed(
+        &mut host,
+        r##"{"version":"1.0.0","children":[
+        {"type":"rectangle","id":"first","x":10,"y":20,"width":30,"height":40},
+        {"type":"rectangle","id":"second","x":100,"y":80,"width":30,"height":40}
+    ]}"##,
+    );
+    host.editor_state.set_single_selection(NodeId::new("first"));
+    host.editor_state.toggle_selection(NodeId::new("second"));
+    let before = host.editor_state.snapshot_for_history();
+    host.apply_property_action(PropertyPanelAction::AlignSelection(
+        op_editor_core::AlignAction::Left,
+    ));
+    assert_eq!(host.editor_state.history.past.len(), 1);
+    let second = op_editor_core::walkers::find_node(
+        host.editor_state.active_children(),
+        &NodeId::new("second"),
+    )
+    .unwrap();
+    assert_eq!(op_editor_core::own_bounds(second).x, 10.0);
+    assert!(host.editor_state.undo());
+    assert_eq!(host.editor_state.snapshot_for_history(), before);
+}
+
+#[test]
+fn web_pixel_grid_toggle_changes_view_only() {
+    let mut host = WidgetHost::new();
+    let before = host.editor_state.snapshot_for_history();
+    let revision = host.editor_state.revision;
+    let rect = host.status_bar_rect(VIEWPORT_W, VIEWPORT_H).unwrap();
+    let point = op_editor_ui::Point2D::new(
+        rect.origin.x + rect.size.x - 16.0,
+        rect.origin.y + rect.size.y / 2.0,
+    );
+    for visible in [true, false] {
+        assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
+        assert_eq!(host.editor_state.editor_ui.pixel_grid_visible, visible);
+        assert_eq!(host.editor_state.snapshot_for_history(), before);
+        assert_eq!(host.editor_state.revision, revision);
+        assert!(host.editor_state.history.past.is_empty());
+    }
+}
+
 fn seed(host: &mut WidgetHost, json: &str) {
     let doc = jian_ops_schema::load_str(json)
         .expect("fixture JSON parses")
@@ -34,6 +105,42 @@ fn selected_tile_scale(host: &WidgetHost) -> f32 {
         .unwrap()
         .tile_scale
         .unwrap()
+}
+
+#[test]
+fn web_structural_fill_actions_are_single_reversible_edits() {
+    for action in [
+        PropertyPanelAction::AddFill,
+        PropertyPanelAction::RemoveFill(1),
+        PropertyPanelAction::SetFillType {
+            index: 1,
+            fill_type: op_editor_core::FillType::LinearGradient,
+        },
+    ] {
+        let mut host = WidgetHost::new();
+        seed(
+            &mut host,
+            r##"{"version":"1.0.0","children":[{"type":"rectangle","id":"r","fill":[{"type":"solid","color":"#123456"},{"type":"solid","color":"#ABCDEF"}]}]}"##,
+        );
+        host.editor_state.set_single_selection(NodeId::new("r"));
+        let before = host.editor_state.snapshot_for_history();
+        host.apply_property_action(action);
+        let after = host.editor_state.snapshot_for_history();
+        assert_ne!(after, before);
+        assert_eq!(host.editor_state.history.past.len(), 1);
+        assert!(host.editor_state.undo());
+        assert_eq!(host.editor_state.snapshot_for_history(), before);
+        assert!(host.editor_state.redo());
+        assert_eq!(host.editor_state.snapshot_for_history(), after);
+
+        host.apply_property_action(PropertyPanelAction::RemoveFill(99));
+        host.apply_property_action(PropertyPanelAction::SetFillType {
+            index: 99,
+            fill_type: op_editor_core::FillType::LinearGradient,
+        });
+        assert_eq!(host.editor_state.history.past.len(), 1);
+        assert_eq!(host.editor_state.snapshot_for_history(), after);
+    }
 }
 
 #[test]

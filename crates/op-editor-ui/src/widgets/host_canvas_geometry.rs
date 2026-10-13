@@ -18,6 +18,37 @@ use crate::widgets::slides_panel_flow;
 use crate::widgets::{STATUS_BAR_HEIGHT, STATUS_BAR_WIDTH, TOOLBAR_WIDTH, TOP_BAR_HEIGHT};
 use crate::{Point2D, Rect};
 
+#[cfg(test)]
+mod responsive_tests {
+    use super::*;
+    use op_editor_core::size_class::EditorSizeClass;
+
+    #[test]
+    fn desktop_inspector_keeps_its_original_geometry_at_every_size_class() {
+        for (width, height, class) in [
+            (320.0, 568.0, EditorSizeClass::Compact),
+            (390.0, 844.0, EditorSizeClass::Compact),
+            (744.0, 768.0, EditorSizeClass::Medium),
+            (1440.0, 900.0, EditorSizeClass::Expanded),
+        ] {
+            let mut state = EditorState::default();
+            state.editor_ui.sidebar_open = false;
+            state.editor_ui.property_tab = op_editor_core::PropertyTab::Code;
+            state.editor_ui.size_class = class;
+            let (_, _, canvas_width, _) = canvas_region(&state, width, height);
+            assert_eq!(canvas_width, width - state.editor_ui.property_panel_width);
+            let inspector = property_panel_rect(&state, width, height);
+            assert_eq!(
+                inspector.origin.x,
+                width - state.editor_ui.property_panel_width
+            );
+            assert_eq!(inspector.origin.y, TOP_BAR_HEIGHT);
+            assert_eq!(inspector.size.x, state.editor_ui.property_panel_width);
+            assert_eq!(inspector.size.y, height - TOP_BAR_HEIGHT);
+        }
+    }
+}
+
 /// Breathing room between the floating chrome and the canvas edges, so
 /// the pills don't visually touch it (per the 2026-05-10 user note that
 /// asked for a little vertical spacing under the chat pill).

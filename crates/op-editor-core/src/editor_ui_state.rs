@@ -46,6 +46,7 @@ pub struct EditorUiState {
     pub sidebar_open: bool,
     pub layer_panel_width: f32,
     pub property_panel_width: f32,
+    pub pixel_grid_visible: bool,
     /// Whether this session's one-time Chat-tab width bump has run (see
     /// `CHAT_TAB_MIN_WIDTH`). Transient by design — a fresh session gets
     /// one bump again, and the user's own drag is never overridden after

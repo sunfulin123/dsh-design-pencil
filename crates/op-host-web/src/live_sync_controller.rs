@@ -36,9 +36,22 @@ impl SyncController {
             oversize_identity: None,
         }
     }
+
+    fn save_version(&self) -> Option<u64> {
+        (self.client.initialized() && !self.gate.open_pending() && self.gate.conflict().is_none())
+            .then(|| self.client.last_version())
+    }
 }
 
 pub(crate) type SharedSync = Rc<RefCell<SyncController>>;
+
+pub(crate) fn daemon_save_version() -> Option<u64> {
+    ACTIVE_SYNC.with(|slot| {
+        let sync = slot.borrow().as_ref().and_then(Weak::upgrade)?;
+        let version = sync.try_borrow().ok()?.save_version();
+        version
+    })
+}
 
 /// Commit a successful daemon Save as a sync acknowledgement.
 ///
@@ -84,4 +97,24 @@ pub(super) fn current_oversize_identity<C: RepaintContext>(b: &C) -> (u64, u64, 
         doc.document_generation(),
         doc.document_revision(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn daemon_save_version_requires_an_initialized_unconflicted_document() {
+        let mut sync = SyncController::new();
+        assert_eq!(sync.save_version(), None);
+        sync.client.mark_applied(42);
+        sync.gate.note_synced(3, 5);
+        assert_eq!(sync.save_version(), Some(42));
+        sync.gate.note_open_pending(4);
+        assert_eq!(sync.save_version(), None);
+        sync.gate.note_synced(4, 0);
+        assert_eq!(sync.save_version(), Some(42));
+        sync.gate.note_conflict(43);
+        assert_eq!(sync.save_version(), None);
+    }
 }

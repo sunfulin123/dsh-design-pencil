@@ -309,6 +309,8 @@ impl PropertyPanel {
             ui.effect_add_picker_open || ui.interaction_menu_open || ui.compositing_picker.open;
         Self {
             id: WidgetId::new(2000),
+            alignment_enabled: crate::widgets::align_toolbar::AlignToolbar::enabled_actions(state),
+            alignment_active: crate::widgets::align_toolbar::AlignToolbar::active_actions(state),
             density_scale,
             color_variable_picker_scroll: ui.property_color_variable_picker_scroll.offset.max(0.0),
             color_variable_picker_hover: ui.property_color_variable_picker_hover,

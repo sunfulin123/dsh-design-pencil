@@ -202,6 +202,8 @@ pub struct PropertyPanel {
     pub stroke_mode_popover_hover: Option<usize>,
     /// True for multi-select aggregate (inputs inert, "N items").
     pub is_multi: bool,
+    pub alignment_enabled: [bool; 8],
+    pub alignment_active: [bool; 8],
     /// Active header tab — toggled by Cmd+Shift+C.
     pub tab: op_editor_core::PropertyTab,
     /// Header tab currently hovered. Used only for the pinned tab strip.

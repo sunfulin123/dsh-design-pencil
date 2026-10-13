@@ -56,6 +56,86 @@ fn scene_origin(host: &WidgetHost, id: &str) -> Point2D {
 }
 
 #[test]
+fn dragging_near_other_edges_snaps_and_shows_transient_guides() {
+    let mut host = WidgetHost::new();
+    seed_json(
+        &mut host,
+        r##"{"version":"1.0.0","children":[
+            {"type":"rectangle","id":"box","x":100,"y":100,"width":120,"height":80},
+            {"type":"rectangle","id":"target","x":300,"y":210,"width":120,"height":80}
+        ]}"##,
+    );
+    let press = screen(&host, 160.0, 140.0);
+    let near = screen(&host, 237.0, 247.0);
+    assert!(host.apply_press(press.x, press.y, VW, VH));
+    assert!(host.apply_cursor_move(near.x, near.y));
+    assert_eq!(box_bounds(&host).x, 180.0);
+    assert_eq!(box_bounds(&host).y, 210.0);
+    let guides = &host.editor_state.editor_ui.active_guides;
+    assert!(guides
+        .iter()
+        .any(|guide| guide.vertical && guide.pos == 300.0));
+    assert!(guides
+        .iter()
+        .any(|guide| !guide.vertical && guide.pos == 210.0));
+    let away = screen(&host, 267.0, 267.0);
+    assert!(host.apply_cursor_move(away.x, away.y));
+    assert!(host.editor_state.editor_ui.active_guides.is_empty());
+    assert!(host.apply_release_with_viewport(VW, VH));
+    assert!(host.editor_state.editor_ui.active_guides.is_empty());
+    assert_eq!(host.editor_state.history.past.len(), 1);
+    assert!(host.editor_state.undo());
+    assert_eq!(box_bounds(&host).x, 100.0);
+    assert_eq!(box_bounds(&host).y, 100.0);
+}
+
+#[test]
+fn alignment_tolerance_uses_screen_pixels_and_does_not_accumulate_snap_offset() {
+    let mut host = WidgetHost::new();
+    seed_json(
+        &mut host,
+        r##"{"version":"1.0.0","children":[
+            {"type":"rectangle","id":"box","x":100,"y":100,"width":120,"height":80},
+            {"type":"rectangle","id":"target","x":300,"y":210,"width":120,"height":80}
+        ]}"##,
+    );
+    host.editor_state.viewport.zoom = 2.0;
+    let press = screen(&host, 320.0, 280.0);
+    assert!(host.apply_press(press.x, press.y, VW, VH));
+    let outside = screen(&host, 474.0, 494.0);
+    assert!(host.apply_cursor_move(outside.x, outside.y));
+    assert_eq!(box_bounds(&host).x, 177.0);
+    assert!(host.editor_state.editor_ui.active_guides.is_empty());
+    let near = screen(&host, 478.0, 498.0);
+    assert!(host.apply_cursor_move(near.x, near.y));
+    assert_eq!(box_bounds(&host).x, 180.0);
+    assert_eq!(box_bounds(&host).y, 210.0);
+    let away = screen(&host, 534.0, 534.0);
+    assert!(host.apply_cursor_move(away.x, away.y));
+    assert_eq!(box_bounds(&host).x, 207.0);
+    assert_eq!(box_bounds(&host).y, 227.0);
+    assert!(host.editor_state.editor_ui.active_guides.is_empty());
+}
+
+#[test]
+fn hidden_nodes_do_not_create_drag_alignment_targets() {
+    let mut host = WidgetHost::new();
+    seed_json(
+        &mut host,
+        r##"{"version":"1.0.0","children":[
+            {"type":"rectangle","id":"box","x":100,"y":100,"width":120,"height":80},
+            {"type":"rectangle","id":"target","x":300,"y":210,"width":120,"height":80,"visible":false}
+        ]}"##,
+    );
+    let press = screen(&host, 160.0, 140.0);
+    let near = screen(&host, 237.0, 247.0);
+    assert!(host.apply_press(press.x, press.y, VW, VH));
+    assert!(host.apply_cursor_move(near.x, near.y));
+    assert_eq!(box_bounds(&host).x, 177.0);
+    assert!(host.editor_state.editor_ui.active_guides.is_empty());
+}
+
+#[test]
 fn select_tool_dragging_selected_node_moves_it_without_resizing() {
     let mut host = WidgetHost::new();
     seed(&mut host);

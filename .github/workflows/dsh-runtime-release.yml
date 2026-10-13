@@ -13,12 +13,12 @@ permissions:
 
 env:
   RUSTUP_TOOLCHAIN: '1.96.0'
-  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.2'
+  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.3'
 
 jobs:
   runtime:
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'runtime-v')
-    runs-on: macos-15
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -32,12 +32,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: '1.3.14'
-      - name: Install locked version-check dependencies
-        working-directory: packages
-        run: bun install --frozen-lockfile --ignore-scripts
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: '1.96.0'
@@ -46,35 +40,25 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-workspace-crates: true
-      - name: Install validation and WASM tools
-        run: brew install ripgrep jq binaryen
-      - name: Validate macOS source policies
+      - name: Validate Node/WASM source policies
         run: |
-          test "$(uname -m)" = arm64
           cargo fmt --all -- --check
-          bash tools/check-version-sync.sh
-          bash tools/check-file-line-cap.sh
-          bash tools/check-rustls-client-policy.sh
-          node --test scripts/check-dsh-runtime.test.mjs
+          node --test --test-name-pattern='webpage|published release tag|validated assets|native build' scripts/check-dsh-runtime.test.mjs
           node scripts/check-dsh-runtime-dependencies.mjs
-      - name: Install locked wasm-bindgen and viewer bundler
+      - name: Install locked wasm-bindgen
         run: |
           version="$(awk '/^name = "wasm-bindgen"$/{found=1; next} found && /^version = /{gsub(/[" ]/,"",$3); print $3; exit}' Cargo.lock)"
           if ! command -v wasm-bindgen >/dev/null || [[ "$(wasm-bindgen --version)" != "wasm-bindgen $version" ]]; then
             cargo install wasm-bindgen-cli --version "$version" --locked --force
           fi
-          npm ci --prefix packages/dsh-runtime-build
-      - name: Build macOS arm64 daemon
-        run: |
-          cargo build --locked --release -p op-host-web-server --no-default-features
+      - name: Build headless design WASM
+        run: bash packages/dsh-node-runtime/build-engine.sh
       - name: Build embedded editor WASM
-        run: bash tools/check-wasm-bundle.sh
-      - name: Build viewer WASM
-        run: bash crates/op-web-sdk/tools/build-wasm.sh
+        run: bash packages/dsh-node-runtime/build-web.sh
+      - name: Verify Node runtime and package whitelist
+        run: node --test packages/dsh-node-runtime/*.test.mjs
       - name: Stage checksummed runtime
         run: node scripts/stage-dsh-runtime.mjs
-      - name: Verify Node.js consumer contract
-        run: node scripts/check-dsh-runtime.mjs "dist/dsh-design-pencil-${OPENPENCIL_DSH_RUNTIME_VERSION}-darwin-arm64"
       - uses: actions/upload-artifact@v4
         with:
           name: dsh-design-pencil-runtime
@@ -83,7 +67,7 @@ jobs:
   publish:
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'runtime-v')
     needs: runtime
-    runs-on: macos-15
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:

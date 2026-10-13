@@ -33,7 +33,7 @@ pub use ingest_error::DocumentIngestError;
 pub use ingested_doc::IngestedDoc;
 pub use save_payload::{
     acknowledge_browser_download, parse_save_response, save_ack_matches_document, save_file_name,
-    save_snapshot_matches_document, serialize_save_payload, SavePayloadTarget,
+    save_snapshot_matches_document, serialize_save_payload, SavePayloadError, SavePayloadTarget,
 };
 #[cfg(test)]
 pub use save_payload::{save_request_body, serialize_document};

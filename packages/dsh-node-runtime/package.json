@@ -1,0 +1,12 @@
+{
+  "name": "@sunfulin123/dsh-design-pencil-runtime",
+  "version": "0.8.5-synapse.3",
+  "private": true,
+  "type": "commonjs",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "build:engine": "bash build-engine.sh",
+    "build:web": "bash build-web.sh",
+    "test": "node --test *.test.mjs"
+  }
+}

@@ -161,33 +161,17 @@ impl SlidesPanelTabs {
         let y = row.origin.y + inset_y;
         let h = (row.size.y - inset_y * 2.0).max(0.0);
 
-        // Text mode: each tab takes the width of its OWN label, laid
-        // left to right from the rail's inset. Equal thirds is what made
-        // the row read as a segmented control bolted onto the rail
-        // instead of part of it; natural widths let the labels sit like
-        // the section headings they are, the way Pencil's Agent /
-        // Layers / Slides row does. `text_tabs_fit` has already decided
-        // the words fit, so the total cannot overrun the rail.
         if text_mode {
-            let mut cursor = 0.0_f32;
-            // A touch row still owes every tab a 44 pt target, so a short
-            // label's natural width is floored there.
-            let touch_floor = if row.size.y > TAB_ROW_HEIGHT {
-                TOUCH_SLIDES_TAB_TARGET
-            } else {
-                0.0
-            };
+            let width = (inner_w - TAB_GAP * shown.len().saturating_sub(1) as f32)
+                / shown.len().max(1) as f32;
             return shown
                 .iter()
-                .map(|tab| {
-                    let w = (estimated_text_width(tabs.label(*tab), TAB_FONT) + TAB_PAD_X * 2.0)
-                        .max(touch_floor)
-                        .min((inner_w - cursor).max(0.0));
+                .enumerate()
+                .map(|(index, tab)| {
                     let rect = Rect {
-                        origin: Point2D::new(x + cursor, y),
-                        size: Point2D::new(w, h),
+                        origin: Point2D::new(x + index as f32 * (width + TAB_GAP), y),
+                        size: Point2D::new(width, h),
                     };
-                    cursor += w + TAB_GAP;
                     (*tab, rect)
                 })
                 .collect();
@@ -311,16 +295,24 @@ impl SlidesPanelTabs {
                 LeftPanelTab::Slides => SlidesPanelTarget::SlidesTab,
             };
             let selected = self.active == tab;
-            if selected {
-                // A soft fill and nothing else: the border used to draw a
-                // second box inside the track and read as a button.
-                cx.backend.fill_round_rect(rect, TAB_RADIUS, theme.muted);
-            } else if hover == Some(target) {
+            if hover == Some(target) {
                 cx.backend
                     .fill_round_rect(rect, TAB_RADIUS, theme.button_hover);
             }
+            if selected {
+                cx.backend.fill_round_rect(
+                    Rect::xywh(
+                        rect.origin.x + 12.0,
+                        self.row.origin.y + self.row.size.y - 2.0,
+                        (rect.size.x - 24.0).max(0.0),
+                        2.0,
+                    ),
+                    1.0,
+                    theme.primary,
+                );
+            }
             let color = if selected {
-                theme.foreground
+                theme.primary
             } else {
                 theme.muted_foreground
             };
@@ -332,7 +324,7 @@ impl SlidesPanelTabs {
                     cx.backend,
                     label,
                     TAB_FONT,
-                    if selected { 600 } else { 400 },
+                    if selected { 500 } else { 400 },
                 );
                 cx.backend.draw_text(
                     &TextLayout::single_run(
@@ -342,7 +334,7 @@ impl SlidesPanelTabs {
                         color.to_jian(),
                         Point2D::ZERO,
                     )
-                    .with_font_weight(if selected { 600 } else { 400 }),
+                    .with_font_weight(if selected { 500 } else { 400 }),
                     Point2D::new(rect.origin.x + (rect.size.x - width) / 2.0, baseline),
                 );
                 continue;
@@ -368,7 +360,7 @@ impl SlidesPanelTabs {
                 TAB_FONT,
                 (rect.size.x - TAB_PAD_X * 2.0 - TAB_ICON_SIZE - TAB_ICON_GAP).max(0.0),
             );
-            let label_w = text_metrics::measure_chrome_weighted(cx.backend, &label, TAB_FONT, 600);
+            let label_w = text_metrics::measure_chrome_weighted(cx.backend, &label, TAB_FONT, 500);
             let content_w = TAB_ICON_SIZE + TAB_ICON_GAP + label_w;
             let icon_x = rect.origin.x + (rect.size.x - content_w) / 2.0;
             draw_icon(
@@ -388,7 +380,7 @@ impl SlidesPanelTabs {
                         color.to_jian(),
                         Point2D::ZERO,
                     )
-                    .with_font_weight(600),
+                    .with_font_weight(500),
                     Point2D::new(icon_x + TAB_ICON_SIZE + TAB_ICON_GAP, baseline),
                 );
             }

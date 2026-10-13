@@ -100,8 +100,6 @@ pub struct PreviewSession {
     /// before it replays.
     pub(crate) route_generation: u64,
     /// Per-root scene↔runtime coordinate mapping for tap translation.
-    /// `pub(crate)` so `app_mode`'s
-    /// `current_screen_scene_rect` can read the first frame's scene rect.
     pub(crate) root_frames: Vec<RootFrame>,
     /// The design `LayoutScene` preview paints: paint tree from the
     /// prepared + PROMOTED document (so a generated/legacy `role=input`
@@ -111,6 +109,7 @@ pub struct PreviewSession {
     /// match design mode by construction. Live widget values are
     /// overlaid onto a clone of this each frame in `paint_scene`.
     pub(crate) scene: LayoutScene,
+    pub(crate) presentation_root: Option<String>,
     /// The prepared (ref/token-resolved, page-projected / screen-
     /// normalized) but UNPROMOTED document — the geometry source the
     /// design canvas would lay out. Kept so app-mode screen switches
@@ -536,6 +535,7 @@ impl PreviewSession {
             pending_activation: None,
             root_frames,
             scene,
+            presentation_root: None,
             layout_doc,
             preserve_authored_geometry,
             warnings,

@@ -67,6 +67,20 @@ extern "C" {
         b: f32,
         a: f32,
     );
+    #[wasm_bindgen(method, js_name = fillDropShadow)]
+    pub(super) fn fill_drop_shadow(
+        this: &OpCk,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        rad: f32,
+        blur: f32,
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+    );
     #[wasm_bindgen(method, js_name = fillRoundRectPerCorner)]
     pub(super) fn fill_round_rect_per_corner(
         this: &OpCk,
@@ -592,6 +606,8 @@ extern "C" {
     pub(super) fn push_blend_layer(this: &OpCk, blend_mode: u8);
     #[wasm_bindgen(method, js_name = pushBackdropBlurLayer)]
     pub(super) fn push_backdrop_blur_layer(this: &OpCk, sigma: f32);
+    #[wasm_bindgen(method, js_name = pushBlurLayer)]
+    pub(super) fn push_blur_layer(this: &OpCk, sigma: f32);
     #[wasm_bindgen(method)]
     pub(super) fn restore(this: &OpCk);
     #[wasm_bindgen(method)]

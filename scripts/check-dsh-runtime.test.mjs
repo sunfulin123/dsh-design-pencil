@@ -39,7 +39,7 @@ test('checks the published release tag against the runtime version before buildi
   assert.equal(guard.env.RELEASE_TAG, '${{ github.event.release.tag_name }}')
   assert.match(guard.run, /test "\$RELEASE_TAG" = "runtime-v\$\{OPENPENCIL_DSH_RUNTIME_VERSION\}"/)
   assert.ok(workflow.jobs.runtime.steps.indexOf(guard) <
-    workflow.jobs.runtime.steps.findIndex(step => step.name === 'Build macOS arm64 daemon'))
+    workflow.jobs.runtime.steps.findIndex(step => step.name === 'Build headless design WASM'))
   const env = { ...process.env, OPENPENCIL_DSH_RUNTIME_VERSION: version }
   await execute('bash', ['-e', '-c', guard.run], {
     env: { ...env, RELEASE_TAG: `runtime-v${version}` },
@@ -60,6 +60,16 @@ test('uploads validated assets to the webpage release without recreating or over
   assert.equal(upload.env.TAG, '${{ github.event.release.tag_name }}')
   assert.match(upload.run, /gh release upload "\$TAG" dist\/\*\.tar\.gz\*/)
   assert.doesNotMatch(upload.run, /release create|--clobber/)
+})
+
+test('runtime release has no native build or Agent SDK installation', async () => {
+  const workflow = await releaseWorkflow()
+  const steps = workflow.jobs.runtime.steps
+  assert.equal(workflow.jobs.runtime['runs-on'], 'ubuntu-24.04')
+  assert.equal(workflow.env.OPENPENCIL_DSH_RUNTIME_VERSION, '0.8.5-synapse.3')
+  assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-engine.sh'))
+  assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-web.sh'))
+  assert.doesNotMatch(JSON.stringify(steps), /op-host-web-server|darwin-arm64|brew install|bun install|npm ci/)
 })
 
 async function fixture(context, options = {}) {

@@ -58,32 +58,6 @@ impl CkInner {
         // the frame after the fetch lands. No-op on every other frame and on
         // native, where the document was already in the binary.
         self.host.retry_pending_scene_template();
-        crate::web_chat::reconcile_models(self.host.editor_state_mut());
-        // Detect a credential edit and enqueue the daemon sync BEFORE mirroring
-        // the sync status below: a corrective edit clears the stale error in
-        // the sync state machine here, so the mirror reflects it in the SAME
-        // frame instead of leaving the banner up until the next repaint.
-        if crate::web_settings::save_credentials_if_changed(
-            self.host.editor_state(),
-            &mut self.credential_fingerprint,
-        )
-        .is_some()
-        {
-            if let Some(json) =
-                crate::web_settings::server_credentials_json(self.host.editor_state())
-            {
-                crate::web_credential_sync::credential_changed(json);
-            }
-        }
-        // Mirror the (now up-to-date) credential-sync status into the settings
-        // modal so a rejected server save is visible instead of console-only.
-        let sync_error = crate::web_credential_sync::current_sync_error();
-        {
-            let settings = &mut self.host.editor_state_mut().editor_ui.agent_settings;
-            if settings.web_credential_sync_error != sync_error {
-                settings.web_credential_sync_error = sync_error;
-            }
-        }
         let (w, h) = self.backend.logical_size();
         self.backend.begin_frame();
         self.host.paint_dyn(&mut self.backend, w, h);
@@ -333,7 +307,7 @@ pub(super) fn start_bootstrap_reset(
             complete();
         })
     };
-    if !crate::live_sync::post_json_with_status(&url, "", on_reset) {
+    if !crate::live_sync::post_json_with_status(&url, "{}", on_reset) {
         // Request could not even start — treat as a transport error.
         if retries_left > 0 {
             start_bootstrap_reset(base, complete, retries_left - 1);

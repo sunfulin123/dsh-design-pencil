@@ -483,7 +483,7 @@ impl Widget for LayerPanel {
                     "system-ui",
                     self.metrics.row_font,
                     (if page.active {
-                        self.theme.foreground
+                        self.theme.primary
                     } else {
                         self.theme.muted_foreground
                     })

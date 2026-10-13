@@ -16,4 +16,5 @@ pub enum StatusBarButton {
     ZoomOut,
     /// Plus — zooms the canvas in one step.
     ZoomIn,
+    PixelGrid,
 }

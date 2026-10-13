@@ -6,7 +6,8 @@ pub const RULER_SIZE: f32 = 24.0;
 
 pub fn enabled(state: &op_editor_core::EditorState) -> bool {
     state.editor_ui.embed == op_editor_core::EmbedHost::VsCode
-        && state.editor_ui.host_theme_override.is_some()
+        && state.editor_ui.pixel_grid_visible
+        && !state.editor_ui.preview.mode
         && !state.editor_ui.touch_chrome()
 }
 
@@ -351,6 +352,47 @@ fn draw_label(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rulers_require_explicit_enable_and_are_hidden_during_presentation() {
+        let mut state = op_editor_core::EditorState::new();
+        state.editor_ui.embed = op_editor_core::EmbedHost::VsCode;
+        assert!(!enabled(&state));
+        state.editor_ui.pixel_grid_visible = true;
+        assert!(enabled(&state));
+        state.editor_ui.preview.mode = true;
+        assert!(!enabled(&state));
+        state.editor_ui.preview.mode = false;
+        assert!(enabled(&state));
+        state.editor_ui.pixel_grid_visible = false;
+        assert!(!enabled(&state));
+    }
+
+    #[test]
+    fn managed_rulers_are_available_before_host_theme_initialization() {
+        let mut state = op_editor_core::EditorState::new();
+        assert!(!enabled(&state));
+        state.editor_ui.embed = op_editor_core::EmbedHost::VsCode;
+        assert!(state.editor_ui.host_theme_override.is_none());
+        state.editor_ui.pixel_grid_visible = true;
+        assert!(enabled(&state));
+        let toolbar_before = super::super::host_canvas_geometry::toolbar_rect(&state, 240.0);
+        for mode in [
+            op_editor_core::ThemeMode::Light,
+            op_editor_core::ThemeMode::Dark,
+        ] {
+            state.editor_ui.set_host_theme_override(Some(mode));
+            assert!(enabled(&state));
+            assert_eq!(
+                super::super::host_canvas_geometry::toolbar_rect(&state, 240.0),
+                toolbar_before
+            );
+        }
+        state.editor_ui.set_host_theme_override(None);
+        assert!(enabled(&state));
+        state.editor_ui.touch = true;
+        assert!(!enabled(&state));
+    }
 
     #[test]
     fn ruler_scene_bounds_union_rotated_selection_and_follow_overlay() {

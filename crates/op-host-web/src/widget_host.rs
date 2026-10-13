@@ -169,6 +169,10 @@ mod press_ctx;
 mod press_overlay_tiers;
 mod press_property_tiers;
 mod press_surface_tiers;
+#[cfg(feature = "canvaskit")]
+mod preview_browser;
+#[cfg(feature = "canvaskit")]
+mod preview_browser_controls;
 mod preview_frame;
 mod preview_frame_teardown;
 mod preview_slideshow;
@@ -438,6 +442,10 @@ pub struct WidgetHost {
     /// Viewport the cached device frame was solved against, so paint can
     /// notice a resize and rebuild rather than scaling stale geometry.
     preview_frame_viewport: Option<(f32, f32)>,
+    preview_editor_viewport: Option<op_editor_core::Viewport>,
+    responsive_sidebar: Option<bool>,
+    #[cfg(feature = "canvaskit")]
+    preview_browser: preview_browser::PreviewBrowserState,
     /// CanvasKit bridge for text measurement — required for preview construction.
     /// Set by the mount / repaint path after the backend is initialized.
     #[cfg(feature = "canvaskit")]
@@ -490,9 +498,17 @@ impl WidgetHost {
     /// The preview-only wake deadline used by the browser frame pump and the
     /// paint-side self-perpetuating clause.
     pub(crate) fn preview_wake_deadline_ms(&self) -> Option<u64> {
-        self.preview
+        let session = self
+            .preview
             .as_ref()
-            .and_then(|preview| preview.next_wake_deadline_ms())
+            .and_then(|preview| preview.next_wake_deadline_ms());
+        #[cfg(feature = "canvaskit")]
+        return session
+            .into_iter()
+            .chain(self.preview_controls_wake_deadline_ms())
+            .min();
+        #[cfg(not(feature = "canvaskit"))]
+        session
     }
 
     /// Next absolute millisecond at which this host owes a repaint.
