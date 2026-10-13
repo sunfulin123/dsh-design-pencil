@@ -251,6 +251,10 @@ fn handshake_line_is_single_line_json() {
     assert!(!line.contains('\n'));
     assert!(line.contains(r#""port":41234"#));
     assert!(line.contains(r#""token":"aabbccdd00112233aabbccdd00112233""#));
+    let parsed: serde_json::Value = serde_json::from_str(&line).expect("managed handshake JSON");
+    let expected_version =
+        option_env!("OPENPENCIL_DSH_RUNTIME_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"));
+    assert_eq!(parsed["version"], expected_version);
 }
 
 #[test]

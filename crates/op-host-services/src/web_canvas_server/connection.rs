@@ -86,7 +86,11 @@ pub(super) fn serve_one_in_mode<S: Read + Write>(
             state,
             hub,
             mode,
-            mcp_profile: crate::mcp_serve::tool_profile::McpAccessProfile::UNRESTRICTED,
+            mcp_profile: if matches!(mode, ServeMode::Managed) {
+                crate::mcp_serve::tool_profile::McpAccessProfile::MANAGED
+            } else {
+                crate::mcp_serve::tool_profile::McpAccessProfile::UNRESTRICTED
+            },
             rest_identity: None,
             write_barrier: None,
         },
@@ -168,6 +172,16 @@ pub(super) fn dispatch<S: Read + Write>(
         )?;
         return Ok(false);
     }
+    if ctx.mode.excludes_standalone_route(&req.method, &req.path) {
+        let reply = not_found_reply();
+        crate::mcp_serve::write_mcp_http_response_with_origin(
+            stream,
+            reply.status,
+            &reply.body,
+            cors_origin,
+        )?;
+        return Ok(false);
+    }
     // Static serving: the host page (`/`) and the wasm-bindgen bundle
     // (`/pkg/*`). Owns only those paths — everything else falls through.
     if req.method == "GET" {
@@ -183,6 +197,7 @@ pub(super) fn dispatch<S: Read + Write>(
     // bundle routes above (it renders a spinner and nothing else). It only
     // exists to host the daemon's device-login proxy, so a deployment with no
     // proxy has no interstitial either.
+    #[cfg(feature = "standalone-services")]
     if req.method == "GET"
         && req.path == op_editor_core::auth_routes::LOADING_PAGE
         && ctx.mode.allows_device_login_proxy()
@@ -245,6 +260,7 @@ pub(super) fn dispatch<S: Read + Write>(
     // Current-account avatar proxy: performs bounded public HTTPS I/O on this
     // connection thread, never while holding the editor-state mutex. Part of
     // the device-login proxy, so it is off wherever that is.
+    #[cfg(feature = "standalone-services")]
     if req.method == "POST"
         && req.path == op_editor_core::auth_routes::AVATAR
         && ctx.mode.allows_device_login_proxy()
@@ -264,6 +280,7 @@ pub(super) fn dispatch<S: Read + Write>(
     // a process-global registry that only a live relay session populates, so
     // it is gated with relay collaboration itself rather than left to answer
     // one account out of another account's roster.
+    #[cfg(feature = "standalone-services")]
     if req.method == "POST"
         && req.path == op_editor_core::collab_routes::AVATAR
         && ctx.mode.allows_relay_collaboration()
@@ -281,6 +298,7 @@ pub(super) fn dispatch<S: Read + Write>(
     // lock) for the pairing's verification URI so the popup can navigate
     // straight from this response — handled here rather than in the
     // whole-body REST tier, which runs under the state mutex.
+    #[cfg(feature = "standalone-services")]
     if req.method == "POST"
         && req.path == op_editor_core::auth_routes::LOGIN_BEGIN
         && ctx.mode.allows_device_login_proxy()

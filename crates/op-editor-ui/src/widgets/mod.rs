@@ -169,9 +169,11 @@ pub(crate) mod text_input_backend;
 pub mod text_metrics;
 mod text_selection;
 pub mod toolbar;
+pub mod toolbar_tooltip;
 pub mod touch_overlay_geometry;
 
 // Step 3 — center canvas that renders document nodes as actual
+pub mod canvas_rulers;
 // visual primitives (frame fills, rect strokes, text strings).
 mod canvas_agent_cursor;
 mod canvas_agent_cursor_motion;

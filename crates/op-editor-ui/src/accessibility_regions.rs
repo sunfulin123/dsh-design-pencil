@@ -239,13 +239,11 @@ pub fn apply_region_action(
         // Canvas / Toolbar / Property panel — moving a11y focus off the
         // chat blurs the chat input so caret + send routing follow the
         // screen reader's focus. Only meaningful when the chat holds it.
-        CANVAS_WIDGET_ID | TOOLBAR_WIDGET_ID | PROPERTY_PANEL_WIDGET_ID if is_focus => {
-            if state.chat.focused {
-                state.chat.focused = false;
-                true
-            } else {
-                false
-            }
+        CANVAS_WIDGET_ID | TOOLBAR_WIDGET_ID | PROPERTY_PANEL_WIDGET_ID
+            if is_focus && state.chat.focused =>
+        {
+            state.chat.focused = false;
+            true
         }
         _ => false,
     }

@@ -11,13 +11,16 @@ name = "op-host-web-server"
 path = "src/main.rs"
 
 [features]
+default = []
+standalone-services = ["op-host-services/standalone-services"]
+standalone-ai-sdks = ["op-host-services/standalone-ai-sdks"]
 pinned-skia-binaries = ["op-host-services/pinned-skia-binaries"]
 # Forwarded to op-host-services so a dev daemon can mint collaboration
 # tickets from the locally built ABI-v2 op-auth archive (debug only).
 dev-op-auth-abi-v2 = ["op-host-services/dev-op-auth-abi-v2"]
 
 [dependencies]
-op-host-services = { path = "../op-host-services" }
+op-host-services = { path = "../op-host-services", default-features = false }
 
 [dev-dependencies]
 serde_json = { workspace = true }

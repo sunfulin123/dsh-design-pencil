@@ -445,6 +445,14 @@ mod abi_tests {
     use super::*;
 
     #[test]
+    fn fork_has_no_account_backend() {
+        assert!(!available());
+        assert!(!collab_ticket_available());
+        assert!(!restore());
+        assert_eq!(login_begin(), 0);
+    }
+
+    #[test]
     fn base_account_api_accepts_v1_through_v3_only() {
         assert!(!supports_base_abi(0));
         assert!(supports_base_abi(1));

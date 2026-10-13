@@ -227,6 +227,9 @@ pub(crate) fn start<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
 /// when it installs a new token; repeated host init messages with the same
 /// token remain no-ops at that layer.
 pub(crate) fn refresh_status<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
+    if crate::web_clipboard::is_vscode_embed() {
+        return;
+    }
     let base = crate::daemon_base::daemon_base();
     fetch_status(inner, &base);
 }

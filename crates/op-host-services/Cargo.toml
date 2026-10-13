@@ -11,7 +11,9 @@ name = "op_host_services"
 path = "src/lib.rs"
 
 [features]
-default = []
+default = ["standalone-services"]
+standalone-services = ["standalone-ai-sdks", "dep:op-auth-bridge", "dep:op-collab-host"]
+standalone-ai-sdks = ["dep:anthropic-agent-sdk", "dep:github-copilot-sdk"]
 # Mirrors op-host-desktop's debug-tools toggle for the MCP server.
 mcp-debug-tools = ["op-mcp/debug-tools", "op-chat-agent/mcp-debug-tools"]
 # Production release lane; forwarded by op-host-web-server.
@@ -20,6 +22,7 @@ pinned-skia-binaries = ["skia-safe/no-compile"]
 # op-host-desktop's flag of the same name: links the locally built ABI-v2
 # op-auth archive (debug profile only; see op-auth-bridge/README).
 dev-op-auth-abi-v2 = [
+  "standalone-services",
   "op-auth-bridge/dev-abi-v2",
   "op-collab-host/dev-op-auth-abi-v2",
 ]
@@ -35,7 +38,7 @@ op-html = { path = "../op-html" }
 op-editor-core = { path = "../op-editor-core" }
 op-builtin-model-discovery = { path = "../op-builtin-model-discovery" }
 # Device-login proxy for the web editor (prebuilt library or inert stub).
-op-auth-bridge = { path = "../op-auth-bridge" }
+op-auth-bridge = { path = "../op-auth-bridge", optional = true }
 op-config-store = { path = "../op-config-store" }
 op-editor-ui = { path = "../op-editor-ui" }
 op-editor-host-core = { path = "../op-editor-host-core", features = [
@@ -61,16 +64,16 @@ op-i18n = { path = "../op-i18n" }
 op-util = { path = "../op-util" }
 jian-ops-schema = { path = "../../vendor/jian/crates/jian-ops-schema" }
 agent = { path = "../../vendor/agent/crates/agent", default-features = false }
-anthropic-agent-sdk = { path = "../../vendor/anthropic-agent-sdk" }
+anthropic-agent-sdk = { path = "../../vendor/anthropic-agent-sdk", optional = true }
 # Collaboration runtime — the daemon runs the same owner/guest actors the
 # desktop GUI runs, so a browser client gets real sessions instead of a
 # permanently `Unavailable` panel.
-op-collab-host = { path = "../op-collab-host" }
+op-collab-host = { path = "../op-collab-host", optional = true }
 
 # --- external (crates.io / forks) ---
 # Keep the product's explicit installed-CLI contract; the SDK's default
 # `bundled-cli` feature would otherwise embed a platform CLI archive.
-github-copilot-sdk = { version = "=1.0.11", default-features = false }
+github-copilot-sdk = { version = "=1.0.11", default-features = false, optional = true }
 reqwest = { version = "0.12", default-features = false, features = [
   "rustls-tls",
   "json",

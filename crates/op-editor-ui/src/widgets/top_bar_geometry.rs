@@ -50,7 +50,11 @@ impl TopBar {
         let file_menu = self.file_menu_rect_for(top_bar_rect);
         Rect {
             origin: Point2D::new(
-                file_menu.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span,
+                if self.file_controls_visible() {
+                    file_menu.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span
+                } else {
+                    file_menu.origin.x
+                },
                 file_menu.origin.y,
             ),
             size: Point2D::new(FILE_MENU_BUTTON_WIDTH, ICON_BUTTON),
@@ -83,15 +87,18 @@ impl TopBar {
         PREVIEW_BUTTON_AVAILABLE
     }
 
-    /// File-scoped chrome (open menu, Figma import, centered file name):
-    /// hidden inside a VS Code embed — the workbench owns file identity.
     pub(super) fn file_controls_visible(&self) -> bool {
-        self.embed != op_editor_core::EmbedHost::VsCode
+        self.host_controls_visible
     }
 
     /// The Maximize toggle is meaningless inside an embed iframe.
     pub(super) fn fullscreen_button_visible(&self) -> bool {
         self.embed != op_editor_core::EmbedHost::VsCode
+    }
+
+    /// Whether the globe locale toggle is displayed in the top bar.
+    pub(super) fn locale_button_visible(&self) -> bool {
+        self.locale_picker_visible
     }
 
     /// Right-cluster layout (right → left): Maximize (hidden in a VS Code
@@ -138,6 +145,13 @@ impl TopBar {
     }
 
     pub fn globe_rect(&self, top_bar_rect: Rect) -> Rect {
+        if !self.locale_button_visible() {
+            let theme = self.theme_button_rect(top_bar_rect);
+            return Rect {
+                origin: Point2D::new(theme.origin.x, theme.origin.y),
+                size: Point2D::new(0.0, 0.0),
+            };
+        }
         // Globe is the wider GLOBE_BUTTON_WIDTH; it hangs off the theme
         // button's left edge so the whole cluster shifts as one.
         let theme = self.theme_button_rect(top_bar_rect);
@@ -153,9 +167,13 @@ impl TopBar {
     /// globe/theme icons"). Derived from [`Self::globe_rect`] so the two
     /// can never drift apart.
     pub fn account_button_rect(&self, top_bar_rect: Rect) -> Rect {
-        let globe = self.globe_rect(top_bar_rect);
+        let right_anchor_x = if self.locale_button_visible() {
+            self.globe_rect(top_bar_rect).origin.x
+        } else {
+            self.theme_button_rect(top_bar_rect).origin.x
+        };
         Rect {
-            origin: Point2D::new(globe.origin.x - ICON_BUTTON, globe.origin.y),
+            origin: Point2D::new(right_anchor_x - ICON_BUTTON, top_bar_rect.origin.y + 8.0),
             size: Point2D::new(ICON_BUTTON, ICON_BUTTON),
         }
     }
@@ -163,8 +181,10 @@ impl TopBar {
     fn account_or_globe_anchor_x(&self, top_bar_rect: Rect) -> f32 {
         if self.account_button_visible {
             self.account_button_rect(top_bar_rect).origin.x
-        } else {
+        } else if self.locale_button_visible() {
             self.globe_rect(top_bar_rect).origin.x
+        } else {
+            self.theme_button_rect(top_bar_rect).origin.x
         }
     }
 

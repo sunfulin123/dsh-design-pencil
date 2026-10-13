@@ -63,6 +63,8 @@ fn app_preferences_preserve_runtime_font_availability() {
 #[test]
 fn app_preferences_preserve_transient_embedding_theme_and_locale_separately() {
     let mut previous = EditorState::new();
+    previous.editor_ui.embed = op_editor_core::EmbedHost::VsCode;
+    previous.editor_ui.host_theme_palette = [("primary".into(), "#336699".into())].into();
     previous.editor_ui.theme_mode = op_editor_core::ThemeMode::Light;
     previous
         .editor_ui
@@ -77,6 +79,11 @@ fn app_preferences_preserve_transient_embedding_theme_and_locale_separately() {
 
     preserve_app_preferences(&previous, &mut next);
 
+    assert_eq!(next.editor_ui.embed, op_editor_core::EmbedHost::VsCode);
+    assert_eq!(
+        next.editor_ui.host_theme_palette,
+        previous.editor_ui.host_theme_palette
+    );
     assert_eq!(next.editor_ui.theme_mode, op_editor_core::ThemeMode::Light);
     assert_eq!(
         next.editor_ui.effective_theme_mode(),

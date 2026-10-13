@@ -359,8 +359,10 @@ fn ingest_html_project(
 /// for wasm32).
 pub fn preserve_app_preferences(previous: &EditorState, next: &mut EditorState) {
     let previous_selected_model = previous.chat.selected_model_entry().cloned();
+    next.editor_ui.embed = previous.editor_ui.embed;
     next.editor_ui.theme_mode = previous.editor_ui.theme_mode;
     next.editor_ui.host_theme_override = previous.editor_ui.host_theme_override;
+    next.editor_ui.host_theme_palette = previous.editor_ui.host_theme_palette.clone();
     next.editor_ui.locale = previous.editor_ui.locale;
     next.editor_ui.pending_locale = previous.editor_ui.pending_locale;
     next.editor_ui.locale_persistence_override = previous.editor_ui.locale_persistence_override;

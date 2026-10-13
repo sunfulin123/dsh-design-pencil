@@ -386,6 +386,75 @@ impl WidgetHost {
             panel.paint(&mut cx, property_rect);
         }
 
+        if op_editor_ui::widgets::canvas_rulers::enabled(&self.editor_state) {
+            let overlay = self.node_drag_overlay_for_paint();
+            let ids = self
+                .editor_state
+                .selection
+                .set
+                .iter()
+                .map(|id| id.as_str().to_string())
+                .collect::<Vec<_>>();
+            let selection = op_editor_ui::widgets::canvas_rulers::selection_bounds(
+                &self.layout_scene,
+                &ids,
+                overlay.as_ref(),
+            );
+            op_editor_ui::widgets::canvas_rulers::paint(
+                backend,
+                &self.theme,
+                canvas_rect,
+                &self.editor_state.viewport,
+                selection,
+            );
+        }
+
+        if self.editor_state.editor_ui.embed == op_editor_core::EmbedHost::VsCode
+            && self.editor_state.editor_ui.host_theme_override.is_some()
+        {
+            let height = (viewport_height - TOP_BAR_HEIGHT).max(0.0);
+            let dark = self.theme.card.r + self.theme.card.g + self.theme.card.b < 1.5;
+            let right = canvas_left + canvas_w;
+            for (offset, alpha) in [0.07, 0.045, 0.028, 0.016, 0.008, 0.003]
+                .into_iter()
+                .enumerate()
+            {
+                let color = op_editor_ui::Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: if dark { alpha * 1.6 } else { alpha },
+                };
+                if offset as f32 >= canvas_w {
+                    break;
+                }
+                if rail_open && canvas_left > 0.0 {
+                    backend.fill_rect(
+                        Rect::xywh(canvas_left + offset as f32, TOP_BAR_HEIGHT, 1.0, height),
+                        color,
+                    );
+                }
+                if property_panel.is_some() {
+                    backend.fill_rect(
+                        Rect::xywh(right - offset as f32 - 1.0, TOP_BAR_HEIGHT, 1.0, height),
+                        color,
+                    );
+                }
+            }
+            if rail_open && canvas_left > 0.0 {
+                backend.fill_rect(
+                    Rect::xywh(canvas_left - 1.0, TOP_BAR_HEIGHT, 1.0, height),
+                    self.theme.card,
+                );
+            }
+            if property_panel.is_some() {
+                backend.fill_rect(
+                    Rect::xywh(right, TOP_BAR_HEIGHT, 1.0, height),
+                    self.theme.card,
+                );
+            }
+        }
+
         // 5b. VariablesPanel — mirrors TS' `{}` toolbar toggle as a
         //     floating canvas overlay next to the toolbar (#21: same
         //     interactive grid as the native host; the old read-only
@@ -515,6 +584,20 @@ impl WidgetHost {
                 top_bar_rect,
                 viewport_width,
                 self.now_ms,
+            );
+        }
+
+        if canvas_geometry::toolbar_fits(canvas_w) {
+            let mut cx = PaintCx {
+                backend: &mut *backend,
+            };
+            op_editor_ui::widgets::toolbar_tooltip::paint(
+                &mut cx,
+                &self.editor_state,
+                &toolbar,
+                toolbar_rect,
+                viewport_width,
+                viewport_height,
             );
         }
 

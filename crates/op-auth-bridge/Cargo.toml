@@ -12,7 +12,8 @@ readme = "README.md"
 exclude = ["prebuilt/**"]
 
 [features]
-default = []
+default = ["account-free"]
+account-free = []
 # Deterministic, non-production signing keys for downstream integration tests.
 # Production verifier configuration never trusts this fixture issuer.
 test-issuer = []

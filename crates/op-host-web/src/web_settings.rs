@@ -572,6 +572,10 @@ fn str_to_locale(s: &str) -> Option<Locale> {
 mod tests;
 
 #[cfg(test)]
+#[path = "web_settings_managed_tests.rs"]
+mod managed_tests;
+
+#[cfg(test)]
 #[path = "web_settings_locale_tests.rs"]
 mod locale_tests;
 

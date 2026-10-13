@@ -210,7 +210,10 @@ fn route_message<C: RepaintContext + 'static>(
 
     match msg {
         BridgeInbound::Init { token, mcp_url } => handle_init(inner, token, mcp_url),
-        BridgeInbound::Theme { color_scheme } => handle_theme(inner, color_scheme),
+        BridgeInbound::Theme {
+            color_scheme,
+            palette,
+        } => handle_theme(inner, color_scheme, palette),
         BridgeInbound::Locale { locale } => handle_locale(inner, locale),
         BridgeInbound::OpenDocument { json } => handle_open_document(inner, sync, json),
         BridgeInbound::Snapshot { request_id, .. } => handle_snapshot(inner, sync, request_id),
@@ -249,6 +252,7 @@ fn handle_locale<C: RepaintContext + 'static>(
 fn handle_theme<C: RepaintContext + 'static>(
     inner: &Rc<RefCell<C>>,
     color_scheme: op_editor_core::ThemeMode,
+    palette: std::collections::BTreeMap<String, String>,
 ) {
     let Ok(mut context) = inner.try_borrow_mut() else {
         return;
@@ -257,6 +261,11 @@ fn handle_theme<C: RepaintContext + 'static>(
         context.host_mut().editor_state_mut(),
         color_scheme,
     );
+    context
+        .host_mut()
+        .editor_state_mut()
+        .editor_ui
+        .host_theme_palette = palette;
     context.host_mut().mark_editor_state_dirty();
     let _ = context.repaint();
 }

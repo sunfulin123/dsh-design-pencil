@@ -458,8 +458,16 @@ pub fn mobile_sheet_close_rect(sheet: Rect) -> Rect {
 /// slots are live), which is why it is a parameter rather than derived.
 pub fn toolbar_rect(state: &EditorState, toolbar_h: f32) -> Rect {
     let (canvas_left, canvas_top) = canvas_origin(state);
+    let ruler_inset = if super::canvas_rulers::enabled(state) {
+        super::canvas_rulers::RULER_SIZE
+    } else {
+        0.0
+    };
     Rect {
-        origin: Point2D::new(canvas_left + TOOLBAR_INSET_X, canvas_top + TOOLBAR_INSET_Y),
+        origin: Point2D::new(
+            canvas_left + TOOLBAR_INSET_X + ruler_inset,
+            canvas_top + TOOLBAR_INSET_Y + ruler_inset,
+        ),
         size: Point2D::new(TOOLBAR_WIDTH, toolbar_h),
     }
 }

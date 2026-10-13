@@ -1,0 +1,91 @@
+name: DSH runtime release
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['runtime-v*']
+
+permissions:
+  contents: read
+
+env:
+  RUSTUP_TOOLCHAIN: '1.96.0'
+  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.2'
+
+jobs:
+  runtime:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+      - name: Install locked version-check dependencies
+        working-directory: packages
+        run: bun install --frozen-lockfile --ignore-scripts
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: '1.96.0'
+          components: rustfmt
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-workspace-crates: true
+      - name: Install validation and WASM tools
+        run: brew install ripgrep jq binaryen
+      - name: Validate macOS source policies
+        run: |
+          test "$(uname -m)" = arm64
+          cargo fmt --all -- --check
+          bash tools/check-version-sync.sh
+          bash tools/check-file-line-cap.sh
+          bash tools/check-rustls-client-policy.sh
+          node --test scripts/check-dsh-runtime.test.mjs
+          node scripts/check-dsh-runtime-dependencies.mjs
+      - name: Install locked wasm-bindgen and viewer bundler
+        run: |
+          version="$(awk '/^name = "wasm-bindgen"$/{found=1; next} found && /^version = /{gsub(/[" ]/,"",$3); print $3; exit}' Cargo.lock)"
+          if ! command -v wasm-bindgen >/dev/null || [[ "$(wasm-bindgen --version)" != "wasm-bindgen $version" ]]; then
+            cargo install wasm-bindgen-cli --version "$version" --locked --force
+          fi
+          npm ci --prefix packages/dsh-runtime-build
+      - name: Build macOS arm64 daemon
+        run: |
+          cargo build --locked --release -p op-host-web-server --no-default-features
+      - name: Build embedded editor WASM
+        run: bash tools/check-wasm-bundle.sh
+      - name: Build viewer WASM
+        run: bash crates/op-web-sdk/tools/build-wasm.sh
+      - name: Stage checksummed runtime
+        run: node scripts/stage-dsh-runtime.mjs
+      - name: Verify Node.js consumer contract
+        run: node scripts/check-dsh-runtime.mjs "dist/dsh-design-pencil-${OPENPENCIL_DSH_RUNTIME_VERSION}-darwin-arm64"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-design-pencil-runtime
+          path: dist/*.tar.gz*
+          if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/runtime-v')
+    needs: runtime
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dsh-design-pencil-runtime
+          path: dist
+      - name: Publish immutable runtime assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" dist/*.tar.gz* --verify-tag --title "$TAG" --notes "Account-free macOS arm64 editor, daemon, viewer and checksummed resources."

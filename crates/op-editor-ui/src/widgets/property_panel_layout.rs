@@ -79,7 +79,7 @@ pub fn fill_body_height(fill_type: FillType) -> f32 {
 /// Stop-aware variant — accounts for the actual number of gradient
 /// stops so adding / removing a stop reflows the panel correctly.
 pub fn fill_body_height_with_stops(fill_type: FillType, stop_count: usize) -> f32 {
-    let stops = stop_count.max(0);
+    let stops = stop_count;
     let stops_block = SECTION_HEADER_HEIGHT
         + stops as f32 * (INPUT_HEIGHT + 4.0)
         + if stops == 0 { 0.0 } else { 2.0 };

@@ -173,7 +173,7 @@ fn palette_from_fills(children: &[serde_json::Value]) -> Vec<String> {
     // Stable by construction: `counts` is in first-appearance order, and the
     // sort is stable, so equally-used colours keep the document's order
     // instead of flipping between builds.
-    counts.sort_by(|left, right| right.1.cmp(&left.1));
+    counts.sort_by_key(|entry| std::cmp::Reverse(entry.1));
     counts
         .into_iter()
         .map(|(hex, _)| hex)

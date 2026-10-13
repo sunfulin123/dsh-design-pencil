@@ -10,13 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="./README.md"><b>English</b></a> · <a href="./README.zh.md">简体中文</a> · <a href="./README.zh-TW.md">繁體中文</a> · <a href="./README.ja.md">日本語</a> · <a href="./README.ko.md">한국어</a> · <a href="./README.fr.md">Français</a> · <a href="./README.es.md">Español</a> · <a href="./README.de.md">Deutsch</a> · <a href="./README.pt.md">Português</a> · <a href="./README.ru.md">Русский</a> · <a href="./README.hi.md">हिन्दी</a> · <a href="./README.tr.md">Türkçe</a> · <a href="./README.th.md">ไทย</a> · <a href="./README.vi.md">Tiếng Việt</a> · <a href="./README.id.md">Bahasa Indonesia</a>
+  <a href="./README.md"><b>English</b></a> · <a href="./README.zh.md">简体中文</a> · <a href="./README.zh-TW.md">繁體中文</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/ZSeven-W/openpencil/stargazers"><img src="https://img.shields.io/github/stars/ZSeven-W/openpencil?style=flat&color=cfb537" alt="Stars" /></a>
   <a href="https://github.com/ZSeven-W/openpencil/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ZSeven-W/openpencil?color=64748b" alt="License" /></a>
-  <a href="https://github.com/ZSeven-W/openpencil/actions/workflows/rust-check.yml"><img src="https://img.shields.io/github/actions/workflow/status/ZSeven-W/openpencil/rust-check.yml?label=CI" alt="CI" /></a>
+  <a href="https://github.com/sunfulin123/dsh-design-pencil/actions/workflows/dsh-runtime-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/sunfulin123/dsh-design-pencil/dsh-runtime-release.yml?branch=synapse-runtime&amp;label=macOS%20CI" alt="macOS CI" /></a>
   <a href="https://discord.gg/h9Fmyy6pVh"><img src="https://img.shields.io/badge/Discord-Join%20chat-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
 </p>
 
@@ -32,6 +32,16 @@
   </a>
 </p>
 <p align="center"><sub>Click the image to watch the demo video</sub></p>
+
+## DSH Design Pencil Fork
+
+This fork ships the macOS arm64 DSH plugin runtime, not a standalone desktop application. It owns the Synapse Studio managed-editor customization: host locale and palette, hidden host controls, canvas rulers, sidebar shadows, retained top-bar divider, toolbar hints, and managed file lifecycle. The default daemon build excludes Claude/Copilot SDKs, account bridges, collaboration transports, and native Preview. Native raster rendering remains for screenshots and export; browser Preview, editing, importing, exporting, document synchronization, and design MCP tools remain available. DSH owns AI execution, without OpenPencil accounts or model API keys. Account, independent AI, credential settings, and collaboration routes are unavailable; `run_design_agent` and `spawn_agents` are excluded from MCP discovery and calls. Managed startup does not load global settings or start account and collaboration services. Embedded pages neither restore nor persist provider credentials; existing browser storage is left untouched. Local session authorization, browser-origin checks, file conflict checks, and document integrity remain enforced.
+
+The [runtime release workflow](.github/workflows/dsh-runtime-release.yml) publishes macOS arm64 archives for `runtime-v*` tags. Each archive contains the native daemon, compiled editor, namespaced read-only viewer, CanvasKit, product resources, license, and a manifest identifying the fork commit and SHA-256 of every payload file. Synapse Studio consumes a pinned release archive rather than this Rust source tree. Other platforms are not published by this workflow.
+
+Release staging coalesces identical content with identical permissions into in-package hard links, including shared editor/viewer CanvasKit and product assets. Paths and per-file hashes stay unchanged; extraction produces regular files and symlinks remain forbidden. A dependency gate rejects standalone account, AI SDK, collaboration, native Preview, and desktop-window dependencies. CI caches workspace compilation and reuses a lockfile-matched wasm-bindgen executable. The artifact smoke executes script-mode design writes and verifies PNG/PDF exports.
+
+Runtime compilation belongs to the macOS arm64 release workflow, not the consuming plugin or desktop profile. The workflow pins Rust with the `wasm32-unknown-unknown` target, a lockfile-matched `wasm-bindgen-cli`, Binaryen, and Node 24. Pull requests, main-branch pushes, and runtime tags run format, version, file-size, and rustls checks, then build only the daemon, embedded editor, and viewer. A Node.js smoke checks the staged payload and archive checksums, managed startup and version handshake, design MCP discovery and invocation, account/model route exclusion, browser Origin isolation, and normal stdin-lease shutdown. Release CI does not compile Rust tests or run workspace Clippy or standalone browser tests; native daemon and WASM compilation remain required. Feature branches use pull-request CI without duplicate push builds. Tagged builds publish the verified archive. CI and releases target macOS arm64 only; P2P, mobile, Windows, Linux, and Nix workflows are not part of this distribution. Documentation is maintained in English and Chinese. Consumers need only the pinned, checksummed archive and never download a Skia builder. Do not configure model credentials or production collaboration bootstrap URLs for the managed distribution.
 
 ## Why OpenPencil
 

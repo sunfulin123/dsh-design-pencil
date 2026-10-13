@@ -15,49 +15,65 @@
 //! borrowing view assembled per call — [`DaemonCollabHost`] — with exactly the
 //! semantics of `HeadlessCollabHost`.
 
+#[cfg(feature = "standalone-services")]
 use op_collab_host::{CollabHost, CollabRuntime};
+#[cfg(feature = "standalone-services")]
 use op_editor_core::{
-    next_sequential_counter, CollabEditSource, CollabGateAction, CollabGatePolicy,
-    CollabGateReason, DocumentIdAllocator, DocumentInstallError, DocumentInstallReport, EditOrigin,
-    EditorState, IdAllocError, PeerNamespace, PenDocument, PreparedDocument,
+    next_sequential_counter, DocumentIdAllocator, DocumentInstallError, DocumentInstallReport,
+    EditOrigin, EditorState, IdAllocError, PeerNamespace, PenDocument, PreparedDocument,
 };
+use op_editor_core::{CollabEditSource, CollabGateAction, CollabGatePolicy, CollabGateReason};
+#[cfg(feature = "standalone-services")]
 use op_editor_host_core::collab::CollaborationEditorHost;
 
 use super::WebCanvasState;
 
 /// First id a standalone daemon hands out, matching the GUI host's seed.
+#[cfg(feature = "standalone-services")]
 const FIRST_STANDALONE_NODE_ID: u64 = 100;
 
 /// Everything the daemon keeps for collaboration, beside the editor itself.
 pub(crate) struct WebCollabState {
     /// The owner/guest actors and their network workers.
+    #[cfg(feature = "standalone-services")]
     pub(crate) runtime: CollabRuntime,
     /// Owner-assigned id namespace while a session is live.
+    #[cfg(feature = "standalone-services")]
     id_allocator: Option<DocumentIdAllocator>,
     /// Next id under the standalone sequential policy.
+    #[cfg(feature = "standalone-services")]
     next_node_id: u64,
     /// Raised by any runtime write through the host seam.
+    #[cfg(feature = "standalone-services")]
     dirty: bool,
     /// Bumps whenever the *projection* changes — a peer joining, a cursor
     /// moving, a notice appearing. Deliberately separate from the document
     /// version so presence traffic never makes a browser refetch the document.
     seq: u64,
     /// Last cursor the browser published, replayed to peers by the driver.
+    #[cfg(feature = "standalone-services")]
     presence_override: Option<(f64, f64)>,
     /// Pokes the driver thread awake. `None` until the driver starts, and in
     /// the unit tests, which tick the runtime directly.
+    #[cfg(feature = "standalone-services")]
     waker: Option<std::sync::Arc<super::collab_driver::CollabWaker>>,
 }
 
 impl Default for WebCollabState {
     fn default() -> Self {
         Self {
+            #[cfg(feature = "standalone-services")]
             runtime: CollabRuntime::new(),
+            #[cfg(feature = "standalone-services")]
             id_allocator: None,
+            #[cfg(feature = "standalone-services")]
             next_node_id: FIRST_STANDALONE_NODE_ID,
+            #[cfg(feature = "standalone-services")]
             dirty: false,
             seq: 0,
+            #[cfg(feature = "standalone-services")]
             presence_override: None,
+            #[cfg(feature = "standalone-services")]
             waker: None,
         }
     }
@@ -76,25 +92,30 @@ impl WebCollabState {
     }
 
     /// Read and clear the host dirty flag.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn take_dirty(&mut self) -> bool {
         std::mem::take(&mut self.dirty)
     }
 
     /// Record the browser's latest cursor for the next presence flush.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn set_presence_override(&mut self, cursor: Option<(f64, f64)>) {
         self.presence_override = cursor;
     }
 
+    #[cfg(feature = "standalone-services")]
     pub(crate) const fn presence_override(&self) -> Option<(f64, f64)> {
         self.presence_override
     }
 
     /// Register the driver's wake path.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn set_waker(&mut self, waker: std::sync::Arc<super::collab_driver::CollabWaker>) {
         self.waker = Some(waker);
     }
 
     /// Ask the driver to tick now instead of at its next timeout.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn wake_driver(&self) {
         if let Some(waker) = self.waker.as_ref() {
             waker.wake();
@@ -106,6 +127,7 @@ impl WebCollabState {
 ///
 /// Assembled per call so the editor can stay where the rest of the daemon
 /// already reads it. Every method matches `HeadlessCollabHost`.
+#[cfg(feature = "standalone-services")]
 pub(crate) struct DaemonCollabHost<'a> {
     editor: &'a mut EditorState,
     id_allocator: &'a mut Option<DocumentIdAllocator>,
@@ -113,6 +135,7 @@ pub(crate) struct DaemonCollabHost<'a> {
     dirty: &'a mut bool,
 }
 
+#[cfg(feature = "standalone-services")]
 impl CollaborationEditorHost for DaemonCollabHost<'_> {
     fn editor_state(&self) -> &EditorState {
         self.editor
@@ -131,6 +154,7 @@ impl CollaborationEditorHost for DaemonCollabHost<'_> {
     }
 }
 
+#[cfg(feature = "standalone-services")]
 impl CollabHost for DaemonCollabHost<'_> {
     fn mark_editor_state_dirty(&mut self) {
         *self.dirty = true;
@@ -184,10 +208,12 @@ impl IngestOutcome {
 /// `begin_local_edit` and `finish_local_edit` must pair on every path. Holding
 /// the pair in a guard means an early return — or a panic in the install —
 /// cannot leave the capture open and the session wedged.
+#[cfg(feature = "standalone-services")]
 struct LocalEditCapture<'a> {
     state: Option<&'a mut WebCanvasState>,
 }
 
+#[cfg(feature = "standalone-services")]
 impl LocalEditCapture<'_> {
     fn state_mut(&mut self) -> &mut WebCanvasState {
         self.state.as_mut().expect("capture is open")
@@ -206,6 +232,7 @@ impl LocalEditCapture<'_> {
     }
 }
 
+#[cfg(feature = "standalone-services")]
 impl Drop for LocalEditCapture<'_> {
     fn drop(&mut self) {
         // Only reached when `finish` was not called — an unwind. Close the
@@ -269,6 +296,7 @@ impl WebCanvasState {
     ///
     /// One method rather than two accessors because the borrow checker has to
     /// see both borrows split out of `self` at once.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn collab_runtime_and_host(&mut self) -> (&mut CollabRuntime, DaemonCollabHost<'_>) {
         let collab = &mut self.collab;
         (
@@ -324,6 +352,7 @@ impl WebCanvasState {
     }
 
     /// Whether a live session currently sequences this document.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn collab_session_is_active(&self) -> bool {
         self.editor.editor_ui.collab.phase == op_editor_core::CollabConnectionPhase::Active
     }
@@ -340,6 +369,7 @@ impl WebCanvasState {
     /// The previous `bool` could not distinguish "the session accepted this"
     /// from "the session threw it away", so a rejected push was answered 200
     /// with a version bump and the browser never learned to resync.
+    #[cfg(feature = "standalone-services")]
     pub(crate) fn ingest_document_in_session(
         &mut self,
         prepared: PreparedDocument,
@@ -397,6 +427,6 @@ impl WebCanvasState {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "standalone-services"))]
 #[path = "collab_state_tests.rs"]
 mod tests;

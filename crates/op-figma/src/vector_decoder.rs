@@ -608,10 +608,7 @@ fn assemble_greedy_paths(context: &VnPathContext<'_>, parts: &mut Vec<String>) -
         used[i] = true;
         let chain_start = seg.start;
         let mut current = seg.end;
-        loop {
-            let Some(nexts) = adj.get(&current) else {
-                break;
-            };
+        while let Some(nexts) = adj.get(&current) {
             let Some(&next) = nexts.iter().find(|&&index| !used[index]) else {
                 break;
             };

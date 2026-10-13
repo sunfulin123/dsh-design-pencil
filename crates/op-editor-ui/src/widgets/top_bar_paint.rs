@@ -16,7 +16,6 @@ use op_editor_core::TopBarButton;
 impl TopBar {
     pub(super) fn paint_chrome(&self, cx: &mut PaintCx<'_>, rect: Rect) {
         cx.backend.fill_rect(rect, self.theme.background);
-        // Bottom hairline.
         cx.backend.fill_rect(
             Rect {
                 origin: Point2D::new(rect.origin.x, rect.origin.y + rect.size.y - 1.0),
@@ -153,16 +152,6 @@ impl TopBar {
             // Divider before the Figma import affordance.
             let divider2_x = file_menu_x + FILE_MENU_BUTTON_WIDTH + DIVIDER_GAP;
             paint_divider(cx, &self.theme, divider2_x, center_y);
-            // Import button (Figma / HTML menu).
-            let figma_x = divider2_x + DIVIDER_W + DIVIDER_GAP;
-            paint_import_button(
-                cx,
-                &self.theme,
-                figma_x,
-                center_y,
-                self.is_hovered(TopBarButton::OpenImportMenu),
-                self.is_pressed(TopBarButton::OpenImportMenu),
-            );
             // Divider then Home (制图台) — return to the drafting table.
             let home = self.home_button_rect(rect);
             paint_divider(
@@ -180,7 +169,17 @@ impl TopBar {
                 self.is_hovered(TopBarButton::Home),
                 self.is_pressed(TopBarButton::Home),
             );
+        }
+        paint_import_button(
+            cx,
+            &self.theme,
+            self.import_button_rect(rect).origin.x,
+            center_y,
+            self.is_hovered(TopBarButton::OpenImportMenu),
+            self.is_pressed(TopBarButton::OpenImportMenu),
+        );
 
+        if self.file_controls_visible() {
             // ── Bounded centered file title ─────────────────────
             // File name, dirty marker, and Git button form one visual group
             // centered against the full window. The slot between the Home
@@ -331,6 +330,10 @@ impl TopBar {
             self.is_pressed(TopBarButton::OpenAssetCenter),
         );
 
+        if !self.host_controls_visible {
+            return;
+        }
+
         // Theme toggle — Sun in dark mode (click → light); Moon in
         // light mode (click → dark).
         rx -= ICON_BUTTON;
@@ -347,21 +350,23 @@ impl TopBar {
             self.is_hovered(TopBarButton::ToggleTheme),
             self.is_pressed(TopBarButton::ToggleTheme),
         );
-        rx -= GLOBE_BUTTON_WIDTH;
+        if self.locale_button_visible() {
+            rx -= GLOBE_BUTTON_WIDTH;
 
-        // i18n globe — plain icon button like its Sun/Maximize siblings
-        // (the trailing chevron was dropped: it added noise without
-        // information, the dropdown affordance is the click itself).
-        paint_icon_button(
-            cx,
-            &self.theme,
-            rx + (GLOBE_BUTTON_WIDTH - ICON_BUTTON) / 2.0,
-            center_y,
-            Icon::Globe,
-            self.is_hovered(TopBarButton::ToggleLocale),
-            self.is_pressed(TopBarButton::ToggleLocale),
-        );
-        // `rx` now points at the LEFT edge of the globe button.
+            // i18n globe — plain icon button like its Sun/Maximize siblings
+            // (the trailing chevron was dropped: it added noise without
+            // information, the dropdown affordance is the click itself).
+            paint_icon_button(
+                cx,
+                &self.theme,
+                rx + (GLOBE_BUTTON_WIDTH - ICON_BUTTON) / 2.0,
+                center_y,
+                Icon::Globe,
+                self.is_hovered(TopBarButton::ToggleLocale),
+                self.is_pressed(TopBarButton::ToggleLocale),
+            );
+        }
+        // `rx` now points at the LEFT edge of the globe button (or theme button if hidden).
 
         // User-avatar button — sits between the Globe and the agent
         // chip (TS layout spot: "between the agents chip and the

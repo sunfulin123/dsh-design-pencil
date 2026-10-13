@@ -29,7 +29,9 @@ mod chat_avatar_modify_tests;
 pub mod chat_builtin_http;
 mod chat_builtin_http_wire;
 pub mod chat_canvas_tools;
+#[cfg(feature = "standalone-ai-sdks")]
 pub mod chat_claude;
+#[cfg(feature = "standalone-ai-sdks")]
 pub mod chat_copilot;
 pub mod chat_grok_stream;
 pub mod chat_http_server;
@@ -53,8 +55,11 @@ pub mod cli_probe_error;
 mod cli_probe_support;
 pub mod cli_provider_probe;
 mod cli_resolver_windows;
+#[cfg(feature = "standalone-services")]
 pub(crate) mod collab_avatar_proxy;
+#[cfg(feature = "standalone-services")]
 pub mod collab_blocking;
+#[cfg(feature = "standalone-ai-sdks")]
 mod copilot_sdk_probe;
 #[cfg(test)]
 mod design_agent_reflow_tests;
@@ -93,6 +98,7 @@ pub mod model_catalog_refresh;
 pub mod model_discovery;
 mod model_probe;
 pub mod pre_validator;
+#[cfg(feature = "standalone-services")]
 pub mod profile_avatar_fetch;
 mod provider_dial;
 pub mod provider_probe;
@@ -111,6 +117,7 @@ pub use op_editor_host_core::settings_io;
 pub use op_editor_host_core::settings_io_error;
 pub mod user_scene_template_store;
 pub mod validation_providers;
+#[cfg(feature = "standalone-services")]
 pub(crate) mod web_auth;
 pub mod web_canvas_server;
 pub mod web_canvas_server_error;

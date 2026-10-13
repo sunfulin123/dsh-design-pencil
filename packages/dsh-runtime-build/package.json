@@ -1,0 +1,8 @@
+{
+  "name": "dsh-design-pencil-runtime-build",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "esbuild": "0.28.2"
+  }
+}

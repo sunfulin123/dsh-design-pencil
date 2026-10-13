@@ -108,6 +108,7 @@ fn connected_probe_outcome_rejects_empty_model_list() {
 }
 
 #[test]
+#[cfg(feature = "standalone-ai-sdks")]
 fn copilot_connection_info_mirrors_ts_branches() {
     let full = CopilotAuth {
         login: Some("octocat".into()),
@@ -142,6 +143,11 @@ fn friendly_error_mappers_match_ts_tables() {
         friendly_claude_error(Locale::EnUs, "process exited with code 7"),
         "Unable to connect. Claude Code process exited unexpectedly."
     );
+}
+
+#[test]
+#[cfg(feature = "standalone-ai-sdks")]
+fn friendly_copilot_errors_match_ts_tables() {
     assert!(friendly_copilot_error(Locale::EnUs, "spawn ENOENT").contains("not found"));
     assert!(
         friendly_copilot_error(Locale::EnUs, "not authenticated yet").contains("copilot login")
@@ -151,6 +157,18 @@ fn friendly_error_mappers_match_ts_tables() {
         // "timed out" also matches the auth branch's bare "auth"?
         // No — it doesn't contain "auth"; the timeout branch wins.
         "Connection timed out. Please try again."
+    );
+}
+
+#[test]
+#[cfg(not(feature = "standalone-ai-sdks"))]
+fn copilot_probe_without_sdk_fails_without_launching_a_cli() {
+    let outcome = connect_provider(AgentProvider::GithubCopilot, Locale::EnUs);
+    assert!(!outcome.connected);
+    assert!(outcome.models.is_empty());
+    assert_eq!(
+        outcome.error.as_deref(),
+        Some("Standalone AI SDKs are disabled in this build.")
     );
 }
 

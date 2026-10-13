@@ -222,6 +222,15 @@ impl WidgetHost {
             return consumed;
         }
         // Tier 12 — the canvas, branching on the active tool.
+        if op_editor_ui::widgets::canvas_rulers::enabled(&self.editor_state) {
+            let (left, top, width, height) = self.canvas_region(viewport_width, viewport_height);
+            if op_editor_ui::widgets::canvas_rulers::contains(
+                op_editor_ui::Rect::xywh(left, top, width, height),
+                Point2D::new(x, y),
+            ) {
+                return true;
+            }
+        }
         if let Some(consumed) = self.press_canvas_tier(&ctx) {
             return consumed;
         }
