@@ -111,10 +111,12 @@ pub fn slides_tab_available(state: &EditorState) -> bool {
 
 /// Whether the Chat tab owns the rail's BODY — the pinned chat panel
 /// paints there instead of the layer tree (see
-/// `host_canvas_geometry::pinned_chat`). Never on touch chrome: touch
-/// never offers the tab, and `enter_chat_tab` refuses to select it.
+/// `host_canvas_geometry::pinned_chat`). Touch and managed hosts do not
+/// offer a conversation tab.
 pub fn chat_tab_active(state: &EditorState) -> bool {
-    !state.editor_ui.touch_chrome() && state.editor_ui.slides_panel.tab == LeftPanelTab::Chat
+    !state.editor_ui.touch_chrome()
+        && state.editor_ui.embed != op_editor_core::EmbedHost::VsCode
+        && state.editor_ui.slides_panel.tab == LeftPanelTab::Chat
 }
 
 /// The row's three labels plus which optional tabs exist — the ONE
@@ -127,7 +129,7 @@ pub fn tab_row_desc(state: &EditorState) -> SlidesTabRow<'static> {
         chat_label: translate(ui, "leftPanel.tab.chat"),
         layers_label: translate(ui, "layers.title"),
         slides_label: translate(ui, slides_tab_label_key(state)),
-        chat_available: !ui.touch_chrome(),
+        chat_available: !ui.touch_chrome() && ui.embed != op_editor_core::EmbedHost::VsCode,
         slides_available: slides_tab_available(state),
     }
 }
@@ -151,7 +153,10 @@ pub fn tab_row(state: &EditorState, panel: Rect) -> Option<SlidesPanelTabs> {
 
 fn tabs_for_state(state: &EditorState, panel: Rect) -> SlidesPanelTabs {
     let desc = tab_row_desc(state);
-    let active = state.editor_ui.slides_panel.tab;
+    let active = match state.editor_ui.slides_panel.tab {
+        LeftPanelTab::Chat if !desc.chat_available => LeftPanelTab::Layers,
+        tab => tab,
+    };
     if state.editor_ui.touch_chrome() {
         SlidesPanelTabs::new_touch(panel, active, &desc)
     } else {
@@ -175,8 +180,7 @@ pub fn layers_content_rect(state: &EditorState, panel: Rect) -> Rect {
 /// Whether the slides tab is the one on show. False whenever the
 /// document has no slides tab to offer, so a stale tab selection cannot
 /// strand a document that stopped being a deck on a navigator it no
-/// longer has. (A stale CHAT selection can never strand: the tab is
-/// always available on the chrome that can select it.)
+/// longer has. A stale Chat selection is inactive on managed hosts.
 pub fn slides_tab_active(state: &EditorState) -> bool {
     slides_tab_available(state) && state.editor_ui.slides_panel.tab == LeftPanelTab::Slides
 }
@@ -508,6 +512,9 @@ pub fn tab_release(state: &mut EditorState) -> SlidesRelease {
 /// one-time width bump.
 pub fn select_tab(state: &mut EditorState, tab: LeftPanelTab) -> bool {
     if tab == LeftPanelTab::Chat {
+        if !tab_row_desc(state).chat_available {
+            return false;
+        }
         return state.editor_ui.enter_chat_tab();
     }
     let panel = &mut state.editor_ui.slides_panel;

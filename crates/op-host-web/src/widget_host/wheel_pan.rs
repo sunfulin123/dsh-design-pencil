@@ -182,6 +182,9 @@ impl WidgetHost {
         #[cfg(feature = "canvaskit")]
         if self.editor_state.editor_ui.preview.mode && self.preview.is_some() {
             self.last_viewport_h = viewport_height;
+            if self.managed_preview_active() {
+                return self.preview_scroll_by(x, y, 0.0, delta_y);
+            }
             if self.device_mode_active() {
                 return self.apply_device_scroll(delta_y);
             }
@@ -262,6 +265,12 @@ impl WidgetHost {
         viewport_width: f32,
         viewport_height: f32,
     ) -> bool {
+        #[cfg(feature = "canvaskit")]
+        if self.managed_preview_active() {
+            self.last_viewport_w = viewport_width;
+            self.last_viewport_h = viewport_height;
+            return self.preview_scroll_by(x, y, dx, dy);
+        }
         if self.try_scroll_missing_fonts_picker(x, y, dy, viewport_width, viewport_height) {
             return true;
         }
@@ -327,6 +336,11 @@ impl WidgetHost {
     ) -> bool {
         self.last_viewport_w = viewport_width;
         self.last_viewport_h = viewport_height;
+        #[cfg(feature = "canvaskit")]
+        if self.managed_preview_active() {
+            self.preview_browser.pan_capture = Some((Point2D::new(x, y), self.preview_browser.pan));
+            return true;
+        }
         if self.over_topmost_panel(x, y, viewport_width, viewport_height)
             || !self.over_canvas(x, y, viewport_width, viewport_height)
         {

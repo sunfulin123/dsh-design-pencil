@@ -264,6 +264,7 @@ impl WidgetHost {
                 #[cfg(feature = "canvaskit")]
                 {
                     let op_ck = self.op_ck.clone();
+                    self.preview_browser.present = true;
                     let _ = self.enter_preview_from_browser(viewport_w, viewport_h, op_ck.as_ref());
                 }
                 #[cfg(not(feature = "canvaskit"))]

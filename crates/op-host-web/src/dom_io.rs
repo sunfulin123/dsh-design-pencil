@@ -554,6 +554,10 @@ fn handle_paste_event<C: RepaintContext + 'static>(
     inner: &InnerRc<C>,
     evt: &web_sys::ClipboardEvent,
 ) {
+    if inner.borrow().host().editor_state().editor_ui.preview.mode {
+        evt.prevent_default();
+        return;
+    }
     let Some(dt) = evt.clipboard_data() else {
         return;
     };
@@ -653,6 +657,10 @@ fn handle_paste_event<C: RepaintContext + 'static>(
 /// Route every dropped file through the same ingestion the file menu
 /// / shape picker use.
 fn handle_drop_event<C: RepaintContext + 'static>(inner: &InnerRc<C>, evt: &web_sys::DragEvent) {
+    if inner.borrow().host().editor_state().editor_ui.preview.mode {
+        evt.prevent_default();
+        return;
+    }
     let Some(dt) = evt.data_transfer() else {
         return;
     };

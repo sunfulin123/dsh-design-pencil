@@ -49,17 +49,8 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
     let logical_h = (dev_h / dpr).round().max(1.0) as u32;
 
     let mut host = crate::widget_host::WidgetHost::new();
-    // The editor opens on its canvas, not on a chat panel: the AI panel
-    // starts as its compact input bar and expands on click. Applied here
-    // rather than in `WidgetHost::new` because that constructor is also
-    // every widget test's fixture — this is the mount-time policy, not
-    // the host's resting state.
-    host.editor_state_mut().chat.minimize();
-    // Embed-host flag from the page URL (`?embed=vscode` in the VS Code
-    // plugin iframe): parsed before the first paint so embedded chrome
-    // never flashes in.
     let search = window.location().search().unwrap_or_default();
-    host.editor_state_mut().editor_ui.embed = op_editor_core::EmbedHost::from_query(&search);
+    host.editor_state_mut().editor_ui.embed = op_editor_core::EmbedHost::VsCode;
     let credential_load = crate::web_settings::load_into(host.editor_state_mut());
     // Theme is device-level, so it is resolved from its own unpartitioned key
     // rather than from the partition blob just loaded. On a browser that has
@@ -226,23 +217,9 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
     }
     // 3. Only now start the daemon-dependent services — in managed mode the
     //    token is present so their requests carry the auth header.
-    let standalone =
-        inner.borrow().host.editor_state().editor_ui.embed != op_editor_core::EmbedHost::VsCode;
-    if standalone {
-        crate::web_credential_sync::start();
-        if let Some(json) = initial_credential_json {
-            crate::web_credential_sync::credential_changed(json);
-        }
-        crate::web_chat::fetch_models(&inner);
-        crate::web_auth_sync::start(&inner);
-        crate::collab_sync::start(&inner);
-    }
     // Pull the brand-logo catalog (omitted from the wasm bundle) from the daemon
     // in the background so the icon picker / figma can resolve simple-icons.
     crate::iconify_web::fetch_brand_catalog(&inner);
-    // Mirror the daemon's agent-indicator registry so design runs paint
-    // their agent borders / badges / reveal animations on web too.
-    crate::agent_indicator_sync::start(&inner);
     // 4. Reset the daemon's transient sync document, THEN emit the managed
     //    `ready` reply and start the live-sync ticks. The reset must complete
     //    FIRST for two reasons:
@@ -387,17 +364,8 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                 if consumed {
                     crate::repaint_coalescer::request();
                 }
-                // Release the borrow before draining: a Send / Stop / New Chat
-                // button press raised a chat flag; an icon-picker Load-more
-                // press queued a remote search. Both drains re-borrow `inner`
-                // (mirrors the skia mount's post-press drain points).
                 drop(b);
-                crate::web_chat::drain_chat_flags(&inner);
-                crate::web_image_panel::drain_image_jobs(&inner);
-                crate::web_builtin_model_discovery::drain_pending_builtin_model_discovery(&inner);
                 crate::iconify_web::drain_iconify_request(&inner);
-                crate::codegen_web::drain_codegen_flags(&inner);
-                crate::web_design_md::drain_design_md_action(&inner);
                 crate::web_style_import::drain_pending_style_import(&inner);
                 crate::dom_io::drain_pending_file_action(&inner);
                 crate::dom_io::drain_pending_attachment_pick(&inner);
@@ -506,8 +474,18 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     scroll_delta_y,
                     canvas_delta_y,
                 } => {
-                    b.host
-                        .apply_wheel_with_canvas_delta(x, y, scroll_delta_y, canvas_delta_y, w, h)
+                    if b.host.managed_preview_active() && (evt.ctrl_key() || evt.meta_key()) {
+                        b.host.preview_zoom_by(canvas_delta_y)
+                    } else {
+                        b.host.apply_wheel_with_canvas_delta(
+                            x,
+                            y,
+                            scroll_delta_y,
+                            canvas_delta_y,
+                            w,
+                            h,
+                        )
+                    }
                 }
                 WheelIntent::Pan { dx, dy } => b.host.apply_pan_gesture(x, y, dx, dy, w, h),
             };
@@ -598,11 +576,6 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     if consumed {
                         crate::repaint_coalescer::request();
                     }
-                    // Enter is not an `insertText`, but a send can still be
-                    // queued by a field reacting to the inserted text.
-                    drop(b);
-                    crate::web_chat::drain_chat_flags(&inner);
-                    crate::web_image_panel::drain_image_jobs(&inner);
                 },
             )?;
         }

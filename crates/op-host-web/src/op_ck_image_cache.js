@@ -89,6 +89,7 @@ const SVG_RASTER_SCALE = 2;
 const SVG_FAILURE_CAP = 1024;
 
 export function createWebImageCaches(CK) {
+  let disposed = false;
   const fullImageCache = new Map();
   let fullImageCacheBytes = 0;
   const thumbnailCache = new Map();
@@ -109,6 +110,7 @@ export function createWebImageCaches(CK) {
   };
 
   const installRasterizedSvg = (key, img) => {
+    if (disposed) return false;
     const sourceW = img.naturalWidth || img.width;
     const sourceH = img.naturalHeight || img.height;
     if (!(sourceW > 0) || !(sourceH > 0)) return false;
@@ -389,6 +391,15 @@ export function createWebImageCaches(CK) {
   };
 
   return {
+    dispose() {
+      disposed = true;
+      for (const entry of fullImageCache.values()) deleteImage(entry.image);
+      for (const entry of thumbnailCache.values()) deleteImage(entry.image);
+      fullImageCache.clear();
+      thumbnailCache.clear();
+      fullImageCacheBytes = 0;
+      thumbnailCacheBytes = 0;
+    },
     hasFullImage,
     fullImage,
     installFullImage,

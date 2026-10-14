@@ -75,6 +75,10 @@ impl WidgetHost {
             preview_edge_swipe_start_x: None,
             preview_edge_swipe_pid: None,
             preview_frame_viewport: None,
+            preview_editor_viewport: None,
+            responsive_sidebar: None,
+            #[cfg(feature = "canvaskit")]
+            preview_browser: Default::default(),
             #[cfg(feature = "canvaskit")]
             op_ck: None,
             #[cfg(feature = "canvaskit")]

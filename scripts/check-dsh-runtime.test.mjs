@@ -14,6 +14,64 @@ const script = fileURLToPath(new URL('./check-dsh-runtime.mjs', import.meta.url)
 const version = '0.8.5-synapse.2'
 const hash = value => createHash('sha256').update(value).digest('hex')
 
+async function releaseWorkflow() {
+  const path = fileURLToPath(new URL('../.github/workflows/dsh-runtime-release.yml', import.meta.url))
+  const result = await execute('ruby', ['-ryaml', '-rjson', '-e',
+    'puts JSON.generate(YAML.load_file(ARGV.fetch(0)))', path])
+  return JSON.parse(result.stdout)
+}
+
+test('builds runtime releases from webpage publication without duplicate tag-push builds', async () => {
+  const workflow = await releaseWorkflow()
+  const triggers = workflow.on ?? workflow.true
+  assert.ok(triggers.release)
+  assert.deepEqual(triggers.release.types, ['published'])
+  assert.equal(triggers.push.tags, undefined)
+  assert.match(workflow.jobs.runtime.if, /github.event.release.tag_name/)
+  assert.match(workflow.jobs.runtime.steps[0].with.ref, /github.event.release.tag_name/)
+})
+
+test('checks the published release tag against the runtime version before building', async () => {
+  const workflow = await releaseWorkflow()
+  const guard = workflow.jobs.runtime.steps.find(step => step.name === 'Validate release tag')
+  assert.ok(guard)
+  assert.equal(guard.if, "github.event_name == 'release'")
+  assert.equal(guard.env.RELEASE_TAG, '${{ github.event.release.tag_name }}')
+  assert.match(guard.run, /test "\$RELEASE_TAG" = "runtime-v\$\{OPENPENCIL_DSH_RUNTIME_VERSION\}"/)
+  assert.ok(workflow.jobs.runtime.steps.indexOf(guard) <
+    workflow.jobs.runtime.steps.findIndex(step => step.name === 'Build headless design WASM'))
+  const env = { ...process.env, OPENPENCIL_DSH_RUNTIME_VERSION: version }
+  await execute('bash', ['-e', '-c', guard.run], {
+    env: { ...env, RELEASE_TAG: `runtime-v${version}` },
+  })
+  for (const tag of ['runtime-v0.8.5-synapse.1', 'v0.8.5', 'runtime-v$(exit 0)']) {
+    await assert.rejects(execute('bash', ['-e', '-c', guard.run], {
+      env: { ...env, RELEASE_TAG: tag },
+    }))
+  }
+})
+
+test('uploads validated assets to the webpage release without recreating or overwriting it', async () => {
+  const { jobs } = await releaseWorkflow()
+  assert.equal(jobs.publish.needs, 'runtime')
+  assert.match(jobs.publish.if, /github.event_name == 'release'/)
+  assert.match(jobs.publish.if, /startsWith\(github.event.release.tag_name, 'runtime-v'\)/)
+  const upload = jobs.publish.steps.at(-1)
+  assert.equal(upload.env.TAG, '${{ github.event.release.tag_name }}')
+  assert.match(upload.run, /gh release upload "\$TAG" dist\/\*\.tar\.gz\*/)
+  assert.doesNotMatch(upload.run, /release create|--clobber/)
+})
+
+test('runtime release has no native build or Agent SDK installation', async () => {
+  const workflow = await releaseWorkflow()
+  const steps = workflow.jobs.runtime.steps
+  assert.equal(workflow.jobs.runtime['runs-on'], 'ubuntu-24.04')
+  assert.equal(workflow.env.OPENPENCIL_DSH_RUNTIME_VERSION, '0.8.5-synapse.3')
+  assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-engine.sh'))
+  assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-web.sh'))
+  assert.doesNotMatch(JSON.stringify(steps), /op-host-web-server|darwin-arm64|brew install|bun install|npm ci/)
+})
+
 async function fixture(context, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'dsh-runtime-check-test-'))
   context.after(() => rm(directory, { recursive: true, force: true }))

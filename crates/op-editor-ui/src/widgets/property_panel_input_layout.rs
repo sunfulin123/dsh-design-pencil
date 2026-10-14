@@ -71,6 +71,7 @@ pub fn editable_input_rects(
         );
     }
     y += SECTION_HEADER_HEIGHT;
+    y += crate::widgets::align_toolbar::POSITION_ACTION_HEIGHT;
     let x_rect = Rect {
         origin: Point2D::new(x0 + PAD_X, y),
         size: Point2D::new(half_w, INPUT_HEIGHT),

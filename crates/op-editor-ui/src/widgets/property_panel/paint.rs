@@ -145,6 +145,9 @@ impl Widget for PropertyPanel {
             &self.labels,
             self.snapshot.has_corner_radius,
             self.corner_expand_open,
+            self.alignment_enabled,
+            self.alignment_active,
+            self.locale,
             x,
             y,
             w,
@@ -363,6 +366,17 @@ impl Widget for PropertyPanel {
                             &self.theme,
                             *r,
                             self.labels.corner_per_corner,
+                        );
+                    }
+                    if let PropertyPanelAction::AlignSelection(action) = action {
+                        crate::widgets::tooltip::paint_tooltip(
+                            cx,
+                            &self.theme,
+                            *r,
+                            crate::widgets::align_toolbar::action_label(*action, self.locale),
+                            None,
+                            crate::widgets::tooltip::TooltipPlacement::Below,
+                            Some((rect.origin.x + 4.0, rect.origin.x + rect.size.x - 4.0)),
                         );
                     }
                 }

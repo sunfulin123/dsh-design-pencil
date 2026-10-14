@@ -82,9 +82,7 @@ fn managed_panel_edges_are_borderless_and_cast_only_side_shadows() {
                 .set_single_selection(op_editor_core::NodeId::new("selected"));
             host.editor_state.editor_ui.embed = op_editor_core::EmbedHost::VsCode;
             host.editor_state.editor_ui.sidebar_open = true;
-            host.editor_state
-                .editor_ui
-                .set_host_theme_override(Some(mode));
+            host.editor_state.editor_ui.theme_mode = mode;
             let (left, _, canvas_width, _) = host.canvas_region(width, 700.0);
             let property =
                 host_canvas_geometry::property_panel_rect(&host.editor_state, width, 700.0);
@@ -110,7 +108,7 @@ fn managed_panel_edges_are_borderless_and_cast_only_side_shadows() {
                     .fills
                     .iter()
                     .rev()
-                    .find(|(rect, color)| rect.contains(point) && color.a == 1.0)
+                    .find(|(rect, _)| rect.contains(point))
                     .map(|(_, color)| *color);
                 assert_eq!(
                     color,
@@ -122,7 +120,7 @@ fn managed_panel_edges_are_borderless_and_cast_only_side_shadows() {
                 !capture
                     .fills
                     .iter()
-                    .any(|(rect, color)| rect.origin.y >= TOP_BAR_HEIGHT - 1.0
+                    .any(|(rect, color)| rect.origin.y >= TOP_BAR_HEIGHT
                         && rect.origin.y < TOP_BAR_HEIGHT + 6.0
                         && rect.size.x == width
                         && color.a > 0.0

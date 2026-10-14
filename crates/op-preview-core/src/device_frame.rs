@@ -191,12 +191,61 @@ pub fn compute_frame_geometry(
     let fit = (canvas.size.x / frame_w)
         .min(canvas.size.y / frame_h)
         .min(1.0);
+    geometry_for_size(
+        kind,
+        canvas,
+        root_scene,
+        nav_scene,
+        status_scene,
+        (frame_w, frame_h),
+        (fit, fit),
+    )
+}
+
+pub fn compute_presentation_geometry(
+    kind: PreviewDeviceKind,
+    mut canvas: Rect,
+    root_scene: Rect,
+    screen_size: (f32, f32),
+    zoom: Option<f32>,
+    pan: Point2D,
+    nav_scene: Option<Rect>,
+    status_scene: Option<Rect>,
+) -> DeviceFrame {
+    let screen_scale = zoom
+        .unwrap_or_else(|| (canvas.size.x / screen_size.0).min(canvas.size.y / screen_size.1))
+        .clamp(0.01, 32.0);
+    let content_scale = screen_scale * screen_size.0 / root_scene.size.x.max(1.0);
+    canvas.origin.x += pan.x;
+    canvas.origin.y += pan.y;
+    geometry_for_size(
+        kind,
+        canvas,
+        root_scene,
+        nav_scene,
+        status_scene,
+        screen_size,
+        (screen_scale, content_scale),
+    )
+}
+
+fn geometry_for_size(
+    kind: PreviewDeviceKind,
+    canvas: Rect,
+    root_scene: Rect,
+    nav_scene: Option<Rect>,
+    status_scene: Option<Rect>,
+    screen_size: (f32, f32),
+    scales: (f32, f32),
+) -> DeviceFrame {
+    let (frame_w, frame_h) = screen_size;
+    let (screen_scale, fit) = scales;
     let frame = Rect {
         origin: Point2D::new(
-            canvas.origin.x + (canvas.size.x - frame_w * fit) / 2.0,
-            canvas.origin.y + (canvas.size.y - frame_h * fit) / 2.0,
+            canvas.origin.x + (canvas.size.x - frame_w * screen_scale) / 2.0,
+            canvas.origin.y + (canvas.size.y - frame_h * screen_scale) / 2.0,
         ),
-        size: Point2D::new(frame_w * fit, frame_h * fit),
+        size: Point2D::new(frame_w * screen_scale, frame_h * screen_scale),
     };
     let content_origin = Point2D::new(
         frame.origin.x + (frame.size.x - root_scene.size.x * fit) / 2.0 - root_scene.origin.x * fit,
@@ -245,10 +294,10 @@ pub fn compute_frame_geometry(
             let nav_h = pinned.node_scene.size.y;
             (
                 (pinned.node_scene.origin.y - root_scene.origin.y).max(0.0),
-                frame_h - nav_h - status_h,
+                frame_h * screen_scale / fit - nav_h - status_h,
             )
         }
-        None => (content_h, frame_h - status_h),
+        None => (content_h, frame_h * screen_scale / fit - status_h),
     };
     let content_span_x = (
         content_origin.x + root_scene.origin.x * fit,

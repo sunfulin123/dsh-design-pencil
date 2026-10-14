@@ -273,9 +273,9 @@ impl TopBar {
             account: ui.account.clone(),
             account_button_visible: ui.account_ui_available,
             embed: ui.embed,
-            locale_picker_visible: ui.host_locale_override.is_none(),
-            host_controls_visible: !(ui.embed == op_editor_core::EmbedHost::VsCode
-                && ui.host_theme_override.is_some()),
+            locale_picker_visible: ui.embed != op_editor_core::EmbedHost::VsCode
+                && ui.host_locale_override.is_none(),
+            host_controls_visible: ui.embed != op_editor_core::EmbedHost::VsCode,
         }
     }
 

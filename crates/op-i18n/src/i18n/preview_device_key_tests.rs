@@ -5,10 +5,19 @@
 /// a missing translation.
 #[test]
 fn preview_device_keys_exist_in_every_locale_table() {
-    const KEYS: [&str; 3] = [
+    const KEYS: [&str; 12] = [
         "preview.device.phone",
         "preview.device.desktop",
         "preview.device.canvas",
+        "preview.emptyPage",
+        "preview.noFrame",
+        "preview.fit",
+        "preview.mode.preview",
+        "preview.mode.present",
+        "preview.list",
+        "preview.rotate",
+        "preview.previous",
+        "preview.next",
     ];
     type Lookup = fn(&str) -> Option<&'static str>;
     let tables: [(&str, Lookup); 15] = [

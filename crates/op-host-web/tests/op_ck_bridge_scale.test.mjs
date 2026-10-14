@@ -12,6 +12,23 @@ const bucketRatio = 2 ** 0.25;
 const nearlyEqual = (actual, expected) =>
   Math.abs(actual - expected) <= Number.EPSILON * 4 * Math.max(1, Math.abs(expected));
 
+test('axis-aligned text rasters start on device pixels without changing their scale', () => {
+  for (const scale of [1, 1.25, 2, 3]) {
+    const matrix = [scale, 0, 3.2, 0, scale, 5.1, 0, 0, 1];
+    const origin = bridge.opCkSnapTextRasterOrigin(10.23, 20.37, matrix);
+    assert.ok(nearlyEqual(origin[0] * scale + matrix[2], Math.round(10.23 * scale + matrix[2])));
+    assert.ok(nearlyEqual(origin[1] * scale + matrix[5], Math.round(20.37 * scale + matrix[5])));
+    assert.ok(Math.abs(origin[0] - 10.23) <= 0.5 / scale + 1e-12);
+    assert.ok(Math.abs(origin[1] - 20.37) <= 0.5 / scale + 1e-12);
+  }
+});
+
+test('rotated, skewed and invalid text transforms retain authored placement', () => {
+  for (const matrix of [[0, -2, 0, 2, 0, 0, 0, 0, 1], [2, 0.2, 0, 0, 2, 0, 0, 0, 1], [NaN, 0, 0, 0, 2, 0, 0, 0, 1]]) {
+    assert.deepEqual(bridge.opCkSnapTextRasterOrigin(10.23, 20.37, matrix), [10.23, 20.37]);
+  }
+});
+
 test('text raster scale falls back safely for invalid inputs', () => {
   for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1, 0, 1]) {
     assert.equal(opCkQuantizeTextRasterScale(value), 1);

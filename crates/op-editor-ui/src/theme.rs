@@ -99,6 +99,67 @@ pub struct Theme {
 }
 
 impl Theme {
+    pub const fn managed(dark: bool) -> Self {
+        let mut theme = if dark { Self::dark() } else { Self::light() };
+        theme.background = if dark {
+            rgb(21, 21, 23)
+        } else {
+            rgb(255, 255, 255)
+        };
+        theme.card = if dark {
+            rgb(35, 35, 36)
+        } else {
+            rgb(255, 255, 255)
+        };
+        theme.canvas_surface = theme.card;
+        theme.popover = theme.card;
+        theme.foreground = if dark {
+            rgb(249, 250, 251)
+        } else {
+            rgb(15, 17, 21)
+        };
+        theme.card_foreground = theme.foreground;
+        theme.popover_foreground = theme.foreground;
+        theme.primary = rgb(65, 118, 230);
+        theme.primary_foreground = rgb(255, 255, 255);
+        theme.ring = theme.primary;
+        theme.muted = if dark {
+            rgb(44, 44, 46)
+        } else {
+            rgb(255, 255, 255)
+        };
+        theme.secondary = theme.muted;
+        theme.secondary_foreground = theme.foreground;
+        theme.muted_foreground = if dark {
+            rgb(207, 211, 214)
+        } else {
+            rgb(97, 102, 107)
+        };
+        theme.border = if dark {
+            rgba(255, 255, 255, 0.12)
+        } else {
+            rgba(0, 0, 0, 0.1)
+        };
+        theme.input = theme.border;
+        theme.accent = if dark {
+            rgb(53, 54, 56)
+        } else {
+            rgb(241, 243, 245)
+        };
+        theme.accent_foreground = theme.foreground;
+        theme.button_hover = if dark {
+            rgba(255, 255, 255, 0.08)
+        } else {
+            rgba(38, 49, 72, 0.06)
+        };
+        theme.row_selected = rgba(65, 118, 230, if dark { 0.22 } else { 0.10 });
+        theme.row_selected_primary = theme.row_selected;
+        theme.foreground = theme.muted_foreground;
+        theme.card_foreground = theme.foreground;
+        theme.popover_foreground = theme.foreground;
+        theme
+    }
+
     /// Dark palette tuned to the TS screenshot. Values eyeballed from
     /// the screenshot + apps/web/src/styles.css `.dark` block — exact
     /// hex parity isn't a goal, semantic parity is.

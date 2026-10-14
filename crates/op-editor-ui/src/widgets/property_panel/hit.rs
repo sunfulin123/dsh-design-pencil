@@ -93,8 +93,25 @@ impl PropertyPanel {
             return Some(PropertyPanelAction::SetPropertyTab(tab));
         }
         if self.is_multi {
-            // Multi-select inputs / toggles are inert in v1.
-            return None;
+            if !matches!(self.tab, op_editor_core::PropertyTab::Design) {
+                return None;
+            }
+            let rect = self.scrolled_rect(panel_rect);
+            let toolbar = crate::widgets::align_toolbar::AlignToolbar::for_panel_row(
+                Rect::xywh(
+                    rect.origin.x + crate::widgets::property_panel_inputs::PAD_X,
+                    rect.origin.y
+                        + crate::widgets::property_panel_inputs::TAB_HEIGHT
+                        + crate::widgets::property_panel_inputs::HEADER_HEIGHT
+                        + crate::widgets::property_panel_inputs::SECTION_HEADER_HEIGHT,
+                    rect.size.x - 2.0 * crate::widgets::property_panel_inputs::PAD_X,
+                    crate::widgets::align_toolbar::POSITION_CONTROLS_HEIGHT,
+                ),
+                self.alignment_enabled,
+            );
+            return toolbar
+                .hit_test(point)
+                .map(PropertyPanelAction::AlignSelection);
         }
         if matches!(self.tab, op_editor_core::PropertyTab::Code) {
             return crate::widgets::property_panel_code::code_action_hit_with_locale_for_touch(
@@ -229,6 +246,14 @@ impl PropertyPanel {
         // toggle, otherwise clicking a row would just re-toggle.
         for (action, rect) in rects.into_iter().rev() {
             if (rect).contains(point) {
+                if let PropertyPanelAction::AlignSelection(align) = &action {
+                    if !crate::widgets::align_toolbar::AlignToolbar::action_enabled(
+                        &self.alignment_enabled,
+                        *align,
+                    ) {
+                        return None;
+                    }
+                }
                 if let PropertyPanelAction::AdjustEffectParam { effect, field, .. } = &action {
                     return Some(PropertyPanelAction::AdjustEffectParam {
                         effect: *effect,
@@ -438,7 +463,7 @@ impl PropertyPanel {
     }
 
     fn action_hover_index_logical(&self, panel_rect: Rect, point: Point2D) -> Option<usize> {
-        if self.is_multi || matches!(self.tab, op_editor_core::PropertyTab::Code) {
+        if matches!(self.tab, op_editor_core::PropertyTab::Code) {
             return None;
         }
         if self.page_only {
@@ -473,7 +498,19 @@ impl PropertyPanel {
             self.padding_mode_popover_open,
         )
         .iter()
-        .position(|(_, r)| (*r).contains(point))
+        .position(|(action, r)| {
+            (*r).contains(point)
+                && (!self.is_multi || matches!(action, PropertyPanelAction::AlignSelection(_)))
+                && match action {
+                    PropertyPanelAction::AlignSelection(align) => {
+                        crate::widgets::align_toolbar::AlignToolbar::action_enabled(
+                            &self.alignment_enabled,
+                            *align,
+                        )
+                    }
+                    _ => true,
+                }
+        })
     }
 
     /// Pinned Design / Code tab under the cursor.

@@ -49,6 +49,20 @@ impl RenderBackend for CanvasKitBackend {
     fn fill_round_rect(&mut self, rect: Rect, radius: f32, color: Color) {
         ops::fill_round_rect(&self.ck, rect, radius, color);
     }
+    fn fill_drop_shadow(&mut self, rect: Rect, radius: f32, blur: f32, color: Color) {
+        self.ck.fill_drop_shadow(
+            rect.origin.x,
+            rect.origin.y,
+            rect.size.x,
+            rect.size.y,
+            radius,
+            blur,
+            color.r,
+            color.g,
+            color.b,
+            color.a,
+        );
+    }
     fn fill_round_rect_per_corner(&mut self, rect: Rect, radii: [f32; 4], color: Color) {
         ops::fill_round_rect_per_corner(&self.ck, rect, radii, color);
     }
@@ -687,6 +701,9 @@ impl RenderBackend for CanvasKitBackend {
     }
     fn push_backdrop_blur_layer(&mut self, sigma: f32) {
         self.ck.push_backdrop_blur_layer(sigma);
+    }
+    fn push_blur_layer(&mut self, sigma: f32) {
+        self.ck.push_blur_layer(sigma);
     }
     fn restore(&mut self) {
         self.ck.restore();

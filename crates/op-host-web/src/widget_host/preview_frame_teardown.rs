@@ -22,6 +22,11 @@ impl WidgetHost {
     ) {
         #[cfg(feature = "canvaskit")]
         {
+            if self.managed_preview_active() {
+                self.finish_exit_teardown();
+                self.mark_dirty();
+                return;
+            }
             let Some(settled) = self.preview_device_frame.as_ref().map(|f| f.frame) else {
                 // No device frame on screen (Canvas-mode preview, or
                 // preview was never entered) — nothing to merge back into,
@@ -58,6 +63,13 @@ impl WidgetHost {
     /// its own) and re-enter (the user re-opened before it did).
     pub(in crate::widget_host) fn finish_exit_teardown(&mut self) {
         self.preview = None;
+        self.preview_browser.frames.clear();
+        self.preview_browser.present = false;
+        self.preview_browser.controls_captured = false;
+        self.preview_browser.pressed = None;
+        self.preview_browser.hover = None;
+        self.preview_browser.pan_capture = None;
+        self.preview_browser.menu = None;
         self.clear_device_preview_state();
         self.preview_pressed_pids.clear();
         self.preview_last_doc_by_pid.clear();
@@ -65,6 +77,9 @@ impl WidgetHost {
         self.slideshow_cursor = None;
         self.slideshow_press_screen = None;
         self.editor_state.editor_ui.exit_preview();
+        if let Some(viewport) = self.preview_editor_viewport.take() {
+            self.editor_state.viewport = viewport;
+        }
         #[cfg(feature = "canvaskit")]
         {
             self.preview_mode_transition = None;

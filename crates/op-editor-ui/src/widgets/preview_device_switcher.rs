@@ -2,6 +2,7 @@
 
 use op_editor_core::PreviewDeviceKind;
 
+use crate::widgets::icons::{draw_icon, Icon};
 use crate::widgets::text_metrics;
 use crate::widgets::PaintCx;
 use crate::{Point2D, Rect, TextLayout, Theme};
@@ -26,6 +27,15 @@ pub struct PreviewDeviceSwitcher<'a> {
 }
 
 impl PreviewDeviceSwitcher<'_> {
+    pub fn exit_rect(canvas: Rect) -> Rect {
+        Rect::xywh(
+            (canvas.origin.x + canvas.size.x - 40.0).max(canvas.origin.x),
+            canvas.origin.y + TOP_GAP,
+            28.0,
+            28.0,
+        )
+    }
+
     pub fn pill_rect(canvas: Rect) -> Rect {
         Rect {
             origin: Point2D::new(
@@ -62,6 +72,16 @@ impl PreviewDeviceSwitcher<'_> {
     }
 
     pub fn paint(&self, cx: &mut PaintCx<'_>, canvas: Rect, theme: &Theme) {
+        let exit = Self::exit_rect(canvas);
+        cx.backend.fill_round_rect(exit, 6.0, theme.card);
+        draw_icon(
+            cx.backend,
+            Icon::Close,
+            Point2D::new(exit.origin.x + 6.0, exit.origin.y + 6.0),
+            16.0,
+            theme.foreground,
+            1.5,
+        );
         let pill = Self::pill_rect(canvas);
         cx.backend.fill_round_rect(pill, RADIUS, theme.card);
         cx.backend

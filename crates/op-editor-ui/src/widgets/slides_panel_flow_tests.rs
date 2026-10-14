@@ -92,6 +92,32 @@ fn the_scenario_names_the_tab_without_gating_it() {
 }
 
 #[test]
+fn managed_rail_has_no_agent_tab_or_chat_selection() {
+    for source in [THREE_BOARDS, r#"{"version":"1.0.0","children":[]}"#] {
+        let mut state = deck_state(source);
+        state.editor_ui.embed = op_editor_core::EmbedHost::VsCode;
+        state.editor_ui.slides_panel.tab = LeftPanelTab::Layers;
+        let tabs = tab_row(&state, PANEL).expect("managed rail");
+        assert_eq!(tabs.chat, crate::Rect::ZERO);
+        assert!(tabs.layers.size.x > 0.0);
+        for offset in 0..240 {
+            assert_ne!(
+                tabs.hit(Point2D::new(offset as f32, PANEL.origin.y + 16.0)),
+                Some(SlidesPanelTarget::ChatTab)
+            );
+        }
+        assert!(!select_tab(&mut state, LeftPanelTab::Chat));
+        assert_eq!(state.editor_ui.slides_panel.tab, LeftPanelTab::Layers);
+        state.editor_ui.slides_panel.tab = LeftPanelTab::Chat;
+        assert!(!chat_tab_active(&state));
+        assert_eq!(
+            tab_row(&state, PANEL).expect("managed rail").active,
+            LeftPanelTab::Layers
+        );
+    }
+}
+
+#[test]
 fn presenting_hides_the_row_and_an_empty_desktop_deck_keeps_it() {
     let mut deck = deck_state(THREE_BOARDS);
     deck.editor_ui.enter_preview();

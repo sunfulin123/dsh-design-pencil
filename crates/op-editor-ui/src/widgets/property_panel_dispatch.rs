@@ -94,6 +94,9 @@ pub fn updates_document(action: &PropertyPanelAction) -> bool {
         PropertyPanelAction::SetNodeBlendMode(_)
             | PropertyPanelAction::SetNodeMaskType(_)
             | PropertyPanelAction::SetFillBlendMode { .. }
+            | PropertyPanelAction::AddFill
+            | PropertyPanelAction::RemoveFill(_)
+            | PropertyPanelAction::SetFillType { .. }
             | PropertyPanelAction::SetImageFillMode(_)
             | PropertyPanelAction::ClearPageBackground
     )
@@ -236,6 +239,10 @@ pub fn apply_property_action(
             let _ = state.set_selected_fill_rule(*rule);
             Handled
         }
+        A::AlignSelection(action) => {
+            state.align_selected(*action);
+            Handled
+        }
         A::SetFlexLayout(mode) => {
             layout_ops::set_selected_layout_mode(state, *mode);
             Handled
@@ -289,8 +296,7 @@ pub fn apply_property_action(
             Handled
         }
         A::SetLayoutAlignment { justify, align } => {
-            layout_ops::set_selected_layout_justify(state, *justify);
-            layout_ops::set_selected_layout_align(state, *align);
+            layout_ops::set_selected_layout_alignment(state, *justify, *align);
             Handled
         }
         A::CreateComponent => {

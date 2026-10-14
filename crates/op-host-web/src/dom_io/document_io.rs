@@ -250,8 +250,15 @@ fn start_daemon_save<C: RepaintContext + 'static>(
             finish_daemon_save();
             return;
         }
-        let body =
-            file_actions::serialize_save_payload(state, file_actions::SavePayloadTarget::Daemon);
+        let body = match crate::live_sync_glue::daemon_save_version() {
+            Some(version) => file_actions::serialize_save_payload(
+                state,
+                file_actions::SavePayloadTarget::DaemonAtVersion(version),
+            ),
+            None => Err(file_actions::SavePayloadError::Daemon(
+                "Document sync is not ready".into(),
+            )),
+        };
         let snap_rev = state.document_revision();
         (
             body,

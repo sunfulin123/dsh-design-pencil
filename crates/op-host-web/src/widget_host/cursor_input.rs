@@ -23,17 +23,23 @@ impl WidgetHost {
         // Refresh the derived paint doc once up front so every hit-test
         // below (layer context menu, layer drag, align toolbar) reads
         // current geometry, never a stale snapshot.
-        self.refresh_layout_scene();
         // Route canvas moves to preview when preview mode is active
         #[cfg(feature = "canvaskit")]
         if self.editor_state.editor_ui.preview.mode && self.preview.is_some() {
             // Chrome hover first: both switchers maintain their own hover so
             // release can confirm the pointer never left the armed segment.
             let (vw, vh) = (self.last_viewport_w, self.last_viewport_h);
+            if self.managed_preview_active() {
+                if self.preview_controls_hover(x, y, vw, vh) {
+                    return true;
+                }
+                return self.preview_dispatch_move(x, y, vw, vh);
+            }
             self.preview_switcher_hover(x, y, vw, vh);
             self.screen_switcher_hover(x, y, vw, vh);
             return self.preview_dispatch_move(x, y, vw, vh);
         }
+        self.refresh_layout_scene();
         // Pointer-capture drags + the modal surfaces, in `cursor_input_modals`.
         // They run FIRST — a modal that does not claim the cursor lets the
         // hover washes underneath it light up through its own scrim.

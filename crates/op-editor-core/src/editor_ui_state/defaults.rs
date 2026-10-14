@@ -18,6 +18,7 @@ impl Default for EditorUiState {
             sidebar_open: true,
             layer_panel_width: 240.0,
             property_panel_width: 256.0,
+            pixel_grid_visible: false,
             chat_tab_width_bumped: false,
             size_class: crate::size_class::EditorSizeClass::Expanded,
             touch: false,

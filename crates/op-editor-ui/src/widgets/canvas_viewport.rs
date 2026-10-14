@@ -119,6 +119,7 @@ pub struct CanvasViewport<'a> {
     pub canvas_background: Color,
     /// Authored Figma page backgrounds replace the editor grid.
     pub(super) show_grid: bool,
+    pub(super) show_pixel_grid: bool,
     pub theme: Theme,
     /// Host ms clock — text-edit caret blink.
     pub now_ms: u64,
@@ -328,6 +329,9 @@ impl<'a> Widget for CanvasViewport<'a> {
                     );
                 }
             }
+            if self.show_pixel_grid {
+                super::canvas_viewport_grid::paint_pixel_grid(cx, rect, viewport);
+            }
             if let Some(indicators) = indicators.as_ref() {
                 super::canvas_agent_cursor::paint_agent_cursors(
                     cx,
@@ -396,6 +400,8 @@ impl<'a> Widget for CanvasViewport<'a> {
                 viewport,
                 self.pencil_cursor_style,
             );
+        } else if self.show_pixel_grid {
+            super::canvas_viewport_grid::paint_pixel_grid(cx, rect, viewport);
         }
 
         // 3a. Smart-guide alignment lines (magenta) — painted over the

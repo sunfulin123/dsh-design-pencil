@@ -14,14 +14,14 @@ use crate::widgets::{LayoutBox, LayoutCx, PaintCx, Widget, WidgetId};
 use crate::{Color, Point2D, Rect, TextLayout};
 use op_editor_core::StatusBarButton;
 
-pub const STATUS_BAR_WIDTH: f32 = 134.0;
+pub const STATUS_BAR_WIDTH: f32 = 160.0;
 pub const STATUS_BAR_HEIGHT: f32 = 32.0;
 const ICON_SIZE: f32 = 14.0;
 const SIDE_PAD: f32 = 14.0;
 /// Gap between the search icon and the `[- N% +]` cluster — the
 /// section divider, wider than within-cluster spacing so the eye
 /// reads them as separate groups.
-const SECTION_GAP: f32 = 18.0;
+const SECTION_GAP: f32 = 12.0;
 /// Gap inside the zoom cluster.
 const CLUSTER_GAP: f32 = 8.0;
 /// Width of the left "search" section, used as its click + hover
@@ -40,6 +40,9 @@ pub struct StatusBar {
     /// `theme.button_hover` wash. `None` = no hover.
     pub hover: Option<StatusBarButton>,
     pub pressed: Option<StatusBarButton>,
+    pub pixel_grid_visible: bool,
+    pub show_pixel_grid: bool,
+    pub pixel_grid_label: String,
 }
 
 impl StatusBar {
@@ -50,6 +53,9 @@ impl StatusBar {
             theme: Theme::dark(),
             hover: None,
             pressed: None,
+            pixel_grid_visible: false,
+            show_pixel_grid: true,
+            pixel_grid_label: "Rulers and pixel grid".into(),
         }
     }
 
@@ -72,19 +78,24 @@ impl StatusBar {
                 Some(op_editor_core::ButtonPressTarget::StatusBar(button)) => Some(button),
                 _ => None,
             },
+            pixel_grid_visible: state.editor_ui.pixel_grid_visible,
+            show_pixel_grid: true,
+            pixel_grid_label: crate::widgets::editor_state_ext::translate(
+                &state.editor_ui,
+                "canvas.pixelGrid",
+            )
+            .to_string(),
         }
     }
 
     /// Top-left x of the search / minus / plus glyphs for a pill at
     /// `rect`. Shared by paint + [`control_at`] so the hover wash and
-    /// the click target can never drift from the painted glyphs. The
-    /// plus x trails the zoom label, whose width tracks `zoom_percent`.
+    /// the click target share fixed slots across zoom percentages.
     fn glyph_x(&self, rect: Rect) -> (f32, f32, f32) {
         let search_x = rect.origin.x + SIDE_PAD;
         let minus_x = search_x + ICON_SIZE + SECTION_GAP;
         let text_x = minus_x + ICON_SIZE + CLUSTER_GAP;
-        let zoom_text = format!("{}%", self.zoom_percent);
-        let plus_x = text_x + zoom_text.chars().count() as f32 * 7.5 + CLUSTER_GAP;
+        let plus_x = text_x + 40.0 + CLUSTER_GAP;
         (search_x, minus_x, plus_x)
     }
 
@@ -98,6 +109,9 @@ impl StatusBar {
             || point.y > rect.origin.y + rect.size.y
         {
             return None;
+        }
+        if self.show_pixel_grid && point.x >= rect.origin.x + rect.size.x - STATUS_BAR_HEIGHT {
+            return Some(StatusBarButton::PixelGrid);
         }
         if point.x <= rect.origin.x + SEARCH_SECTION_W {
             return Some(StatusBarButton::Search);
@@ -190,8 +204,13 @@ impl Widget for StatusBar {
             (self.theme.foreground).to_jian(),
             Point2D::new(0.0, 0.0),
         );
-        cx.backend
-            .draw_text(&label, Point2D::new(text_x, center_y + 4.5));
+        let label_width = cx
+            .backend
+            .measure_text_family(&zoom_text, 12.0, "system-ui");
+        cx.backend.draw_text(
+            &label,
+            Point2D::new(text_x + (40.0 - label_width) / 2.0, center_y + 4.5),
+        );
         let plus_color = paint_control_bg(
             cx,
             &self.theme,
@@ -209,6 +228,51 @@ impl Widget for StatusBar {
             plus_color,
             1.4,
         );
+        if !self.show_pixel_grid {
+            return;
+        }
+        let grid_x = rect.origin.x + rect.size.x - 16.0 - ICON_SIZE / 2.0;
+        let grid_color = paint_control_bg(
+            cx,
+            &self.theme,
+            grid_x,
+            center_y,
+            StatusBarButton::PixelGrid,
+            self.hover,
+            self.pressed,
+        );
+        draw_icon(
+            cx.backend,
+            Icon::LayoutGrid,
+            Point2D::new(grid_x, icon_y),
+            ICON_SIZE,
+            if self.pixel_grid_visible {
+                self.theme.primary
+            } else {
+                grid_color
+            },
+            1.4,
+        );
+        if self.hover == Some(StatusBarButton::PixelGrid) {
+            let tooltip = Rect::xywh(
+                rect.origin.x + rect.size.x - 180.0,
+                rect.origin.y - 30.0,
+                180.0,
+                24.0,
+            );
+            cx.backend.fill_round_rect(tooltip, 4.0, self.theme.popover);
+            let label = TextLayout::single_run(
+                &self.pixel_grid_label,
+                "system-ui",
+                12.0,
+                self.theme.foreground.to_jian(),
+                Point2D::new(0.0, 0.0),
+            );
+            cx.backend.draw_text(
+                &label,
+                Point2D::new(tooltip.origin.x + 12.0, tooltip.origin.y + 16.0),
+            );
+        }
     }
 
     fn access_node(&self) -> accesskit::Node {
@@ -254,6 +318,36 @@ fn paint_control_bg(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn zoom_controls_stay_compact_and_stable_across_percentages() {
+        let rect = Rect::xywh(0.0, 0.0, STATUS_BAR_WIDTH, STATUS_BAR_HEIGHT);
+        let baseline = StatusBar::with_zoom(100).glyph_x(rect);
+        for zoom in [1, 68, 100, 800, 3200] {
+            let bar = StatusBar::with_zoom(zoom);
+            let positions = bar.glyph_x(rect);
+            assert_eq!(positions, baseline, "zoom labels must not move controls");
+            let grid_x = rect.size.x - 16.0 - ICON_SIZE / 2.0;
+            assert!((grid_x - positions.2 - ICON_SIZE) <= 14.0);
+            assert_eq!(
+                bar.control_at(rect, Point2D::new(positions.2 + 7.0, 16.0)),
+                Some(StatusBarButton::ZoomIn)
+            );
+        }
+    }
+
+    #[test]
+    fn pixel_grid_control_has_a_fixed_independent_hit_target() {
+        let bar = StatusBar::with_zoom(3200);
+        let rect = Rect::xywh(100.0, 200.0, STATUS_BAR_WIDTH, STATUS_BAR_HEIGHT);
+        assert_eq!(
+            bar.control_at(
+                rect,
+                Point2D::new(rect.origin.x + rect.size.x - 16.0, 216.0)
+            ),
+            Some(StatusBarButton::PixelGrid)
+        );
+    }
 
     #[test]
     fn default_zoom_is_100() {

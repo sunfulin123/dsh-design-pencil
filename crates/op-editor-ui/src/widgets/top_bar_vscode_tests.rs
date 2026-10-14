@@ -78,8 +78,6 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
         embed: op_editor_core::EmbedHost::VsCode,
         ..Default::default()
     };
-    ui.set_host_theme_override(Some(op_editor_core::ThemeMode::Light));
-    ui.set_host_locale_override(Some(op_editor_core::Locale::ZhCn));
     ui.account_ui_available = true;
     let mut bar = TopBar::for_editor_ui(&ui).with_traffic_controls(false);
     bar.collab.visible = true;

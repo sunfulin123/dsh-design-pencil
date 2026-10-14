@@ -743,7 +743,9 @@ thread_local! {
 
 #[path = "live_sync_controller.rs"]
 mod live_sync_controller;
-pub(crate) use live_sync_controller::{acknowledge_daemon_save, SharedSync, SyncController};
+pub(crate) use live_sync_controller::{
+    acknowledge_daemon_save, daemon_save_version, SharedSync, SyncController,
+};
 // Spine-local: the two identity pairs every gating decision here is keyed on.
 use live_sync_controller::{current_oversize_identity, current_pair};
 

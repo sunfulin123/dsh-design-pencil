@@ -1,7 +1,5 @@
-//! Floating align / distribute toolbar — appears above the canvas
-//! whenever the active selection has 2+ nodes (distribute also
-//! requires 3+; the 2-node case still shows the buttons, but the
-//! distribute presses no-op gracefully via `align_selected`).
+//! Alignment controls for the floating canvas toolbar and Position inspector.
+//! Ineligible actions are disabled using the canonical editor's selection rules.
 //!
 //! Layout: three button groups separated by ~12 px gutters:
 //!   - Align L / Center-H / Right
@@ -19,6 +17,9 @@ use op_editor_core::walkers::find_node;
 use op_editor_core::{AlignAction, BooleanOp, EditorState};
 
 pub const ALIGN_TOOLBAR_HEIGHT: f32 = 36.0;
+pub const POSITION_ACTION_HEIGHT: f32 = 72.0;
+pub const POSITION_CONTROLS_HEIGHT: f32 = 66.0;
+const AXIS_LABEL_WIDTH: f32 = 88.0;
 const BUTTON_SIZE: f32 = 28.0;
 const ICON_SIZE: f32 = 16.0;
 const INNER_GAP: f32 = 2.0;
@@ -50,6 +51,20 @@ const ITEMS: &[(AlignAction, Icon)] = &[
     (AlignAction::DistributeV, Icon::DistributeV),
 ];
 
+pub fn action_label(action: AlignAction, locale: op_editor_core::Locale) -> &'static str {
+    let key = match action {
+        AlignAction::Left => "position.alignLeft",
+        AlignAction::CenterH => "position.alignCenterH",
+        AlignAction::Right => "position.alignRight",
+        AlignAction::Top => "position.alignTop",
+        AlignAction::CenterV => "position.alignCenterV",
+        AlignAction::Bottom => "position.alignBottom",
+        AlignAction::DistributeH => "position.distributeH",
+        AlignAction::DistributeV => "position.distributeV",
+    };
+    op_i18n::translate(locale, key)
+}
+
 const BOOLEAN_ITEMS: &[BooleanOp] = &[
     BooleanOp::Union,
     BooleanOp::Subtract,
@@ -71,9 +86,72 @@ pub enum AlignToolbarHit {
 pub struct AlignToolbar {
     rect: Rect,
     boolean_ops: bool,
+    compact: bool,
+    enabled: [bool; 8],
+    active: [bool; 8],
 }
 
 impl AlignToolbar {
+    pub fn active_actions(state: &EditorState) -> [bool; 8] {
+        std::array::from_fn(|index| state.is_selection_aligned(ITEMS[index].0))
+    }
+
+    pub fn enabled_actions(state: &EditorState) -> [bool; 8] {
+        std::array::from_fn(|index| state.can_align_selected(ITEMS[index].0))
+    }
+
+    pub fn action_enabled(enabled: &[bool; 8], action: AlignAction) -> bool {
+        ITEMS
+            .iter()
+            .position(|item| item.0 == action)
+            .is_some_and(|index| enabled[index])
+    }
+
+    pub fn for_panel_row(rect: Rect, enabled: [bool; 8]) -> Self {
+        Self {
+            rect,
+            boolean_ops: false,
+            compact: true,
+            enabled,
+            active: [false; 8],
+        }
+    }
+
+    pub fn with_active_actions(mut self, active: [bool; 8]) -> Self {
+        self.active = active;
+        self
+    }
+
+    pub fn panel_action_rects(rect: Rect) -> [(AlignAction, Rect); 8] {
+        let toolbar = Self::for_panel_row(rect, [true; 8]);
+        std::array::from_fn(|index| (ITEMS[index].0, toolbar.button_rect(index)))
+    }
+
+    pub fn paint_panel(
+        &self,
+        backend: &mut dyn RenderBackend,
+        theme: &Theme,
+        locale: op_editor_core::Locale,
+    ) {
+        self.paint(backend, theme, None);
+        for (row, key) in ["text.horizontal", "text.vertical"].iter().enumerate() {
+            let layout = crate::TextLayout::single_run(
+                op_i18n::translate(locale, key),
+                "system-ui",
+                11.0,
+                theme.muted_foreground.to_jian(),
+                Point2D::new(0.0, 0.0),
+            );
+            backend.draw_text(
+                &layout,
+                Point2D::new(
+                    self.rect.origin.x,
+                    self.rect.origin.y + row as f32 * 36.0 + 19.0,
+                ),
+            );
+        }
+    }
+
     /// Build a toolbar centered horizontally inside `canvas_region`
     /// when the editor selection has 2+ nodes. Returns `None`
     /// otherwise so the host can skip paint + hit-test entirely.
@@ -107,6 +185,9 @@ impl AlignToolbar {
         Some(Self {
             rect: Rect::xywh(x, y, toolbar_width, ALIGN_TOOLBAR_HEIGHT),
             boolean_ops,
+            compact: false,
+            enabled: Self::enabled_actions(state),
+            active: [false; 8],
         })
     }
 
@@ -122,15 +203,26 @@ impl AlignToolbar {
         theme: &Theme,
         hovered: Option<AlignAction>,
     ) {
-        backend.fill_round_rect(self.rect, CORNER_RADIUS, theme.popover);
-        backend.stroke_round_rect(self.rect, CORNER_RADIUS, theme.border, 1.0);
+        if self.compact {
+            for index in [0, 3, 6, 7] {
+                let mut group = self.button_rect(index);
+                if index < 6 {
+                    group.size.x *= 3.0;
+                }
+                backend.fill_round_rect(group, 4.0, theme.popover);
+                backend.stroke_round_rect(group, 4.0, theme.border, 1.0);
+            }
+        } else {
+            backend.fill_round_rect(self.rect, CORNER_RADIUS, theme.popover);
+            backend.stroke_round_rect(self.rect, CORNER_RADIUS, theme.border, 1.0);
+        }
         for (i, (action, icon)) in ITEMS.iter().enumerate() {
             jian_widgets::components::icon_button::IconButton {
                 icon_paths: icon.paths(),
                 hovered: hovered == Some(*action),
                 pressed: false,
-                active: false,
-                enabled: true,
+                active: self.active[i] && self.enabled[i],
+                enabled: self.enabled[i],
                 icon_size: ICON_SIZE,
                 stroke_width: 1.5,
             }
@@ -173,7 +265,7 @@ impl AlignToolbar {
             return None;
         }
         for (i, (action, _)) in ITEMS.iter().enumerate() {
-            if (self.button_rect(i)).contains(point) {
+            if self.enabled[i] && (self.button_rect(i)).contains(point) {
                 return Some(AlignToolbarHit::Align(*action));
             }
         }
@@ -188,6 +280,24 @@ impl AlignToolbar {
     }
 
     fn button_rect(&self, index: usize) -> Rect {
+        if self.compact {
+            let (row, column) = match index {
+                0..=2 => (0, index),
+                3..=5 => (1, index - 3),
+                6 => (0, 3),
+                _ => (1, 3),
+            };
+            let cell_width = (self.rect.size.x - AXIS_LABEL_WIDTH - GROUP_GAP) / 4.0;
+            return Rect::xywh(
+                self.rect.origin.x
+                    + AXIS_LABEL_WIDTH
+                    + column as f32 * cell_width
+                    + if column == 3 { GROUP_GAP } else { 0.0 },
+                self.rect.origin.y + row as f32 * 36.0,
+                cell_width,
+                30.0,
+            );
+        }
         let mut x = self.rect.origin.x + SIDE_PAD;
         for i in 0..index {
             x += BUTTON_SIZE;
@@ -476,7 +586,10 @@ mod tests {
 
     #[test]
     fn hit_test_maps_buttons_to_actions() {
-        let doc = doc_with_n_selected(3);
+        let mut doc = doc_with_two_rects_selected();
+        doc.active_children_mut()
+            .push(rect_node("n12", 160.0, 120.0, 100.0, 80.0));
+        doc.toggle_selection(OpNodeId::new("n12"));
         let tb = AlignToolbar::for_canvas_region(canvas(), &doc).unwrap();
         for (i, (action, _)) in ITEMS.iter().enumerate() {
             let r = tb.button_rect(i);
@@ -487,7 +600,7 @@ mod tests {
 
     #[test]
     fn explicit_center_buttons_hit_test_to_center_h_and_center_v_actions() {
-        let doc = doc_with_n_selected(2);
+        let doc = doc_with_two_rects_selected();
         let tb = AlignToolbar::for_canvas_region(canvas(), &doc).unwrap();
 
         let center_h_rect = tb.button_rect(1);

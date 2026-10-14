@@ -3,7 +3,7 @@
 //! Two build configurations:
 //! * `canvaskit` — the production web shell: renders the full editor through
 //!   the official CanvasKit skia WASM (GPU) via `mount_ck` (`canvaskit.rs`).
-//!   All widget / chat / codegen / file-IO / live-sync logic is shared Rust.
+//!   DSH owns AI execution, theme and locale; this host edits and syncs documents.
 //! * `web` (default) — a wasm32-unknown-unknown-clean stub (no skia, no
 //!   CanvasKit) that only compile-checks the public surface for CI; `mount`
 //!   below returns a fields-less `WebShell` and never paints.
@@ -38,9 +38,6 @@ mod repaint_ctx;
 // Pure web_sys IO (no native Skia/C toolchain) — compiled always so the `web`
 // stub still compile-checks on wasm32.
 mod live_sync;
-// Daemon → browser agent-indicator relay (poll + local mirror + rAF pump).
-#[cfg(feature = "canvaskit")]
-mod agent_indicator_sync;
 mod preview_pump;
 // Top-bar hover-tooltip dwell → rAF repaint (the web host has no
 // animation-deadline scheduler of its own).
@@ -68,8 +65,6 @@ mod collab_sync;
 // localhost fallback for the dev smoke page).
 #[cfg(feature = "canvaskit")]
 mod codegen_bundle;
-#[cfg(feature = "canvaskit")]
-mod codegen_web;
 mod daemon_base;
 #[cfg(feature = "canvaskit")]
 mod document_json;
@@ -98,12 +93,6 @@ mod raf_pump;
 mod repaint_coalescer;
 #[cfg(feature = "canvaskit")]
 mod theme_preset_io;
-#[cfg(feature = "canvaskit")]
-mod web_ai_credentials;
-#[cfg(feature = "canvaskit")]
-mod web_ai_transport;
-#[cfg(feature = "canvaskit")]
-mod web_builtin_model_discovery;
 // Web Iconify bridge — drains the icon picker's remote-search request directly
 // against api.iconify.design (CORS-open, same as TS).
 #[cfg(feature = "canvaskit")]
@@ -114,20 +103,8 @@ mod web_asset_fetch;
 // Runtime fetch for collaboration-peer avatars via the daemon proxy.
 #[cfg(feature = "canvaskit")]
 mod collab_avatar_fetch;
-// Web chat session — drains `chat.pending_send` / Stop / New Chat and streams
-// real standard-mode turns through the daemon's `/api/ai/standard` route.
-#[cfg(feature = "canvaskit")]
-mod web_chat;
 #[cfg(feature = "canvaskit")]
 mod web_credential_sync;
-#[cfg(feature = "canvaskit")]
-mod web_design_md;
-// Web image-panel drain — Search / Generate popover network via the daemon's
-// `/api/ai/image/*` routes (desktop `image_panel_host` counterpart).
-#[cfg(feature = "canvaskit")]
-mod web_image_panel;
-#[cfg(feature = "canvaskit")]
-mod web_model_catalog;
 #[cfg(feature = "canvaskit")]
 mod web_settings;
 // The Styles tab's DESIGN.md file pick — the browser half of the import the

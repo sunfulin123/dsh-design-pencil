@@ -51,6 +51,7 @@ impl From<SavePayloadError> for String {
 pub enum SavePayloadTarget {
     /// Compact request body consumed by `/api/file/save`.
     Daemon,
+    DaemonAtVersion(u64),
     /// Canonical, image-table-externalized `.op` downloaded by the browser.
     BrowserDownload,
 }
@@ -97,7 +98,10 @@ pub fn serialize_save_payload(
     target: SavePayloadTarget,
 ) -> Result<String, SavePayloadError> {
     match target {
-        SavePayloadTarget::Daemon => serialize_daemon_request(state),
+        SavePayloadTarget::Daemon => serialize_daemon_request(state, None),
+        SavePayloadTarget::DaemonAtVersion(version) => {
+            serialize_daemon_request(state, Some(version))
+        }
         SavePayloadTarget::BrowserDownload => serialize_download_document(state),
     }
 }
@@ -159,13 +163,21 @@ fn serialize_download_document(state: &EditorState) -> Result<String, SavePayloa
     finish_utf8(out)
 }
 
-fn serialize_daemon_request(state: &EditorState) -> Result<String, SavePayloadError> {
+fn serialize_daemon_request(
+    state: &EditorState,
+    base_version: Option<u64>,
+) -> Result<String, SavePayloadError> {
     let mut out = Vec::new();
     out.extend_from_slice(br#"{"document":"#);
     write_canonical_document(&mut out, state)?;
     out.extend_from_slice(br#", "activePageIndex": "#);
     serde_json::to_writer(&mut out, &state.ui.active_page_index)
         .map_err(|e| SavePayloadError::SerializeRequest(e.to_string()))?;
+    if let Some(version) = base_version {
+        out.extend_from_slice(br#", "baseVersion": "#);
+        serde_json::to_writer(&mut out, &version)
+            .map_err(|e| SavePayloadError::SerializeRequest(e.to_string()))?;
+    }
     out.push(b'}');
     finish_utf8(out)
 }
@@ -208,6 +220,18 @@ mod tests {
         let mut state = EditorState::from_document(doc);
         assert!(state.set_active_page(1));
         state
+    }
+
+    #[test]
+    fn daemon_save_carries_the_snapshot_version_without_persisting_it() {
+        let state = two_page_state();
+        let request: serde_json::Value = serde_json::from_str(
+            &serialize_save_payload(&state, SavePayloadTarget::DaemonAtVersion(42)).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(request["baseVersion"], 42);
+        assert!(request["document"].get("baseVersion").is_none());
+        assert_eq!(request["activePageIndex"], 1);
     }
 
     #[test]

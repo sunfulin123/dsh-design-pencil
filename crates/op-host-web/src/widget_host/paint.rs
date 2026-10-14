@@ -53,6 +53,7 @@ impl WidgetHost {
         viewport_height: f32,
     ) {
         self.image_input_geometry = None;
+        self.sync_responsive_viewport(viewport_width, viewport_height);
         // Rotate the transcript-cache owner if the active chat session changed,
         // BEFORE any resolve stores under it (mirrors native paint).
         self.rotate_chat_owner_if_session_changed();
@@ -129,6 +130,57 @@ impl WidgetHost {
             },
             self.theme.background,
         );
+
+        #[cfg(feature = "canvaskit")]
+        if self.editor_state.editor_ui.preview.mode && self.preview.is_some() {
+            let canvas = self.preview_canvas_rect(viewport_width, viewport_height);
+            backend.fill_rect(canvas, self.theme.canvas_surface);
+            if self.device_mode_active() {
+                backend.save();
+                if self.managed_preview_active() {
+                    backend.clip_rect(self.preview_stage_rect(canvas));
+                }
+                if self.managed_preview_active()
+                    && !self.preview_browser.present
+                    && self.browser_device_kind() == op_editor_core::PreviewDeviceKind::Canvas
+                {
+                    self.paint_preview_canvas(backend, canvas);
+                } else {
+                    self.paint_device_frame(backend, canvas);
+                }
+                backend.restore();
+            } else if self.preview_slideshow_active() {
+                self.frame_slideshow_board((viewport_width, viewport_height));
+                self.paint_slideshow(backend, canvas);
+            } else if let Some(session) = self.preview.as_ref() {
+                let viewport = self.editor_state.viewport;
+                session.paint_scene(
+                    backend,
+                    canvas,
+                    (viewport.pan_x, viewport.pan_y),
+                    viewport.zoom,
+                    self.now_ms,
+                );
+            }
+            if self.managed_preview_active() {
+                self.paint_preview_browser_controls(backend, canvas);
+            } else {
+                self.paint_preview_switcher(backend, canvas);
+                self.paint_screen_switcher(backend, canvas);
+            }
+            if crate::preview_pump::needs_next_paint(
+                self.preview_mode_transition
+                    .as_ref()
+                    .is_some_and(|transition| transition.is_active(self.now_ms)),
+                self.preview
+                    .as_ref()
+                    .is_some_and(|session| session.transition_active()),
+                self.preview_wake_deadline_ms().is_some(),
+            ) {
+                crate::repaint_coalescer::request();
+            }
+            return;
+        }
 
         let dpi = backend.dpi_scale();
 
@@ -409,9 +461,7 @@ impl WidgetHost {
             );
         }
 
-        if self.editor_state.editor_ui.embed == op_editor_core::EmbedHost::VsCode
-            && self.editor_state.editor_ui.host_theme_override.is_some()
-        {
+        if self.editor_state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
             let height = (viewport_height - TOP_BAR_HEIGHT).max(0.0);
             let dark = self.theme.card.r + self.theme.card.g + self.theme.card.b < 1.5;
             let right = canvas_left + canvas_w;

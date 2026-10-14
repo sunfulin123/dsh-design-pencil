@@ -37,7 +37,9 @@
 
 本分支仅发布供 DSH 插件调用的 macOS arm64 runtime，不打包独立桌面应用。默认 daemon 构建不包含 Claude/Copilot SDK、账号桥接、P2P 协作传输或原生 Preview 宿主。保留截图和导出所需的原生 raster 渲染，以及 DSH 内的浏览器 Preview、画布编辑、导入导出、文档同步和设计 MCP 工具。AI 执行由 DSH 负责，不需要 OpenPencil 账号或独立模型凭据；托管模式拒绝独立账号、AI、凭据设置和协作路由，并保留浏览器来源校验、父进程生命周期和文档冲突检查。
 
-[Runtime 发布流程](.github/workflows/dsh-runtime-release.yml) 构建 daemon、内嵌编辑器和只读 viewer，并在 `runtime-v*` 标签上发布带源码 revision 和逐文件 SHA-256 的归档。插件只安装并调用固定、校验过的归档，不在 DSH 工作区或运行中的 profile 内编译 Rust/Skia。发行归档将内容和权限都相同的 CanvasKit 与产品资源转为包内硬链接；原路径与校验值不变，解压后仍是普通文件，符号链接继续禁止。CI 的依赖门禁阻止独立服务进入产物，并缓存 workspace 编译结果及版本匹配的 wasm-bindgen。归档 smoke 执行脚本模式的设计写入，并验证 PNG/PDF 导出。
+[Runtime 发布流程](.github/workflows/dsh-runtime-release.yml) 在 GitHub 网页发布 `runtime-v*` Release 后构建 daemon、内嵌编辑器和只读 viewer，并上传带源码 revision 和逐文件 SHA-256 的归档。插件只安装并调用固定、校验过的归档，不在 DSH 工作区或运行中的 profile 内编译 Rust/Skia。发行归档将内容和权限都相同的 CanvasKit 与产品资源转为包内硬链接；原路径与校验值不变，解压后仍是普通文件，符号链接继续禁止。CI 的依赖门禁阻止独立服务进入产物，并缓存 workspace 编译结果及版本匹配的 wasm-bindgen。归档 smoke 执行脚本模式的设计写入，并验证 PNG/PDF 导出。
+
+网页发布步骤：先合并发行改动，打开 Releases > Draft a new release，创建指向合并后 `main` 提交的新 tag。Tag 必须是 `runtime-v` 加上工作流中的 `OPENPENCIL_DSH_RUNTIME_VERSION`。填写标题和说明后点击 Publish release；CI 会检出该 tag，构建、验证并上传 `.tar.gz` 和 `.tar.gz.sha256`，不修改发行说明或覆盖已有附件。等待工作流成功且两个附件出现后再更新插件的固定版本配置；GitHub 自动生成的 Source code 归档不是 runtime 包。失败的任务可以在 Actions 页面重跑；已有 runtime 附件不能覆盖，需要替换时发布新版本。此流程要求仓库关闭 Release immutability，因为不可变 Release 不允许发布后追加附件。单独推送 tag 不触发构建或发布，PR 和 `main` 推送仍执行验证。
 
 ## 为什么选择 OpenPencil
 

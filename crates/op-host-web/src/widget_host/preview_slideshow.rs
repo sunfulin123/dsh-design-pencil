@@ -56,6 +56,9 @@ impl WidgetHost {
     /// carries the live session that paints it. A slideshow without a
     /// session would paint nothing and swallow the arrow keys.
     pub fn preview_slideshow_active(&self) -> bool {
+        if self.managed_preview_active() {
+            return self.preview_browser.present;
+        }
         self.preview.is_some() && self.editor_state.preview_slideshow().is_some()
     }
 
@@ -81,9 +84,9 @@ impl WidgetHost {
         // go, not just be painted around: a left-over frame makes Exit start
         // the device merge animation instead of leaving, so the presentation
         // would refuse to close.
+        self.clear_device_preview_state();
         self.editor_state.editor_ui.preview.device =
             Some(op_editor_core::PreviewDeviceKind::Canvas);
-        self.clear_device_preview_state();
         self.preview_mode_transition = None;
         self.frame_slideshow_board(canvas_size);
         true
@@ -194,23 +197,36 @@ impl WidgetHost {
             &self.editor_state.ui.variables.active_theme,
             self.editor_state.ui.active_page_index,
             op_ck,
-            op_editor_core::preview_slideshow::slideshow_for_document(&self.editor_state).is_some(),
+            self.preview_browser.present,
             self.now_ms,
         ) {
             Ok(mut session) => {
-                let source_rect = session
-                    .framed_root()
-                    .map(|(_, rect)| self.framed_root_to_screen_rect(rect, viewport_w, viewport_h));
                 session.set_now_ms(self.now_ms);
-                self.editor_state.editor_ui.enter_preview();
                 self.editor_state.editor_ui.preview.warnings = session.warnings().to_vec();
                 self.preview = Some(session);
+                if !self.initialize_preview_browser(canvas_w, canvas_h) {
+                    self.preview = None;
+                    return false;
+                }
+                let source_rect = self
+                    .preview
+                    .as_ref()
+                    .and_then(|session| session.framed_root())
+                    .map(|(_, rect)| self.framed_root_to_screen_rect(rect, viewport_w, viewport_h));
+                self.editor_state.editor_ui.enter_preview();
                 self.initialize_device_preview(viewport_w, viewport_h);
                 if !self.device_mode_active() {
                     self.center_canvas_on_preview_root(viewport_w, viewport_h);
                 }
-                self.begin_slideshow_if_deck(canvas_size);
-                if let Some(settled) = self.preview_device_frame.as_ref().map(|f| f.frame) {
+                if !self.managed_preview_active() {
+                    self.begin_slideshow_if_deck(canvas_size);
+                }
+                if let Some(settled) = self
+                    .preview_device_frame
+                    .as_ref()
+                    .filter(|_| !self.managed_preview_active())
+                    .map(|f| f.frame)
+                {
                     #[cfg(feature = "canvaskit")]
                     {
                         self.preview_mode_transition =
@@ -280,6 +296,9 @@ impl WidgetHost {
     ///
     /// Public so the keyboard handler can reach it for the arrow keys.
     pub fn preview_slideshow_step(&mut self, delta: i32) -> bool {
+        if self.managed_preview_active() {
+            return self.preview_navigation_step(delta);
+        }
         if !self.preview_slideshow_active() {
             return false;
         }
@@ -479,6 +498,13 @@ impl WidgetHost {
         viewport_w: f32,
         viewport_h: f32,
     ) -> bool {
+        if self.managed_preview_active()
+            && (self.preview_browser.controls_captured
+                || self.preview_browser.pan_capture.is_some())
+        {
+            self.preview_controls_hover(x, y, viewport_w, viewport_h);
+            return true;
+        }
         if self
             .editor_state
             .editor_ui

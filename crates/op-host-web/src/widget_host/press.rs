@@ -25,6 +25,9 @@ impl WidgetHost {
     /// Right-click handler — opens the LayerPanel context menu on
     /// a layer or page row.
     pub fn apply_right_press(&mut self, x: f32, y: f32, viewport_w: f32, viewport_h: f32) -> bool {
+        if self.editor_state.editor_ui.preview.mode {
+            return true;
+        }
         self.commit_variable_row_focus_if_any();
         self.close_image_popovers_for_higher_overlay();
         if self.over_topmost_panel(x, y, viewport_w, viewport_h) {
@@ -142,6 +145,35 @@ impl WidgetHost {
         self.last_viewport_h = viewport_height;
         self.last_cursor_x = x;
         self.last_cursor_y = y;
+        #[cfg(feature = "canvaskit")]
+        if self.editor_state.editor_ui.preview.mode {
+            if self.managed_preview_active() {
+                if self.preview_controls_press(x, y, viewport_width, viewport_height) {
+                    return true;
+                }
+                if self.preview_stage_press(x, y) {
+                    return true;
+                }
+                self.capture_device_preview_surface(x, y);
+                return self.preview_dispatch_press(x, y, viewport_width, viewport_height);
+            }
+            let canvas = self.preview_canvas_rect(viewport_width, viewport_height);
+            if op_editor_ui::widgets::PreviewDeviceSwitcher::exit_rect(canvas)
+                .contains(Point2D::new(x, y))
+            {
+                self.do_exit_preview(viewport_width, viewport_height);
+                return true;
+            }
+            if self.preview_switcher_press(x, y, viewport_width, viewport_height)
+                || self.screen_switcher_press(x, y, viewport_width, viewport_height)
+            {
+                self.preview_switcher_hover(x, y, viewport_width, viewport_height);
+                self.mark_dirty();
+                return true;
+            }
+            self.capture_device_preview_surface(x, y);
+            return self.preview_dispatch_press(x, y, viewport_width, viewport_height);
+        }
         // Refresh the derived paint doc once up front — every hit-test
         // below reads `&self.layout_scene`, so it must be current.
         self.refresh_layout_scene();
@@ -481,14 +513,14 @@ impl WidgetHost {
             // pinned strips and the captured gesture surface.
             return self.device_preview_doc_point(screen_x, screen_y);
         }
-        // Canvas: the editor's own pan/zoom, via the same shared helper
-        // the native host's `preview_doc_point` falls back to.
-        op_editor_ui::widgets::host_canvas_geometry::canvas_doc_point(
-            &self.editor_state,
-            screen_x,
-            screen_y,
-            viewport_w,
-            viewport_h,
-        )
+        let canvas = self.preview_canvas_rect(viewport_w, viewport_h);
+        if !canvas.contains(Point2D::new(screen_x, screen_y)) {
+            return None;
+        }
+        let viewport = self.editor_state.viewport;
+        Some(Point2D::new(
+            (screen_x - canvas.origin.x - viewport.pan_x) / viewport.zoom,
+            (screen_y - canvas.origin.y - viewport.pan_y) / viewport.zoom,
+        ))
     }
 }

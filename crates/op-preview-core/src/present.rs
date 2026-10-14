@@ -7,7 +7,7 @@
 use super::PreviewSession;
 
 use op_editor_core::PenNodeExt;
-use op_editor_ui::layout_scene::SceneNode;
+use op_editor_ui::layout_scene::{NodeKind, SceneNode};
 use op_editor_ui::widgets::{
     paint_scene_page_with, paint_scene_subtree, PaintCx, PaintSceneOptions,
 };
@@ -27,11 +27,90 @@ pub struct PinnedPaint {
 }
 
 impl PreviewSession {
+    /// Select a visible top-level frame from selection ancestry, then camera proximity.
+    pub fn select_preview_root(&mut self, selected: Option<&str>, center: Point2D) -> bool {
+        fn contains_id(node: &SceneNode, selected: &str) -> bool {
+            node.id == selected
+                || node
+                    .children
+                    .iter()
+                    .any(|child| contains_id(child, selected))
+        }
+        let Some(page) = self.scene.active_page() else {
+            return false;
+        };
+        let frames: Vec<_> = page
+            .children
+            .iter()
+            .filter(|node| {
+                matches!(node.kind, NodeKind::Frame)
+                    && !node.hidden
+                    && node.bounds.origin.x.is_finite()
+                    && node.bounds.origin.y.is_finite()
+                    && node.bounds.size.x.is_finite()
+                    && node.bounds.size.y.is_finite()
+                    && node.bounds.size.x > 0.0
+                    && node.bounds.size.y > 0.0
+            })
+            .collect();
+        let selected_frame =
+            selected.and_then(|id| frames.iter().find(|node| contains_id(node, id)).copied());
+        let nearest = if center.x.is_finite() && center.y.is_finite() {
+            frames.iter().copied().min_by(|first, second| {
+                let distance = |node: &SceneNode| {
+                    let delta_x = f64::from(node.bounds.origin.x)
+                        + f64::from(node.bounds.size.x) / 2.0
+                        - f64::from(center.x);
+                    let delta_y = f64::from(node.bounds.origin.y)
+                        + f64::from(node.bounds.size.y) / 2.0
+                        - f64::from(center.y);
+                    delta_x * delta_x + delta_y * delta_y
+                };
+                distance(first).total_cmp(&distance(second))
+            })
+        } else {
+            None
+        };
+        let target = selected_frame
+            .or(nearest)
+            .or_else(|| frames.first().copied());
+        self.presentation_root = target.map(|node| node.id.clone());
+        self.presentation_root.is_some()
+    }
+
+    /// Select exactly one mounted frame; an invalid target preserves the current root.
+    pub fn select_preview_frame(&mut self, id: &str) -> bool {
+        let frame = self
+            .scene
+            .active_page()
+            .and_then(|page| page.children.iter().find(|node| node.id == id));
+        let Some(frame) = frame.filter(|node| {
+            matches!(node.kind, NodeKind::Frame)
+                && !node.hidden
+                && node.bounds.origin.x.is_finite()
+                && node.bounds.origin.y.is_finite()
+                && node.bounds.size.x.is_finite()
+                && node.bounds.size.y.is_finite()
+                && node.bounds.size.x > 0.0
+                && node.bounds.size.y > 0.0
+        }) else {
+            return false;
+        };
+        self.presentation_root = Some(frame.id.clone());
+        true
+    }
+
+    fn framed_scene_root(&self) -> Option<&SceneNode> {
+        let page = self.scene.active_page()?;
+        self.presentation_root
+            .as_ref()
+            .and_then(|id| page.children.iter().find(|node| node.id == *id))
+            .or_else(|| page.children.first())
+    }
+
     /// The root the device frame presents: schema id + scene-space rect.
     pub fn framed_root(&self) -> Option<(String, Rect)> {
-        let page = self.scene.active_page()?;
-        page.children
-            .first()
+        self.framed_scene_root()
             .map(|node| (node.id.clone(), node.bounds))
     }
 
@@ -62,8 +141,7 @@ impl PreviewSession {
     /// letterbox blend with the design instead of reading as a stray
     /// white seam against a dark theme.
     pub fn framed_root_fill(&self) -> Option<Color> {
-        let page = self.scene.active_page()?;
-        page.children.first()?.fill
+        self.framed_scene_root()?.fill
     }
 
     /// Mirror the host's page scroll into the framed root's `$scroll`
@@ -127,8 +205,7 @@ impl PreviewSession {
     /// to every device kind, since a landing page pins its nav just as
     /// deliberately as a phone screen pins its tab bar.
     fn authored_pin_at_edge(&self, bottom: bool) -> Option<(String, Rect)> {
-        let page = self.scene.active_page()?;
-        let root = page.children.first()?;
+        let root = self.framed_scene_root()?;
         let root_top = root.bounds.origin.y;
         let root_bottom = root_top + root.bounds.size.y;
         root.children
@@ -161,8 +238,7 @@ impl PreviewSession {
         if !phone {
             return None;
         }
-        let page = self.scene.active_page()?;
-        let root = page.children.first()?;
+        let root = self.framed_scene_root()?;
         let root_bottom = root.bounds.origin.y + root.bounds.size.y;
         let valid = |node: &SceneNode| {
             let height = node.bounds.size.y;
@@ -223,8 +299,7 @@ impl PreviewSession {
         if !phone {
             return None;
         }
-        let page = self.scene.active_page()?;
-        let root = page.children.first()?;
+        let root = self.framed_scene_root()?;
         let candidate = root.children.first()?;
         let height = candidate.bounds.size.y;
         if candidate.hidden || !height.is_finite() || height <= 0.0 || height > 60.0 {

@@ -16,9 +16,10 @@ use op_editor_core::editor_ui_state::{EditorUiState, ThemeMode};
 /// Resolve the active editor [`Theme`] from the UI theme mode.
 /// Mirrors the old `Document::theme()`.
 pub fn theme_for(ui: &EditorUiState) -> Theme {
-    let mut theme = match ui.effective_theme_mode() {
-        ThemeMode::Dark => Theme::dark(),
-        ThemeMode::Light => Theme::light(),
+    let mut theme = match (ui.embed, ui.effective_theme_mode()) {
+        (op_editor_core::EmbedHost::VsCode, mode) => Theme::managed(mode == ThemeMode::Dark),
+        (_, ThemeMode::Dark) => Theme::dark(),
+        (_, ThemeMode::Light) => Theme::light(),
     };
     macro_rules! apply_palette {
         ($($field:ident),*) => {
@@ -51,6 +52,25 @@ pub fn theme_for(ui: &EditorUiState) -> Theme {
         row_selected_primary,
         canvas_surface
     );
+    if ui.embed == op_editor_core::EmbedHost::VsCode {
+        let host_foreground = ui
+            .host_theme_palette
+            .get("foreground")
+            .and_then(|value| crate::util::parse_hex_color(value));
+        let defaults = Theme::managed(ui.effective_theme_mode() == ThemeMode::Dark);
+        if host_foreground == Some(theme.primary) {
+            let brand = theme.primary;
+            theme.primary = defaults.primary;
+            if theme.ring == brand {
+                theme.ring = theme.primary;
+            }
+            theme.row_selected = defaults.row_selected;
+            theme.row_selected_primary = defaults.row_selected_primary;
+        }
+        theme.foreground = theme.muted_foreground;
+        theme.card_foreground = theme.foreground;
+        theme.popover_foreground = theme.foreground;
+    }
     theme
 }
 
@@ -344,6 +364,83 @@ pub fn export_format(
 #[cfg(test)]
 mod host_palette_tests {
     use super::*;
+
+    #[test]
+    fn managed_light_theme_uses_dsh_white_surfaces_and_blue_focus() {
+        let mut ui = EditorUiState::default();
+        ui.embed = op_editor_core::EmbedHost::VsCode;
+        ui.set_host_theme_override(Some(ThemeMode::Light));
+        let theme = theme_for(&ui);
+        assert_eq!(theme.background, crate::Color::WHITE);
+        assert_eq!(theme.card, crate::Color::WHITE);
+        assert_eq!(theme.canvas_surface, crate::Color::WHITE);
+        assert_eq!(
+            theme.primary,
+            crate::util::parse_hex_color("#4176e6").unwrap()
+        );
+        assert_eq!(theme.ring, theme.primary);
+        assert_eq!(theme.foreground, theme.muted_foreground);
+        assert!(theme.row_selected_primary.b > theme.row_selected_primary.r);
+    }
+
+    #[test]
+    fn managed_brand_ink_is_not_used_as_interaction_accent() {
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let mut ui = EditorUiState::default();
+            ui.embed = op_editor_core::EmbedHost::VsCode;
+            ui.set_host_theme_override(Some(mode));
+            let ink = if mode == ThemeMode::Dark {
+                "#f9fafb"
+            } else {
+                "#0f1115"
+            };
+            ui.host_theme_palette = [
+                ("foreground".into(), ink.into()),
+                ("primary".into(), ink.into()),
+                ("ring".into(), ink.into()),
+                ("row_selected_primary".into(), "#f5f6f7".into()),
+            ]
+            .into();
+            let theme = theme_for(&ui);
+            assert_eq!(
+                theme.primary,
+                crate::util::parse_hex_color("#4176e6").unwrap()
+            );
+            assert_eq!(theme.ring, theme.primary);
+            assert_eq!(theme.foreground, theme.muted_foreground);
+            assert!(theme.row_selected_primary.b > theme.row_selected_primary.r);
+        }
+    }
+
+    #[test]
+    fn host_focus_and_selection_tokens_preserve_alpha_in_both_modes() {
+        for mode in [ThemeMode::Light, ThemeMode::Dark] {
+            let mut ui = EditorUiState::default();
+            ui.embed = op_editor_core::EmbedHost::VsCode;
+            ui.set_host_theme_override(Some(mode));
+            ui.host_theme_palette = [
+                ("primary".into(), "#112233".into()),
+                ("ring".into(), "#445566".into()),
+                ("row_selected_primary".into(), "#77889933".into()),
+                ("button_hover".into(), "#aabbcc11".into()),
+            ]
+            .into();
+            let theme = theme_for(&ui);
+            assert_eq!(
+                theme.primary,
+                crate::util::parse_hex_color("#112233").unwrap()
+            );
+            assert_eq!(theme.ring, crate::util::parse_hex_color("#445566").unwrap());
+            assert_eq!(
+                theme.row_selected_primary,
+                crate::util::parse_hex_color("#77889933").unwrap()
+            );
+            assert_eq!(
+                theme.button_hover,
+                crate::util::parse_hex_color("#aabbcc11").unwrap()
+            );
+        }
+    }
 
     #[test]
     fn host_palette_overrides_chrome_without_changing_user_theme() {

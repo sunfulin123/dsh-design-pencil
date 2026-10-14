@@ -69,6 +69,7 @@ impl<'a> CanvasViewport<'a> {
             text_edit_input: state.ui.text_edit_input.clone(),
             canvas_background,
             show_grid,
+            show_pixel_grid: state.editor_ui.pixel_grid_visible,
             theme,
             now_ms: 0,
             hovered: state
@@ -130,6 +131,7 @@ impl<'a> CanvasViewport<'a> {
             text_edit_input: Default::default(),
             canvas_background,
             show_grid: true,
+            show_pixel_grid: false,
             theme,
             now_ms: 0,
             hovered: None,

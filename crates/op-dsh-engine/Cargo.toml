@@ -1,0 +1,17 @@
+[package]
+name = "op-dsh-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Headless OpenPencil design engine for the DSH Node.js host"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+op-editor-core = { path = "../op-editor-core" }
+op-mcp = { path = "../op-mcp", default-features = false }
+op-pen-loader = { path = "../op-pen-loader", default-features = false }
+serde_json = { workspace = true }
+wasm-bindgen = "=0.2.117"

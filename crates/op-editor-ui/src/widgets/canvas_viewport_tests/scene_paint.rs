@@ -7,6 +7,45 @@
 use super::*;
 
 #[test]
+fn pixel_grid_is_independent_of_background_dots_and_absent_in_viewers() {
+    let mut state = sample_state();
+    state.editor_ui.pixel_grid_visible = true;
+    state.viewport.zoom = 8.0;
+    state.doc.pages = Some(vec![PenPage {
+        id: "page".into(),
+        name: "Page".into(),
+        children: Vec::new(),
+        background_color: Some("#FFFFFF".into()),
+        state: None,
+        lifecycle: None,
+    }]);
+    let scene = LayoutScene::default();
+    let rect = Rect::xywh(0.0, 0.0, 32.0, 32.0);
+    let paint = |viewport: &CanvasViewport<'_>| {
+        let mut backend = RecordingBackend::default();
+        viewport.paint(
+            &mut PaintCx {
+                backend: &mut backend,
+            },
+            rect,
+        );
+        backend
+    };
+    let enabled = paint(&CanvasViewport::from_editor(&state, &scene));
+    assert_eq!(enabled.dots, 0);
+    assert_eq!(enabled.stroke_lines.len(), 8);
+    state.editor_ui.pixel_grid_visible = false;
+    let disabled = paint(&CanvasViewport::from_editor(&state, &scene));
+    assert!(disabled.stroke_lines.is_empty());
+    let viewer = paint(&CanvasViewport::from_scene(
+        &scene,
+        state.viewport.clone(),
+        Theme::light(),
+    ));
+    assert!(viewer.stroke_lines.is_empty());
+}
+
+#[test]
 fn from_sample_scene_paints_expected_primitives() {
     let state = sample_state();
     let scene = sample_scene();

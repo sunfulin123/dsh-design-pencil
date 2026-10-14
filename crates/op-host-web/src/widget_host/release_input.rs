@@ -39,6 +39,10 @@ impl WidgetHost {
         // Dispatch preview pointer up if preview is active
         #[cfg(feature = "canvaskit")]
         if self.editor_state.editor_ui.preview.mode && self.preview.is_some() {
+            if self.managed_preview_active() && self.preview_controls_release() {
+                self.preview_surface_capture = None;
+                return true;
+            }
             if self.preview_switcher_release(viewport_w, viewport_h)
                 || self.screen_switcher_release(viewport_w, viewport_h)
             {

@@ -246,6 +246,17 @@ pub fn action_button_rects_with_fill_picker(
     }
     // Position section.
     y += SECTION_HEADER_HEIGHT;
+    for (action, rect) in
+        crate::widgets::align_toolbar::AlignToolbar::panel_action_rects(Rect::xywh(
+            x0 + PAD_X,
+            y,
+            usable_w,
+            crate::widgets::align_toolbar::POSITION_CONTROLS_HEIGHT,
+        ))
+    {
+        out.push((PropertyPanelAction::AlignSelection(action), rect));
+    }
+    y += crate::widgets::align_toolbar::POSITION_ACTION_HEIGHT;
     y += INPUT_HEIGHT + 6.0;
     if visible.corner_per_corner {
         out.push((

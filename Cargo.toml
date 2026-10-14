@@ -1,27 +1,11 @@
 [workspace]
 resolver = "2"
-# Use a glob instead of an explicit list: incremental crate creation in Step 0
-# does not require editing `members` each time (per implementer Phase 1 batch 2
-# workspace-masking feedback: listing a non-existent crate makes `cargo build -p X`
-# fail at the resolve stage). The glob picks up every manifest under crates/,
-# naturally supporting incremental creation.
-members = ["crates/*"]
+members = ["crates/op-dsh-engine", "crates/op-host-web"]
 exclude = [
-  "vendor/agent",
-  "vendor/anthropic-agent-sdk",
-  "vendor/casement",
   "vendor/jian",
   "node_modules",
 ]
-# A bare `cargo build` / `cargo test` (no `-p`, no `--workspace`) operates on
-# this set only — the native shippable artifacts (the desktop app + the `op`
-# CLI), exactly what `rust-release.yml` builds via `-p op-host-desktop -p op-cli`.
-# This stops a plain `cargo build` from also compiling the wasm host
-# (`op-host-web`) on the native target — a wasted compile, since its real build
-# is always `cargo build -p op-host-web --target wasm32-unknown-unknown`. CI and
-# the `package.json` cargo:* scripts are unaffected: they all pass `--workspace`
-# explicitly, which overrides `default-members`.
-default-members = ["crates/op-host-desktop", "crates/op-cli", "crates/op-host-web-server"]
+default-members = ["crates/op-dsh-engine", "crates/op-host-web"]
 
 [workspace.package]
 version = "0.8.5"

@@ -21,7 +21,7 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
         A::ToggleSizeClipContent => G::Document(D::NodeProperty(F::ClipContent)),
         A::SetLayoutAlign(_) => G::Document(D::NodeProperty(F::AlignItems)),
         A::SetLayoutJustify(_) => G::Document(D::NodeProperty(F::JustifyContent)),
-        A::SetLayoutAlignment { .. } => G::Document(D::NodePropertyBatch),
+        A::SetLayoutAlignment { .. } | A::AlignSelection(_) => G::Document(D::NodePropertyBatch),
         A::SetPaddingMode(_) => G::Document(D::NodeProperty(F::Padding)),
         A::SetStrokeMode(_) => G::Document(D::NodeProperty(F::Stroke)),
 

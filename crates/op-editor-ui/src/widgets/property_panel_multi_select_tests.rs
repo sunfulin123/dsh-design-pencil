@@ -3,12 +3,12 @@
 //! and the selection-scoped padding-mode pin.
 
 use super::property_panel::PropertyPanel;
-use super::property_panel_test_support::{paint_and_count, state_from};
+use super::property_panel_test_support::{paint_and_count, state_from, visible_for};
 use crate::{Point2D, Rect};
 use op_editor_core::{EditorState, NodeId};
 
 #[test]
-fn multi_selection_panel_shows_union_bounds_and_is_inert() {
+fn multi_selection_panel_shows_union_bounds_with_read_only_inputs() {
     let mut state = EditorState::sample();
     state.set_single_selection(NodeId::new("n11"));
     state.toggle_selection(NodeId::new("n12"));
@@ -29,10 +29,19 @@ fn multi_selection_panel_shows_union_bounds_and_is_inert() {
         origin: Point2D::new(0.0, 0.0),
         size: Point2D::new(280.0, 600.0),
     };
-    assert!(panel.hit_test(rect, Point2D::new(140.0, 100.0)).is_none());
-    assert!(panel
-        .hit_test_action(rect, Point2D::new(140.0, 100.0))
-        .is_none());
+    let input = super::property_panel_sections::editable_input_rects(
+        rect,
+        visible_for(&panel),
+        &panel.snapshot.fills,
+        &panel.snapshot.effects,
+    )[0]
+    .1;
+    let point = Point2D::new(
+        input.origin.x + input.size.x / 2.0,
+        input.origin.y + input.size.y / 2.0,
+    );
+    assert!(panel.hit_test(rect, point).is_none());
+    assert!(panel.hit_test_action(rect, point).is_none());
 }
 
 #[test]
