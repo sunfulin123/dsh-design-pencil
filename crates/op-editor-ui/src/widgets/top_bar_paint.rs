@@ -149,9 +149,6 @@ impl TopBar {
                 self.is_hovered(TopBarButton::ToggleFileMenu),
                 self.is_pressed(TopBarButton::ToggleFileMenu),
             );
-            // Divider before the Figma import affordance.
-            let divider2_x = file_menu_x + FILE_MENU_BUTTON_WIDTH + DIVIDER_GAP;
-            paint_divider(cx, &self.theme, divider2_x, center_y);
             // Divider then Home (制图台) — return to the drafting table.
             let home = self.home_button_rect(rect);
             paint_divider(
@@ -170,14 +167,6 @@ impl TopBar {
                 self.is_pressed(TopBarButton::Home),
             );
         }
-        paint_import_button(
-            cx,
-            &self.theme,
-            self.import_button_rect(rect).origin.x,
-            center_y,
-            self.is_hovered(TopBarButton::OpenImportMenu),
-            self.is_pressed(TopBarButton::OpenImportMenu),
-        );
 
         if self.file_controls_visible() {
             // ── Bounded centered file title ─────────────────────

@@ -461,12 +461,13 @@ pub(crate) fn wrap_imported_document(imported: HtmlImportResult) -> HtmlDocument
         PenNode::Frame(frame) => frame.base.name.clone(),
         _ => None,
     });
+    let variables = crate::snapshot::extract_design_variables(&imported.nodes);
     HtmlDocumentResult::new(
         PenDocument {
             version: "1.0".to_string(),
             name,
             themes: None,
-            variables: None,
+            variables,
             pages: None,
             children: imported.nodes,
             format_version: None,

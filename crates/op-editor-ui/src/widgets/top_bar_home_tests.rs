@@ -11,23 +11,23 @@ fn top_bar_rect() -> Rect {
 }
 
 #[test]
-fn home_button_sits_right_of_import_and_hit_tests() {
+fn home_button_sits_right_of_file_menu_and_hit_tests() {
     let bar = TopBar::new("Untitled");
     let rect = top_bar_rect();
-    let import = bar.import_button_rect(rect);
+    let file_menu = bar.file_menu_rect_for(rect);
     let home = bar.home_button_rect(rect);
     let divider_span = DIVIDER_GAP + DIVIDER_W + DIVIDER_GAP;
 
     assert_eq!(home.size.x, ICON_BUTTON);
     assert_eq!(home.size.y, ICON_BUTTON);
-    assert_eq!(home.origin.y, import.origin.y);
+    assert_eq!(home.origin.y, file_menu.origin.y);
     assert_eq!(
         home.origin.x,
-        import.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span
+        file_menu.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span
     );
     assert!(
-        home.origin.x >= import.origin.x + import.size.x,
-        "home {home:?} overlaps import {import:?}"
+        home.origin.x >= file_menu.origin.x + file_menu.size.x,
+        "home {home:?} overlaps file_menu {file_menu:?}"
     );
 
     let center = Point2D::new(
@@ -38,20 +38,13 @@ fn home_button_sits_right_of_import_and_hit_tests() {
 }
 
 #[test]
-fn home_button_does_not_move_import_rect() {
-    // Snapshot of the import (and file-menu) rects before the Home button
-    // was added. The new control sits to their right and must not shift them.
+fn home_button_does_not_move_file_menu_rect() {
     // macOS reserves 66px for native traffic lights; other platforms reserve
     // TRAFFIC_STEP*2 + TRAFFIC_DOT + 16 = 68.
     let expected_file_menu_x = if cfg!(target_os = "macos") {
         115.0
     } else {
         117.0
-    };
-    let expected_import_x = if cfg!(target_os = "macos") {
-        170.0
-    } else {
-        172.0
     };
 
     let bar = TopBar::new("Untitled");
@@ -63,8 +56,6 @@ fn home_button_does_not_move_import_rect() {
     assert_eq!(file_menu.origin.y, 8.0);
     assert_eq!(file_menu.size.x, FILE_MENU_BUTTON_WIDTH);
     assert_eq!(file_menu.size.y, ICON_BUTTON);
-    assert_eq!(import.origin.x, expected_import_x);
-    assert_eq!(import.origin.y, 8.0);
-    assert_eq!(import.size.x, FILE_MENU_BUTTON_WIDTH);
-    assert_eq!(import.size.y, ICON_BUTTON);
+    assert_eq!(import.size.x, 0.0);
+    assert_eq!(import.size.y, 0.0);
 }

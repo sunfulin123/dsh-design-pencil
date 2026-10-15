@@ -70,6 +70,21 @@
     // overlap. Pruned when it equals the initial value, so the common block
     // element still costs nothing.
     "display",
+    "flex-direction",
+    "flex-wrap",
+    "justify-content",
+    "align-items",
+    "align-self",
+    "gap",
+    "row-gap",
+    "column-gap",
+    "padding-top",
+    "padding-right",
+    "padding-bottom",
+    "padding-left",
+    "flex-grow",
+    "backdrop-filter",
+    "-webkit-backdrop-filter",
   ];
   var TEXT_STYLE_KEYS = [
     "color",
@@ -120,6 +135,21 @@
     "white-space": "normal",
     "text-decoration-line": "none",
     display: "block",
+    "flex-direction": "row",
+    "flex-wrap": "nowrap",
+    "justify-content": "normal",
+    "align-items": "normal",
+    "align-self": "auto",
+    gap: "normal",
+    "row-gap": "normal",
+    "column-gap": "normal",
+    "padding-top": "0px",
+    "padding-right": "0px",
+    "padding-bottom": "0px",
+    "padding-left": "0px",
+    "flex-grow": "0",
+    "backdrop-filter": "none",
+    "-webkit-backdrop-filter": "none",
   };
 
   var nodeCount = 0;
@@ -1104,9 +1134,53 @@
     return buildElementBody(element, tag, computed, rect);
   }
 
+  function extractSemanticAttrs(element) {
+    if (!element || !element.getAttribute) return null;
+    var attrs = {};
+    var hasAny = false;
+    var id = element.getAttribute("id");
+    if (id && id.trim() && id.length <= 64) {
+      attrs.id = id.trim();
+      hasAny = true;
+    }
+    var role = element.getAttribute("role");
+    if (role && role.trim()) {
+      attrs.role = role.trim();
+      hasAny = true;
+    }
+    var ariaLabel = element.getAttribute("aria-label");
+    if (ariaLabel && ariaLabel.trim()) {
+      attrs["aria-label"] = ariaLabel.trim().slice(0, 80);
+      hasAny = true;
+    }
+    var placeholder = element.getAttribute("placeholder");
+    if (placeholder && placeholder.trim()) {
+      attrs.placeholder = placeholder.trim().slice(0, 80);
+      hasAny = true;
+    }
+    var dataLucide = element.getAttribute("data-lucide") || element.getAttribute("data-icon");
+    if (dataLucide && dataLucide.trim()) {
+      attrs["data-lucide"] = dataLucide.trim();
+      hasAny = true;
+    }
+    var cls = typeof element.className === "string"
+      ? element.className
+      : (element.getAttribute("class") || "");
+    if (cls && cls.trim()) {
+      attrs.class = cls.trim().slice(0, 200);
+      hasAny = true;
+    }
+    return hasAny ? attrs : null;
+  }
+
   function buildElementBody(element, tag, computed, rect) {
     if (MEDIA_TAGS[tag]) {
-      return buildImage(element, computed, rect);
+      var mediaNode = buildImage(element, computed, rect);
+      if (mediaNode) {
+        var mediaAttrs = extractSemanticAttrs(element);
+        if (mediaAttrs) mediaNode.attrs = mediaAttrs;
+      }
+      return mediaNode;
     }
     if (!takeNode()) return null;
     // Consecutive inline-flow children of a block-like parent fold into one
@@ -1149,13 +1223,49 @@
     }
     Array.prototype.forEach.call(element.childNodes, collect);
     flushRun();
-    return {
+    // Form input/textarea/select value or placeholder fallback when DOM has no text child
+    if (
+      children.length === 0 &&
+      (tag === "input" || tag === "textarea" || tag === "select")
+    ) {
+      var inputText = "";
+      if (tag === "select" && element.selectedOptions && element.selectedOptions.length > 0) {
+        inputText = (element.selectedOptions[0].textContent || "").trim();
+      } else if (typeof element.value === "string" && element.value.trim()) {
+        inputText = element.value.trim();
+      } else if (element.getAttribute && element.getAttribute("placeholder")) {
+        inputText = element.getAttribute("placeholder").trim();
+      }
+      if (inputText && takeNode()) {
+        var padLeft = parseFloat(computed.getPropertyValue("padding-left")) || 12;
+        var padTop = parseFloat(computed.getPropertyValue("padding-top")) || 8;
+        var fontSize = parseFloat(computed.getPropertyValue("font-size")) || 14;
+        var textH = Math.min(rect.height, Math.max(fontSize * 1.35, 16));
+        var textY = rect.top + Math.max(padTop, (rect.height - textH) / 2);
+        children.push({
+          kind: "text",
+          rect: pageRect({
+            left: rect.left + padLeft,
+            top: textY,
+            width: Math.max(16, rect.width - padLeft * 2),
+            height: textH,
+          }),
+          text: inputText,
+          lines: 1,
+          styles: textPaintStyles(computed, TEXT_STYLE_KEYS),
+        });
+      }
+    }
+    var out = {
       kind: "element",
       tag: tag,
       rect: pageRect(rect),
       styles: elementStyles(computed),
       children: children,
     };
+    var attrs = extractSemanticAttrs(element);
+    if (attrs) out.attrs = attrs;
+    return out;
   }
 
   // A picked element can itself be an <img>/<svg>/<canvas>/<video>, which
@@ -1216,6 +1326,9 @@
   if (truncated) snapshot.truncated = true;
   var output = JSON.stringify(snapshot, null, 2);
 
+  if (options && options.returnOnly) {
+    return snapshot;
+  }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(output).catch(function (error) {
       console.warn("OpenPencil snapshot: clipboard copy failed", error);
@@ -1238,6 +1351,7 @@
     remoteImages: remoteImageCount,
     truncated: truncated,
   });
+  return snapshot;
   // The argument is optional on purpose. Pasted into a devtools console the
   // global is undefined and this captures the whole page, exactly as before;
   // a host that wants a subtree sets `{ root: <element> }` on the global

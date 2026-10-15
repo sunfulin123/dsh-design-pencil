@@ -323,8 +323,6 @@ impl DesktopApp {
                         "v" => consumed = self.host.apply_toggle_variables_panel(),
                         "d" => consumed = self.host.apply_toggle_design_md_panel(),
                         "k" => consumed = self.host.apply_toggle_component_browser(),
-                        "f" => consumed = self.host.apply_open_figma_import(),
-                        "h" => consumed = self.host.apply_open_html_import(),
                         _ => {}
                     }
                 }

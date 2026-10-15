@@ -1,7 +1,10 @@
-import { readFileSync, realpathSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
 import { isIP } from 'node:net'
+import { tmpdir } from 'node:os'
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import vm from 'node:vm'
 import { deflateSync } from 'node:zlib'
@@ -393,94 +396,401 @@ function rgbaToHex(color, opacity = 1) {
   return hex
 }
 
-function mapFigmaPaints(paints) {
+function gradientAngleFromHandles(handles) {
+  if (!Array.isArray(handles) || handles.length < 2) return 180
+  const start = handles[0]
+  const end = handles[1]
+  if (!start || !end) return 180
+  const dx = Number(end.x ?? 0) - Number(start.x ?? 0)
+  const dy = Number(end.y ?? 0) - Number(start.y ?? 0)
+  if (Math.abs(dx) < 1e-6 && Math.abs(dy) < 1e-6) return 180
+  const deg = Math.round((Math.atan2(dy, dx) * 180) / Math.PI + 90)
+  return ((deg % 360) + 360) % 360
+}
+
+function mapFigmaBlendMode(mode) {
+  switch (mode) {
+    case 'DARKEN': return 'darken'
+    case 'MULTIPLY': return 'multiply'
+    case 'COLOR_BURN': return 'color-burn'
+    case 'LIGHTEN': return 'lighten'
+    case 'SCREEN': return 'screen'
+    case 'COLOR_DODGE': return 'color-dodge'
+    case 'OVERLAY': return 'overlay'
+    case 'SOFT_LIGHT': return 'soft-light'
+    case 'HARD_LIGHT': return 'hard-light'
+    case 'DIFFERENCE': return 'difference'
+    case 'EXCLUSION': return 'exclusion'
+    case 'HUE': return 'hue'
+    case 'SATURATION': return 'saturation'
+    case 'COLOR': return 'color'
+    case 'LUMINOSITY': return 'luminosity'
+    default: return undefined
+  }
+}
+
+function mapFigmaScaleMode(scaleMode) {
+  switch (scaleMode) {
+    case 'FIT': return 'fit'
+    case 'CROP': return 'crop'
+    case 'TILE': return 'tile'
+    case 'STRETCH': return 'stretch'
+    default: return 'fill'
+  }
+}
+
+function mapFigmaPaints(paints, imageRefs) {
   if (!Array.isArray(paints)) return undefined
   const mapped = []
   for (const paint of paints) {
     if (!paint || paint.visible === false) continue
+    const opacity = typeof paint.opacity === 'number' && paint.opacity < 0.999
+      ? Number(paint.opacity.toFixed(3))
+      : undefined
+    const blendMode = mapFigmaBlendMode(paint.blendMode)
     if (paint.type === 'SOLID' && paint.color) {
       mapped.push({
         type: 'solid',
         color: rgbaToHex(paint.color, paint.opacity ?? 1),
+        ...(blendMode ? { blendMode } : {}),
+      })
+    } else if (paint.type === 'GRADIENT_LINEAR' && Array.isArray(paint.gradientStops) && paint.gradientStops.length > 0) {
+      mapped.push({
+        type: 'linear',
+        angle: gradientAngleFromHandles(paint.gradientHandlePositions),
+        stops: paint.gradientStops.map(stop => ({
+          offset: Number(Number(stop.position ?? 0).toFixed(3)),
+          color: rgbaToHex(stop.color, 1),
+        })),
+        ...(opacity !== undefined ? { opacity } : {}),
+        ...(blendMode ? { blendMode } : {}),
+      })
+    } else if (
+      (paint.type === 'GRADIENT_RADIAL' || paint.type === 'GRADIENT_ANGULAR' || paint.type === 'GRADIENT_DIAMOND')
+      && Array.isArray(paint.gradientStops)
+      && paint.gradientStops.length > 0
+    ) {
+      const center = Array.isArray(paint.gradientHandlePositions) && paint.gradientHandlePositions[0]
+        ? paint.gradientHandlePositions[0]
+        : { x: 0.5, y: 0.5 }
+      mapped.push({
+        type: 'radial',
+        cx: Number(Number(center.x ?? 0.5).toFixed(3)),
+        cy: Number(Number(center.y ?? 0.5).toFixed(3)),
+        radius: 0.5,
+        stops: paint.gradientStops.map(stop => ({
+          offset: Number(Number(stop.position ?? 0).toFixed(3)),
+          color: rgbaToHex(stop.color, 1),
+        })),
+        ...(opacity !== undefined ? { opacity } : {}),
+        ...(blendMode ? { blendMode } : {}),
+      })
+    } else if (paint.type === 'IMAGE' && typeof paint.imageRef === 'string' && paint.imageRef.trim()) {
+      const ref = paint.imageRef.trim()
+      if (imageRefs) imageRefs.add(ref)
+      mapped.push({
+        type: 'image',
+        url: `__figma_image__:${ref}`,
+        mode: mapFigmaScaleMode(paint.scaleMode),
+        ...(opacity !== undefined ? { opacity } : {}),
+        ...(blendMode ? { blendMode } : {}),
       })
     }
   }
   return mapped.length > 0 ? mapped : undefined
 }
 
-function mapFigmaNode(node, parentBox, idCounter) {
-  if (!node || typeof node !== 'object' || node.visible === false) return null
+function mapFigmaStroke(node, imageRefs) {
+  const strokePaints = mapFigmaPaints(node.strokes, imageRefs)
+  if (!strokePaints) return undefined
+  const weights = node.individualStrokeWeights
+  let thickness
+  if (weights && typeof weights === 'object') {
+    const t = Number(weights.top ?? 0)
+    const r = Number(weights.right ?? 0)
+    const b = Number(weights.bottom ?? 0)
+    const l = Number(weights.left ?? 0)
+    if (t > 0 || r > 0 || b > 0 || l > 0) {
+      thickness = (t === r && r === b && b === l) ? t : [t, r, b, l]
+    }
+  }
+  if (thickness === undefined) {
+    const w = Number(node.strokeWeight ?? 0)
+    if (!(w > 0)) return undefined
+    thickness = Number(w.toFixed(2))
+  }
+  const align = node.strokeAlign === 'INSIDE'
+    ? 'inside'
+    : node.strokeAlign === 'OUTSIDE'
+      ? 'outside'
+      : node.strokeAlign === 'CENTER'
+        ? 'center'
+        : undefined
+  const join = node.strokeJoin === 'MITER'
+    ? 'miter'
+    : node.strokeJoin === 'BEVEL'
+      ? 'bevel'
+      : node.strokeJoin === 'ROUND'
+        ? 'round'
+        : undefined
+  const cap = node.strokeCap === 'ROUND'
+    ? 'round'
+    : node.strokeCap === 'SQUARE'
+      ? 'square'
+      : undefined
+  const dashPattern = Array.isArray(node.strokeDashes) && node.strokeDashes.length > 0
+    ? node.strokeDashes.map(Number).filter(n => Number.isFinite(n) && n >= 0)
+    : undefined
+  return {
+    thickness,
+    fill: strokePaints,
+    ...(align ? { align } : {}),
+    ...(join ? { join } : {}),
+    ...(cap ? { cap } : {}),
+    ...(dashPattern && dashPattern.length > 0 ? { dashPattern } : {}),
+  }
+}
+
+function mapFigmaEffects(effects) {
+  if (!Array.isArray(effects) || effects.length === 0) return undefined
+  const out = []
+  for (const effect of effects) {
+    if (!effect || effect.visible === false) continue
+    const radius = Number(effect.radius ?? 0)
+    if (effect.type === 'DROP_SHADOW' || effect.type === 'INNER_SHADOW') {
+      out.push({
+        type: 'shadow',
+        ...(effect.type === 'INNER_SHADOW' ? { inner: true } : {}),
+        offsetX: Number(effect.offset?.x ?? 0),
+        offsetY: Number(effect.offset?.y ?? 0),
+        blur: Math.max(0, radius),
+        spread: Number(effect.spread ?? 0),
+        color: effect.color ? rgbaToHex(effect.color, effect.color.a ?? 1) : '#00000040',
+      })
+    } else if (effect.type === 'LAYER_BLUR') {
+      out.push({ type: 'blur', radius: Math.max(0, radius) })
+    } else if (effect.type === 'BACKGROUND_BLUR') {
+      out.push({ type: 'background_blur', radius: Math.max(0, radius) })
+    }
+  }
+  return out.length > 0 ? out : undefined
+}
+
+function mapFigmaCornerRadius(node) {
+  if (Array.isArray(node.rectangleCornerRadii) && node.rectangleCornerRadii.length === 4) {
+    const [tl, tr, br, bl] = node.rectangleCornerRadii.map(v => Math.max(0, Math.round(Number(v ?? 0))))
+    if (tl === 0 && tr === 0 && br === 0 && bl === 0) return undefined
+    if (tl === tr && tr === br && br === bl) return tl
+    return [tl, tr, br, bl]
+  }
+  if (typeof node.cornerRadius === 'number' && node.cornerRadius > 0) {
+    return Math.round(node.cornerRadius)
+  }
+  return undefined
+}
+
+function mapFigmaRichTextContent(node) {
+  const chars = typeof node.characters === 'string' ? node.characters : ''
+  if (!chars) return ''
+  const overrides = Array.isArray(node.characterStyleOverrides) ? node.characterStyleOverrides : null
+  const table = node.styleOverrideTable && typeof node.styleOverrideTable === 'object' ? node.styleOverrideTable : null
+  if (!overrides || overrides.length === 0 || !table || Object.keys(table).length === 0) {
+    return chars
+  }
+  const segments = []
+  let currentId = overrides[0] ?? 0
+  let start = 0
+  for (let i = 1; i <= chars.length; i += 1) {
+    const sid = i < chars.length ? (overrides[i] ?? 0) : -1
+    if (sid !== currentId || i === chars.length) {
+      const slice = chars.slice(start, i)
+      if (slice.length > 0) {
+        const ov = currentId > 0 ? table[String(currentId)] : null
+        const seg = { text: slice }
+        if (ov && typeof ov === 'object') {
+          if (typeof ov.fontFamily === 'string' && ov.fontFamily.trim()) {
+            seg.fontFamily = `${ov.fontFamily.trim()}, Inter, system-ui, sans-serif`
+          }
+          if (typeof ov.fontSize === 'number' && ov.fontSize > 0) {
+            seg.fontSize = Math.round(ov.fontSize)
+          }
+          if (typeof ov.fontWeight === 'number' && ov.fontWeight > 0) {
+            seg.fontWeight = ov.fontWeight
+          }
+          if (ov.italic === true) {
+            seg.fontStyle = 'italic'
+          }
+          if (ov.textDecoration === 'UNDERLINE') seg.underline = true
+          if (ov.textDecoration === 'STRIKETHROUGH') seg.strikethrough = true
+          const ovFill = Array.isArray(ov.fills)
+            ? ov.fills.find(p => p && p.visible !== false && p.type === 'SOLID' && p.color)
+            : null
+          if (ovFill?.color) {
+            seg.fill = rgbaToHex(ovFill.color, ovFill.opacity ?? 1)
+          }
+        }
+        segments.push(seg)
+      }
+      currentId = sid
+      start = i
+    }
+  }
+  const hasStyled = segments.some(s => (
+    s.fontFamily !== undefined
+    || s.fontSize !== undefined
+    || s.fontWeight !== undefined
+    || s.fontStyle !== undefined
+    || s.fill !== undefined
+    || s.underline !== undefined
+    || s.strikethrough !== undefined
+  ))
+  return hasStyled ? segments : chars
+}
+
+export function mapFigmaNode(node, parentBox, idCounter, imageRefs) {
+  if (!node || typeof node !== 'object' || node.visible === false || Number(node.opacity) === 0) return null
   const box = node.absoluteBoundingBox || node.absoluteRenderBounds || { x: 0, y: 0, width: 100, height: 100 }
-  const x = Math.round((Number(box.x ?? 0)) - (parentBox ? Number(parentBox.x ?? 0) : 0))
-  const y = Math.round((Number(box.y ?? 0)) - (parentBox ? Number(parentBox.y ?? 0) : 0))
-  const width = Math.max(1, Math.round(Number(box.width ?? 100)))
-  const height = Math.max(1, Math.round(Number(box.height ?? 40)))
+  const x = Number(((Number(box.x ?? 0)) - (parentBox ? Number(parentBox.x ?? 0) : 0)).toFixed(2))
+  const y = Number(((Number(box.y ?? 0)) - (parentBox ? Number(parentBox.y ?? 0) : 0)).toFixed(2))
+  const width = Math.max(1, Number(Number(box.width ?? 100).toFixed(2)))
+  const height = Math.max(1, Number(Number(box.height ?? 40).toFixed(2)))
   const id = `figma_${++idCounter.count}`
   const name = typeof node.name === 'string' && node.name.trim() ? node.name.trim() : node.type
-  const fill = mapFigmaPaints(node.fills)
-  const strokePaints = mapFigmaPaints(node.strokes)
-  const stroke = strokePaints && Number(node.strokeWeight) > 0
-    ? { thickness: Number(node.strokeWeight), fill: strokePaints }
+  const fill = mapFigmaPaints(node.fills, imageRefs) || mapFigmaPaints(node.background, imageRefs)
+  const stroke = mapFigmaStroke(node, imageRefs)
+  const effects = mapFigmaEffects(node.effects)
+  const cornerRadius = mapFigmaCornerRadius(node)
+  const opacity = typeof node.opacity === 'number' && node.opacity < 0.999
+    ? Number(node.opacity.toFixed(3))
     : undefined
-  const cornerRadius = typeof node.cornerRadius === 'number' && node.cornerRadius > 0
-    ? Math.round(node.cornerRadius)
+  const rotation = typeof node.rotation === 'number' && Math.abs(node.rotation) > 0.01
+    ? Number((-node.rotation * (180 / Math.PI)).toFixed(2))
     : undefined
+  const blendMode = mapFigmaBlendMode(node.blendMode)
+  const commonBase = {
+    id,
+    name,
+    x,
+    y,
+    ...(opacity !== undefined ? { opacity } : {}),
+    ...(rotation !== undefined ? { rotation } : {}),
+    ...(blendMode ? { blendMode } : {}),
+  }
 
   if (node.type === 'TEXT') {
     const style = node.style || {}
+    const textGrowth = style.textAutoResize === 'WIDTH_AND_HEIGHT'
+      ? 'auto'
+      : style.textAutoResize === 'HEIGHT'
+        ? 'fixed-width'
+        : 'fixed-width-height'
+    const letterSpacing = typeof style.letterSpacing === 'number' && Math.abs(style.letterSpacing) > 0.01
+      ? Number(style.letterSpacing.toFixed(2))
+      : undefined
     return {
-      id,
+      ...commonBase,
       type: 'text',
-      name,
-      x,
-      y,
       width,
       height,
-      content: typeof node.characters === 'string' ? node.characters : name,
+      content: mapFigmaRichTextContent(node),
       fontFamily: style.fontFamily ? `${style.fontFamily}, Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif',
       fontSize: typeof style.fontSize === 'number' && style.fontSize > 0 ? Math.round(style.fontSize) : 16,
       fontWeight: typeof style.fontWeight === 'number' ? style.fontWeight : 400,
+      ...(style.italic === true ? { fontStyle: 'italic' } : {}),
+      ...(style.textDecoration === 'UNDERLINE' ? { underline: true } : {}),
+      ...(style.textDecoration === 'STRIKETHROUGH' ? { strikethrough: true } : {}),
+      ...(letterSpacing !== undefined ? { letterSpacing } : {}),
       lineHeight: typeof style.lineHeightPx === 'number' && style.fontSize > 0
         ? Number((style.lineHeightPx / style.fontSize).toFixed(2))
         : 1.4,
       textAlign: typeof style.textAlignHorizontal === 'string' ? style.textAlignHorizontal.toLowerCase() : 'left',
+      ...(typeof style.textAlignVertical === 'string'
+        ? { textAlignVertical: style.textAlignVertical === 'CENTER' ? 'middle' : style.textAlignVertical.toLowerCase() }
+        : {}),
+      textGrowth,
       fill: fill ?? [{ type: 'solid', color: '#111827' }],
+      ...(stroke ? { stroke } : {}),
+      ...(effects ? { effects } : {}),
     }
   }
 
   if (node.type === 'ELLIPSE') {
+    const arc = node.arcData
+    const innerRadius = arc && typeof arc.innerRadius === 'number' && arc.innerRadius > 0.001
+      ? Number(arc.innerRadius.toFixed(3))
+      : undefined
     return {
-      id,
+      ...commonBase,
       type: 'ellipse',
-      name,
-      x,
-      y,
       width,
       height,
+      ...(innerRadius !== undefined ? { innerRadius } : {}),
       ...(fill ? { fill } : {}),
       ...(stroke ? { stroke } : {}),
+      ...(effects ? { effects } : {}),
+    }
+  }
+
+  if (node.type === 'LINE') {
+    return {
+      ...commonBase,
+      type: 'line',
+      x1: x,
+      y1: y,
+      x2: Number((x + width).toFixed(2)),
+      y2: Number((y + height).toFixed(2)),
+      ...(stroke ? { stroke } : fill ? { stroke: { thickness: 1, fill } } : {}),
+      ...(effects ? { effects } : {}),
     }
   }
 
   const rawChildren = Array.isArray(node.children) ? node.children : []
-  if (rawChildren.length === 0 && (node.type === 'RECTANGLE' || node.type === 'VECTOR' || node.type === 'LINE' || node.type === 'BOOLEAN_OPERATION')) {
+  const isVectorLike = node.type === 'VECTOR'
+    || node.type === 'BOOLEAN_OPERATION'
+    || node.type === 'STAR'
+    || node.type === 'REGULAR_POLYGON'
+  if (isVectorLike) {
+    const fillGeo = Array.isArray(node.fillGeometry) ? node.fillGeometry.filter(g => g && typeof g.path === 'string' && g.path.trim()) : []
+    const strokeGeo = Array.isArray(node.strokeGeometry) ? node.strokeGeometry.filter(g => g && typeof g.path === 'string' && g.path.trim()) : []
+    if (fillGeo.length > 0 || strokeGeo.length > 0) {
+      const useStrokeOutline = fillGeo.length === 0 && strokeGeo.length > 0
+      const chosen = useStrokeOutline ? strokeGeo : fillGeo
+      const d = chosen.map(g => g.path.trim()).join(' ')
+      const fillRule = chosen[0]?.windingRule === 'EVENODD' ? 'evenodd' : undefined
+      return {
+        ...commonBase,
+        type: 'path',
+        width,
+        height,
+        d,
+        ...(fillRule ? { fillRule } : {}),
+        ...(useStrokeOutline
+          ? { fill: stroke?.fill ?? fill }
+          : {
+              ...(fill ? { fill } : {}),
+              ...(stroke ? { stroke } : {}),
+            }),
+        ...(effects ? { effects } : {}),
+      }
+    }
+  }
+
+  if (rawChildren.length === 0 && (node.type === 'RECTANGLE' || isVectorLike)) {
     return {
-      id,
+      ...commonBase,
       type: 'rectangle',
-      name,
-      x,
-      y,
       width,
       height,
       ...(cornerRadius !== undefined ? { cornerRadius } : {}),
       ...(fill ? { fill } : {}),
       ...(stroke ? { stroke } : {}),
+      ...(effects ? { effects } : {}),
     }
   }
 
   const children = []
   for (const child of rawChildren) {
-    const mapped = mapFigmaNode(child, box, idCounter)
+    const mapped = mapFigmaNode(child, box, idCounter, imageRefs)
     if (mapped) children.push(mapped)
   }
   const layout = node.layoutMode === 'HORIZONTAL'
@@ -488,44 +798,124 @@ function mapFigmaNode(node, parentBox, idCounter) {
     : node.layoutMode === 'VERTICAL'
       ? 'vertical'
       : 'none'
-  const gap = typeof node.itemSpacing === 'number' && node.itemSpacing > 0 ? Math.round(node.itemSpacing) : undefined
+  const justifyContent = node.primaryAxisAlignItems === 'CENTER'
+    ? 'center'
+    : node.primaryAxisAlignItems === 'MAX'
+      ? 'end'
+      : node.primaryAxisAlignItems === 'SPACE_BETWEEN'
+        ? 'space_between'
+        : node.primaryAxisAlignItems === 'MIN'
+          ? 'start'
+          : undefined
+  const alignItems = node.counterAxisAlignItems === 'CENTER'
+    ? 'center'
+    : node.counterAxisAlignItems === 'MAX'
+      ? 'end'
+      : node.counterAxisAlignItems === 'MIN'
+        ? 'start'
+        : undefined
+  const gap = typeof node.itemSpacing === 'number' && node.itemSpacing > 0 && justifyContent !== 'space_between'
+    ? Math.round(node.itemSpacing)
+    : undefined
   const padT = Math.round(Number(node.paddingTop ?? 0))
   const padR = Math.round(Number(node.paddingRight ?? 0))
   const padB = Math.round(Number(node.paddingBottom ?? 0))
   const padL = Math.round(Number(node.paddingLeft ?? 0))
   const padding = (padT || padR || padB || padL) ? [padT, padR, padB, padL] : undefined
+  const isGroup = node.type === 'GROUP'
   return {
-    id,
-    type: 'frame',
-    name,
-    x,
-    y,
+    ...commonBase,
+    type: isGroup ? 'group' : 'frame',
     width,
     height,
-    layout,
+    ...(isGroup ? {} : { layout }),
     ...(gap !== undefined ? { gap } : {}),
     ...(padding !== undefined ? { padding } : {}),
+    ...(justifyContent ? { justifyContent } : {}),
+    ...(alignItems ? { alignItems } : {}),
     ...(cornerRadius !== undefined ? { cornerRadius } : {}),
-    ...(node.clipsContent === true ? { clipContent: true } : {}),
+    ...(node.clipsContent === true ? { clipContent: true } : { clipContent: false }),
+    ...(node.type === 'COMPONENT' ? { reusable: true } : {}),
     ...(fill ? { fill } : {}),
     ...(stroke ? { stroke } : {}),
+    ...(effects ? { effects } : {}),
     children,
   }
 }
 
+function guessImageMime(bytes) {
+  if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png'
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
+  if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[8] === 0x57 && bytes[9] === 0x45) return 'image/webp'
+  if (bytes.length >= 4 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return 'image/gif'
+  return 'image/png'
+}
+
+async function resolveFigmaImageRefs(fileKey, headers, imageRefs, pages) {
+  if (!imageRefs || imageRefs.size === 0) return
+  try {
+    const endpoint = `https://api.figma.com/v1/files/${encodeURIComponent(fileKey)}/images`
+    const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(20_000) })
+    if (!response.ok) return
+    const payload = await response.json()
+    const urlMap = payload?.meta?.images
+    if (!urlMap || typeof urlMap !== 'object') return
+    const resolvedDataUrls = new Map()
+    const refsToFetch = [...imageRefs].filter(ref => typeof urlMap[ref] === 'string' && urlMap[ref]).slice(0, 48)
+    await Promise.all(refsToFetch.map(async ref => {
+      try {
+        const imgUrl = urlMap[ref]
+        const imgResp = await fetch(imgUrl, { redirect: 'follow', signal: AbortSignal.timeout(15_000) })
+        if (!imgResp.ok) {
+          resolvedDataUrls.set(ref, imgUrl)
+          return
+        }
+        const bytes = Buffer.from(await imgResp.arrayBuffer())
+        if (bytes.byteLength <= 6 * 1024 * 1024) {
+          const mime = guessImageMime(bytes)
+          resolvedDataUrls.set(ref, `data:${mime};base64,${bytes.toString('base64')}`)
+        } else {
+          resolvedDataUrls.set(ref, imgUrl)
+        }
+      } catch {
+        if (typeof urlMap[ref] === 'string') resolvedDataUrls.set(ref, urlMap[ref])
+      }
+    }))
+    const rewriteTree = nodes => {
+      for (const node of nodes ?? []) {
+        if (!node || typeof node !== 'object') continue
+        for (const list of [node.fill, node.stroke?.fill]) {
+          if (!Array.isArray(list)) continue
+          for (const paint of list) {
+            if (paint && paint.type === 'image' && typeof paint.url === 'string' && paint.url.startsWith('__figma_image__:')) {
+              const ref = paint.url.slice('__figma_image__:'.length)
+              paint.url = resolvedDataUrls.get(ref) || urlMap[ref] || ''
+            }
+          }
+        }
+        if (Array.isArray(node.children)) rewriteTree(node.children)
+      }
+    }
+    for (const page of pages) {
+      rewriteTree(page.children)
+    }
+  } catch {
+    // Non-fatal: keep document structure if image meta fetch fails
+  }
+}
+
 async function fetchFigmaApiDocument(figmaInfo, token) {
-  const headers = token.startsWith('figd_')
-    ? { Authorization: `Bearer ${token}` }
-    : { 'X-Figma-Token': token }
+  const headers = { 'X-Figma-Token': token }
   const endpoint = figmaInfo.nodeId
-    ? `https://api.figma.com/v1/files/${encodeURIComponent(figmaInfo.fileKey)}/nodes?ids=${encodeURIComponent(figmaInfo.nodeId)}`
-    : `https://api.figma.com/v1/files/${encodeURIComponent(figmaInfo.fileKey)}`
+    ? `https://api.figma.com/v1/files/${encodeURIComponent(figmaInfo.fileKey)}/nodes?ids=${encodeURIComponent(figmaInfo.nodeId)}&geometry=paths`
+    : `https://api.figma.com/v1/files/${encodeURIComponent(figmaInfo.fileKey)}?geometry=paths`
   const response = await fetch(endpoint, { headers, signal: AbortSignal.timeout(30_000) })
   if (!response.ok) {
     throw new Error(`Figma API returned HTTP ${response.status} for file ${figmaInfo.fileKey}`)
   }
   const payload = await response.json()
   const idCounter = { count: 0 }
+  const imageRefs = new Set()
   const pages = []
   let nodeCount = 0
   const countTree = items => items.reduce((sum, item) => sum + 1 + (Array.isArray(item.children) ? countTree(item.children) : 0), 0)
@@ -537,11 +927,11 @@ async function fetchFigmaApiDocument(figmaInfo, token) {
       if (!docNode) continue
       if (docNode.type === 'CANVAS' && Array.isArray(docNode.children)) {
         for (const child of docNode.children) {
-          const mapped = mapFigmaNode(child, null, idCounter)
+          const mapped = mapFigmaNode(child, null, idCounter, imageRefs)
           if (mapped) roots.push(mapped)
         }
       } else {
-        const mapped = mapFigmaNode(docNode, null, idCounter)
+        const mapped = mapFigmaNode(docNode, null, idCounter, imageRefs)
         if (mapped) roots.push(mapped)
       }
     }
@@ -551,9 +941,10 @@ async function fetchFigmaApiDocument(figmaInfo, token) {
     for (const [index, canvas] of payload.document.children.entries()) {
       const children = []
       for (const child of canvas.children ?? []) {
-        const mapped = mapFigmaNode(child, null, idCounter)
+        const mapped = mapFigmaNode(child, null, idCounter, imageRefs)
         if (mapped) children.push(mapped)
       }
+      if (children.length === 0) continue
       nodeCount += countTree(children)
       pages.push({
         id: `page_${index + 1}`,
@@ -565,6 +956,7 @@ async function fetchFigmaApiDocument(figmaInfo, token) {
   if (pages.length === 0 || nodeCount === 0) {
     throw new Error('Figma file returned no importable nodes')
   }
+  await resolveFigmaImageRefs(figmaInfo.fileKey, headers, imageRefs, pages)
   const document = {
     version: '1.0',
     name: payload.name || figmaInfo.title || 'Figma Import',
@@ -581,17 +973,349 @@ async function fetchFigmaApiDocument(figmaInfo, token) {
   }
 }
 
+function discoverChromiumBinary() {
+  if (process.env.OPENPENCIL_DISABLE_HEADLESS_BROWSER === '1') return null
+  const candidates = [
+    process.env.OPENPENCIL_CHROME_PATH,
+    process.env.CHROME_PATH,
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/microsoft-edge',
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim() && existsSync(candidate.trim())) {
+      return candidate.trim()
+    }
+  }
+  return null
+}
+
+function guessMimeForPath(filePath) {
+  switch (extname(filePath).toLowerCase()) {
+    case '.html':
+    case '.htm': return 'text/html; charset=utf-8'
+    case '.css': return 'text/css; charset=utf-8'
+    case '.js':
+    case '.mjs': return 'application/javascript; charset=utf-8'
+    case '.json': return 'application/json; charset=utf-8'
+    case '.svg': return 'image/svg+xml'
+    case '.png': return 'image/png'
+    case '.jpg':
+    case '.jpeg': return 'image/jpeg'
+    case '.webp': return 'image/webp'
+    case '.gif': return 'image/gif'
+    case '.woff2': return 'font/woff2'
+    case '.woff': return 'font/woff'
+    case '.ttf': return 'font/ttf'
+    default: return 'application/octet-stream'
+  }
+}
+
+async function startLocalHtmlServer(htmlBytes, baseDir) {
+  let rootReal = null
+  if (baseDir) {
+    try {
+      rootReal = realpathSync(baseDir)
+    } catch {
+      rootReal = null
+    }
+  }
+  const server = createServer((req, res) => {
+    const rawUrl = (req.url || '/').split(/[?#]/)[0] || '/'
+    if (rawUrl === '/' || rawUrl === '/__op_entry__.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
+      res.end(htmlBytes)
+      return
+    }
+    if (!rootReal) {
+      res.writeHead(404)
+      res.end()
+      return
+    }
+    try {
+      const decoded = decodeURIComponent(rawUrl.replace(/^\/+/, ''))
+      if (!decoded || decoded.includes('\0') || isAbsolute(decoded)) {
+        res.writeHead(403)
+        res.end()
+        return
+      }
+      const candidate = realpathSync(resolve(rootReal, decoded))
+      const rel = relative(rootReal, candidate)
+      if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+        res.writeHead(403)
+        res.end()
+        return
+      }
+      const bytes = readFileSync(candidate)
+      res.writeHead(200, { 'Content-Type': guessMimeForPath(candidate), 'Cache-Control': 'no-store' })
+      res.end(bytes)
+    } catch {
+      res.writeHead(404)
+      res.end()
+    }
+  })
+  await new Promise((resolveListen, rejectListen) => {
+    server.once('error', rejectListen)
+    server.listen(0, '127.0.0.1', resolveListen)
+  })
+  const addr = server.address()
+  return {
+    url: `http://127.0.0.1:${addr.port}/__op_entry__.html`,
+    close: () => new Promise(r => server.close(() => r())),
+  }
+}
+
+async function captureHtmlSnapshotWithBrowser({
+  htmlBytes,
+  baseDir,
+  targetUrl,
+  viewportWidth = 1440,
+  viewportHeight = 900,
+  timeoutMs = 15_000,
+}) {
+  const chromeBinary = discoverChromiumBinary()
+  if (!chromeBinary || typeof WebSocket !== 'function') return null
+  const extractorScript = typeof DesignEngine.snapshot_extractor_script === 'function'
+    ? DesignEngine.snapshot_extractor_script()
+    : null
+  if (!extractorScript) return null
+
+  let localServer = null
+  let userDataDir = null
+  let child = null
+  let ws = null
+  try {
+    const navigateUrl = targetUrl
+      ? targetUrl
+      : await (async () => {
+          localServer = await startLocalHtmlServer(htmlBytes, baseDir)
+          return localServer.url
+        })()
+    userDataDir = await mkdtemp(join(tmpdir(), 'op-headless-chrome-'))
+    const vw = Math.max(320, Math.min(3840, Math.round(Number(viewportWidth) || 1440)))
+    const vh = Math.max(320, Math.min(4096, Math.round(Number(viewportHeight) || 900)))
+    child = spawn(
+      chromeBinary,
+      [
+        '--headless=new',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-sync',
+        '--hide-scrollbars',
+        `--user-data-dir=${userDataDir}`,
+        `--window-size=${vw},${vh}`,
+        '--remote-debugging-port=0',
+        'about:blank',
+      ],
+      { stdio: ['ignore', 'ignore', 'pipe'] },
+    )
+
+    const browserWsUrl = await new Promise((resolveWs, rejectWs) => {
+      const timer = setTimeout(() => rejectWs(new Error('Timed out waiting for DevTools listening endpoint')), 6000)
+      let stderrText = ''
+      child.stderr.on('data', chunk => {
+        stderrText += chunk.toString('utf8')
+        const match = /DevTools listening on (ws:\/\/[^\s]+)/.exec(stderrText)
+        if (match) {
+          clearTimeout(timer)
+          resolveWs(match[1])
+        }
+      })
+      child.once('error', err => {
+        clearTimeout(timer)
+        rejectWs(err)
+      })
+      child.once('exit', code => {
+        clearTimeout(timer)
+        rejectWs(new Error(`Headless browser exited early (${code})`))
+      })
+    })
+
+    const httpBase = browserWsUrl.replace(/^ws:\/\//, 'http://').replace(/\/devtools\/browser\/.*$/, '')
+    const targetsResp = await fetch(`${httpBase}/json/list`, { signal: AbortSignal.timeout(4000) })
+    const targets = await targetsResp.json()
+    const pageTarget = Array.isArray(targets)
+      ? targets.find(t => t && t.type === 'page' && typeof t.webSocketDebuggerUrl === 'string')
+      : null
+    const targetWsUrl = pageTarget?.webSocketDebuggerUrl
+    if (!targetWsUrl) return null
+
+    ws = new WebSocket(targetWsUrl)
+    await new Promise((resolveOpen, rejectOpen) => {
+      const timer = setTimeout(() => rejectOpen(new Error('WebSocket open timeout')), 4000)
+      ws.addEventListener('open', () => {
+        clearTimeout(timer)
+        resolveOpen()
+      }, { once: true })
+      ws.addEventListener('error', err => {
+        clearTimeout(timer)
+        rejectOpen(err)
+      }, { once: true })
+    })
+
+    let nextMsgId = 1
+    const pending = new Map()
+    let loadFiredResolve = null
+    const loadFiredPromise = new Promise(r => { loadFiredResolve = r })
+
+    ws.addEventListener('message', event => {
+      try {
+        const msg = JSON.parse(typeof event.data === 'string' ? event.data : event.data.toString('utf8'))
+        if (msg.method === 'Page.loadEventFired' && loadFiredResolve) {
+          loadFiredResolve()
+        }
+        if (typeof msg.id === 'number' && pending.has(msg.id)) {
+          const entry = pending.get(msg.id)
+          pending.delete(msg.id)
+          if (msg.error) entry.reject(new Error(msg.error.message || 'CDP error'))
+          else entry.resolve(msg.result)
+        }
+      } catch {
+        // Ignore malformed CDP frames
+      }
+    })
+
+    const cdpCall = (method, params = {}) => new Promise((resolveCall, rejectCall) => {
+      const id = nextMsgId++
+      const timer = setTimeout(() => {
+        pending.delete(id)
+        rejectCall(new Error(`CDP timeout: ${method}`))
+      }, timeoutMs)
+      pending.set(id, {
+        resolve: res => {
+          clearTimeout(timer)
+          resolveCall(res)
+        },
+        reject: err => {
+          clearTimeout(timer)
+          rejectCall(err)
+        },
+      })
+      ws.send(JSON.stringify({ id, method, params }))
+    })
+
+    await cdpCall('Page.enable')
+    await cdpCall('Runtime.enable')
+    await cdpCall('Emulation.setDeviceMetricsOverride', {
+      width: vw,
+      height: vh,
+      deviceScaleFactor: 1,
+      mobile: false,
+    })
+    await cdpCall('Page.navigate', { url: navigateUrl })
+    await Promise.race([
+      loadFiredPromise,
+      new Promise(r => setTimeout(r, Math.min(8000, timeoutMs))),
+    ])
+
+    // Wait for fonts and dynamic CSS (e.g., Tailwind CDN script) to settle, then expand viewport to full scrollHeight
+    const measureResult = await cdpCall('Runtime.evaluate', {
+      expression: `(async () => {
+        try {
+          if (document.fonts && document.fonts.ready) {
+            await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+          }
+        } catch {}
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise(r => setTimeout(r, 120));
+        const bodyH = document.body ? document.body.scrollHeight : 0;
+        const docH = document.documentElement ? document.documentElement.scrollHeight : 0;
+        return Math.max(bodyH, docH, window.innerHeight || 900);
+      })()`,
+      awaitPromise: true,
+      returnByValue: true,
+    })
+    const fullHeight = Number(measureResult?.result?.value) || vh
+    if (fullHeight > vh && fullHeight <= 16_384) {
+      await cdpCall('Emulation.setDeviceMetricsOverride', {
+        width: vw,
+        height: Math.ceil(fullHeight),
+        deviceScaleFactor: 1,
+        mobile: false,
+      })
+    }
+
+    const evalSnapshot = await cdpCall('Runtime.evaluate', {
+      expression: `(() => {
+        globalThis.openpencilSnapshotOptions = { returnOnly: true };
+        const snap = ${extractorScript};
+        return snap ? JSON.stringify(snap) : null;
+      })()`,
+      returnByValue: true,
+    })
+    const snapshotJson = evalSnapshot?.result?.value
+    return typeof snapshotJson === 'string' && snapshotJson.startsWith('{') ? snapshotJson : null
+  } catch {
+    return null
+  } finally {
+    try { ws?.close() } catch {}
+    if (child && child.pid) {
+      try { child.kill('SIGKILL') } catch {}
+    }
+    if (localServer) {
+      try { await localServer.close() } catch {}
+    }
+    if (userDataDir) {
+      try { await rm(userDataDir, { recursive: true, force: true }) } catch {}
+    }
+  }
+}
+
+function summarizeImportedDocument(document) {
+  const roots = Array.isArray(document?.children)
+    ? document.children
+    : Array.isArray(document?.pages?.[0]?.children)
+      ? document.pages[0].children
+      : []
+  let autoLayoutFrames = 0
+  let semanticRoles = 0
+  let iconFontNodes = 0
+  const walk = nodes => {
+    for (const node of nodes ?? []) {
+      if (!node || typeof node !== 'object') continue
+      if (node.type === 'frame' && (node.layout === 'horizontal' || node.layout === 'vertical')) {
+        autoLayoutFrames += 1
+      }
+      if (typeof node.role === 'string' && node.role) {
+        semanticRoles += 1
+      }
+      if (node.type === 'icon_font') {
+        iconFontNodes += 1
+      }
+      if (Array.isArray(node.children)) walk(node.children)
+    }
+  }
+  walk(roots)
+  const variablesCount = document?.variables && typeof document.variables === 'object'
+    ? Object.keys(document.variables).length
+    : 0
+  return { autoLayoutFrames, semanticRoles, iconFontNodes, variablesCount }
+}
+
 export async function convertHtmlToDocument({
   html,
   htmlPath,
   url,
+  viewportWidth,
   viewportHeight,
   documentName,
+  preferBrowser = true,
   allowLocalUrl = false,
 } = {}) {
   let sourceBytes
   let resolvedName = documentName
   let baseUrl
+  let baseDir = null
+  let remoteUrl = null
   let resources = {}
   if (typeof html === 'string' && html.trim()) {
     sourceBytes = Buffer.from(html, 'utf8')
@@ -601,21 +1325,60 @@ export async function convertHtmlToDocument({
     resolvedName ??= basename(fullPath, extname(fullPath)) || 'HTML Import'
     if (!(sourceBytes.length >= 4 && sourceBytes[0] === 0x50 && sourceBytes[1] === 0x4b)) {
       const text = new TextDecoder('utf-8').decode(sourceBytes)
-      resources = collectLocalHtmlResources(text, dirname(fullPath))
+      baseDir = dirname(fullPath)
+      resources = collectLocalHtmlResources(text, baseDir)
       baseUrl = `${VIRTUAL_PROJECT_ORIGIN}document.html`
     }
   } else if (typeof url === 'string' && url.trim()) {
-    const fetched = await fetchRemoteHtmlWithResources(url.trim(), { allowLocal: allowLocalUrl })
+    const validated = validateExternalUrl(url.trim(), allowLocalUrl)
+    remoteUrl = validated.href
+    resolvedName ??= validated.hostname || 'HTML Import'
+  } else {
+    throw new Error('html, htmlPath, or url is required')
+  }
+
+  const isZip = sourceBytes && sourceBytes.length >= 4 && sourceBytes[0] === 0x50 && sourceBytes[1] === 0x4b
+  const height = viewportHeight === undefined || viewportHeight === null || viewportHeight === ''
+    ? undefined
+    : Number(viewportHeight)
+  const width = viewportWidth === undefined || viewportWidth === null || viewportWidth === ''
+    ? 1440
+    : Number(viewportWidth)
+
+  if (preferBrowser && !isZip) {
+    const snapshotJson = await captureHtmlSnapshotWithBrowser({
+      htmlBytes: sourceBytes,
+      baseDir,
+      targetUrl: remoteUrl,
+      viewportWidth: Number.isFinite(width) && width > 0 ? width : 1440,
+      viewportHeight: Number.isFinite(height) && height > 0 ? height : 900,
+    })
+    if (snapshotJson) {
+      try {
+        const parsed = JSON.parse(DesignEngine.convert_snapshot_document(snapshotJson))
+        if (parsed && parsed.ok && parsed.document) {
+          if (resolvedName) parsed.document.name = resolvedName
+          const summary = summarizeImportedDocument(parsed.document)
+          return {
+            ...parsed,
+            renderMode: 'browser-snapshot',
+            ...summary,
+          }
+        }
+      } catch {
+        // Fall through to static CSS importer if snapshot conversion fails
+      }
+    }
+  }
+
+  if (remoteUrl && !sourceBytes) {
+    const fetched = await fetchRemoteHtmlWithResources(remoteUrl, { allowLocal: allowLocalUrl })
     sourceBytes = fetched.bytes
     baseUrl = fetched.finalUrl
     resources = fetched.resources
     resolvedName ??= new URL(fetched.finalUrl).hostname || 'HTML Import'
-  } else {
-    throw new Error('html, htmlPath, or url is required')
   }
-  const height = viewportHeight === undefined || viewportHeight === null || viewportHeight === ''
-    ? undefined
-    : Number(viewportHeight)
+
   const raw = DesignEngine.convert_html_document(
     sourceBytes,
     resolvedName,
@@ -623,7 +1386,16 @@ export async function convertHtmlToDocument({
     Number.isFinite(height) && height > 0 ? height : undefined,
     Object.keys(resources).length > 0 ? JSON.stringify(resources) : undefined,
   )
-  return JSON.parse(raw)
+  const parsed = JSON.parse(raw)
+  if (parsed && parsed.document) {
+    const summary = summarizeImportedDocument(parsed.document)
+    return {
+      ...parsed,
+      renderMode: 'static-css',
+      ...summary,
+    }
+  }
+  return parsed
 }
 
 export async function convertFigmaToDocument({
@@ -1231,6 +2003,17 @@ export class EngineSession {
     const name = String(rawName ?? '').replace(/^(?:synapse_|openpencil_)/, '')
     if (name === 'import_html_url' && typeof args.url === 'string' && args.url.trim()) {
       try {
+        const snapshotJson = await captureHtmlSnapshotWithBrowser({
+          targetUrl: validateExternalUrl(args.url.trim()).href,
+          viewportWidth: args.viewportWidth ?? 1440,
+          viewportHeight: args.viewportHeight ?? 900,
+        })
+        if (snapshotJson) {
+          return this.#invokeEngineTool('import_web_snapshot', {
+            ...args,
+            snapshot: snapshotJson,
+          })
+        }
         const fetched = await fetchRemoteHtmlWithResources(args.url.trim())
         return this.#invokeEngineTool('import_html_url', {
           ...args,

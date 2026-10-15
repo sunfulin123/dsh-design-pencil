@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use base64::Engine;
 use jian_ops_schema::node::PenNode;
-use op_editor_core::{EditorCommand, EditorState, NodeId, PenNodeExt};
+use op_editor_core::{EditorCommand, EditorState, NodeId};
 use op_mcp::import_common::{
     count_subtree_nodes, import_result_to_outcome, parse_import_placement, parse_viewport_height,
 };
@@ -178,7 +178,7 @@ impl DesignEngine {
 
     pub fn convert_figma_document(bytes: &[u8], file_name: &str) -> Result<String, JsValue> {
         let import =
-            op_figma::parse_fig_binary(bytes, file_name, op_figma::FigLayoutMode::OpenPencil)
+            op_figma::parse_fig_binary(bytes, file_name, op_figma::FigLayoutMode::Preserve)
                 .map_err(|error| JsValue::from_str(&format!("import {file_name:?}: {error}")))?;
         let page_count = import.document.pages.as_ref().map_or(1, Vec::len);
         let node_count: usize = import
@@ -208,6 +208,10 @@ impl DesignEngine {
         .to_string())
     }
 
+    pub fn snapshot_extractor_script() -> String {
+        op_html::snapshot::SNAPSHOT_EXTRACTOR_JS.to_string()
+    }
+
     pub fn convert_snapshot_document(snapshot: &str) -> Result<String, JsValue> {
         let imported =
             op_html::import_snapshot_document(snapshot, &op_html::HtmlImportOptions::default());
@@ -222,7 +226,17 @@ impl DesignEngine {
             )));
         }
         let node_count = count_subtree_nodes(&imported.document.children);
-        let document = serde_json::to_value(&imported.document).map_err(js_error)?;
+        let mut document = serde_json::to_value(&imported.document).map_err(js_error)?;
+        jian_ops_schema::image_table::externalize_images(&mut document);
+        if let Some(obj) = document.as_object_mut() {
+            obj.insert(
+                "editorMeta".to_string(),
+                json!({
+                    "activePageIndex": 0,
+                    "preserveAuthoredGeometry": true,
+                }),
+            );
+        }
         Ok(json!({
             "ok": true,
             "document": document,
@@ -298,11 +312,20 @@ impl DesignEngine {
             Ok(placement) => placement,
             Err((_, message)) => return error_reply(&message),
         };
-        let import = match op_figma::parse_fig_binary(
-            &bytes,
-            file_name,
-            op_figma::FigLayoutMode::OpenPencil,
-        ) {
+        let doc_is_empty = self.state.doc.children.is_empty()
+            && self
+                .state
+                .doc
+                .pages
+                .as_ref()
+                .is_none_or(|pages| pages.iter().all(|p| p.children.is_empty()));
+        let layout_mode =
+            if doc_is_empty && placement.parent_id == NodeId::NONE && placement.page_id.is_none() {
+                op_figma::FigLayoutMode::Preserve
+            } else {
+                op_figma::FigLayoutMode::OpenPencil
+            };
+        let import = match op_figma::parse_fig_binary(&bytes, file_name, layout_mode) {
             Ok(import) => import,
             Err(error) => return error_reply(&format!("failed to parse Figma file: {error}")),
         };
@@ -313,13 +336,6 @@ impl DesignEngine {
             .as_ref()
             .map(|pages| pages.iter().map(|p| count_subtree_nodes(&p.children)).sum())
             .unwrap_or_else(|| count_subtree_nodes(&import.document.children));
-        let doc_is_empty = self.state.doc.children.is_empty()
-            && self
-                .state
-                .doc
-                .pages
-                .as_ref()
-                .is_none_or(|pages| pages.iter().all(|p| p.children.is_empty()));
         if doc_is_empty && placement.parent_id == NodeId::NONE && placement.page_id.is_none() {
             let previous = self.state.snapshot_for_history();
             self.state.replace_document(import.document);

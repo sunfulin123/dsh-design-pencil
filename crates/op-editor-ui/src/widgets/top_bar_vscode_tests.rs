@@ -12,7 +12,10 @@ fn vscode_embed_keeps_file_controls_and_hides_fullscreen() {
     for x in 0..1200 {
         let hit = bar.hit_test(rect, Point2D::new(x as f32, TOP_BAR_HEIGHT / 2.0));
         assert!(
-            !matches!(hit, Some(TopBarHit::ToggleFullscreen)),
+            !matches!(
+                hit,
+                Some(TopBarHit::ToggleFullscreen | TopBarHit::OpenImportMenu)
+            ),
             "hidden control hit at x={x}: {hit:?}"
         );
     }
@@ -22,7 +25,6 @@ fn vscode_embed_keeps_file_controls_and_hides_fullscreen() {
         })
         .collect();
     assert!(hits.contains(&TopBarHit::ToggleFileMenu));
-    assert!(hits.contains(&TopBarHit::OpenImportMenu));
 }
 
 #[test]
@@ -92,6 +94,7 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
             .collect();
         for hidden in [
             TopBarHit::ToggleFileMenu,
+            TopBarHit::OpenImportMenu,
             TopBarHit::ToggleGitPanel,
             TopBarHit::OpenAgentSettings,
             TopBarHit::Collaboration,
@@ -106,7 +109,6 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
         }
         for retained in [
             TopBarHit::ToggleSidebar,
-            TopBarHit::OpenImportMenu,
             TopBarHit::OpenAssetCenter,
             TopBarHit::OpenExportMenu,
             TopBarHit::TogglePreview,

@@ -565,12 +565,6 @@ impl WidgetHost {
             } else {
                 self.apply_toggle_component_browser()
             }
-        } else if key.eq_ignore_ascii_case("f") {
-            // F/H intentionally blur inputs covered by the import modal, with
-            // settings/Git/modal guards inside `apply_open_import`.
-            self.apply_open_import(ImportSource::Figma)
-        } else if key.eq_ignore_ascii_case("h") {
-            self.apply_open_import(ImportSource::Html)
         } else {
             false
         }

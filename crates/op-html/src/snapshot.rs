@@ -20,6 +20,11 @@ use crate::{
     MAX_OUTPUT_NODES,
 };
 
+#[path = "snapshot_layout.rs"]
+mod snapshot_layout;
+#[path = "snapshot_semantics.rs"]
+mod snapshot_semantics;
+pub(crate) use snapshot_semantics::extract_design_variables;
 #[path = "snapshot_stack.rs"]
 mod snapshot_stack;
 #[path = "snapshot_text.rs"]
@@ -94,7 +99,12 @@ pub fn import_snapshot(json: &str, opts: &HtmlImportOptions) -> HtmlImportResult
 }
 
 pub fn import_snapshot_document(json: &str, opts: &HtmlImportOptions) -> HtmlDocumentResult {
-    wrap_imported_document(import_snapshot(json, opts))
+    let mut result = wrap_imported_document(import_snapshot(json, opts));
+    if result.document.variables.is_none() {
+        result.document.variables =
+            snapshot_semantics::extract_design_variables(&result.document.children);
+    }
+    result
 }
 
 fn import_snapshot_inner(
@@ -274,6 +284,18 @@ impl<'a> SnapshotCtx<'a> {
         rect: Rect,
         parent_rect: Rect,
     ) -> Option<PenNode> {
+        let styles = style_map(object);
+        if snapshot_semantics::extract_lucide_icon_name(object).is_some() {
+            if let Some(id) = self.allocate_id() {
+                let mut base = self.base(id, Some("svg".into()), rect, Some(parent_rect));
+                self.apply_opacity(&mut base, &styles);
+                if let Some(icon) =
+                    snapshot_semantics::try_map_lucide_icon(object, base, rect.w, rect.h, &styles)
+                {
+                    return Some(icon);
+                }
+            }
+        }
         self.map_vector(object, rect, parent_rect)
             .or_else(|| self.map_image(object, rect, parent_rect))
     }
@@ -335,23 +357,16 @@ impl<'a> SnapshotCtx<'a> {
                 .unwrap_or_else(|| "#ffffff".into());
             container.fill = Some(vec![solid_fill(backdrop)]);
         }
-        let name = root_name.map(str::to_string).or_else(|| {
-            object
-                .get("tag")
-                .and_then(Value::as_str)
-                .map(str::to_string)
-        });
-        let mut base = self.base(id, name, rect, parent_rect);
-        self.apply_base_styles(&mut base, &styles);
+        snapshot_layout::apply_verified_snapshot_auto_layout(object, &styles, rect, &mut container);
         // `z-index` takes effect on a flex / grid item even while it stays
         // `position: static`, so the children's stacking depends on *this*
         // element's `display`.
         let flex_or_grid_parent = snapshot_stack::is_flex_or_grid(styles.get("display"));
         // Map in DOM order (id allocation and the node budget must follow the
         // capture), then re-lay the survivors into canonical front-to-back
-        // order. Snapshot frames position every child explicitly, so this
-        // moves paint only.
-        let ordered = object
+        // order when `LayoutMode::None`, or keep natural flow order when
+        // verified Auto-Layout (`Horizontal`/`Vertical`) is active.
+        let ordered: Vec<_> = object
             .get("children")
             .and_then(Value::as_array)
             .map(|children| {
@@ -364,7 +379,15 @@ impl<'a> SnapshotCtx<'a> {
                     .collect()
             })
             .unwrap_or_default();
-        let children = snapshot_stack::to_front_to_back(ordered);
+        let children: Vec<PenNode> = if snapshot_layout::is_flow_auto_layout(&container) {
+            ordered.into_iter().map(|(_, node)| node).collect()
+        } else {
+            snapshot_stack::to_front_to_back(ordered)
+        };
+        let name = snapshot_semantics::infer_layer_name(object, root_name, &children);
+        let mut base = self.base(id, name, rect, parent_rect);
+        base.role = snapshot_semantics::infer_semantic_role(object);
+        self.apply_base_styles(&mut base, &styles);
         self.text_fill_override = saved_text_fill;
         Some(PenNode::Frame(FrameNode {
             base,

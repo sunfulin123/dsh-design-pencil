@@ -786,3 +786,106 @@ fn bad_version_and_bad_json_warn_not_panic() {
     let malformed = import_snapshot("not json", &HtmlImportOptions::default());
     assert!(malformed.nodes.is_empty());
 }
+
+#[test]
+fn verified_flex_row_upgrades_to_horizontal_auto_layout_with_gap_and_padding() {
+    let json = r#"{
+      "version": 1,
+      "root": {
+        "kind": "element", "tag": "header",
+        "rect": { "x": 0, "y": 0, "w": 1200, "h": 64 },
+        "attrs": { "class": "site-navbar flex items-center" },
+        "styles": {
+          "display": "flex",
+          "flex-direction": "row",
+          "justify-content": "space-between",
+          "align-items": "center",
+          "padding-top": "12px",
+          "padding-right": "24px",
+          "padding-bottom": "12px",
+          "padding-left": "24px",
+          "column-gap": "16px",
+          "background-color": "rgb(15, 23, 42)"
+        },
+        "children": [
+          { "kind": "element", "tag": "a",
+            "rect": { "x": 24, "y": 16, "w": 120, "h": 32 },
+            "attrs": { "class": "brand-logo" },
+            "styles": {},
+            "children": [
+              { "kind": "text", "rect": { "x": 24, "y": 20, "w": 80, "h": 24 },
+                "text": "Synapse", "lines": 1, "styles": { "color": "rgb(255, 255, 255)" } }
+            ] },
+          { "kind": "element", "tag": "button",
+            "rect": { "x": 1080, "y": 12, "w": 96, "h": 40 },
+            "attrs": { "class": "cta-button" },
+            "styles": { "background-color": "rgb(59, 130, 246)" },
+            "children": [
+              { "kind": "text", "rect": { "x": 1096, "y": 20, "w": 64, "h": 24 },
+                "text": "Get Started", "lines": 1, "styles": { "color": "rgb(255, 255, 255)" } }
+            ] }
+        ]
+      }
+    }"#;
+    let doc_result = import_snapshot_document(json, &HtmlImportOptions::default());
+    let PenNode::Frame(root) = &doc_result.document.children[0] else {
+        panic!("expected frame")
+    };
+    assert_eq!(root.base.role.as_deref(), Some("navbar"));
+    assert_eq!(root.container.layout, Some(LayoutMode::Horizontal));
+    assert_eq!(
+        root.container.justify_content,
+        Some(jian_ops_schema::node::container::JustifyContent::SpaceBetween)
+    );
+    assert_eq!(
+        root.container.align_items,
+        Some(jian_ops_schema::node::container::AlignItems::Center)
+    );
+    let kids = root.children.as_ref().unwrap();
+    // Flow order preserved: brand link first, CTA button second.
+    let PenNode::Frame(first) = &kids[0] else {
+        panic!("first child")
+    };
+    let PenNode::Frame(second) = &kids[1] else {
+        panic!("second child")
+    };
+    assert_eq!(first.base.name.as_deref(), Some("Link: Synapse"));
+    assert_eq!(second.base.name.as_deref(), Some("Button: Get Started"));
+    assert_eq!(second.base.role.as_deref(), Some("button"));
+    // Design variables extracted automatically into document.variables
+    let vars = doc_result
+        .document
+        .variables
+        .as_ref()
+        .expect("design variables");
+    assert!(vars.contains_key("--bg-canvas"));
+    assert!(vars.contains_key("--text-primary"));
+}
+
+#[test]
+fn lucide_svg_in_snapshot_upgrades_to_native_icon_font_node() {
+    let json = r#"{
+      "version": 1,
+      "root": {
+        "kind": "element", "tag": "button",
+        "rect": { "x": 0, "y": 0, "w": 40, "h": 40 },
+        "children": [
+          { "kind": "image", "tag": "svg",
+            "rect": { "x": 10, "y": 10, "w": 20, "h": 20 },
+            "attrs": { "class": "lucide lucide-search" },
+            "src": "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=",
+            "fill": "rgb(37, 99, 235)",
+            "styles": {} }
+        ]
+      }
+    }"#;
+    let result = import_snapshot(json, &HtmlImportOptions::default());
+    let PenNode::Frame(root) = &result.nodes[0] else {
+        panic!()
+    };
+    let PenNode::IconFont(icon) = &root.children.as_ref().unwrap()[0] else {
+        panic!("expected IconFont node")
+    };
+    assert_eq!(icon.icon_font_name, "search");
+    assert_eq!(icon.icon_font_family.as_deref(), Some("lucide"));
+}

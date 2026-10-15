@@ -187,9 +187,13 @@ fn narrow_dirty_title_drops_git_before_filename_extension_or_status() {
     // ends where chrome begins, so the window that produces "Git dropped,
     // name intact" moves by exactly the width of those new controls.
     let home_span = ICON_BUTTON + DIVIDER_GAP + DIVIDER_W + DIVIDER_GAP;
+    let removed_import_span = FILE_MENU_BUTTON_WIDTH + DIVIDER_GAP + DIVIDER_W + DIVIDER_GAP;
     let rect = Rect {
         origin: Point2D::ZERO,
-        size: Point2D::new(620.0 + ICON_BUTTON * 2.0 + home_span, TOP_BAR_HEIGHT),
+        size: Point2D::new(
+            620.0 + ICON_BUTTON * 2.0 + home_span - removed_import_span,
+            TOP_BAR_HEIGHT,
+        ),
     };
 
     let layout = bar.title_layout(rect, title_test_width);
@@ -584,12 +588,15 @@ fn managed_embed_paints_only_document_tools() {
         );
         assert_eq!(capture.texts, 0, "title and status labels must not paint");
         assert!(!capture.strokes.is_empty());
-        assert!(!capture.fills.is_empty(), "import glyph must still paint");
-        let import = bar.import_button_rect(rect);
+        assert!(
+            capture.fills.is_empty(),
+            "import glyph is removed from TopBar"
+        );
+        let sidebar_right = PAD + bar.left_inset() + ICON_BUTTON;
         let palette = bar.asset_center_button_rect(rect);
         for origin in capture.strokes {
             assert!(
-                origin.x < import.origin.x + import.size.x || origin.x >= palette.origin.x,
+                origin.x < sidebar_right || origin.x >= palette.origin.x,
                 "hidden icon painted at {origin:?} for width={width}"
             );
         }

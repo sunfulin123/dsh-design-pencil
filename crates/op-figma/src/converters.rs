@@ -150,6 +150,18 @@ fn build_container(
     if let Some(l) = layout {
         apply_layout(l, &mut container);
     }
+    container.limits.min_width = figma
+        .get_f64("minWidth")
+        .filter(|v| v.is_finite() && *v > 0.0);
+    container.limits.max_width = figma
+        .get_f64("maxWidth")
+        .filter(|v| v.is_finite() && *v > 0.0);
+    container.limits.min_height = figma
+        .get_f64("minHeight")
+        .filter(|v| v.is_finite() && *v > 0.0);
+    container.limits.max_height = figma
+        .get_f64("maxHeight")
+        .filter(|v| v.is_finite() && *v > 0.0);
     container.corner_radius = map_corner_radius(figma);
     container.fill = map_figma_fills(figma.get_array("fillPaints"))
         .or_else(|| map_figma_fills(figma.get_array("backgroundPaints")));

@@ -43,33 +43,25 @@ impl TopBar {
         }
     }
 
-    /// Import button, right of the file menu. Canonical anchor shared by
-    /// hit-test, paint, and the import dropdown so they cannot drift.
+    /// Import button (hidden — Figma/HTML import is MCP-only).
+    /// Returns a zero-width rect at the file-menu edge so legacy anchor callers compile cleanly.
     pub fn import_button_rect(&self, top_bar_rect: Rect) -> Rect {
+        let file_menu = self.file_menu_rect_for(top_bar_rect);
+        Rect {
+            origin: Point2D::new(file_menu.origin.x, file_menu.origin.y),
+            size: Point2D::new(0.0, 0.0),
+        }
+    }
+
+    /// Home (制图台) button, right of the file menu. Canonical anchor
+    /// shared by hit-test, paint, and the hover tooltip so they cannot drift.
+    pub fn home_button_rect(&self, top_bar_rect: Rect) -> Rect {
         let divider_span = DIVIDER_GAP + DIVIDER_W + DIVIDER_GAP;
         let file_menu = self.file_menu_rect_for(top_bar_rect);
         Rect {
             origin: Point2D::new(
-                if self.file_controls_visible() {
-                    file_menu.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span
-                } else {
-                    file_menu.origin.x
-                },
+                file_menu.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span,
                 file_menu.origin.y,
-            ),
-            size: Point2D::new(FILE_MENU_BUTTON_WIDTH, ICON_BUTTON),
-        }
-    }
-
-    /// Home (制图台) button, right of the import button. Canonical anchor
-    /// shared by hit-test, paint, and the hover tooltip so they cannot drift.
-    pub fn home_button_rect(&self, top_bar_rect: Rect) -> Rect {
-        let divider_span = DIVIDER_GAP + DIVIDER_W + DIVIDER_GAP;
-        let import = self.import_button_rect(top_bar_rect);
-        Rect {
-            origin: Point2D::new(
-                import.origin.x + FILE_MENU_BUTTON_WIDTH + divider_span,
-                import.origin.y,
             ),
             size: Point2D::new(ICON_BUTTON, ICON_BUTTON),
         }
@@ -396,12 +388,7 @@ impl TopBar {
                 }
                 self.file_menu_rect_for(top_bar_rect)
             }
-            B::OpenImportMenu => {
-                if !self.file_controls_visible() {
-                    return None;
-                }
-                self.import_button_rect(top_bar_rect)
-            }
+            B::OpenImportMenu => return None,
             B::Home => {
                 if !self.file_controls_visible() {
                     return None;

@@ -8,7 +8,9 @@
 use crate::theme::Theme;
 use crate::widgets::collab_ui::CollabTopBarModel;
 use crate::widgets::editor_state_ext::{theme_for, translate};
-use crate::widgets::icons::{draw_icon, draw_import_icon, Icon};
+#[cfg(test)]
+use crate::widgets::icons::draw_import_icon;
+use crate::widgets::icons::{draw_icon, Icon};
 use crate::widgets::{LayoutBox, LayoutCx, PaintCx, Widget, WidgetId};
 use crate::{Color, Point2D, Rect};
 use op_editor_core::editor_ui_state::EditorUiState;
@@ -430,7 +432,7 @@ impl TopBar {
         // controls are hidden (`show_traffic_controls = false` → inset 0), so
         // the static rect would shift the hover/hit area right of the painted
         // folder button by the traffic-cluster width.
-        // File-scoped chrome (file menu, import) — hidden inside a
+        // File-scoped chrome (file menu, home) — hidden inside a
         // VS Code embed, where the workbench owns file identity.
         if self.file_controls_visible() {
             let file_menu_rect = self.file_menu_rect_for(rect);
@@ -440,9 +442,6 @@ impl TopBar {
             if (self.home_button_rect(rect)).contains(point) {
                 return Some(TopBarHit::Home);
             }
-        }
-        if (self.import_button_rect(rect)).contains(point) {
-            return Some(TopBarHit::OpenImportMenu);
         }
         // Git-panel toggle, just right of the centred file name (desktop
         // only — see `GIT_BUTTON_AVAILABLE`; also hidden inside a VS Code
@@ -639,6 +638,7 @@ pub(super) fn paint_file_menu_button(
     paint_compound_icon_button(cx, theme, button_rect, Icon::FolderOpen, hovered, pressed);
 }
 
+#[cfg(test)]
 pub(super) fn paint_import_button(
     cx: &mut PaintCx<'_>,
     theme: &Theme,
