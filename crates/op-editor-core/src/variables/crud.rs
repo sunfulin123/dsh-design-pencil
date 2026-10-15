@@ -165,6 +165,55 @@ impl EditorState {
         true
     }
 
+    /// Synchronize color tokens from a `DesignMdSpec` into `doc.variables` so
+    /// the `{}` Variables panel and AI variable context immediately reflect
+    /// the active Design System / Style Guide.
+    pub fn sync_design_md_to_variables(
+        &mut self,
+        spec: &jian_ops_schema::design_md::DesignMdSpec,
+    ) -> usize {
+        let Some(colors) = spec.color_palette.as_ref() else {
+            return 0;
+        };
+        let mut count = 0usize;
+        for (idx, entry) in colors.iter().enumerate() {
+            let hex = entry.hex.trim();
+            if crate::color_picker::parse_hex_rgb(hex).is_none() {
+                continue;
+            }
+            let raw = entry.name.trim().trim_start_matches('$').trim_start_matches('-');
+            let mut slug = String::new();
+            let mut prev_dash = false;
+            for ch in raw.chars() {
+                if ch.is_alphanumeric() || ch == '_' {
+                    for lower in ch.to_lowercase() {
+                        slug.push(lower);
+                    }
+                    prev_dash = false;
+                } else if !slug.is_empty() && !prev_dash {
+                    slug.push('-');
+                    prev_dash = true;
+                }
+            }
+            while slug.ends_with('-') {
+                slug.pop();
+            }
+            if slug.is_empty() {
+                slug = format!("color-{}", idx + 1);
+            }
+            let var_name = format!("--{slug}");
+            self.variables_mut().insert(
+                var_name,
+                VariableDefinition {
+                    kind: VariableKind::Color,
+                    value: VariableValue::Scalar(VariableScalar::Str(hex.to_string())),
+                },
+            );
+            count += 1;
+        }
+        count
+    }
+
     /// Merge or replace the persisted document theme axes. Any
     /// transient active-theme pin that no longer points at a declared
     /// axis/value is dropped so later variable resolution cannot keep

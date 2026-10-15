@@ -110,8 +110,28 @@ pub fn press_scene_template_center(
             if state.editor_ui.pinned_style_guide.as_deref() == Some(id.as_str()) {
                 // Same entry point the chat panel's ✕ uses, so the two
                 // surfaces cannot disagree about what unpinning does.
-                state.editor_ui.clear_pinned_style_guide()
+                let cleared = state.editor_ui.clear_pinned_style_guide();
+                if state.doc.design_md.is_some() {
+                    let snap = state.snapshot_for_history();
+                    state.doc.design_md = None;
+                    state.editor_ui.design_md_panel.scroll.offset = 0.0;
+                    state.history_push_past(snap);
+                    true
+                } else {
+                    cleared
+                }
             } else {
+                if let Some(guide) = op_ai_skills::style_guide::find_style_guide(&id) {
+                    let mut spec = op_editor_core::parse_design_md(&guide.content);
+                    if spec.project_name.is_none() {
+                        spec.project_name = Some(guide.name.clone());
+                    }
+                    let snap = state.snapshot_for_history();
+                    state.sync_design_md_to_variables(&spec);
+                    state.doc.design_md = Some(spec);
+                    state.editor_ui.design_md_panel.scroll.offset = 0.0;
+                    state.history_push_past(snap);
+                }
                 state.editor_ui.pinned_style_guide = Some(id);
                 true
             }
@@ -193,6 +213,15 @@ pub fn import_style_guide_text(state: &mut EditorState, raw: &str, fallback_name
     match op_ai_skills::style_guide::import_design_md(raw, fallback_name) {
         Ok(imported) => {
             let id = imported.id.clone();
+            let mut spec = op_editor_core::parse_design_md(&imported.guide.content);
+            if spec.project_name.is_none() {
+                spec.project_name = Some(imported.guide.name.clone());
+            }
+            let snap = state.snapshot_for_history();
+            state.sync_design_md_to_variables(&spec);
+            state.doc.design_md = Some(spec);
+            state.editor_ui.design_md_panel.scroll.offset = 0.0;
+            state.history_push_past(snap);
             let center = &mut state.editor_ui.scene_template_center;
             center.queue_style_persist(id.clone());
             state.editor_ui.close_scene_template_style_import();
@@ -237,8 +266,53 @@ pub fn delete_user_style_guide(state: &mut EditorState, id: &str) -> bool {
     center.hover = None;
     if state.editor_ui.pinned_style_guide.as_deref() == Some(id) {
         state.editor_ui.clear_pinned_style_guide();
+        if state.doc.design_md.is_some() {
+            let snap = state.snapshot_for_history();
+            state.doc.design_md = None;
+            state.editor_ui.design_md_panel.scroll.offset = 0.0;
+            state.history_push_past(snap);
+        }
     }
     true
+}
+
+/// Import a `design.md` into the document's `design_md` field and best-effort
+/// register and pin it in the style-guide catalogue so both the Design System
+/// panel and the Asset Center Styles tab stay synchronized.
+pub fn import_design_md_into_document(state: &mut EditorState, markdown: &str, fallback_name: &str) {
+    let mut spec = op_editor_core::parse_design_md(markdown);
+    if spec.project_name.is_none() && !fallback_name.is_empty() {
+        spec.project_name = Some(fallback_name.to_string());
+    }
+    let snap = state.snapshot_for_history();
+    state.sync_design_md_to_variables(&spec);
+    state.doc.design_md = Some(spec);
+    state.editor_ui.design_md_panel.scroll.offset = 0.0;
+    if let Ok(imported) = op_ai_skills::style_guide::import_design_md(markdown, fallback_name) {
+        state.editor_ui.pinned_style_guide = Some(imported.id.clone());
+    }
+    state.history_push_past(snap);
+}
+
+/// Synchronize the in-memory style-guide catalogue and `pinned_style_guide`
+/// from a document's persisted `design_md` on open/sync.
+pub fn sync_style_guide_from_design_md(state: &mut EditorState) {
+    let Some(spec) = state.doc.design_md.as_ref() else {
+        return;
+    };
+    let name = spec.project_name.as_deref().unwrap_or("").trim();
+    if !name.is_empty() {
+        if let Some(guide) = op_ai_skills::style_guide::find_style_guide(name) {
+            state.editor_ui.pinned_style_guide = Some(guide.id().to_string());
+            return;
+        }
+    }
+    if !spec.raw.trim().is_empty() {
+        let fallback = if name.is_empty() { "Design System" } else { name };
+        if let Ok(imported) = op_ai_skills::style_guide::import_design_md(&spec.raw, fallback) {
+            state.editor_ui.pinned_style_guide = Some(imported.id.clone());
+        }
+    }
 }
 
 /// Forget a saved scene template.

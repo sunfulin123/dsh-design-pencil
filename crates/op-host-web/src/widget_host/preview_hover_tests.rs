@@ -149,32 +149,17 @@ fn navigation_host() -> WidgetHost {
 }
 
 #[test]
-fn phone_preview_navigation_keeps_a_rotatable_device() {
-    use op_editor_core::PreviewDeviceKind;
-    let mut host = navigation_host();
-    host.last_viewport_w = VIEWPORT_W;
-    host.last_viewport_h = VIEWPORT_H;
-    host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H);
-    host.editor_state.editor_ui.enter_preview();
-    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
-    assert!(host.preview_go_to_frame(1, "other"));
-    assert_eq!(host.browser_device_kind(), PreviewDeviceKind::Phone);
-    assert!(host.preview_browser.device.is_some());
-    let portrait = host.preview_screen_size();
-    host.preview_browser.preferences.landscape = true;
-    let landscape = host.preview_screen_size();
-    assert_eq!(landscape, (portrait.1, portrait.0));
-}
-
-#[test]
 fn preview_canvas_fit_keeps_all_page_frames_visible() {
     let mut host = navigation_host();
     host.last_viewport_w = VIEWPORT_W;
     host.last_viewport_h = VIEWPORT_H;
     host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H);
     host.editor_state.editor_ui.enter_preview();
-    host.preview_browser.view = Some(op_editor_core::PreviewDeviceKind::Canvas);
     host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
+    assert_eq!(
+        host.browser_device_kind(),
+        op_editor_core::PreviewDeviceKind::Canvas
+    );
     let stage = host.preview_stage_rect(host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H));
     let frame = host.preview_device_frame.as_ref().unwrap();
     for id in ["earlier", "later"] {
@@ -190,40 +175,7 @@ fn preview_canvas_fit_keeps_all_page_frames_visible() {
 }
 
 #[test]
-fn preview_mode_switch_restores_each_inspection_position() {
-    use op_editor_ui::widgets::preview_toolbar::{PreviewControl, PreviewToolbar};
-    let mut host = navigation_host();
-    host.last_viewport_w = VIEWPORT_W;
-    host.last_viewport_h = VIEWPORT_H;
-    host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H);
-    host.editor_state.editor_ui.enter_preview();
-    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
-    host.preview_browser.pan = Point2D::new(80.0, 40.0);
-    host.preview_set_zoom(Some(1.5));
-    assert_eq!(host.preview_browser.pan, Point2D::new(80.0, 40.0));
-    let canvas = host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H);
-    for control in [PreviewControl::Canvas, PreviewControl::Phone] {
-        let rect = PreviewToolbar::control_rects(canvas)
-            .into_iter()
-            .find(|entry| entry.0 == control)
-            .unwrap()
-            .1;
-        host.preview_controls_press(
-            rect.origin.x + 8.0,
-            rect.origin.y + 8.0,
-            VIEWPORT_W,
-            VIEWPORT_H,
-        );
-        host.preview_controls_release();
-    }
-    assert_eq!(host.preview_browser.pan, Point2D::new(80.0, 40.0));
-    assert_eq!(host.preview_browser.zoom, Some(1.5));
-}
-
-#[test]
-fn preview_modes_and_blank_drag_preserve_document_and_camera() {
-    use op_editor_core::PreviewDeviceKind;
-    use op_editor_ui::widgets::preview_toolbar::{PreviewControl, PreviewToolbar};
+fn preview_blank_drag_preserves_document_and_camera() {
     let mut host = navigation_host();
     host.last_viewport_w = VIEWPORT_W;
     host.last_viewport_h = VIEWPORT_H;
@@ -232,26 +184,6 @@ fn preview_modes_and_blank_drag_preserve_document_and_camera() {
     host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
     let camera = host.editor_state.viewport;
     let document = host.editor_state.doc.clone();
-    let canvas = host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H);
-    for (control, kind) in [
-        (PreviewControl::Desktop, PreviewDeviceKind::Desktop),
-        (PreviewControl::Canvas, PreviewDeviceKind::Canvas),
-        (PreviewControl::Phone, PreviewDeviceKind::Phone),
-    ] {
-        let rect = PreviewToolbar::control_rects(canvas)
-            .into_iter()
-            .find(|entry| entry.0 == control)
-            .unwrap()
-            .1;
-        assert!(host.preview_controls_press(
-            rect.origin.x + 8.0,
-            rect.origin.y + 8.0,
-            VIEWPORT_W,
-            VIEWPORT_H
-        ));
-        host.preview_controls_release();
-        assert_eq!(host.browser_device_kind(), kind);
-    }
     assert!(host.apply_press(8.0, 140.0, VIEWPORT_W, VIEWPORT_H));
     host.preview_controls_hover(88.0, 180.0, VIEWPORT_W, VIEWPORT_H);
     assert_eq!(host.preview_browser.pan, Point2D::new(80.0, 40.0));
@@ -310,7 +242,7 @@ fn preview_navigation_starts_selected_and_clamps_in_reading_order() {
 }
 
 #[test]
-fn managed_preview_zoom_and_device_changes_leave_editor_camera_unchanged() {
+fn managed_preview_zoom_leaves_editor_camera_unchanged() {
     let mut host = navigation_host();
     let camera = host.editor_state.viewport;
     let before = host.editor_state.doc.clone();
@@ -322,19 +254,14 @@ fn managed_preview_zoom_and_device_changes_leave_editor_camera_unchanged() {
     host.preview_set_zoom(Some(2.0));
     assert_eq!(
         host.preview_device_frame.as_ref().unwrap().frame.size.x,
-        780.0
-    );
-    host.preview_pick_device(None);
-    assert_eq!(
-        host.preview_device_frame.as_ref().unwrap().frame.size.x,
-        780.0
+        2580.0
     );
     assert_eq!(host.editor_state.viewport, camera);
     assert_eq!(host.editor_state.doc, before);
 }
 
 #[test]
-fn managed_preview_trackpad_scroll_never_pans_editor_camera() {
+fn managed_preview_trackpad_scroll_pans_canvas_without_changing_editor_camera() {
     let mut host = navigation_host();
     let camera = host.editor_state.viewport;
     host.last_viewport_w = VIEWPORT_W;
@@ -342,8 +269,8 @@ fn managed_preview_trackpad_scroll_never_pans_editor_camera() {
     assert!(host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H));
     host.editor_state.editor_ui.enter_preview();
     host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
-    assert!(host.apply_pan_gesture(500.0, 300.0, 0.0, -40.0, VIEWPORT_W, VIEWPORT_H));
-    assert!(host.preview_scroll_y > 0.0);
+    assert!(host.apply_pan_gesture(500.0, 300.0, 20.0, -40.0, VIEWPORT_W, VIEWPORT_H));
+    assert_eq!(host.preview_browser.pan, Point2D::new(20.0, -40.0));
     assert_eq!(host.editor_state.viewport, camera);
 }
 
@@ -358,8 +285,8 @@ fn present_navigates_an_ordinary_document_without_deck_metadata() {
 }
 
 #[test]
-fn preview_toolbar_opens_device_menu_and_switches_present_without_edits() {
-    use op_editor_ui::widgets::preview_toolbar::{PreviewControl, PreviewMenu, PreviewToolbar};
+fn preview_toolbar_switches_present_without_edits() {
+    use op_editor_ui::widgets::preview_toolbar::{PreviewControl, PreviewToolbar};
     let mut host = navigation_host();
     host.last_viewport_w = VIEWPORT_W;
     host.last_viewport_h = VIEWPORT_H;
@@ -368,23 +295,6 @@ fn preview_toolbar_opens_device_menu_and_switches_present_without_edits() {
     host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
     let before = host.editor_state.doc.clone();
     let canvas = host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H);
-    let mut click = |control| {
-        let rect = PreviewToolbar::control_rects(canvas)
-            .into_iter()
-            .find(|entry| entry.0 == control)
-            .unwrap()
-            .1;
-        assert!(host.preview_controls_press(
-            rect.origin.x + 8.0,
-            rect.origin.y + 8.0,
-            VIEWPORT_W,
-            VIEWPORT_H
-        ));
-        assert!(host.preview_controls_release());
-    };
-    click(PreviewControl::Device);
-    assert_eq!(host.preview_browser.menu, Some(PreviewMenu::Device));
-    host.preview_browser.menu = None;
     let rect = PreviewToolbar::control_rects(canvas)
         .into_iter()
         .find(|entry| entry.0 == PreviewControl::Present)

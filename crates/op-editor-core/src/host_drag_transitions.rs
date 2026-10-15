@@ -65,11 +65,7 @@ pub fn resolve_canvas_press(
     let selected_crop_is_deepest = deepest == state.selection.anchor
         && state.selection_count() == 1
         && state.can_edit_selected_image_crop();
-    let primary = if selected_crop_is_deepest {
-        deepest
-    } else {
-        targets.primary.clone()
-    };
+    let primary = deepest;
     Some(CanvasPressResolve {
         targets,
         primary,
@@ -126,23 +122,21 @@ pub fn apply_canvas_press_selection(
 ) -> bool {
     let should_start_drag = if shift_held {
         let was_in_set = state.is_selected(&target);
-        state.toggle_selection(target);
+        state.toggle_selection(target.clone());
         !was_in_set
     } else {
         let already_in_set = state.is_selected(&target);
         if !already_in_set || state.selection_count() == 1 {
-            state.set_single_selection(target);
+            state.set_single_selection(target.clone());
         }
         true
     };
-    if state
-        .editor_ui
-        .entered_container
-        .as_ref()
-        .is_some_and(|entered| !hit_path.contains(entered))
-    {
-        state.editor_ui.entered_container = None;
-    }
+    state.editor_ui.entered_container = hit_path
+        .iter()
+        .rposition(|id| id == &target)
+        .and_then(|idx| idx.checked_sub(1))
+        .and_then(|parent_idx| hit_path.get(parent_idx))
+        .cloned();
     should_start_drag
 }
 

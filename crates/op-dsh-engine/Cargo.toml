@@ -10,7 +10,11 @@ description = "Headless OpenPencil design engine for the DSH Node.js host"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+base64 = "0.22"
+jian-ops-schema = { path = "../../vendor/jian/crates/jian-ops-schema" }
 op-editor-core = { path = "../op-editor-core" }
+op-figma = { path = "../op-figma" }
+op-html = { path = "../op-html" }
 op-mcp = { path = "../op-mcp", default-features = false }
 op-pen-loader = { path = "../op-pen-loader", default-features = false }
 serde_json = { workspace = true }

@@ -46,6 +46,18 @@ test('MCP discovers only implemented passive tools and executes Position over HT
   const call = (name, args = {}) => rpc('tools/call', { name, arguments: args })
   assert.equal((await call('set_selection_set', { node_ids: 'first,second' })).isError, false)
   assert.deepEqual(await (await fetch(`${host.baseUrl}/api/mcp/version`)).json(), { version: 0 })
+  assert.deepEqual(await (await fetch(`${host.baseUrl}/api/mcp/selection`)).json(), {
+    selectedIds: ['first', 'second'],
+    activePageId: '0',
+  })
+  const pushSelection = await fetch(`${host.baseUrl}/api/mcp/selection`, write({
+    selectedIds: ['second'],
+    activePageId: '0',
+  }))
+  assert.equal(pushSelection.status, 200)
+  assert.deepEqual(await pushSelection.json(), { ok: true })
+  assert.deepEqual((await call('get_selection', { readDepth: 0 })).structuredContent.selectedIds, ['second'])
+  assert.equal((await call('set_selection_set', { node_ids: 'first,second' })).isError, false)
   assert.equal((await call('align_selected', { action: 'center_v' })).isError, false)
   let snapshot = await (await fetch(`${host.baseUrl}/api/mcp/document`)).json()
   assert.deepEqual(snapshot.document.children.map(node => node.y), [60, 50])

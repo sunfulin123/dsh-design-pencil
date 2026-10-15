@@ -14,31 +14,119 @@ macro_rules! tools {
         }
 
         pub fn schemas() -> Vec<Value> {
-            vec![$(json!({
+            let mut list = vec![$(json!({
                 "name": $name,
                 "description": $description,
                 "inputSchema": {
                     "type": "object", "properties": $properties,
                     "required": $required, "additionalProperties": false,
                 },
-            })),*]
+            })),*];
+            list.extend(extra_schemas());
+            list
         }
     };
 }
 
+fn extra_schemas() -> Vec<Value> {
+    vec![
+        json!({
+            "name": "import_html_url",
+            "description": "Fetch an HTTP(S) HTML page and import its DOM/CSS into canonical design nodes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "viewportHeight": {"type": "string"},
+                    "x": {"type": "string"},
+                    "y": {"type": "string"},
+                    "parent": {"type": "string"},
+                    "pageId": {"type": "string"}
+                },
+                "required": ["url"],
+                "additionalProperties": false
+            }
+        }),
+        json!({
+            "name": "import_figma",
+            "description": "Import a Figma .fig file (via figPath, url, or bytesBase64) into the design document.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "figPath": {"type": "string"},
+                    "url": {"type": "string"},
+                    "bytesBase64": {"type": "string"},
+                    "fileName": {"type": "string"},
+                    "x": {"type": "string"},
+                    "y": {"type": "string"},
+                    "parent": {"type": "string"},
+                    "pageId": {"type": "string"}
+                },
+                "required": [],
+                "additionalProperties": false
+            }
+        }),
+        json!({
+            "name": "finalize_design",
+            "description": "Run deterministic post-generation layout and structure refinement passes on the active page.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "root_ids": {"type": "string"}
+                },
+                "required": [],
+                "additionalProperties": false
+            }
+        }),
+        json!({
+            "name": "get_design_quality",
+            "description": "Run non-destructive quality diagnostics over the current document.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+            }
+        }),
+        json!({
+            "name": "enrich_images",
+            "description": "Resolve unresolved image slots on the active page.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "timeout_seconds": {"type": "string"},
+                    "root_ids": {"type": "string"}
+                },
+                "required": [],
+                "additionalProperties": false
+            }
+        }),
+    ]
+}
+
 tools!(state;
     ("batch_design", op_mcp::batch_design_snapshot(state),
-     "Atomically insert, copy, replace, move, update or delete canonical design nodes. Use operations, not script; script and image generation are unavailable on this host.",
-     {"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"},"postProcess":{"type":"boolean"},"canvasWidth":{"type":"number"}}, []),
+     "Atomically insert, copy, replace, move, update or delete canonical design nodes.",
+     {"script":{"type":"string"},"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"},"postProcess":{"type":"boolean"},"canvasWidth":{"type":"number"}}, []),
     ("batch_get", op_mcp::batch_get_snapshot(state),
      "Read or search canonical nodes and their children.",
      {"nodeIds":{"type":"array","items":{"type":"string"}},"patterns":{"type":"array","items":{"type":"object"}},"parentId":{"type":"string"},"pageId":{"type":"string"},"readDepth":{"type":"number"},"searchDepth":{"type":"number"},"resolveRefs":{"type":"boolean"}}, []),
+    ("read_nodes", op_mcp::read_nodes_snapshot(state),
+     "Read canonical nodes with depth and ref resolution options.",
+     {"nodeIds":{"type":"array","items":{"type":"string"}},"parentId":{"type":"string"},"pageId":{"type":"string"},"readDepth":{"type":"number"},"searchDepth":{"type":"number"},"resolveRefs":{"type":"boolean"}}, []),
     ("snapshot_layout", op_mcp::snapshot_layout_snapshot(state),
      "Read resolved layout bounds and hierarchy for the active or requested page.",
      {"parentId":{"type":"string"},"maxDepth":{"type":"number"},"pageId":{"type":"string"}}, []),
     ("find_empty_space", op_mcp::find_empty_space_snapshot(state),
      "Find free space near existing design content.",
      {"width":{"type":"string"},"height":{"type":"string"},"padding":{"type":"string"},"direction":{"type":"string","enum":["top","right","bottom","left"]},"nodeId":{"type":"string"},"pageId":{"type":"string"}}, ["width","height","direction"]),
+    ("find_node_by_name", op_mcp::find_node_by_name_snapshot(state),
+     "Find a node by name substring on the active page.",
+     {"name":{"type":"string"}}, ["name"]),
+    ("count_nodes", op_mcp::count_nodes_snapshot(state),
+     "Count canonical nodes on the active page.", {}, []),
+    ("list_node_kinds", op_mcp::list_node_kinds_snapshot(state),
+     "List canonical node types present on the active page.", {}, []),
     ("get_editor_state", op_mcp::get_editor_state_snapshot(state),
      "Read active page, selection, nodes and components before editing.", {}, []),
     ("get_document_info", op_mcp::document_info_snapshot(state),
@@ -57,14 +145,79 @@ tools!(state;
      "Read undo and redo stack depths.", {}, []),
     ("get_canvas_bounds", op_mcp::get_canvas_bounds_snapshot(state),
      "Read the active page's union bounds.", {}, []),
+    ("get_viewport", op_mcp::get_viewport_snapshot(state),
+     "Read the editor camera viewport.", {}, []),
+    ("set_viewport", op_mcp::set_viewport_snapshot(),
+     "Set the editor camera pan and zoom.",
+     {"pan_x":{"type":"string"},"pan_y":{"type":"string"},"zoom":{"type":"string"}}, []),
+    ("set_active_tool", op_mcp::set_active_tool_snapshot(),
+     "Switch the active editor tool.",
+     {"tool":{"type":"string"}}, ["tool"]),
     ("list_pages", op_mcp::list_pages_snapshot(state),
      "Read page ids and names.", {}, []),
+    ("list_variables", op_mcp::list_variables_snapshot(state),
+     "List canonical design variable records.", {}, []),
     ("get_variables", op_mcp::get_variables_snapshot(state),
      "Read canonical design variables and theme axes.", {}, []),
+    ("get_active_theme", op_mcp::get_active_theme_snapshot(state),
+     "Read active design-token theme axis values.", {}, []),
+    ("cycle_active_axis_value", op_mcp::cycle_active_axis_value_snapshot(state),
+     "Cycle a design-token theme axis value.", {"axis":{"type":"string"}}, ["axis"]),
     ("list_components", op_mcp::list_components_snapshot(state),
      "Read registered design components.", {}, []),
     ("get_component", op_mcp::get_component_snapshot(state),
      "Read one registered component.", {"component_id":{"type":"string"}}, ["component_id"]),
+    ("list_ui_kits", op_mcp::list_ui_kits_snapshot(state),
+     "List available UI kits and their components.", {}, []),
+    ("get_guidelines", op_mcp::get_guidelines_snapshot(),
+     "Read design guidelines by topic.", {"topic":{"type":"string"}}, []),
+    ("get_style_guide_tags", op_mcp::get_style_guide_tags_snapshot(),
+     "Read available style guide tags.", {}, []),
+    ("get_style_guide", op_mcp::get_style_guide_snapshot(),
+     "Select a style guide by tags or name.",
+     {"tags":{"type":"string"},"name":{"type":"string"},"platform":{"type":"string"}}, []),
+    ("list_style_guides", op_mcp::list_style_guides_snapshot(),
+     "List bundled style guides.", {"platform":{"type":"string"}}, []),
+    ("get_design_md", op_mcp::get_design_md_snapshot(state),
+     "Read the document's DESIGN.md specification.", {}, []),
+    ("set_design_md", op_mcp::set_design_md_snapshot(state),
+     "Update the document's DESIGN.md specification.",
+     {"markdown":{"type":"string"},"content":{"type":"string"}}, []),
+    ("export_design_md", op_mcp::export_design_md_snapshot(state),
+     "Export the document's DESIGN.md specification.", {}, []),
+    ("get_design_prompt", op_mcp::get_design_prompt_snapshot(state),
+     "Read the design prompt guidance.", {"section":{"type":"string"}}, []),
+    ("get_design_agent_prompt", op_mcp::get_design_agent_prompt_snapshot(),
+     "Read the design agent system prompt.", {}, []),
+    ("lint_document", op_mcp::lint_document_snapshot(state),
+     "Run structural and visual lint detectors on the document.",
+     {"rootId":{"type":"string"},"category":{"type":"string"}}, []),
+    ("search_all_unique_properties", op_mcp::search_all_unique_properties_snapshot(state),
+     "Search unique property values across a subtree.",
+     {"parents":{"type":"string"},"properties":{"type":"string"}}, ["properties"]),
+    ("replace_all_matching_properties", op_mcp::replace_all_matching_properties_snapshot(state),
+     "Replace matching property values across a subtree.",
+     {"parents":{"type":"string"},"properties":{"type":"string"}}, ["properties"]),
+    ("design_skeleton", op_mcp::design_skeleton_snapshot(),
+     "Phase 1 layered design skeleton insertion.",
+     {"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("design_content", op_mcp::design_content_snapshot(),
+     "Phase 2 layered design content insertion.",
+     {"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("design_refine", op_mcp::design_refine_snapshot(state),
+     "Phase 3 layered design refinement.",
+     {"rootId":{"type":"string"},"pageId":{"type":"string"},"canvasWidth":{"type":"string"}}, []),
+    ("upsert_variables", op_mcp::upsert_variables_snapshot(),
+     "Upsert design variables by conversion key.",
+     {"key":{"type":"string"},"variables":{"type":"string"},"sourcePath":{"type":"string"},"sourceHash":{"type":"string"}}, ["key","variables"]),
+    ("upsert_component", op_mcp::upsert_component_snapshot(),
+     "Upsert a reusable component by conversion key.",
+     {"key":{"type":"string"},"name":{"type":"string"},"node_json":{"type":"string"},"sourcePath":{"type":"string"},"sourceHash":{"type":"string"}}, ["key","name","node_json"]),
+    ("upsert_screen", op_mcp::upsert_screen_snapshot(),
+     "Upsert a top-level screen by conversion key.",
+     {"key":{"type":"string"},"node_json":{"type":"string"},"sourcePath":{"type":"string"},"sourceHash":{"type":"string"}}, ["key","node_json"]),
+    ("conversion_status", op_mcp::conversion_status_snapshot(state),
+     "Read incremental conversion status for variables, components and screens.", {}, []),
     ("set_selection", op_mcp::set_selection_snapshot(),
      "Select one node on the active page.", {"node_id":{"type":"string"}}, ["node_id"]),
     ("set_selection_set", op_mcp::set_selection_set_snapshot(),
@@ -114,8 +267,16 @@ tools!(state;
      "Deep-copy a node subtree with fresh ids and optional overrides.",
      {"sourceId":{"type":"string"},"parent":{"type":"string"},"overrides":{"type":"object"},"pageId":{"type":"string"}}, ["sourceId"]),
     ("import_svg", op_mcp::import_svg_snapshot(),
-     "Import inline SVG into canonical design nodes. Local filesystem paths are not supported.",
-     {"svg":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, ["svg"]),
+     "Import inline SVG or an SVG file into canonical design nodes.",
+     {"svg":{"type":"string"},"svgPath":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("import_html", op_mcp::import_html_tool::import_html_snapshot(),
+     "Import HTML/CSS markup or a local HTML file into canonical design nodes.",
+     {"html":{"type":"string"},"htmlPath":{"type":"string"},"viewportHeight":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("import_web_snapshot", op_mcp::import_snapshot_tool::import_web_snapshot_tool(),
+     "Import a browser DOM/style snapshot JSON into canonical design nodes.",
+     {"snapshot":{"type":"string"},"snapshotPath":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("set_node_collapsed", op_mcp::set_node_collapsed_snapshot(),
+     "Set layer collapsed state.", {"node_id":{"type":"string"},"collapsed":{"type":"string","enum":["true","false"]}}, ["node_id","collapsed"]),
     ("set_node_rotation", op_mcp::set_node_rotation_snapshot(),
      "Set rotation in degrees.", {"node_id":{"type":"string"},"degrees":{"type":"string"}}, ["node_id","degrees"]),
     ("set_node_text", op_mcp::set_node_text_snapshot(),
@@ -178,6 +339,8 @@ tools!(state;
      "Remove a registered component.", {"component_id":{"type":"string"}}, ["component_id"]),
     ("rename_component", op_mcp::rename_component_snapshot(),
      "Rename a registered component.", {"component_id":{"type":"string"},"name":{"type":"string"}}, ["component_id","name"]),
+    ("delete_page", op_mcp::delete_page_snapshot(state),
+     "Delete a page by id or zero-based index.", {"pageId":{"type":"string"},"index":{"type":"string"}}, []),
     ("set_active_page", op_mcp::set_active_page_snapshot(),
      "Switch active page by zero-based index.", {"index":{"type":"string"}}, ["index"]),
     ("add_page", op_mcp::add_page_snapshot(),

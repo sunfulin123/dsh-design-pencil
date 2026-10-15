@@ -70,6 +70,7 @@ fn refine_subtree_impl(root: &mut PenNode, adjust_root_height: bool) -> Vec<Refi
     ensure_unique_node_ids(root, &mut fixes);
     normalize_icon_font_dimensions(root, &mut fixes);
     sanitize_auto_layout_child_positions(root, &mut fixes);
+    impeccable_typeset_and_polish(root, None, &mut fixes);
     sanitize_screen_frame_bounds(root, &mut fixes);
     if adjust_root_height {
         adjust_root_height_to_content(root, &mut fixes);
@@ -89,6 +90,7 @@ pub fn refine_subtree_with_allocator(
     ensure_unique_node_ids_with_allocator(root, allocator, taken, &mut fixes)?;
     normalize_icon_font_dimensions(root, &mut fixes);
     sanitize_auto_layout_child_positions(root, &mut fixes);
+    impeccable_typeset_and_polish(root, None, &mut fixes);
     sanitize_screen_frame_bounds(root, &mut fixes);
     adjust_root_height_to_content(root, &mut fixes);
     Ok(fixes)
@@ -436,6 +438,60 @@ fn collapse_spaces(s: &str) -> String {
 }
 
 fn sanitize_auto_layout_child_positions(node: &mut PenNode, fixes: &mut Vec<RefineFix>) {
+    if let PenNode::Frame(frame) = node {
+        let layout_unset = matches!(
+            frame.container.layout,
+            None | Some(jian_ops_schema::node::LayoutMode::None)
+        );
+        if let Some(children) = frame.children.as_ref() {
+            if layout_unset && children.len() >= 2 {
+                let all_unpositioned = children.iter().all(|c| {
+                    c.base().x.unwrap_or(0.0).abs() < f64::EPSILON
+                        && c.base().y.unwrap_or(0.0).abs() < f64::EPSILON
+                });
+                if all_unpositioned {
+                    let id = frame.base.id.clone();
+                    let name = frame.base.name.clone();
+                    let name_lower = name.as_deref().unwrap_or("").to_ascii_lowercase();
+                    let role_lower = frame.base.role.as_deref().unwrap_or("").to_ascii_lowercase();
+                    let is_vertical_surface = name_lower.contains("sidebar")
+                        || name_lower.contains("rail")
+                        || name_lower.contains("panel")
+                        || name_lower.contains("column")
+                        || role_lower.contains("sidebar")
+                        || role_lower.contains("panel");
+                    let is_row = !is_vertical_surface
+                        && (name_lower.contains("row")
+                            || name_lower.contains("navbar")
+                            || name_lower.contains("toolbar")
+                            || name_lower.contains("topbar")
+                            || name_lower.contains("header")
+                            || name_lower.contains("item")
+                            || name_lower.contains("pill")
+                            || name_lower.contains("badge")
+                            || name_lower.contains("link")
+                            || role_lower.contains("row")
+                            || role_lower.contains("navbar")
+                            || role_lower.contains("toolbar")
+                            || role_lower.contains("nav-link")
+                            || role_lower.contains("button"));
+                    frame.container.layout = Some(if is_row {
+                        jian_ops_schema::node::LayoutMode::Horizontal
+                    } else {
+                        jian_ops_schema::node::LayoutMode::Vertical
+                    });
+                    fixes.push(RefineFix {
+                        node_id: id,
+                        node_name: name,
+                        fix: format!(
+                            "Inferred {} auto-layout on multi-child frame with unpositioned children",
+                            if is_row { "horizontal" } else { "vertical" }
+                        ),
+                    });
+                }
+            }
+        }
+    }
     let parent_auto_layout = node.is_auto_layout_container();
     if let Some(children) = node.children_mut() {
         for child in children {
@@ -479,4 +535,115 @@ fn adjust_root_height_to_content(root: &mut PenNode, fixes: &mut Vec<RefineFix>)
         node_name: name,
         fix: "Adjusted root height to fit content".into(),
     });
+}
+
+/// Impeccable (`/typeset` + `/polish`) + Taste Skill deterministic pass:
+/// 1. `/typeset` — Compact horizontal rows (`height <= 72` or containing mixed
+///    icon/shape + text children) default to `alignItems: Center` when unset so
+///    leading icons, labels, and trailing badges share a clean vertical baseline.
+/// 2. `/typeset` — Multi-child horizontal rows without `gap` (and not using
+///    `space_between`/`space_around`) receive a 8px default gap so adjacent
+///    icons and text labels never collide at 0px.
+/// 3. `/polish` — Concentric border radius: if a child card/row frame specifies
+///    a non-pill uniform `cornerRadius` larger than its parent frame's radius
+///    (when parent radius is in `4..=24`), clamp the child radius to
+///    `max(4.0, parent_radius - 2.0)`.
+fn impeccable_typeset_and_polish(
+    node: &mut PenNode,
+    parent_uniform_radius: Option<f64>,
+    fixes: &mut Vec<RefineFix>,
+) {
+    use jian_ops_schema::node::base::NumberOrExpression;
+    use jian_ops_schema::node::container::{AlignItems, JustifyContent, LayoutMode};
+    use jian_ops_schema::node::CornerRadius;
+
+    let mut current_uniform_radius = None;
+
+    if let PenNode::Frame(frame) = node {
+        let id = frame.base.id.clone();
+        let name = frame.base.name.clone();
+
+        // Concentric radius check (`/polish`).
+        if let Some(CornerRadius::Uniform(r)) = frame.container.corner_radius {
+            if let Some(parent_r) = parent_uniform_radius {
+                let is_pill = r >= 99.0;
+                let is_square = match (
+                    frame_size_px(&frame.container.width),
+                    frame_size_px(&frame.container.height),
+                ) {
+                    (Some(w), Some(h)) => (w - h).abs() < 1.0,
+                    _ => false,
+                };
+                if (4.0..=24.0).contains(&parent_r) && r > parent_r && !is_pill && !is_square {
+                    let clamped = (parent_r - 2.0).max(4.0);
+                    frame.container.corner_radius = Some(CornerRadius::Uniform(clamped));
+                    current_uniform_radius = Some(clamped);
+                    fixes.push(RefineFix {
+                        node_id: id.clone(),
+                        node_name: name.clone(),
+                        fix: format!(
+                            "Polished concentric cornerRadius from {r} to {clamped} inside parent radius {parent_r}"
+                        ),
+                    });
+                } else {
+                    current_uniform_radius = Some(r);
+                }
+            } else {
+                current_uniform_radius = Some(r);
+            }
+        }
+
+        // Horizontal row typesetting (`/typeset`).
+        if matches!(frame.container.layout, Some(LayoutMode::Horizontal)) {
+            let child_count = frame.children.as_ref().map_or(0, Vec::len);
+            let height_px = frame_size_px(&frame.container.height);
+            let has_text_and_graphic = frame.children.as_ref().is_some_and(|children| {
+                let has_text = children.iter().any(|c| matches!(c, PenNode::Text(_)));
+                let has_graphic = children.iter().any(|c| {
+                    matches!(
+                        c,
+                        PenNode::IconFont(_)
+                            | PenNode::Ellipse(_)
+                            | PenNode::Rectangle(_)
+                            | PenNode::Path(_)
+                            | PenNode::Frame(_)
+                    )
+                });
+                has_text && has_graphic
+            });
+            let compact_row = height_px.is_some_and(|h| h <= 72.0) || has_text_and_graphic;
+
+            if child_count >= 2 && compact_row && frame.container.align_items.is_none() {
+                frame.container.align_items = Some(AlignItems::Center);
+                fixes.push(RefineFix {
+                    node_id: id.clone(),
+                    node_name: name.clone(),
+                    fix: "Typeset horizontal row with alignItems: center".into(),
+                });
+            }
+
+            let spaced_distribution = matches!(
+                frame.container.justify_content,
+                Some(JustifyContent::SpaceBetween | JustifyContent::SpaceAround)
+            );
+            if child_count >= 2
+                && compact_row
+                && !spaced_distribution
+                && frame.container.gap.is_none()
+            {
+                frame.container.gap = Some(NumberOrExpression::Number(8.0));
+                fixes.push(RefineFix {
+                    node_id: id,
+                    node_name: name,
+                    fix: "Typeset horizontal row with default 8px gap".into(),
+                });
+            }
+        }
+    }
+
+    if let Some(children) = node.children_mut() {
+        for child in children {
+            impeccable_typeset_and_polish(child, current_uniform_radius, fixes);
+        }
+    }
 }

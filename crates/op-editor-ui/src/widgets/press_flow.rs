@@ -25,8 +25,9 @@ pub use super::layer_context_flow::{
 };
 pub use super::prompt_center_press_flow::press_prompt_center;
 pub use super::scene_template_press_flow::{
-    fail_style_import_unreadable, hover_scene_template_center, import_style_guide_text,
-    press_scene_template_center, scroll_scene_template_center,
+    fail_style_import_unreadable, hover_scene_template_center, import_design_md_into_document,
+    import_style_guide_text, press_scene_template_center, scroll_scene_template_center,
+    sync_style_guide_from_design_md,
 };
 
 /// Screen rect of the right-hand property rail. Both hosts derive it

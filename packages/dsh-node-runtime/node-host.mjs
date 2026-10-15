@@ -84,6 +84,15 @@ async function dispatch(request, response, session, file, body, lifecycle) {
   if (request.method === 'GET' && path === '/api/mcp/version') {
     return send(response, 200, { version: session.snapshot().version })
   }
+  if (request.method === 'GET' && path === '/api/mcp/selection') {
+    return send(response, 200, session.getSelection())
+  }
+  if (request.method === 'POST' && path === '/api/mcp/selection') {
+    if (!body || typeof body !== 'object' || !Array.isArray(body.selectedIds)) {
+      throw new HttpError(400, 'Missing selectedIds array')
+    }
+    return send(response, 200, session.setSelection(body))
+  }
   if (request.method === 'GET' && path === '/api/mcp/document') {
     return send(response, 200, snapshotReply(session))
   }
@@ -138,7 +147,7 @@ async function dispatch(request, response, session, file, body, lifecycle) {
         (call.params.arguments !== undefined && (!call.params.arguments || typeof call.params.arguments !== 'object' || Array.isArray(call.params.arguments)))) {
       return send(response, 200, { jsonrpc: '2.0', id: call.id ?? null, error: { code: -32602, message: 'Invalid tool arguments' } })
     }
-    return reply(session.callTool(call.params.name, call.params.arguments ?? {}))
+    return reply(await session.callToolAsync(call.params.name, call.params.arguments ?? {}))
   }
   return send(response, 404, { ok: false, error: 'Not found' })
 }
@@ -171,7 +180,7 @@ export async function startNodeHost({ document, allowOrigins = [], sourcePath, w
     try {
       if (await serveStatic(request, response, { webRoot, canvaskitRoot })) return
       const path = new URL(request.url, 'http://127.0.0.1').pathname
-      const mutating = request.method === 'POST' && ['/mcp', '/api/mcp/document', '/api/mcp/sync-reset', '/api/file/save'].includes(path)
+      const mutating = request.method === 'POST' && ['/mcp', '/api/mcp/document', '/api/mcp/selection', '/api/mcp/sync-reset', '/api/file/save'].includes(path)
       const body = mutating ? await readJson(request) : undefined
       const execute = () => dispatch(request, response, session, file, body, lifecycle)
       if (mutating) {

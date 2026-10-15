@@ -83,6 +83,7 @@ impl WidgetHost {
         if let Some(drag) = self.path_anchor_drag.take() {
             if drag.moved {
                 self.editor_state.history_push_past(drag.pre_drag_snapshot);
+                self.mark_dirty();
                 return true;
             }
             return false;
@@ -124,8 +125,7 @@ impl WidgetHost {
         if self.effect_radius_drag.take().is_some() {
             return true;
         }
-        let was_dragging = self.drag.is_some();
-        self.drag = None;
+        let was_dragging = self.drag.take().is_some();
         was_dragging || pressed_released
     }
 
@@ -168,6 +168,7 @@ impl WidgetHost {
         if let Some(drag) = self.path_anchor_drag.take() {
             if drag.moved {
                 self.editor_state.history_push_past(drag.pre_drag_snapshot);
+                self.mark_dirty();
             }
             return true;
         }
@@ -197,8 +198,7 @@ impl WidgetHost {
         if self.effect_radius_drag.take().is_some() {
             return true;
         }
-        let was_dragging = self.drag.is_some();
-        self.drag = None;
+        let was_dragging = self.drag.take().is_some();
         was_dragging || pressed_released
     }
 

@@ -369,19 +369,48 @@ fn handle_open_document<C: RepaintContext + 'static>(
 
     // Prologue borrow: replace + repaint + capture the opened pair/bytes.
     let Some(snapshot) = with_borrowed_parsed_document(inner, parsed, |b, doc, meta| {
-        b.host_mut().editor_state_mut().replace_document(doc);
+        let was_non_empty = !b.host().editor_state().active_children().is_empty();
+        let prev_viewport = b.host().editor_state().viewport.clone();
+        let prev_selected = b.host().editor_state().selection.set.clone();
+        if was_non_empty {
+            b.host_mut().editor_state_mut().replace_document_with_undo(doc);
+        } else {
+            b.host_mut().editor_state_mut().replace_document(doc);
+        }
         op_pen_loader::apply_editor_meta_or_legacy_fallback(b.host_mut().editor_state_mut(), meta);
+        crate::live_sync_glue::sync_style_guide_from_design_md(b.host_mut().editor_state_mut());
         b.host_mut().force_rotate_layer_panel_owner();
         b.host_mut().mark_editor_state_dirty();
         b.host_mut().arm_missing_fonts_detection();
-        let (w, h) = b.viewport_size();
-        b.host_mut().fit_content_to_viewport(w, h);
+        if was_non_empty {
+            b.host_mut().editor_state_mut().viewport = prev_viewport;
+            if !prev_selected.is_empty() {
+                let surviving: Vec<op_editor_core::NodeId> = prev_selected
+                    .into_iter()
+                    .filter(|id| {
+                        op_editor_core::walkers::find_node(
+                            b.host().editor_state().active_children(),
+                            id,
+                        )
+                        .is_some()
+                    })
+                    .collect();
+                for id in surviving {
+                    b.host_mut().editor_state_mut().toggle_selection(id);
+                }
+            }
+        } else {
+            let (w, h) = b.viewport_size();
+            b.host_mut().fit_content_to_viewport(w, h);
+        }
         let _ = b.repaint();
         BridgeDocumentSnapshot::capture(b.host().editor_state())
     })
     .flatten() else {
         return;
     };
+    crate::live_sync_glue::mark_selection_dirty();
+    crate::live_sync_glue::flush_selection_if_changed(inner);
 
     // Scope the open to generation G and block pulls, all before any await.
     if let Ok(mut s) = sync.try_borrow_mut() {

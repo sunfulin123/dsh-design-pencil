@@ -69,7 +69,6 @@ impl WidgetHost {
         self.preview_browser.pressed = None;
         self.preview_browser.hover = None;
         self.preview_browser.pan_capture = None;
-        self.preview_browser.menu = None;
         self.clear_device_preview_state();
         self.preview_pressed_pids.clear();
         self.preview_last_doc_by_pid.clear();
