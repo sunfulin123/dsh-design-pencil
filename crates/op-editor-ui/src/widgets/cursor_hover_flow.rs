@@ -278,12 +278,5 @@ pub fn canvas_hover_target(
     let doc = state.viewport.to_document(local);
     scene
         .node_path_at_doc_point(doc, state.viewport.zoom)
-        .and_then(|path| {
-            let path = path.into_iter().map(NodeId::new).collect::<Vec<_>>();
-            op_editor_core::selection_resolve::resolve_canvas_depth_targets(
-                &path,
-                state.editor_ui.entered_container.as_ref(),
-            )
-            .map(|targets| targets.primary)
-        })
+        .and_then(|path| path.into_iter().last().map(NodeId::new))
 }

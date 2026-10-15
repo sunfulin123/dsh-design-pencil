@@ -75,6 +75,7 @@ impl WidgetHost {
                 let snap = self.editor_state.snapshot_for_history();
                 self.editor_state.doc.design_md = None;
                 self.editor_state.editor_ui.design_md_panel.scroll.offset = 0.0;
+                self.editor_state.editor_ui.clear_pinned_style_guide();
                 self.editor_state.history_push_past(snap);
             }
             DesignMdHit::Inside => {

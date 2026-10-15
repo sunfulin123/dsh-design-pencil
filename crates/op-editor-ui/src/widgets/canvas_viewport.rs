@@ -356,13 +356,13 @@ impl<'a> Widget for CanvasViewport<'a> {
             if !hovered_focus_selected {
                 if let Some(screen) = paint_hits.hover_rect {
                     // Replay the focus node's root→node flip/rotation
-                    // chain so its solid outline lands on the rendered
-                    // geometry, not the unrotated doc-space bounds.
+                    // chain so its dashed hover outline lands on the
+                    // rendered geometry, not the unrotated doc-space bounds.
                     let hover_transformed = super::canvas_overlay_transform::replay_on_backend(
                         cx,
                         &paint_hits.hover_transforms,
                     );
-                    cx.backend.stroke_rect(screen, HOVER, 1.5);
+                    paint_dashed_rect(cx, screen, HOVER, 1.5);
                     if hover_transformed {
                         cx.backend.restore();
                     }

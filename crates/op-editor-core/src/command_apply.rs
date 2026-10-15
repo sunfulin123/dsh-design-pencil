@@ -483,6 +483,7 @@ impl EditorState {
                 self.set_variables_bulk(variables, false) && self.set_themes_bulk(themes, false)
             }
             EditorCommand::SetDesignMd { spec } => {
+                self.sync_design_md_to_variables(&spec);
                 self.doc.design_md = Some(*spec);
                 true
             }

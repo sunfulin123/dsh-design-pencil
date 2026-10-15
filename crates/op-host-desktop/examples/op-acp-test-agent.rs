@@ -143,7 +143,7 @@ fn valid_canvas_session(params: &Value, servers: &[Value]) -> bool {
     let Some(server) = servers.first() else {
         return false;
     };
-    server.get("name").and_then(Value::as_str) == Some("openpencil")
+    server.get("name").and_then(Value::as_str) == Some("synapse")
         && server.get("type").and_then(Value::as_str) == Some("http")
         && server.get("url").and_then(Value::as_str) == Some("http://127.0.0.1:4123/mcp")
         && server
@@ -153,7 +153,7 @@ fn valid_canvas_session(params: &Value, servers: &[Value]) -> bool {
         && params
             .pointer("/_meta/systemPrompt")
             .and_then(Value::as_str)
-            .is_some_and(|prompt| prompt.contains("mcp__openpencil__"))
+            .is_some_and(|prompt| prompt.contains("mcp__synapse__"))
 }
 
 fn write_rpc_error(stdout: &mut dyn Write, id: Value, message: &str) {

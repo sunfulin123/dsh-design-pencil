@@ -342,6 +342,9 @@ pub struct WidgetHost {
     /// selection live on cursor move, then end the transient state on
     /// release.
     pub(in crate::widget_host) node_drag: Option<node_drag::NodeDragState>,
+    /// Gesture-scoped drop index for single-selection node drags.
+    pub(in crate::widget_host) canvas_drop_index:
+        Option<op_editor_ui::widgets::drag_flow::CanvasDropIndex>,
     /// Original selected ids for an active Option-drag clone move.
     /// Drop hit-testing skips these so a fresh clone does not
     /// immediately reparent back into the source it overlaps.
@@ -537,6 +540,20 @@ impl WidgetHost {
         self.layout_transition
             .as_ref()
             .is_some_and(|transition| transition.is_active(self.now_ms))
+    }
+
+    pub(in crate::widget_host) fn canvas_fast_interaction_active(&self) -> bool {
+        self.drag.is_some()
+            || self.node_drag.as_ref().is_some_and(|drag| drag.moved)
+            || self.handle_drag.is_some()
+            || self
+                .create_drag
+                .as_ref()
+                .is_some_and(|drag| drag.node_created)
+            || self
+                .path_anchor_drag
+                .as_ref()
+                .is_some_and(|drag| drag.moved)
     }
 
     /// Borrow the canonical-model editor state — the host's single source of

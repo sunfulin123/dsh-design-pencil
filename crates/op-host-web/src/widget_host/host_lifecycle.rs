@@ -48,6 +48,7 @@ impl WidgetHost {
             variables_resize: None,
             handle_drag: None,
             node_drag: None,
+            canvas_drop_index: None,
             option_drag_source_ids: Vec::new(),
             next_node_id: 100,
             collab_id_allocator: None,

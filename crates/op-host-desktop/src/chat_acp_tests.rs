@@ -55,7 +55,7 @@ fn send_without_live_mcp_refuses_with_ts_error() {
 fn session_options_advertise_openpencil_mcp_and_acp_prompt() {
     let options = session_options_for_port(4123);
     assert_eq!(options.mcp_servers.len(), 1);
-    assert_eq!(options.mcp_servers[0].name, "openpencil");
+    assert_eq!(options.mcp_servers[0].name, "synapse");
     assert_eq!(options.mcp_servers[0].url, "http://127.0.0.1:4123/mcp");
     assert_eq!(
         options.system_prompt_meta.as_deref(),
@@ -145,7 +145,7 @@ fn acp_system_prompt_matches_ts_text_anchors() {
     assert!(ACP_SYSTEM_PROMPT.starts_with(
         "You are an AI design assistant integrated inside the OpenPencil vector design tool."
     ));
-    assert!(ACP_SYSTEM_PROMPT.contains("- DO use the `mcp__openpencil__*` tools"));
+    assert!(ACP_SYSTEM_PROMPT.contains("- DO use the `mcp__synapse__*` tools"));
     assert!(ACP_SYSTEM_PROMPT.contains("2. **Build skeleton**: Call `design_skeleton`"));
     assert!(ACP_SYSTEM_PROMPT.contains("4. **Refine**: ALWAYS call `design_refine`"));
     assert!(ACP_SYSTEM_PROMPT.contains("Mobile top rhythm"));

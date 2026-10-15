@@ -1,14 +1,10 @@
 //! Transient Page/frame navigation for browser preview; canonical editor state stays unchanged.
 
-use op_editor_core::frame_presets::{find_device_for_width, DEVICE_PRESETS};
 use op_editor_core::PenNodeExt;
-use op_editor_ui::widgets::preview_toolbar::{PreviewControl, PreviewMenu};
+use op_editor_ui::widgets::preview_toolbar::PreviewControl;
 use op_editor_ui::Point2D;
 
 use super::WidgetHost;
-
-pub(super) const DESKTOP_SIZES: [(f32, f32); 3] =
-    [(1280.0, 800.0), (1440.0, 900.0), (1920.0, 1080.0)];
 
 pub(super) struct PreviewFrameEntry {
     pub page: usize,
@@ -24,22 +20,15 @@ pub(super) struct PreviewBrowserState {
     pub frames: Vec<PreviewFrameEntry>,
     pub canvas_scene: Option<op_editor_ui::layout_scene::LayoutScene>,
     pub present: bool,
-    pub view: Option<op_editor_core::PreviewDeviceKind>,
-    pub device: Option<usize>,
-    pub device_label_width: f32,
-    pub desktop_size: Option<usize>,
     pub zoom: Option<f32>,
     pub pan: Point2D,
     pub list_open: bool,
-    pub menu: Option<PreviewMenu>,
-    pub menu_scroll: f32,
     pub list_scroll: f32,
     pub hover: Option<PreviewControl>,
     pub pressed: Option<PreviewControl>,
     pub controls_captured: bool,
     pub pan_capture: Option<(Point2D, Point2D)>,
     pub inspection_position: Option<(Option<f32>, Point2D, f32)>,
-    pub view_positions: [Option<(Option<f32>, Point2D, f32)>; 3],
     pub last_activity_ms: u64,
     pub preferences: PreviewPreferences,
     preferences_loaded: bool,
@@ -48,20 +37,12 @@ pub(super) struct PreviewBrowserState {
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub(super) struct PreviewPreferences {
-    pub devices: std::collections::BTreeMap<String, Option<String>>,
-    pub landscape: bool,
     pub zoom: Option<f32>,
 }
 
 impl WidgetHost {
     pub(super) fn browser_device_kind(&self) -> op_editor_core::PreviewDeviceKind {
-        use op_editor_core::PreviewDeviceKind;
-        if self.preview_browser.present {
-            return PreviewDeviceKind::Canvas;
-        }
-        self.preview_browser
-            .view
-            .unwrap_or(PreviewDeviceKind::Desktop)
+        op_editor_core::PreviewDeviceKind::Canvas
     }
 
     pub(super) fn browser_frame_geometry(
@@ -71,13 +52,7 @@ impl WidgetHost {
         nav: Option<op_editor_ui::Rect>,
         status: Option<op_editor_ui::Rect>,
     ) -> op_preview_core::device_frame::DeviceFrame {
-        let size = if !self.preview_browser.present
-            && self.browser_device_kind() == op_editor_core::PreviewDeviceKind::Canvas
-        {
-            (root.size.x, root.size.y)
-        } else {
-            self.preview_screen_size()
-        };
+        let size = (root.size.x, root.size.y);
         op_preview_core::device_frame::compute_presentation_geometry(
             self.browser_device_kind(),
             self.preview_stage_rect(canvas),
@@ -91,31 +66,11 @@ impl WidgetHost {
     }
 
     pub(super) fn preview_screen_size(&self) -> (f32, f32) {
-        if !self.preview_browser.present
-            && self.browser_device_kind() == op_editor_core::PreviewDeviceKind::Desktop
-        {
-            if let Some(size) = self
-                .preview_browser
-                .desktop_size
-                .and_then(|index| DESKTOP_SIZES.get(index))
-            {
-                return *size;
-            }
-        }
-        self.preview_browser
-            .device
-            .filter(|_| {
-                !self.preview_browser.present
-                    && self.browser_device_kind() == op_editor_core::PreviewDeviceKind::Phone
-            })
-            .map(|index| DEVICE_PRESETS[index].size(self.preview_browser.preferences.landscape))
-            .unwrap_or_else(|| {
-                self.preview
-                    .as_ref()
-                    .and_then(|session| session.framed_root())
-                    .map(|(_, root)| (root.size.x, root.size.y))
-                    .unwrap_or((1.0, 1.0))
-            })
+        self.preview
+            .as_ref()
+            .and_then(|session| session.framed_root())
+            .map(|(_, root)| (root.size.x, root.size.y))
+            .unwrap_or((1.0, 1.0))
     }
 
     pub(super) fn paint_preview_canvas(
@@ -134,12 +89,14 @@ impl WidgetHost {
         let Some(frame) = self.preview_device_frame.as_ref() else {
             return;
         };
-        op_editor_ui::widgets::paint_scene_page_without_video_badge(
+        let fast = self.preview_browser.pan_capture.is_some();
+        op_editor_ui::widgets::paint_scene_page_without_video_badge_fast(
             &mut op_editor_ui::widgets::PaintCx { backend },
             page,
             frame.content_origin,
             frame.fit,
             canvas,
+            fast,
         );
     }
 
@@ -342,77 +299,10 @@ impl WidgetHost {
                 .zoom
                 .filter(|zoom| zoom.is_finite() && *zoom >= 0.05 && *zoom <= 8.0)
         };
-        self.preview_browser.menu = None;
         self.preview_browser.list_scroll = 0.0;
         self.preview_browser.pan = Point2D::new(0.0, 0.0);
-        self.preview_browser.view_positions = [None; 3];
         self.preview_browser.last_activity_ms = self.now_ms;
-        self.refresh_preview_device();
-        self.preview_browser.view = Some(
-            if self
-                .preview_browser
-                .device
-                .is_some_and(|index| DEVICE_PRESETS[index].phone)
-            {
-                op_editor_core::PreviewDeviceKind::Phone
-            } else {
-                op_editor_core::PreviewDeviceKind::Desktop
-            },
-        );
         true
-    }
-
-    fn preview_width_key(&self) -> Option<String> {
-        self.preview
-            .as_ref()?
-            .framed_root()
-            .map(|(_, rect)| format!("{:.3}", rect.size.x))
-    }
-
-    pub(super) fn refresh_preview_device(&mut self) {
-        let previous = self.preview_browser.device;
-        let width = self
-            .preview
-            .as_ref()
-            .and_then(|session| session.framed_root())
-            .map(|(_, rect)| rect.size.x);
-        self.preview_browser.device = match self
-            .preview_width_key()
-            .and_then(|key| self.preview_browser.preferences.devices.get(&key))
-        {
-            Some(id) => id
-                .as_ref()
-                .and_then(|id| DEVICE_PRESETS.iter().position(|preset| preset.id == id)),
-            None => width.and_then(find_device_for_width),
-        };
-        if self.browser_device_kind() == op_editor_core::PreviewDeviceKind::Phone
-            && !self
-                .preview_browser
-                .device
-                .is_some_and(|index| DEVICE_PRESETS[index].phone)
-        {
-            self.preview_browser.device = previous
-                .filter(|index| DEVICE_PRESETS[*index].phone)
-                .or_else(|| DEVICE_PRESETS.iter().position(|preset| preset.phone));
-        }
-    }
-
-    pub(super) fn preview_pick_device(&mut self, device: Option<usize>) {
-        if device.is_some_and(|index| index >= DEVICE_PRESETS.len()) {
-            return;
-        }
-        self.preview_browser.device = device;
-        if let Some(key) = self.preview_width_key() {
-            self.preview_browser
-                .preferences
-                .devices
-                .insert(key, device.map(|index| DEVICE_PRESETS[index].id.into()));
-        }
-        self.preview_scroll_y = 0.0;
-        self.preview_browser.pan = Point2D::new(0.0, 0.0);
-        self.save_preview_preferences();
-        self.initialize_device_preview(self.last_viewport_w, self.last_viewport_h);
-        self.mark_dirty();
     }
 
     pub(super) fn preview_set_zoom(&mut self, zoom: Option<f32>) {

@@ -135,6 +135,106 @@ pub(crate) fn drain_pending_kit_io<C: RepaintContext + 'static>(inner: &InnerRc<
     }
 }
 
+/// Consume a Design-MD panel import / auto-generate / export request raised
+/// by the floating Design System (`Design.md`) panel.
+pub(crate) fn drain_pending_design_md_request<C: RepaintContext + 'static>(inner: &InnerRc<C>) {
+    let request = inner
+        .borrow_mut()
+        .host_mut()
+        .editor_state_mut()
+        .editor_ui
+        .design_md_panel
+        .request
+        .take();
+    match request {
+        Some(op_editor_core::DesignMdRequest::Import) => import_design_md_file(inner),
+        Some(op_editor_core::DesignMdRequest::AutoGenerate) => auto_generate_design_md_doc(inner),
+        Some(op_editor_core::DesignMdRequest::Export) => export_design_md_file(inner),
+        None => {}
+    }
+}
+
+fn import_design_md_file<C: RepaintContext + 'static>(inner: &InnerRc<C>) {
+    let inner = inner.clone();
+    open_file_picker(
+        ".md,.markdown,text/markdown",
+        Box::new(move |file| {
+            let name = file.name();
+            let inner2 = inner.clone();
+            read_file(
+                file,
+                ReadMode::Text,
+                Box::new(move |value| match value.as_string() {
+                    Some(markdown) => apply_imported_design_md(&inner2, &markdown, &name),
+                    None => console_error("[design-md-import] file read produced no text"),
+                }),
+            );
+        }),
+    );
+}
+
+fn apply_imported_design_md<C: RepaintContext + 'static>(
+    inner: &InnerRc<C>,
+    markdown: &str,
+    file_name: &str,
+) {
+    let stem = file_actions::file_stem(file_name);
+    {
+        let Ok(mut b) = inner.try_borrow_mut() else {
+            return;
+        };
+        op_editor_ui::widgets::press_flow::import_design_md_into_document(
+            b.host_mut().editor_state_mut(),
+            markdown,
+            stem,
+        );
+        b.host_mut().mark_editor_state_dirty();
+        let _ = b.repaint();
+    }
+    crate::live_sync_glue::flush_document_if_changed(inner);
+}
+
+fn auto_generate_design_md_doc<C: RepaintContext + 'static>(inner: &InnerRc<C>) {
+    {
+        let Ok(mut b) = inner.try_borrow_mut() else {
+            return;
+        };
+        let spec = op_editor_core::extract_design_md_from_document(&b.host().editor_state().doc);
+        let snap = b.host().editor_state().snapshot_for_history();
+        let state = b.host_mut().editor_state_mut();
+        state.sync_design_md_to_variables(&spec);
+        state.doc.design_md = Some(spec);
+        state.editor_ui.design_md_panel.scroll.offset = 0.0;
+        state.history_push_past(snap);
+        b.host_mut().mark_editor_state_dirty();
+        let _ = b.repaint();
+    }
+    crate::live_sync_glue::flush_document_if_changed(inner);
+}
+
+fn export_design_md_file<C: RepaintContext + 'static>(inner: &InnerRc<C>) {
+    let Ok(b) = inner.try_borrow() else {
+        return;
+    };
+    let state = b.host().editor_state();
+    let extracted;
+    let spec = match state.doc.design_md.as_ref() {
+        Some(spec) => spec,
+        None => {
+            extracted = op_editor_core::extract_design_md_from_document(&state.doc);
+            &extracted
+        }
+    };
+    let markdown = op_editor_core::generate_design_md(spec);
+    if let Err(e) = crate::web_clipboard::download_bytes(
+        "design.md",
+        "text/markdown;charset=utf-8",
+        markdown.as_bytes(),
+    ) {
+        web_sys::console::error_1(&e);
+    }
+}
+
 /// Component Browser → Import kit: hidden `.op` / `.pen` / `.json`
 /// picker → extract reusable components → append session kit.
 fn import_kit_file<C: RepaintContext + 'static>(inner: &InnerRc<C>) {

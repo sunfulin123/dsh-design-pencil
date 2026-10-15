@@ -353,6 +353,20 @@ pub fn paint_scene_page_without_video_badge(
     zoom: f32,
     cull: Rect,
 ) {
+    paint_scene_page_without_video_badge_fast(cx, page, viewport_origin, zoom, cull, false);
+}
+
+/// Like [`paint_scene_page_without_video_badge`], with `fast_interaction`
+/// enabled during live pan/zoom gestures so blur/shadow effect layers degrade
+/// smoothly.
+pub fn paint_scene_page_without_video_badge_fast(
+    cx: &mut PaintCx<'_>,
+    page: &crate::layout_scene::ScenePage,
+    viewport_origin: Point2D,
+    zoom: f32,
+    cull: Rect,
+    fast_interaction: bool,
+) {
     let _ = paint_scene_nodes_with_options_hiding_without_video_badge(
         cx,
         &page.children,
@@ -369,7 +383,7 @@ pub fn paint_scene_page_without_video_badge(
         None,
         None,
         None,
-        false,
+        fast_interaction,
     );
 }
 

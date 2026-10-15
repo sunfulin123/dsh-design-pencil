@@ -257,7 +257,6 @@ impl super::WidgetHost {
         viewport_h: f32,
     ) {
         if self.managed_preview_active() {
-            self.refresh_preview_device();
             self.editor_state.editor_ui.preview.device = Some(self.infer_device_kind());
         }
         if self.preview_manual_pick.is_none() {

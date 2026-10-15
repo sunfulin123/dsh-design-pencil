@@ -102,10 +102,11 @@ impl WidgetHost {
         true
     }
 
-    /// Open a fresh node-drag gesture, snapshotting history so the whole
-    /// drag undoes as one step.
+    /// Open a fresh node-drag gesture; history is snapshotted once the cursor
+    /// moves past the drag threshold so plain selection clicks do not dirty
+    /// the document.
     pub(in crate::widget_host) fn start_node_drag(&mut self, x: f32, y: f32) {
-        self.editor_state.commit_history();
+        self.canvas_drop_index = None;
         self.option_drag_source_ids.clear();
         self.node_drag = Some(NodeDragState {
             last_screen_x: x,
@@ -137,6 +138,7 @@ impl WidgetHost {
         let total_dx = ((x - drag.press_screen_x) / zoom) as f64;
         let total_dy = ((y - drag.press_screen_y) / zoom) as f64;
         if !drag.moved {
+            self.editor_state.commit_history();
             let result = if let Some(allocator) = self.collab_id_allocator.as_mut() {
                 core_drag::activate_node_drag_with_allocator(
                     &mut self.editor_state,
@@ -189,23 +191,30 @@ impl WidgetHost {
         if let Some(bounds) =
             op_editor_ui::widgets::canvas_rulers::selection_bounds(&self.layout_scene, &ids, None)
         {
+            const MAX_SMART_GUIDE_NODES: usize = 1_000;
             let mut targets = Vec::new();
-            if let Some(page) = self.layout_scene.active_page() {
-                collect_alignment_targets(&page.children, &ids, &mut targets);
+            if self.editor_state.active_children().len() <= MAX_SMART_GUIDE_NODES {
+                if let Some(page) = self.layout_scene.active_page() {
+                    collect_alignment_targets(&page.children, &ids, &mut targets);
+                }
             }
-            let result = compute_alignment_guides(
-                (
-                    (bounds.origin.x + dx) as f64,
-                    (bounds.origin.y + dy) as f64,
-                    bounds.size.x as f64,
-                    bounds.size.y as f64,
-                ),
-                &targets,
-                (4.0 / zoom) as f64,
-            );
-            snap_dx = result.snap_dx as f32;
-            snap_dy = result.snap_dy as f32;
-            self.editor_state.editor_ui.active_guides = result.guides;
+            if !targets.is_empty() {
+                let result = compute_alignment_guides(
+                    (
+                        (bounds.origin.x + dx) as f64,
+                        (bounds.origin.y + dy) as f64,
+                        bounds.size.x as f64,
+                        bounds.size.y as f64,
+                    ),
+                    &targets,
+                    (4.0 / zoom) as f64,
+                );
+                snap_dx = result.snap_dx as f32;
+                snap_dy = result.snap_dy as f32;
+                self.editor_state.editor_ui.active_guides = result.guides;
+            } else {
+                self.editor_state.editor_ui.active_guides.clear();
+            }
         } else {
             self.editor_state.editor_ui.active_guides.clear();
         }
@@ -254,9 +263,14 @@ impl WidgetHost {
     }
 
     pub(in crate::widget_host) fn release_node_drag(&mut self) -> bool {
+        self.canvas_drop_index = None;
         let Some(drag) = self.node_drag.take() else {
             return false;
         };
+        if !drag.moved {
+            self.option_drag_source_ids.clear();
+            return false;
+        }
         self.refresh_layout_scene();
         let before_scene = self.layout_scene.clone();
         let release_overlay = (self.editor_state.selection_count() == 1)
@@ -337,17 +351,25 @@ impl WidgetHost {
         }
         self.refresh_layout_scene();
         let id = self.editor_state.selection.anchor.clone();
-        let Some(preview) = drag_flow::apply_live_drag_preview(
+        if self.ensure_canvas_drop_index(&id).is_none() {
+            self.editor_state.editor_ui.canvas_drop_indicator = None;
+            return;
+        }
+        let Some(index) = self.canvas_drop_index.as_ref() else {
+            return;
+        };
+        let Some(preview) = drag_flow::apply_live_drag_preview_indexed(
             &mut self.editor_state,
             &self.layout_scene,
+            index,
             &id,
             drag.total_dx,
             drag.total_dy,
-            &self.option_drag_source_ids,
         ) else {
             return;
         };
         if preview.mutated {
+            self.canvas_drop_index = None;
             // Drag history advances the document revision when the gesture
             // starts, before this live reorder mutates the tree. Invalidate the
             // revision-keyed scene cache so sibling reflow observes the new
@@ -361,6 +383,27 @@ impl WidgetHost {
         if let Some(active_drag) = self.node_drag.as_mut() {
             active_drag.overlay_bounds = preview.overlay_bounds;
         }
+    }
+
+    fn ensure_canvas_drop_index(&mut self, dragged_id: &NodeId) -> Option<()> {
+        let matches = self.canvas_drop_index.as_ref().is_some_and(|index| {
+            index.matches(
+                &self.editor_state,
+                &self.layout_scene,
+                dragged_id,
+                &self.option_drag_source_ids,
+            )
+        });
+        if matches {
+            return Some(());
+        }
+        self.canvas_drop_index = drag_flow::build_canvas_drop_index(
+            &self.editor_state,
+            &self.layout_scene,
+            dragged_id,
+            &self.option_drag_source_ids,
+        );
+        self.canvas_drop_index.as_ref().map(|_| ())
     }
 
     pub(in crate::widget_host) fn node_drag_overlay_for_paint(

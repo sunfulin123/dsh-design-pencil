@@ -31,18 +31,18 @@ enum SectionKey {
 fn match_section_key(title: &str) -> SectionKey {
     let l = title.to_lowercase();
     let has = |needles: &[&str]| needles.iter().any(|n| l.contains(n));
-    if has(&["theme", "vibe", "aesthetic", "atmosphere", "mood"]) {
+    if has(&["theme", "vibe", "aesthetic", "atmosphere", "mood", "summary", "overview"]) {
         SectionKey::VisualTheme
     } else if has(&["color", "colour", "palette"]) {
         SectionKey::ColorPalette
     } else if has(&["type", "font", "typo"]) {
         SectionKey::Typography
-    } else if has(&["component", "style", "element", "button", "card", "input"]) {
+    } else if has(&["scope", "note", "generation", "usage", "stitch", "prompting"]) {
+        SectionKey::GenerationNotes
+    } else if has(&["component", "style", "element", "button", "card", "input", "radius", "icon"]) {
         SectionKey::ComponentStyles
     } else if has(&["layout", "spacing", "grid", "whitespace"]) {
         SectionKey::LayoutPrinciples
-    } else if has(&["note", "generation", "usage", "stitch", "prompting"]) {
-        SectionKey::GenerationNotes
     } else {
         SectionKey::Unknown
     }
@@ -62,10 +62,27 @@ fn strip_number_prefix(title: &str) -> &str {
 /// Split markdown into the H1 project name + the `## ` sections.
 fn split_sections(markdown: &str) -> (Option<String>, Vec<(SectionKey, String)>) {
     let mut project_name: Option<String> = None;
+    let mut frontmatter_name: Option<String> = None;
     let mut sections: Vec<(SectionKey, String)> = Vec::new();
     let mut current: Option<(SectionKey, Vec<&str>)> = None;
+    let mut lines_iter = markdown.lines().peekable();
+    if lines_iter.peek().is_some_and(|first| first.trim() == "---") {
+        let _ = lines_iter.next();
+        for line in lines_iter.by_ref() {
+            let trimmed = line.trim();
+            if trimmed == "---" {
+                break;
+            }
+            if let Some(rest) = trimmed.strip_prefix("name:") {
+                let candidate = rest.trim().trim_matches(|c| c == '\'' || c == '"').trim();
+                if !candidate.is_empty() {
+                    frontmatter_name = Some(candidate.to_string());
+                }
+            }
+        }
+    }
 
-    for line in markdown.lines() {
+    for line in lines_iter {
         if let Some(rest) = line.strip_prefix("# ").filter(|_| !line.starts_with("## ")) {
             if project_name.is_none() {
                 let name = rest
@@ -86,7 +103,7 @@ fn split_sections(markdown: &str) -> (Option<String>, Vec<(SectionKey, String)>)
     if let Some((key, lines)) = current.take() {
         sections.push((key, lines.join("\n").trim().to_string()));
     }
-    (project_name, sections)
+    (project_name.or(frontmatter_name), sections)
 }
 
 /// Index of the first `#RRGGBB` hex token in `line`, plus the hex.
@@ -110,8 +127,8 @@ fn find_hex(line: &str) -> Option<(usize, String)> {
 }
 
 /// Extract every named colour from a markdown block. A simplified
-/// port — handles `**Name** (#hex) — role`, `- Name #hex: role`, and
-/// the bare-hex fallback.
+/// port — handles `**Name** (#hex) — role`, `- Name #hex: role`,
+/// markdown tables `| Name | #hex | role |`, and the bare-hex fallback.
 fn parse_colors(content: &str) -> Vec<DesignMdColor> {
     let mut colors = Vec::new();
     for line in content.lines() {
@@ -127,13 +144,14 @@ fn parse_colors(content: &str) -> Vec<DesignMdColor> {
         // Prefer a `**Bold**` label as the colour name.
         let name = bold_span(before).map(str::to_string).unwrap_or_else(|| {
             before
-                .trim_end_matches(|c: char| "-*#():–— ".contains(c))
-                .trim_start_matches(|c: char| "-* ".contains(c))
+                .trim_end_matches(|c: char| "|-*#():–— \t".contains(c))
+                .trim_start_matches(|c: char| "|-* \t".contains(c))
                 .trim()
                 .to_string()
         });
         let role = after
-            .trim_start_matches(|c: char| ")(:–—- \t".contains(c))
+            .trim_start_matches(|c: char| "|)(:–—- \t".contains(c))
+            .trim_end_matches(|c: char| "| \t".contains(c))
             .trim()
             .to_string();
         colors.push(DesignMdColor {
@@ -200,11 +218,21 @@ pub fn parse_design_md(markdown: &str) -> DesignMdSpec {
 
     for (key, content) in sections {
         match key {
-            SectionKey::VisualTheme => spec.visual_theme = Some(content),
-            SectionKey::ColorPalette => spec.color_palette = Some(parse_colors(&content)),
+            SectionKey::VisualTheme => {
+                spec.visual_theme = Some(append(spec.visual_theme.take(), content));
+            }
+            SectionKey::ColorPalette => {
+                let mut existing = spec.color_palette.take().unwrap_or_default();
+                existing.extend(parse_colors(&content));
+                spec.color_palette = Some(existing);
+            }
             SectionKey::Typography => spec.typography = Some(parse_typography(&content)),
-            SectionKey::LayoutPrinciples => spec.layout_principles = Some(content),
-            SectionKey::GenerationNotes => spec.generation_notes = Some(content),
+            SectionKey::LayoutPrinciples => {
+                spec.layout_principles = Some(append(spec.layout_principles.take(), content));
+            }
+            SectionKey::GenerationNotes => {
+                spec.generation_notes = Some(append(spec.generation_notes.take(), content));
+            }
             SectionKey::ComponentStyles | SectionKey::Unknown => {
                 spec.component_styles = Some(append(spec.component_styles.take(), content));
             }

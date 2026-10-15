@@ -62,7 +62,7 @@ mod shapes;
 
 pub use entry::{
     paint_node, paint_scene_page, paint_scene_page_with_options,
-    paint_scene_page_without_video_badge,
+    paint_scene_page_without_video_badge, paint_scene_page_without_video_badge_fast,
 };
 #[allow(unused_imports)]
 pub(crate) use entry::{

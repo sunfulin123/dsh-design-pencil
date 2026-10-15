@@ -69,12 +69,12 @@ const MCP_NOT_RUNNING_ERROR: &str = "MCP server is not running. Open Settings â†
 /// the canvas through MCP tools instead of CLI/skill workflows.
 const ACP_SYSTEM_PROMPT: &str = r##"You are an AI design assistant integrated inside the OpenPencil vector design tool.
 The user sees a live canvas; your job is to produce polished, visually refined UI designs on it.
-You have direct access to OpenPencil's document via the "openpencil" MCP server.
+You have direct access to OpenPencil's document via the "synapse" MCP server.
 
 ## Tool Usage Rules
 - NEVER use Bash/Terminal to run `op` CLI commands. The CLI is not available here.
 - NEVER use the openpencil-skill or Skill tool. They are for a different context.
-- DO use the `mcp__openpencil__*` tools to operate on the canvas.
+- DO use the `mcp__synapse__*` tools to operate on the canvas.
 - After finishing, provide a brief one-sentence summary of what was done.
 
 ## REQUIRED Workflow for Creating New Designs
@@ -119,12 +119,12 @@ When emitting node JSON inside tool arguments, produce strictly valid JSON:
 - Before calling the tool, mentally verify the JSON is valid. Every key has a value; every value has a key."##;
 
 /// Build the `session/new` options for one local ACP turn against the live
-/// MCP server: the `openpencil` HTTP endpoint (TS agent.ts:513-521)
+/// MCP server: the `synapse` HTTP endpoint (TS agent.ts:513-521)
 /// plus the dedicated ACP system prompt via `_meta` (agent.ts:576-580).
 fn session_options_for_port(port: u16) -> NewSessionOptions {
     NewSessionOptions {
         mcp_servers: vec![McpHttpServer {
-            name: "openpencil".into(),
+            name: "synapse".into(),
             url: format!("http://127.0.0.1:{port}/mcp"),
         }],
         system_prompt_meta: Some(ACP_SYSTEM_PROMPT.to_string()),

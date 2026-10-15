@@ -134,7 +134,7 @@ fn note_serve_mode(body: &str) {
 fn parse_server_authoritative(body: &str) -> Option<bool> {
     let parsed: serde_json::Value = serde_json::from_str(body).ok()?;
     let mode = parsed.get("serveMode")?.as_str()?;
-    Some(mode == "online")
+    Some(mode == "online" || mode == "managed")
 }
 
 /// Ask the daemon once, at start-up, which deployment this is.

@@ -96,7 +96,12 @@ impl WidgetHost {
     }
 
     pub(in crate::widget_host) fn release_selection_handle_drag(&mut self) -> bool {
-        self.handle_drag.take().is_some()
+        if self.handle_drag.take().is_some() {
+            self.mark_dirty();
+            true
+        } else {
+            false
+        }
     }
 }
 

@@ -365,14 +365,21 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     crate::repaint_coalescer::request();
                 }
                 drop(b);
+                if consumed {
+                    crate::live_sync_glue::flush_selection_if_changed(&inner);
+                }
                 crate::iconify_web::drain_iconify_request(&inner);
                 crate::web_style_import::drain_pending_style_import(&inner);
+                crate::dom_io::drain_pending_design_md_request(&inner);
                 crate::dom_io::drain_pending_file_action(&inner);
                 crate::dom_io::drain_pending_attachment_pick(&inner);
                 crate::dom_io::drain_pending_kit_io(&inner);
                 crate::theme_preset_io::drain_pending_theme_preset_io(&inner);
                 crate::web_fonts::drain_font_requests(&inner);
                 crate::web_fonts::drain_missing_fonts_detection(&inner);
+                if consumed {
+                    crate::live_sync_glue::flush_document_if_changed(&inner);
+                }
             },
         )?;
     }
@@ -443,6 +450,8 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
             if was_middle {
                 b.host.set_space_pan(false);
             }
+            drop(b);
+            crate::live_sync_glue::flush_selection_if_changed(&inner);
         })?;
     }
     // wheel → pan / zoom

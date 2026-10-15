@@ -32,7 +32,7 @@ impl TurnPurpose {
 }
 
 pub const GROK_READ_TOOLS: &str = "read_file,grep,list_dir";
-pub const GROK_MCP_ALLOW: &str = "MCPTool(openpencil__*)";
+pub const GROK_MCP_ALLOW: &str = "MCPTool(synapse__*)";
 
 const ANTIGRAVITY_MCP_PERMISSION: &str = "mcp(openpencil/*)";
 const ANTIGRAVITY_DENY_RULES: &[&str] = &[
@@ -115,9 +115,9 @@ pub fn grok_args(purpose: TurnPurpose) -> Vec<String> {
 }
 
 const AUTOMATION_GUARD: &str = "OPENPENCIL AUTOMATION SAFETY:\n\
-Use the OpenPencil MCP server only (`mcp__openpencil__*` / `openpencil/*`) to inspect or modify the canvas. \
+Use the Synapse Design MCP server only (`mcp__synapse__*` / `synapse/*`) to inspect or modify the canvas. \
 Do not run terminal commands, write local files, browse the web, spawn subagents, or call any other MCP server. \
-Never request interactive approval. If the OpenPencil MCP tools are unavailable or denied, report that failure and stop.";
+Never request interactive approval. If the Synapse Design MCP tools are unavailable or denied, report that failure and stop.";
 const GROK_COMPAT_SETTINGS: &[u8] = br#"{"permissions":{"defaultMode":"dontAsk"}}"#;
 
 pub struct IsolatedTurn {

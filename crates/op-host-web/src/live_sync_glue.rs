@@ -52,7 +52,7 @@ use crate::live_sync;
 use crate::repaint_ctx::RepaintContext;
 
 /// Pull cadence (version probe). TS gets SSE pushes; one tick of latency.
-const POLL_INTERVAL_MS: i32 = 400;
+const POLL_INTERVAL_MS: i32 = 200;
 /// Push cadence — TS `PUSH_DEBOUNCE_MS` (use-mcp-sync.ts:6).
 const PUSH_INTERVAL_MS: i32 = 2000;
 /// TS `SYNC_MAX_BODY_BYTES` (use-mcp-sync.ts:10): documents larger than this
@@ -174,6 +174,9 @@ pub(crate) fn start<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>, sync: S
     let last_selection_key = Rc::new(RefCell::new(Some(web_sync::selection_sync_key(
         inner.borrow().host().editor_state(),
     ))));
+    ACTIVE_SELECTION_KEY.with(|slot| *slot.borrow_mut() = Some(last_selection_key.clone()));
+    ACTIVE_BASE_URL.with(|slot| *slot.borrow_mut() = Some(base.clone()));
+    ACTIVE_OVERSIZE_WARNED.with(|slot| *slot.borrow_mut() = Some(oversize_warned.clone()));
 
     // ---- pull + selection tick ----
     {
@@ -378,6 +381,7 @@ fn apply_document_response<C: RepaintContext + 'static>(
                      preserve_authored_geometry,
                      wire_scenario| {
                         let host = inner_ref.host_mut();
+                        let prev_selected = host.editor_state().selection.set.clone();
                         host.replace_document_from_sync(doc, undoable);
                         // A daemon new enough to send `scenario` is the
                         // authority (the browser boots with `None`, and a deck
@@ -396,6 +400,21 @@ fn apply_document_response<C: RepaintContext + 'static>(
                                 pinned_style_guide,
                             },
                         );
+                        if undoable && !prev_selected.is_empty() {
+                            let surviving: Vec<op_editor_core::NodeId> = prev_selected
+                                .into_iter()
+                                .filter(|id| {
+                                    op_editor_core::walkers::find_node(
+                                        host.editor_state().active_children(),
+                                        id,
+                                    )
+                                    .is_some()
+                                })
+                                .collect();
+                            for id in surviving {
+                                host.editor_state_mut().toggle_selection(id);
+                            }
+                        }
                         inner_ref.repaint().is_ok()
                     },
                 )
@@ -739,6 +758,48 @@ thread_local! {
     /// consume the daemon's returned version without creating an ownership
     /// cycle or threading sync state through every DOM file-action callback.
     pub(super) static ACTIVE_SYNC: RefCell<Option<Weak<RefCell<SyncController>>>> = const { RefCell::new(None) };
+    static ACTIVE_SELECTION_KEY: RefCell<Option<Rc<RefCell<Option<String>>>>> = const { RefCell::new(None) };
+    static ACTIVE_BASE_URL: RefCell<Option<String>> = const { RefCell::new(None) };
+    static ACTIVE_OVERSIZE_WARNED: RefCell<Option<Rc<Cell<bool>>>> = const { RefCell::new(None) };
+}
+
+/// Immediately push the current document to the daemon if it changed since
+/// the last push, eliminating the 2000ms debounce when a style guide or
+/// `design.md` is imported or pinned.
+pub(crate) fn flush_document_if_changed<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
+    let sync = ACTIVE_SYNC.with(|slot| slot.borrow().as_ref().and_then(Weak::upgrade));
+    let base = ACTIVE_BASE_URL.with(|slot| slot.borrow().clone());
+    let oversize_warned = ACTIVE_OVERSIZE_WARNED.with(|slot| slot.borrow().clone());
+    if let (Some(sync), Some(base), Some(oversize_warned)) = (sync, base, oversize_warned) {
+        push_document_if_changed(inner, &base, &sync, &oversize_warned);
+    }
+}
+
+/// Ensure a document's persisted `design_md` is also registered and pinned
+/// in the in-memory style-guide catalogue when opened or synced.
+pub(crate) fn sync_style_guide_from_design_md(state: &mut op_editor_core::EditorState) {
+    op_editor_ui::widgets::press_flow::sync_style_guide_from_design_md(state);
+}
+
+/// Immediately push the current selection to the daemon if it changed since
+/// the last push, eliminating the poll-interval delay after a canvas or layer click.
+pub(crate) fn flush_selection_if_changed<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
+    let key_cell = ACTIVE_SELECTION_KEY.with(|slot| slot.borrow().clone());
+    let base = ACTIVE_BASE_URL.with(|slot| slot.borrow().clone());
+    if let (Some(last_selection_key), Some(base)) = (key_cell, base) {
+        push_selection_if_changed(inner, &base, &last_selection_key);
+    }
+}
+
+/// Force the next selection flush to re-push even if the selection key matches.
+pub(crate) fn mark_selection_dirty() {
+    ACTIVE_SELECTION_KEY.with(|slot| {
+        if let Some(cell) = slot.borrow().as_ref() {
+            if let Ok(mut last) = cell.try_borrow_mut() {
+                *last = None;
+            }
+        }
+    });
 }
 
 #[path = "live_sync_controller.rs"]

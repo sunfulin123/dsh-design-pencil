@@ -65,15 +65,18 @@ pub(crate) fn drain_pending_style_import<C: RepaintContext + 'static>(inner: &In
 }
 
 fn apply_picked_file<C: RepaintContext + 'static>(inner: &InnerRc<C>, markdown: &str, name: &str) {
-    let Ok(mut b) = inner.try_borrow_mut() else {
-        return;
-    };
-    // The file name is a fallback, used only when the document names nothing:
-    // a guide called `untitled` is worse than one called after the file the
-    // user went and found.
-    b.host_mut()
-        .import_picked_style_guide(markdown, crate::file_actions::file_stem(name));
-    let _ = b.repaint();
+    {
+        let Ok(mut b) = inner.try_borrow_mut() else {
+            return;
+        };
+        // The file name is a fallback, used only when the document names nothing:
+        // a guide called `untitled` is worse than one called after the file the
+        // user went and found.
+        b.host_mut()
+            .import_picked_style_guide(markdown, crate::file_actions::file_stem(name));
+        let _ = b.repaint();
+    }
+    crate::live_sync_glue::flush_document_if_changed(inner);
 }
 
 fn report_unreadable<C: RepaintContext + 'static>(inner: &InnerRc<C>) {
