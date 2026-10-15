@@ -453,7 +453,12 @@ fn sanitize_auto_layout_child_positions(node: &mut PenNode, fixes: &mut Vec<Refi
                     let id = frame.base.id.clone();
                     let name = frame.base.name.clone();
                     let name_lower = name.as_deref().unwrap_or("").to_ascii_lowercase();
-                    let role_lower = frame.base.role.as_deref().unwrap_or("").to_ascii_lowercase();
+                    let role_lower = frame
+                        .base
+                        .role
+                        .as_deref()
+                        .unwrap_or("")
+                        .to_ascii_lowercase();
                     let is_vertical_surface = name_lower.contains("sidebar")
                         || name_lower.contains("rail")
                         || name_lower.contains("panel")

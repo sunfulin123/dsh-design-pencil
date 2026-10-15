@@ -181,7 +181,11 @@ impl EditorState {
             if crate::color_picker::parse_hex_rgb(hex).is_none() {
                 continue;
             }
-            let raw = entry.name.trim().trim_start_matches('$').trim_start_matches('-');
+            let raw = entry
+                .name
+                .trim()
+                .trim_start_matches('$')
+                .trim_start_matches('-');
             let mut slug = String::new();
             let mut prev_dash = false;
             for ch in raw.chars() {

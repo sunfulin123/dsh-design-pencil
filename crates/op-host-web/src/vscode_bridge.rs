@@ -373,7 +373,9 @@ fn handle_open_document<C: RepaintContext + 'static>(
         let prev_viewport = b.host().editor_state().viewport.clone();
         let prev_selected = b.host().editor_state().selection.set.clone();
         if was_non_empty {
-            b.host_mut().editor_state_mut().replace_document_with_undo(doc);
+            b.host_mut()
+                .editor_state_mut()
+                .replace_document_with_undo(doc);
         } else {
             b.host_mut().editor_state_mut().replace_document(doc);
         }

@@ -279,7 +279,11 @@ pub fn delete_user_style_guide(state: &mut EditorState, id: &str) -> bool {
 /// Import a `design.md` into the document's `design_md` field and best-effort
 /// register and pin it in the style-guide catalogue so both the Design System
 /// panel and the Asset Center Styles tab stay synchronized.
-pub fn import_design_md_into_document(state: &mut EditorState, markdown: &str, fallback_name: &str) {
+pub fn import_design_md_into_document(
+    state: &mut EditorState,
+    markdown: &str,
+    fallback_name: &str,
+) {
     let mut spec = op_editor_core::parse_design_md(markdown);
     if spec.project_name.is_none() && !fallback_name.is_empty() {
         spec.project_name = Some(fallback_name.to_string());
@@ -308,7 +312,11 @@ pub fn sync_style_guide_from_design_md(state: &mut EditorState) {
         }
     }
     if !spec.raw.trim().is_empty() {
-        let fallback = if name.is_empty() { "Design System" } else { name };
+        let fallback = if name.is_empty() {
+            "Design System"
+        } else {
+            name
+        };
         if let Ok(imported) = op_ai_skills::style_guide::import_design_md(&spec.raw, fallback) {
             state.editor_ui.pinned_style_guide = Some(imported.id.clone());
         }

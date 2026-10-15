@@ -31,15 +31,39 @@ enum SectionKey {
 fn match_section_key(title: &str) -> SectionKey {
     let l = title.to_lowercase();
     let has = |needles: &[&str]| needles.iter().any(|n| l.contains(n));
-    if has(&["theme", "vibe", "aesthetic", "atmosphere", "mood", "summary", "overview"]) {
+    if has(&[
+        "theme",
+        "vibe",
+        "aesthetic",
+        "atmosphere",
+        "mood",
+        "summary",
+        "overview",
+    ]) {
         SectionKey::VisualTheme
     } else if has(&["color", "colour", "palette"]) {
         SectionKey::ColorPalette
     } else if has(&["type", "font", "typo"]) {
         SectionKey::Typography
-    } else if has(&["scope", "note", "generation", "usage", "stitch", "prompting"]) {
+    } else if has(&[
+        "scope",
+        "note",
+        "generation",
+        "usage",
+        "stitch",
+        "prompting",
+    ]) {
         SectionKey::GenerationNotes
-    } else if has(&["component", "style", "element", "button", "card", "input", "radius", "icon"]) {
+    } else if has(&[
+        "component",
+        "style",
+        "element",
+        "button",
+        "card",
+        "input",
+        "radius",
+        "icon",
+    ]) {
         SectionKey::ComponentStyles
     } else if has(&["layout", "spacing", "grid", "whitespace"]) {
         SectionKey::LayoutPrinciples

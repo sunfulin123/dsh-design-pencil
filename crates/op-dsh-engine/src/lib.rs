@@ -141,9 +141,8 @@ impl DesignEngine {
     ) -> Result<String, JsValue> {
         let options = op_html::HtmlImportOptions {
             document_name,
-            base_url: base_url.or_else(|| {
-                Some(format!("{}document.html", op_html::VIRTUAL_PROJECT_ORIGIN))
-            }),
+            base_url: base_url
+                .or_else(|| Some(format!("{}document.html", op_html::VIRTUAL_PROJECT_ORIGIN))),
             viewport_height,
             ..op_html::HtmlImportOptions::default()
         };
