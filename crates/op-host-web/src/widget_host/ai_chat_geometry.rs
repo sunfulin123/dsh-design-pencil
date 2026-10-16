@@ -22,9 +22,14 @@ impl WidgetHost {
 
     pub(in crate::widget_host) fn ai_chat_rect(
         &self,
-        viewport_w: f32,
-        viewport_h: f32,
+        _viewport_w: f32,
+        _viewport_h: f32,
     ) -> Option<Rect> {
+        return None;
+    }
+
+    #[allow(dead_code)]
+    fn ai_chat_rect_legacy(&self, viewport_w: f32, viewport_h: f32) -> Option<Rect> {
         if self.editor_state.editor_ui.embed == op_editor_core::EmbedHost::VsCode {
             // The VS Code plugin is MCP-driven; the in-editor chat is hidden.
             return None;

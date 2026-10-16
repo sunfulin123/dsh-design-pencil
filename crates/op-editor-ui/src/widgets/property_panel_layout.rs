@@ -232,6 +232,20 @@ pub fn action_button_rects_with_fill_picker(
 
     let mut y = panel_rect.origin.y;
     y += TAB_HEIGHT;
+    out.push((
+        PropertyPanelAction::ToggleNodeVisible,
+        Rect {
+            origin: Point2D::new(x0 + w - PAD_X - 46.0, y + 5.0),
+            size: Point2D::new(22.0, 24.0),
+        },
+    ));
+    out.push((
+        PropertyPanelAction::ToggleNodeLocked,
+        Rect {
+            origin: Point2D::new(x0 + w - PAD_X - 22.0, y + 5.0),
+            size: Point2D::new(22.0, 24.0),
+        },
+    ));
     y += HEADER_HEIGHT;
     if visible.create_component {
         out.extend(crate::widgets::property_panel_instance::action_rects(

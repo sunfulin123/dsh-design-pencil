@@ -280,6 +280,8 @@ pub struct VisibleSections {
     /// Whether the Interactions section paints — see
     /// [`SectionCapabilities::interactions`].
     pub interactions: bool,
+    /// Whether the selected node has an authored `screen` route row.
+    pub has_screen: bool,
 }
 
 impl VisibleSections {
@@ -325,5 +327,6 @@ impl VisibleSections {
         fill_type: FillType::Solid,
         gradient_stop_count: 0,
         interactions: true,
+        has_screen: false,
     };
 }

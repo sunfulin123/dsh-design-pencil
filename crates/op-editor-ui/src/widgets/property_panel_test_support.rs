@@ -79,6 +79,8 @@ pub(super) fn visible_for(panel: &PropertyPanel) -> sections::VisibleSections {
         fill_type: panel.fill_type,
         gradient_stop_count: panel.snapshot.gradient_stops.len(),
         interactions: caps.interactions,
+        has_screen: panel.snapshot.is_top_level_frame
+            || panel.snapshot.interactions.screen.is_some(),
     }
 }
 

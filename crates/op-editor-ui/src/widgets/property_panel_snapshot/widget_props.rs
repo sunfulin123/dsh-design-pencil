@@ -138,16 +138,29 @@ pub(super) fn widget_summary_of(node: &PenNode) -> Option<WidgetSummary> {
 }
 
 pub(super) fn text_summary_of(node: &PenNode) -> Option<TextSummary> {
-    let PenNode::Text(t) = node else {
-        return None;
+    let t = op_editor_core::command_node_attrs::resolve_text_node(node)?;
+    let content = match &t.content {
+        jian_ops_schema::node::text::TextContent::Plain(s) => s.clone(),
+        jian_ops_schema::node::text::TextContent::Styled(segs) => segs
+            .iter()
+            .map(|seg| seg.text.as_str())
+            .collect::<Vec<_>>()
+            .join(""),
     };
     Some(TextSummary {
+        content,
         font_family: t
             .font_family
             .clone()
             .unwrap_or_else(|| "Inter, sans-serif".to_string()),
         font_size: t.font_size.unwrap_or(16.0) as f32,
         font_weight: font_weight_value(t.font_weight.as_ref()),
+        italic: matches!(
+            t.font_style,
+            Some(jian_ops_schema::node::text::FontStyleKind::Italic)
+        ),
+        underline: t.underline.unwrap_or(false),
+        strikethrough: t.strikethrough.unwrap_or(false),
         line_height_percent: (t.line_height.unwrap_or(1.2) * 100.0) as f32,
         letter_spacing: t.letter_spacing.unwrap_or(0.0) as f32,
         align: match t.text_align.as_ref().unwrap_or(&TextAlign::Left) {

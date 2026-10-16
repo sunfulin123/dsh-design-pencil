@@ -36,6 +36,15 @@ impl WidgetHostNative {
 
     pub(in crate::widget_host) fn ai_chat_rect(
         &self,
+        _viewport_w: f32,
+        _viewport_h: f32,
+    ) -> Option<Rect> {
+        return None;
+    }
+
+    #[allow(dead_code)]
+    fn ai_chat_rect_legacy(
+        &self,
         viewport_w: f32,
         viewport_h: f32,
     ) -> Option<Rect> {

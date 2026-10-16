@@ -118,6 +118,18 @@ pub enum PropertyFocus {
     WidgetMin,
     WidgetMax,
     WidgetStep,
+    /// Node header inline rename.
+    NodeName,
+    /// Text-node (or single-text wrapper) plain content.
+    TextContent,
+    /// Node semantic role (`base.role` / `semantics.role`).
+    NodeRole,
+    /// Node design explanation / AI note (`base.explain` / `semantics.aiDescription`).
+    NodeExplain,
+    /// Node accessibility label (`semantics.label` / `aria-label`).
+    NodeA11yLabel,
+    /// Top-level Frame route screen path (`screen`).
+    ScreenPath,
     /// Image-node video source URL.
     VideoSrc,
 }
@@ -149,7 +161,13 @@ impl PropertyFocus {
     pub fn is_free_text(self) -> bool {
         matches!(
             self,
-            PropertyFocus::WidgetPlaceholder
+            PropertyFocus::NodeName
+                | PropertyFocus::TextContent
+                | PropertyFocus::NodeRole
+                | PropertyFocus::NodeExplain
+                | PropertyFocus::NodeA11yLabel
+                | PropertyFocus::ScreenPath
+                | PropertyFocus::WidgetPlaceholder
                 | PropertyFocus::WidgetValue
                 | PropertyFocus::WidgetLabel
                 | PropertyFocus::WidgetLeadingIcon

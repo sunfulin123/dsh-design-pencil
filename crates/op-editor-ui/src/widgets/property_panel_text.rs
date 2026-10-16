@@ -2,7 +2,6 @@
 
 use crate::theme::Theme;
 use crate::util::format_panel_number;
-use crate::widgets::button::paint_button_feedback_wash;
 use crate::widgets::icons::{draw_icon, Icon};
 use crate::widgets::property_panel::{
     FontWeightChoice, NodeSnapshot, PropertyPanelAction, TextAlignValue, TextGrowthValue,
@@ -21,6 +20,10 @@ use crate::{Point2D, Rect, TextLayout};
 use op_editor_core::PropertyFocus;
 
 const FAMILY_ROW_GAP: f32 = 6.0;
+const CONTENT_ROW_GAP: f32 = 8.0;
+const FORMAT_ROW_GAP: f32 = 6.0;
+const COPY_BTN_W: f32 = 28.0;
+const COPY_BTN_GAP: f32 = 6.0;
 const ALIGN_LABEL_H: f32 = 18.0;
 const BUTTON_H: f32 = 28.0;
 const TOUCH_BUTTON_H: f32 = 30.0;
@@ -45,8 +48,12 @@ pub fn text_section_height(touch_controls: bool) -> f32 {
     text_layout_block_height(touch_controls)
         + SECTION_HEADER_HEIGHT
         + INPUT_HEIGHT
+        + CONTENT_ROW_GAP
+        + INPUT_HEIGHT
         + FAMILY_ROW_GAP
         + INPUT_HEIGHT
+        + FORMAT_ROW_GAP
+        + button_h
         + 6.0
         + LH_LS_LABEL_H
         + INPUT_HEIGHT
@@ -66,12 +73,18 @@ pub fn push_text_input_rects(
     usable_w: f32,
     touch_controls: bool,
 ) {
+    let button_h = text_button_height(touch_controls);
     let half_w = (usable_w - 8.0) / 2.0;
-    let mut y = y
-        + text_layout_block_height(touch_controls)
-        + SECTION_HEADER_HEIGHT
-        + INPUT_HEIGHT
-        + FAMILY_ROW_GAP;
+    let content_y = y + text_layout_block_height(touch_controls) + SECTION_HEADER_HEIGHT;
+    let content_w = (usable_w - COPY_BTN_W - COPY_BTN_GAP).max(40.0);
+    rects.push((
+        PropertyFocus::TextContent,
+        Rect {
+            origin: Point2D::new(x0 + PAD_X, content_y),
+            size: Point2D::new(content_w, INPUT_HEIGHT),
+        },
+    ));
+    let mut y = content_y + INPUT_HEIGHT + CONTENT_ROW_GAP + INPUT_HEIGHT + FAMILY_ROW_GAP;
     // Weight (left half) is now a dropdown (a ToggleFontWeightPicker
     // action rect), not a focusable input — only Font Size remains here.
     rects.push((
@@ -81,9 +94,8 @@ pub fn push_text_input_rects(
             size: Point2D::new(half_w, INPUT_HEIGHT),
         },
     ));
-    // +LH_LS_LABEL_H to skip the 行高/字间距 caption row that paints
-    // above the inputs (keeps hit-test aligned with paint).
-    y += INPUT_HEIGHT + 6.0 + LH_LS_LABEL_H;
+    // Skip formatting toolbar row + LH/LS caption row.
+    y += INPUT_HEIGHT + FORMAT_ROW_GAP + button_h + 6.0 + LH_LS_LABEL_H;
     rects.push((
         PropertyFocus::LineHeight,
         Rect {
@@ -135,15 +147,25 @@ pub fn text_action_rects(
             },
         ));
     }
+    let content_y = y + layout_block_h + SECTION_HEADER_HEIGHT;
+    let content_w = (usable_w - COPY_BTN_W - COPY_BTN_GAP).max(40.0);
+    out.push((
+        PropertyPanelAction::CopyTextContent,
+        Rect {
+            origin: Point2D::new(x0 + PAD_X + content_w + COPY_BTN_GAP, content_y),
+            size: Point2D::new(COPY_BTN_W, INPUT_HEIGHT),
+        },
+    ));
+    let family_y = content_y + INPUT_HEIGHT + CONTENT_ROW_GAP;
     out.push((
         PropertyPanelAction::ToggleFontFamilyPicker,
         Rect {
-            origin: Point2D::new(x0 + PAD_X, y + layout_block_h + SECTION_HEADER_HEIGHT),
+            origin: Point2D::new(x0 + PAD_X, family_y),
             size: Point2D::new(usable_w, INPUT_HEIGHT),
         },
     ));
     // Weight dropdown trigger — left half of the weight/size row.
-    let weight_row_y = y + layout_block_h + SECTION_HEADER_HEIGHT + INPUT_HEIGHT + FAMILY_ROW_GAP;
+    let weight_row_y = family_y + INPUT_HEIGHT + FAMILY_ROW_GAP;
     let weight_half_w = (usable_w - 8.0) / 2.0;
     out.push((
         PropertyPanelAction::ToggleFontWeightPicker,
@@ -152,21 +174,24 @@ pub fn text_action_rects(
             size: Point2D::new(weight_half_w, INPUT_HEIGHT),
         },
     ));
-    let mut y = y
-        + layout_block_h
-        + SECTION_HEADER_HEIGHT
-        + INPUT_HEIGHT
-        + FAMILY_ROW_GAP
-        + INPUT_HEIGHT
-        + 6.0
-        // The 行高/字间距 caption row sits between the weight/size row and the
-        // LH/LS inputs — paint_text_section + push_text_input_rects both
-        // include it, so the align-row hit anchor must too (else the align
-        // ToggleGroup hit rects drift 14px above where they paint).
-        + LH_LS_LABEL_H
-        + INPUT_HEIGHT
-        + 8.0
-        + ALIGN_LABEL_H;
+    // Formatting toolbar row (Bold, Italic, Underline, Strikethrough).
+    let format_y = weight_row_y + INPUT_HEIGHT + FORMAT_ROW_GAP;
+    let fmt_w = usable_w / 4.0;
+    for (action, i) in [
+        (PropertyPanelAction::ToggleTextBold, 0_usize),
+        (PropertyPanelAction::ToggleTextItalic, 1_usize),
+        (PropertyPanelAction::ToggleTextUnderline, 2_usize),
+        (PropertyPanelAction::ToggleTextStrikethrough, 3_usize),
+    ] {
+        out.push((
+            action,
+            Rect {
+                origin: Point2D::new(x0 + PAD_X + i as f32 * fmt_w, format_y),
+                size: Point2D::new(fmt_w, button_h),
+            },
+        ));
+    }
+    let mut y = format_y + button_h + 6.0 + LH_LS_LABEL_H + INPUT_HEIGHT + 8.0 + ALIGN_LABEL_H;
     let h_buttons = [
         (PropertyPanelAction::SetTextAlign(TextAlignValue::Left), 0),
         (PropertyPanelAction::SetTextAlign(TextAlignValue::Center), 1),
@@ -229,6 +254,8 @@ pub fn font_weight_picker_action_rects(
         + text_layout_block_height(touch_controls)
         + SECTION_HEADER_HEIGHT
         + INPUT_HEIGHT
+        + CONTENT_ROW_GAP
+        + INPUT_HEIGHT
         + FAMILY_ROW_GAP
         + INPUT_HEIGHT
         + 4.0;
@@ -281,6 +308,43 @@ pub fn paint_text_section(
         width,
     );
     let usable_w = width - PAD_X * 2.0;
+    // Content edit input + Copy text button row.
+    let content_w = (usable_w - COPY_BTN_W - COPY_BTN_GAP).max(40.0);
+    let content_rect = Rect {
+        origin: Point2D::new(x + PAD_X, y),
+        size: Point2D::new(content_w, INPUT_HEIGHT),
+    };
+    paint_input_with_prefix_focused_state(
+        cx,
+        theme,
+        content_rect,
+        "T",
+        edit.value_for(PropertyFocus::TextContent, &text.content),
+        edit.focus == Some(PropertyFocus::TextContent),
+        edit.caret_at(PropertyFocus::TextContent),
+        edit.select_all_at(PropertyFocus::TextContent),
+        edit.input_at(PropertyFocus::TextContent),
+        edit.now_ms,
+    );
+    let copy_rect = Rect {
+        origin: Point2D::new(x + PAD_X + content_w + COPY_BTN_GAP, y),
+        size: Point2D::new(COPY_BTN_W, INPUT_HEIGHT),
+    };
+    cx.backend
+        .fill_round_rect(copy_rect, INPUT_RADIUS, theme.muted);
+    draw_icon(
+        cx.backend,
+        Icon::Copy,
+        Point2D::new(
+            copy_rect.origin.x + (copy_rect.size.x - 14.0) / 2.0,
+            copy_rect.origin.y + (copy_rect.size.y - 14.0) / 2.0,
+        ),
+        14.0,
+        theme.foreground,
+        1.5,
+    );
+    y += INPUT_HEIGHT + CONTENT_ROW_GAP;
+
     let family_rect = Rect {
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(usable_w, INPUT_HEIGHT),
@@ -366,7 +430,50 @@ pub fn paint_text_section(
         edit.input_at(PropertyFocus::FontSize),
         edit.now_ms,
     );
-    y += INPUT_HEIGHT + 6.0;
+    y += INPUT_HEIGHT + FORMAT_ROW_GAP;
+
+    // Formatting toolbar row: Bold (B), Italic (I), Underline (U), Strikethrough (S).
+    let button_h = text_button_height(touch_controls);
+    let fmt_w = usable_w / 4.0;
+    let fmt_track = Rect {
+        origin: Point2D::new(x + PAD_X, y),
+        size: Point2D::new(usable_w, button_h),
+    };
+    cx.backend
+        .fill_round_rect(fmt_track, INPUT_RADIUS, theme.muted);
+    for (i, (icon, is_on)) in [
+        (Icon::Bold, text.font_weight >= 600),
+        (Icon::Italic, text.italic),
+        (Icon::Underline, text.underline),
+        (Icon::Strikethrough, text.strikethrough),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let cell = Rect {
+            origin: Point2D::new(x + PAD_X + i as f32 * fmt_w + 2.0, y + 2.0),
+            size: Point2D::new((fmt_w - 4.0).max(0.0), (button_h - 4.0).max(0.0)),
+        };
+        if is_on {
+            cx.backend.fill_round_rect(cell, 4.0, theme.background);
+        }
+        draw_icon(
+            cx.backend,
+            icon,
+            Point2D::new(
+                cell.origin.x + (cell.size.x - 14.0) / 2.0,
+                cell.origin.y + (cell.size.y - 14.0) / 2.0,
+            ),
+            14.0,
+            if is_on {
+                theme.primary
+            } else {
+                theme.muted_foreground
+            },
+            1.6,
+        );
+    }
+    y += button_h + 6.0;
 
     // Caption row — 行高 (left) / 字间距 (right), small muted labels
     // above the inputs (TS `text-[9px] justify-between`).
@@ -449,158 +556,10 @@ pub fn paint_text_section(
     y + SECTION_GAP
 }
 
-// The font-family picker overlay (search + bundled/system groups)
-// lives in `property_panel_typography.rs`.
-
-#[allow(clippy::too_many_arguments)]
-pub fn paint_font_weight_picker(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    panel_rect: Rect,
-    visible: crate::widgets::property_panel_layout::VisibleSections,
-    locale: op_editor_core::Locale,
-    active_weight: u16,
-    hover: Option<usize>,
-    pressed: Option<usize>,
-) {
-    let Some((pop, rows)) = font_weight_picker_layout(panel_rect, visible) else {
-        return;
-    };
-    cx.backend.fill_round_rect(pop, 8.0, theme.popover);
-    cx.backend.stroke_round_rect(pop, 8.0, theme.border, 1.0);
-    let active = FontWeightChoice::nearest(active_weight);
-    for (i, (action, row)) in rows.into_iter().enumerate() {
-        let PropertyPanelAction::SetFontWeight(choice) = action else {
-            continue;
-        };
-        let is_active = choice == active;
-        if is_active {
-            cx.backend
-                .fill_round_rect(row, 6.0, theme.row_selected_primary);
-        } else if hover == Some(i) || pressed == Some(i) {
-            paint_button_feedback_wash(
-                cx.backend,
-                theme,
-                row,
-                6.0,
-                hover == Some(i),
-                pressed == Some(i),
-            );
-        }
-        // "number + name" — e.g. `400 Regular`, `800 Extra Bold`.
-        let row_label = format!(
-            "{}  {}",
-            choice.numeric_label(),
-            op_i18n::translate(locale, choice.label_key())
-        );
-        let label = TextLayout::single_run(
-            &row_label,
-            "system-ui",
-            12.0,
-            (if is_active {
-                theme.primary
-            } else {
-                theme.foreground
-            })
-            .to_jian(),
-            Point2D::new(0.0, 0.0),
-        );
-        cx.backend.draw_text(
-            &label,
-            Point2D::new(row.origin.x + 10.0, row.origin.y + 19.0),
-        );
-        if is_active {
-            draw_icon(
-                cx.backend,
-                Icon::Check,
-                Point2D::new(row.origin.x + row.size.x - 22.0, row.origin.y + 7.0),
-                14.0,
-                theme.primary,
-                1.6,
-            );
-        }
-    }
-}
-
-fn font_weight_picker_layout(
-    panel_rect: Rect,
-    visible: crate::widgets::property_panel_layout::VisibleSections,
-) -> Option<(Rect, Vec<(PropertyPanelAction, Rect)>)> {
-    let text_y = text_section_top(panel_rect, visible)?;
-    let rows = font_weight_picker_action_rects(
-        panel_rect.origin.x,
-        text_y,
-        panel_rect.size.x - PAD_X * 2.0,
-        visible.touch_controls,
-    );
-    let first = rows.first().map(|(_, rect)| *rect)?;
-    let last = rows.last().map(|(_, rect)| *rect).unwrap_or(first);
-    let popup = Rect {
-        origin: Point2D::new(first.origin.x, first.origin.y - 6.0),
-        size: Point2D::new(
-            first.size.x,
-            last.origin.y + last.size.y - first.origin.y + 12.0,
-        ),
-    };
-    Some((popup, rows))
-}
-
-/// Full font-weight popup chrome, including the 6px padding above and
-/// below its option rows. Shared with paint through
-/// `font_weight_picker_layout`.
-pub(crate) fn font_weight_picker_rect(
-    panel_rect: Rect,
-    visible: crate::widgets::property_panel_layout::VisibleSections,
-) -> Option<Rect> {
-    font_weight_picker_layout(panel_rect, visible).map(|(popup, _)| popup)
-}
-
-pub(crate) fn text_section_top(
-    panel_rect: Rect,
-    visible: crate::widgets::property_panel_layout::VisibleSections,
-) -> Option<f32> {
-    if !visible.text {
-        return None;
-    }
-    Some(sections_top_before_text(panel_rect, visible))
-}
-
-/// Y of the slot where the Text section would start — the walk over
-/// every section ABOVE it (also the anchor base for the image
-/// section, which follows text in the section order).
-pub(crate) fn sections_top_before_text(
-    panel_rect: Rect,
-    visible: crate::widgets::property_panel_layout::VisibleSections,
-) -> f32 {
-    let mut y = panel_rect.origin.y;
-    y += crate::widgets::property_panel_inputs::TAB_HEIGHT;
-    y += crate::widgets::property_panel_inputs::HEADER_HEIGHT;
-    if visible.create_component {
-        y += crate::widgets::property_panel_inputs::CREATE_COMPONENT_BLOCK_H;
-    }
-    y += SECTION_HEADER_HEIGHT;
-    y += INPUT_HEIGHT + 6.0;
-    y += INPUT_HEIGHT + 12.0;
-    y += SECTION_GAP;
-    if visible.flex_layout {
-        y += crate::widgets::property_panel_flex::flex_section_height(
-            visible.flex_layout_mode,
-            visible.padding_edit_mode,
-            visible.touch_controls,
-        );
-    }
-    if visible.size_options {
-        y += SECTION_HEADER_HEIGHT;
-        y += INPUT_HEIGHT + 10.0;
-        y += crate::widgets::property_panel_inputs::size_check_row_height(visible.touch_controls)
-            * if visible.clip_content { 3.0 } else { 2.0 };
-        y += 12.0 + SECTION_GAP;
-    }
-    if visible.icon {
-        y += crate::widgets::property_panel_icon::icon_section_height();
-    }
-    y
-}
+pub use crate::widgets::property_panel_typography::paint_font_weight_picker;
+pub(crate) use crate::widgets::property_panel_typography::{
+    font_weight_picker_rect, sections_top_before_text, text_section_top,
+};
 
 #[allow(clippy::too_many_arguments)]
 fn paint_text_growth_row(

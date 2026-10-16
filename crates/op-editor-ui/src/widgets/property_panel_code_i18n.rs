@@ -11,10 +11,6 @@ impl CodePanelStrings {
         Self { locale }
     }
 
-    pub(super) fn title(self) -> &'static str {
-        self.t("rightPanel.code")
-    }
-
     pub(super) fn idle_subtitle(self) -> &'static str {
         self.t("code.productionReady")
     }
@@ -73,10 +69,12 @@ impl CodePanelStrings {
         self.t("common.save")
     }
 
+    #[allow(dead_code)]
     pub(super) fn bundle(self) -> &'static str {
         self.t("code.bundleAction")
     }
 
+    #[allow(dead_code)]
     pub(super) fn regen(self) -> &'static str {
         self.t("code.regenAction")
     }

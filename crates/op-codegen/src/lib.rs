@@ -20,11 +20,26 @@
 pub mod ai;
 
 mod codegen_targets;
+pub mod design_jsx;
+pub mod html_css;
+pub mod tailwind_jsx;
 #[cfg(test)]
 mod tests;
 
 pub use crate::codegen_targets::{
     Compose, Flutter, Html, React, ReactNative, Svelte, SwiftUi, Vue,
+};
+pub use crate::design_jsx::{
+    generate_design_jsx_for_node_refs, generate_design_jsx_for_nodes,
+    generate_design_jsx_selection, DesignJsx,
+};
+pub use crate::html_css::{
+    generate_html_css_for_node_refs, generate_html_css_for_nodes, generate_html_css_selection,
+    HtmlCss,
+};
+pub use crate::tailwind_jsx::{
+    generate_tailwind_jsx_for_node_refs, generate_tailwind_jsx_for_nodes,
+    generate_tailwind_jsx_selection, TailwindJsx,
 };
 
 use jian_ops_schema::node::PenNode;
@@ -137,6 +152,28 @@ impl Codegen for CssVariables {
 // `corner_radius` / `text` / `hidden` directly. The canonical
 // `PenNode` is a 12-variant enum: these helpers give the markup
 // generators the same flat view through `PenNodeExt`.
+
+/// Generate deterministic code for the selected nodes (or active page roots)
+/// in one of the three canonical Code-panel formats:
+/// - `"design-jsx"` (or `"react"` / `"design_jsx"`) -> `Design JSX`
+/// - `"tailwind-jsx"` (or `"tailwind"` / `"tailwind_jsx"`) -> `Tailwind JSX`
+/// - `"html-css"` (or `"html"` / `"html_css"`) -> `HTML/CSS`
+pub fn generate_for_format(
+    doc: &PenDocument,
+    page_roots: &[PenNode],
+    selected_ids: &[String],
+    format: &str,
+) -> String {
+    match format {
+        "tailwind-jsx" | "tailwind_jsx" | "tailwind" => {
+            generate_tailwind_jsx_selection(doc, page_roots, selected_ids)
+        }
+        "html-css" | "html_css" | "html" => {
+            generate_html_css_selection(doc, page_roots, selected_ids)
+        }
+        _ => generate_design_jsx_selection(doc, page_roots, selected_ids),
+    }
+}
 
 /// Top-level node forest the generators walk: the first page's
 /// children when the document is paged, otherwise the bare

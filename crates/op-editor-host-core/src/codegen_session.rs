@@ -242,7 +242,7 @@ fn run_pipeline_with_model_and_cancel_token(
     provider_cancel: Option<Arc<AtomicBool>>,
 ) {
     let provider_label = provider.provider_label().to_string();
-    let framework = input.framework.as_wire();
+    let framework = input.framework.prompt_name();
     tracing::info!(
         target: "op_codegen_runtime",
         provider = %provider_label,

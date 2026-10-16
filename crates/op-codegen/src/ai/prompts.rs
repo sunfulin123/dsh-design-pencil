@@ -224,7 +224,7 @@ pub fn plan_request(id: RequestId, input: &CodegenInput, strict: bool) -> Pendin
     let mut user_message = String::new();
     user_message.push_str(&format!(
         "Target framework: {}\n",
-        input.framework.as_wire()
+        input.framework.prompt_name()
     ));
     user_message.push('\n');
     // PLANNING ONLY: embed a node-tree SUMMARY that PRESERVES each node's id
@@ -271,7 +271,7 @@ pub fn chunk_request(
         dep_contracts,
         asset_hints,
     } = chunk;
-    let framework = input.framework.as_wire();
+    let framework = input.framework.prompt_name();
     let mut user_message = String::new();
     user_message.push_str(&format!(
         "Generate a {framework} component named \"{suggested_name}\".\n"
@@ -366,7 +366,7 @@ pub fn assembly_request(
     input: &CodegenInput,
     asset_paths: &[String],
 ) -> PendingRequest {
-    let framework = input.framework.as_wire();
+    let framework = input.framework.prompt_name();
     let mut user_message = String::new();
     user_message.push_str(&format!(
         "Assemble the following {framework} code chunks into a single production-ready file.\n"
@@ -418,7 +418,7 @@ pub fn rescue_request(
     input: &CodegenInput,
     asset_paths: &[String],
 ) -> PendingRequest {
-    let framework = input.framework.as_wire();
+    let framework = input.framework.prompt_name();
     let mut user_message = format!(
         "The chunked code-generation pipeline could not produce usable code. \
          Generate one complete, self-contained {framework} source file directly from the design.\n\

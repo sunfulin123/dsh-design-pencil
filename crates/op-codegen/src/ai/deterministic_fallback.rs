@@ -45,7 +45,7 @@ impl std::fmt::Display for DeterministicFallbackError {
             Self::EmptyGeneratedCode(framework) => write!(
                 formatter,
                 "the deterministic {} generator returned empty code",
-                framework.as_wire()
+                framework.prompt_name()
             ),
         }
     }
@@ -115,9 +115,10 @@ mod tests {
             Framework::Compose,
             Framework::ReactNative,
         ] {
-            let code = generate(NODE, None, framework)
-                .unwrap_or_else(|error| panic!("{} fallback failed: {error}", framework.as_wire()));
-            assert!(!code.trim().is_empty(), "{}", framework.as_wire());
+            let code = generate(NODE, None, framework).unwrap_or_else(|error| {
+                panic!("{} fallback failed: {error}", framework.prompt_name())
+            });
+            assert!(!code.trim().is_empty(), "{}", framework.prompt_name());
         }
     }
 

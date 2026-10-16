@@ -572,3 +572,149 @@ pub fn paint_dropdown(cx: &mut PaintCx<'_>, theme: &Theme, rect: Rect, value: &s
 /// Re-export of the shared `#RRGGBB` formatter under the historical
 /// property-panel name so existing call sites stay unchanged.
 pub use crate::util::color_to_hex as format_color_hex;
+
+fn tab_label_width(label: &str) -> f32 {
+    label
+        .chars()
+        .map(|c| if c.is_ascii() { 7.0 } else { 13.0 })
+        .sum()
+}
+
+pub fn tab_strip_rects(
+    labels: &crate::widgets::property_panel_sections::PropertyLabels,
+    x: f32,
+    y: f32,
+    show_interact: bool,
+    show_code: bool,
+    touch_controls: bool,
+) -> Vec<(op_editor_core::PropertyTab, Rect)> {
+    use op_editor_core::PropertyTab;
+    let pad = 14.0;
+    let tab_height = if touch_controls { 30.0 } else { 26.0 };
+    let tab_y = y + (TAB_HEIGHT - tab_height) / 2.0;
+    let mut cursor_x = x + pad;
+    let mut rects = Vec::with_capacity(3);
+    let design_w = (tab_label_width(labels.tab_design) + 24.0).max(48.0);
+    rects.push((
+        PropertyTab::Design,
+        Rect {
+            origin: Point2D::new(cursor_x, tab_y),
+            size: Point2D::new(design_w, tab_height),
+        },
+    ));
+    cursor_x += design_w + 6.0;
+    if show_interact {
+        let interact_w = (tab_label_width(labels.tab_interact) + 24.0).max(48.0);
+        rects.push((
+            PropertyTab::Interact,
+            Rect {
+                origin: Point2D::new(cursor_x, tab_y),
+                size: Point2D::new(interact_w, tab_height),
+            },
+        ));
+        cursor_x += interact_w + 6.0;
+    }
+    if show_code {
+        let code_w = (tab_label_width(labels.tab_code) + 24.0).max(48.0);
+        rects.push((
+            PropertyTab::Code,
+            Rect {
+                origin: Point2D::new(cursor_x, tab_y),
+                size: Point2D::new(code_w, tab_height),
+            },
+        ));
+    }
+    rects
+}
+
+pub fn tab_strip_hit(
+    labels: &crate::widgets::property_panel_sections::PropertyLabels,
+    x: f32,
+    y: f32,
+    point: Point2D,
+    show_interact: bool,
+    show_code: bool,
+    touch_controls: bool,
+) -> Option<op_editor_core::PropertyTab> {
+    tab_strip_rects(labels, x, y, show_interact, show_code, touch_controls)
+        .into_iter()
+        .find(|(_, rect)| rect.contains(point))
+        .map(|(tab, _)| tab)
+}
+
+pub fn paint_tab_strip(
+    cx: &mut PaintCx<'_>,
+    theme: &Theme,
+    labels: &crate::widgets::property_panel_sections::PropertyLabels,
+    state: crate::widgets::property_panel_sections::TabStripState,
+    x: f32,
+    y: f32,
+    width: f32,
+) -> f32 {
+    use op_editor_core::PropertyTab;
+    let active = state.active;
+    let hover = state.hover;
+    let label_for = |tab: PropertyTab| -> &'static str {
+        match tab {
+            PropertyTab::Design => labels.tab_design,
+            PropertyTab::Interact => labels.tab_interact,
+            PropertyTab::Code => labels.tab_code,
+        }
+    };
+    for (tab, rect) in tab_strip_rects(
+        labels,
+        x,
+        y,
+        state.show_interact,
+        state.show_code,
+        state.touch_controls,
+    ) {
+        let is_active = tab == active;
+        let is_hovered = hover == Some(tab) && !is_active;
+        if is_hovered {
+            cx.backend.fill_round_rect(rect, 4.0, theme.button_hover);
+        }
+        if is_active {
+            cx.backend.fill_round_rect(
+                Rect::xywh(
+                    rect.origin.x + 8.0,
+                    y + TAB_HEIGHT - 2.0,
+                    (rect.size.x - 16.0).max(0.0),
+                    2.0,
+                ),
+                1.0,
+                theme.primary,
+            );
+        }
+        let color = if is_active {
+            theme.primary
+        } else if is_hovered {
+            theme.foreground
+        } else {
+            theme.muted_foreground
+        };
+        let label = TextLayout::single_run(
+            label_for(tab),
+            "system-ui",
+            13.0,
+            (color).to_jian(),
+            Point2D::new(0.0, 0.0),
+        )
+        .with_font_weight(if is_active { 500 } else { 400 });
+        cx.backend.draw_text(
+            &label,
+            Point2D::new(
+                rect.origin.x + 12.0,
+                jian_widgets::centered_text_baseline_y(rect, 13.0),
+            ),
+        );
+    }
+    cx.backend.fill_rect(
+        Rect {
+            origin: Point2D::new(x, y + TAB_HEIGHT - 1.0),
+            size: Point2D::new(width, 1.0),
+        },
+        theme.border,
+    );
+    y + TAB_HEIGHT
+}

@@ -144,16 +144,17 @@ fn for_editor_picks_up_pressed_design_md_button() {
 }
 
 #[test]
-fn header_auto_generate_button_is_hittable_and_hoverable() {
+fn header_export_button_is_hittable_and_hoverable() {
     let state = open_state();
     let panel = DesignMdPanel::for_editor(&state).expect("open");
     let rect = Rect::xywh(0.0, 0.0, 480.0, 560.0);
-    let point = find_hit(&panel, rect, DesignMdHit::AutoGenerate)
-        .expect("auto-generate header button should be hittable");
+    let point = find_hit(&panel, rect, DesignMdHit::Export)
+        .expect("export header button should be hittable");
 
-    assert_eq!(
-        panel.hover_at(rect, point),
-        Some(DesignMdButton::AutoGenerate)
+    assert_eq!(panel.hover_at(rect, point), Some(DesignMdButton::Export));
+    assert!(
+        find_hit(&panel, rect, DesignMdHit::AutoGenerate).is_none(),
+        "auto-generate button is removed from header"
     );
 }
 
@@ -172,7 +173,7 @@ fn content_paint_uses_design_md_scroll_offset() {
 }
 
 #[test]
-fn empty_state_shows_import_and_auto_generate_actions() {
+fn empty_state_shows_import_action_only() {
     let state = empty_open_state();
     let panel = DesignMdPanel::for_editor(&state).expect("open");
     let rect = Rect::xywh(0.0, 0.0, 480.0, 560.0);
@@ -182,8 +183,8 @@ fn empty_state_shows_import_and_auto_generate_actions() {
         "empty state should expose import design.md action"
     );
     assert!(
-        find_hit(&panel, rect, DesignMdHit::AutoGenerate).is_some(),
-        "empty state should expose auto-generate action"
+        find_hit(&panel, rect, DesignMdHit::AutoGenerate).is_none(),
+        "empty state should not expose auto-generate action"
     );
 }
 
@@ -199,7 +200,7 @@ fn empty_state_action_button_contents_are_centered() {
 
     panel.paint(&mut cx, rect);
 
-    for label in ["导入 design.md", "自动生成"] {
+    for label in ["导入 design.md"] {
         let (text, text_origin) = backend
             .texts
             .iter()

@@ -144,12 +144,10 @@ fn code_tab_idle_body_uses_editor_locale() {
     }
     let drawn = backend.texts.join("\n");
     assert!(drawn.contains("代码"));
-    assert!(drawn.contains("1 个节点已选中"));
-    assert!(drawn.contains("生成可用于生产的代码"));
-    assert!(drawn.contains("生成 React"));
-    assert!(drawn.contains("导出 AI Bundle"));
+    assert!(drawn.contains("Design JSX"));
+    assert!(!drawn.contains("复制"));
+    assert!(!drawn.contains("保存"));
     assert!(!drawn.contains("1 node selected"));
-    assert!(!drawn.contains("Generate production-ready code"));
 }
 
 #[test]

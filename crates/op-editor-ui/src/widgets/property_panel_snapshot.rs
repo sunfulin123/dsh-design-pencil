@@ -176,4 +176,16 @@ pub struct NodeSnapshot {
     /// True when the selection is a reusable COMPONENT definition —
     /// drives the purple badge + the Detach-component button.
     pub is_reusable: bool,
+    /// Node visibility (`base.visible != Some(false)`).
+    pub visible: bool,
+    /// Node lock state (`base.locked == Some(true)`).
+    pub locked: bool,
+    /// Semantic role (`base.role` or `semantics.role`).
+    pub role: String,
+    /// Design intent / AI explanation note (`base.explain` or `semantics.aiDescription`).
+    pub explain: String,
+    /// Accessibility label (`semantics.label`).
+    pub a11y_label: String,
+    /// Whether this node is a top-level Frame on the active page (eligible for `screen` route).
+    pub is_top_level_frame: bool,
 }

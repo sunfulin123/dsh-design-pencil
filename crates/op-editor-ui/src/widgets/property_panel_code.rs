@@ -8,9 +8,7 @@
 use crate::theme::Theme;
 use crate::widgets::icons::{draw_icon, Icon};
 use crate::widgets::property_panel_action::{CodegenAction, PropertyPanelAction};
-use crate::widgets::property_panel_inputs::{
-    paint_section_label, INPUT_HEIGHT, PAD_X, SECTION_HEADER_HEIGHT, TAB_HEIGHT,
-};
+use crate::widgets::property_panel_inputs::{INPUT_HEIGHT, PAD_X, TAB_HEIGHT};
 use crate::widgets::text_metrics;
 use crate::widgets::PaintCx;
 use crate::{Color, Point2D, Rect, TextLayout};
@@ -31,8 +29,9 @@ mod generating;
 
 use framework::{
     chips_body_top, chips_body_top_for, framework_chevron_zones, framework_chevron_zones_for,
-    framework_chip_rects, framework_chip_rects_for, paint_framework_chips,
-    paint_framework_chips_for, CHEVRON_ZONE_W, TOUCH_TARGET_SIZE,
+    framework_chip_rects, framework_chip_rects_for, framework_dropdown_option_rects,
+    framework_dropdown_trigger_rect, paint_framework_chips, paint_framework_chips_for,
+    paint_framework_dropdown_overlay, CHEVRON_ZONE_W, TOUCH_TARGET_SIZE,
 };
 pub use framework::{framework_at, framework_row_band, framework_row_overflow};
 
@@ -140,6 +139,16 @@ pub fn code_preview_max_scroll(panel_rect: Rect, state: &CodegenState) -> Option
     ))
 }
 
+pub fn code_preview_max_h_scroll(panel_rect: Rect, state: &CodegenState) -> Option<f32> {
+    if !matches!(state.phase, CodegenPhase::Complete) {
+        return None;
+    }
+    Some(complete::code_preview_max_h_scroll(
+        state,
+        complete_layout(panel_rect),
+    ))
+}
+
 fn complete_layout(panel_rect: Rect) -> complete::CompleteLayout {
     complete::CompleteLayout {
         x: panel_rect.origin.x,
@@ -155,9 +164,16 @@ fn code_body_y(panel_rect: Rect) -> f32 {
 }
 
 fn code_body_y_for(panel_rect: Rect, touch_controls: bool) -> f32 {
-    let tab_bottom = panel_rect.origin.y + TAB_HEIGHT;
-    let chips_y = tab_bottom + SECTION_HEADER_HEIGHT;
-    chips_body_top_for(chips_y, touch_controls)
+    let (_, chips_bottom) = framework_row_band_for(panel_rect.origin.y, touch_controls);
+    chips_body_top_for(
+        chips_bottom - strip_chip_height(touch_controls),
+        touch_controls,
+    )
+}
+
+fn strip_chip_height(touch_controls: bool) -> f32 {
+    let (top, bottom) = framework_row_band_for(0.0, touch_controls);
+    bottom - top
 }
 
 fn panel_bottom(panel_rect: Rect) -> f32 {
@@ -193,6 +209,7 @@ struct CodePanelLayout {
 
 pub fn codegen_hover_for_action(action: CodegenAction) -> Option<CodegenHover> {
     match action {
+        CodegenAction::ToggleFrameworkPicker => Some(CodegenHover::FrameworkTrigger),
         CodegenAction::SelectFramework(_) => None,
         CodegenAction::Generate => Some(CodegenHover::Generate),
         CodegenAction::Regenerate => Some(CodegenHover::Regenerate),
@@ -559,16 +576,15 @@ fn paint_code_panel_with_bottom(
     pressed: Option<CodegenHover>,
     touch_controls: bool,
 ) -> f32 {
-    // A faint section label keeps the panel head consistent with Design.
     let x = layout.x;
     let w = layout.w;
-    let mut y = paint_section_label(cx, theme, strings.title(), x, layout.y, w);
-    y = if touch_controls {
-        paint_framework_chips_for(cx, theme, state, x, y, w, true)
+    let chips_y = layout.y + 8.0;
+    let y = if touch_controls {
+        paint_framework_chips_for(cx, theme, state, x, chips_y, w, true)
     } else {
-        paint_framework_chips(cx, theme, state, x, y, w)
+        paint_framework_chips(cx, theme, state, x, chips_y, w)
     };
-    match state.phase {
+    let bottom_y = match state.phase {
         CodegenPhase::Idle => paint_idle_body(cx, theme, state, strings, x, y, w),
         CodegenPhase::Generating => {
             generating::paint_generating_body(cx, theme, state, strings, x, y, w, now_ms)
@@ -588,7 +604,9 @@ fn paint_code_panel_with_bottom(
             pressed,
         ),
         CodegenPhase::Error => error::paint_error_body(cx, theme, state, strings, x, y, w),
-    }
+    };
+    paint_framework_dropdown_overlay(cx, theme, state, x, chips_y, w, touch_controls);
+    bottom_y
 }
 
 /// Hit-test geometry for the Code panel — the clickable rects, in draw
@@ -653,17 +671,26 @@ fn code_action_rects_with_bottom(
     touch_controls: bool,
 ) -> Vec<(CodegenAction, Rect)> {
     let mut out: Vec<(CodegenAction, Rect)> = Vec::new();
-    // Section label, then the framework chip row, then the phase body.
-    let chips_y = y + SECTION_HEADER_HEIGHT;
-    // When the strip overflows, the scroll chevrons take precedence over
-    // chips at the band ends (pushed first → win the topmost hit-test).
+    // Framework chip row sits directly under the top tab strip, then the phase body.
+    let chips_y = y + 8.0;
+    let framework_interactive = !matches!(state.phase, CodegenPhase::Generating);
+    if framework_interactive && state.framework_picker_open {
+        for (fw, opt_rect) in framework_dropdown_option_rects(x, chips_y, w, touch_controls) {
+            out.push((CodegenAction::SelectFramework(fw), opt_rect));
+        }
+    }
+    if framework_interactive {
+        let trigger = framework_dropdown_trigger_rect(x, chips_y, w, touch_controls);
+        out.push((CodegenAction::ToggleFrameworkPicker, trigger));
+    }
+    // Keep chip/chevron geometry wired when not using the open dropdown so
+    // narrow-strip / framework hit-tests remain compatible.
     let zones = if touch_controls {
         framework_chevron_zones_for(x, chips_y, w, true)
     } else {
         framework_chevron_zones(x, chips_y, w)
     };
-    let framework_interactive = !matches!(state.phase, CodegenPhase::Generating);
-    if framework_interactive {
+    if framework_interactive && !state.framework_picker_open {
         if let Some((left, right)) = zones {
             out.push((CodegenAction::ScrollFrameworksLeft, left));
             out.push((CodegenAction::ScrollFrameworksRight, right));
@@ -684,20 +711,17 @@ fn code_action_rects_with_bottom(
     } else {
         framework_chip_rects(x, chips_y, w, state.framework_scroll.offset)
     };
-    for (fw, rect) in chip_rects {
-        // Clamp the clickable rect to the visible (chevron-inset) band so a
-        // chip's scrolled-off / clipped portion is NOT clickable (matches the
-        // painter's clip and the hover hit-test in `framework_at`).
-        let left = rect.origin.x.max(band_l);
-        let right = (rect.origin.x + rect.size.x).min(band_r);
-        if right - left <= 0.0 || (touch_controls && right - left < TOUCH_TARGET_SIZE) {
-            continue; // fully outside the visible band
-        }
-        let clipped = Rect {
-            origin: Point2D::new(left, rect.origin.y),
-            size: Point2D::new(right - left, rect.size.y),
-        };
-        if framework_interactive {
+    if framework_interactive && !state.framework_picker_open {
+        for (fw, rect) in chip_rects {
+            let left = rect.origin.x.max(band_l);
+            let right = (rect.origin.x + rect.size.x).min(band_r);
+            if right - left <= 0.0 || (touch_controls && right - left < TOUCH_TARGET_SIZE) {
+                continue;
+            }
+            let clipped = Rect {
+                origin: Point2D::new(left, rect.origin.y),
+                size: Point2D::new(right - left, rect.size.y),
+            };
             out.push((CodegenAction::SelectFramework(fw), clipped));
         }
     }
@@ -728,11 +752,9 @@ fn code_action_rects_with_bottom(
                     panel_bottom,
                 },
             );
-            let [copy, save, bundle, regen] = complete::action_chip_rects(x, row_y, w, strings);
+            let [copy, save, _, _] = complete::action_chip_rects(x, row_y, w, strings);
             out.push((CodegenAction::Copy, copy));
             out.push((CodegenAction::Download, save));
-            out.push((CodegenAction::ExportBundle, bundle));
-            out.push((CodegenAction::Regenerate, regen));
         }
         CodegenPhase::Error => {
             out.extend(error::error_action_rects(state, x, body_y, w));

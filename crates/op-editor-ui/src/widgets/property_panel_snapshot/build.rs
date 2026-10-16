@@ -127,6 +127,12 @@ impl NodeSnapshot {
             kind_variant: NodeKind::Frame,
             is_instance: false,
             is_reusable: false,
+            visible: true,
+            locked: false,
+            role: String::new(),
+            explain: String::new(),
+            a11y_label: String::new(),
+            is_top_level_frame: false,
         }
     }
 
@@ -207,6 +213,12 @@ impl NodeSnapshot {
             kind_variant: NodeKind::Frame,
             is_instance: false,
             is_reusable: false,
+            visible: true,
+            locked: false,
+            role: String::new(),
+            explain: String::new(),
+            a11y_label: String::new(),
+            is_top_level_frame: false,
         })
     }
 
@@ -313,6 +325,30 @@ impl NodeSnapshot {
             kind_variant: kind,
             is_instance: false,
             is_reusable: matches!(node, PenNode::Frame(f) if f.reusable == Some(true)),
+            visible: base.visible.unwrap_or(true),
+            locked: base.locked.unwrap_or(false),
+            role: base
+                .role
+                .clone()
+                .or_else(|| {
+                    op_editor_core::command_node_attrs::node_semantics(node)
+                        .and_then(|s| s.role)
+                        .and_then(|r| serde_json::to_value(r).ok())
+                        .and_then(|v| v.as_str().map(str::to_string))
+                })
+                .unwrap_or_default(),
+            explain: base
+                .explain
+                .clone()
+                .or_else(|| {
+                    op_editor_core::command_node_attrs::node_semantics(node)
+                        .and_then(|s| s.ai_description.clone())
+                })
+                .unwrap_or_default(),
+            a11y_label: op_editor_core::command_node_attrs::node_semantics(node)
+                .and_then(|s| s.label.clone())
+                .unwrap_or_default(),
+            is_top_level_frame: is_top_level && matches!(node, PenNode::Frame(_)),
         }
     }
 }

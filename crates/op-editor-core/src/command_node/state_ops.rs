@@ -145,6 +145,11 @@ impl EditorState {
     }
 
     /// `PatchNodeData` — TS-style shallow merge on a canonical PenNode.
+    /// When `node_id` resolves to a wrapper `Frame`/`Group` holding a single
+    /// `Text` child chain, text-specific patch keys (`content`, `fontFamily`,
+    /// `fontSize`, `fontWeight`, `fontStyle`, `underline`, `strikethrough`,
+    /// `lineHeight`, `letterSpacing`, `textAlign`, `textAlignVertical`,
+    /// `textGrowth`) are automatically routed to the inner `Text` node.
     pub(crate) fn cmd_patch_node_data(&mut self, node_id: &NodeId, patch_json: &str) -> bool {
         if !node_id.is_real() {
             return false;
@@ -157,23 +162,83 @@ impl EditorState {
         let Some(current) = walkers::find_node(self.active_children(), node_id) else {
             return false;
         };
-        let Ok(mut value) = serde_json::to_value(current) else {
-            return false;
-        };
-        let Some(obj) = value.as_object_mut() else {
-            return false;
-        };
-        for (key, value) in patch {
-            obj.insert(key, value);
+        let mut outer_patch = serde_json::Map::new();
+        let mut text_patch = serde_json::Map::new();
+        let is_non_text_with_inner_text = !matches!(current, PenNode::Text(_))
+            && crate::command_node_attrs::resolve_text_node(current).is_some();
+        for (key, val) in patch {
+            if is_non_text_with_inner_text
+                && matches!(
+                    key.as_str(),
+                    "content"
+                        | "fontFamily"
+                        | "fontSize"
+                        | "fontWeight"
+                        | "fontStyle"
+                        | "underline"
+                        | "strikethrough"
+                        | "lineHeight"
+                        | "letterSpacing"
+                        | "textAlign"
+                        | "textAlignVertical"
+                        | "textGrowth"
+                )
+            {
+                text_patch.insert(key, val);
+            } else {
+                outer_patch.insert(key, val);
+            }
         }
-        let Ok(replacement) = serde_json::from_value::<PenNode>(value) else {
-            return false;
-        };
-        if replacement.id_str().is_empty() {
-            return false;
+        let mut applied = false;
+        if !outer_patch.is_empty() {
+            let Ok(mut value) = serde_json::to_value(current) else {
+                return false;
+            };
+            let Some(obj) = value.as_object_mut() else {
+                return false;
+            };
+            for (key, val) in outer_patch {
+                obj.insert(key, val);
+            }
+            let Ok(replacement) = serde_json::from_value::<PenNode>(value) else {
+                return false;
+            };
+            if replacement.id_str().is_empty() {
+                return false;
+            }
+            let mut slot = Some(replacement);
+            if !replace_node_in_children(self.active_children_mut(), node_id, &mut slot) {
+                return false;
+            }
+            applied = true;
         }
-        let mut slot = Some(replacement);
-        replace_node_in_children(self.active_children_mut(), node_id, &mut slot)
+        if !text_patch.is_empty() {
+            let text_id = walkers::find_node(self.active_children(), node_id)
+                .and_then(crate::command_node_attrs::resolve_text_node)
+                .map(|t| NodeId::new(t.base.id.clone()));
+            if let Some(tid) = text_id {
+                if let Some(inner) = walkers::find_node(self.active_children(), &tid) {
+                    if let Ok(mut inner_val) = serde_json::to_value(inner) {
+                        if let Some(inner_obj) = inner_val.as_object_mut() {
+                            for (key, val) in text_patch {
+                                inner_obj.insert(key, val);
+                            }
+                            if let Ok(inner_rep) = serde_json::from_value::<PenNode>(inner_val) {
+                                let mut slot = Some(inner_rep);
+                                if replace_node_in_children(
+                                    self.active_children_mut(),
+                                    &tid,
+                                    &mut slot,
+                                ) {
+                                    applied = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        applied
     }
 
     /// `DeleteNode` — remove a node + descendants from the active page.

@@ -24,6 +24,28 @@ impl WidgetHostNative {
         let viewport_width = ctx.viewport_width;
         let viewport_height = ctx.viewport_height;
         let in_git_panel = ctx.in_git_panel;
+        if self.editor_state.codegen.framework_picker_open && !in_git_panel {
+            self.refresh_layout_scene();
+            if let Some(panel) = PropertyPanel::for_selection(&self.editor_state) {
+                let property_rect = self.property_rect(viewport_width, viewport_height);
+                if let Some(action) = panel.hit_test_action(property_rect, Point2D::new(x, y)) {
+                    if matches!(
+                        action,
+                        op_editor_ui::widgets::PropertyPanelAction::Codegen(
+                            op_editor_ui::widgets::property_panel_action::CodegenAction::SelectFramework(_)
+                                | op_editor_ui::widgets::property_panel_action::CodegenAction::ToggleFrameworkPicker
+                        )
+                    ) {
+                        self.apply_property_action(action);
+                        return Some(true);
+                    }
+                }
+            }
+            self.editor_state.codegen.framework_picker_open = false;
+            self.editor_state.codegen.framework_hover = None;
+            self.mark_dirty();
+            return Some(true);
+        }
         // 0c0. Fill-type picker — outside-click dismiss.
         if self.editor_state.editor_ui.fill_type_picker.open && !in_git_panel {
             self.refresh_layout_scene();
@@ -230,22 +252,25 @@ impl WidgetHostNative {
                 .filter(|_| !in_git_panel)
         {
             let property_rect = self.property_rect(viewport_width, viewport_height);
-            if let Some(anchor) = self.code_text_offset_at_screen(x, y) {
-                self.commit_property_focus_if_any();
-                self.editor_state.codegen.code_selection = Some(CodeSelection {
-                    anchor,
-                    focus: anchor,
-                });
-                self.code_selection_drag = Some(CodeSelectionDragState { anchor });
-                self.editor_state.chat.transcript_selection = None;
-                self.editor_state.codegen.framework_hover = None;
-                self.editor_state.codegen.action_hover = None;
-                self.editor_state.chat.focused = false;
-                self.mark_dirty();
-                return Some(true);
+            let point = Point2D::new(x, y);
+            let hits_action = panel.hit_test_action(property_rect, point).is_some();
+            if !hits_action {
+                if let Some(anchor) = self.code_text_offset_at_screen(x, y) {
+                    self.commit_property_focus_if_any();
+                    self.editor_state.codegen.code_selection = Some(CodeSelection {
+                        anchor,
+                        focus: anchor,
+                    });
+                    self.code_selection_drag = Some(CodeSelectionDragState { anchor });
+                    self.editor_state.chat.transcript_selection = None;
+                    self.editor_state.codegen.framework_hover = None;
+                    self.editor_state.codegen.action_hover = None;
+                    self.editor_state.chat.focused = false;
+                    self.mark_dirty();
+                    return Some(true);
+                }
             }
             // Button / checkbox click first (flex modes + size flags).
-            let point = Point2D::new(x, y);
             if let Some(action) = panel.hit_test_action(property_rect, point) {
                 self.editor_state.editor_ui.pressed_button =
                     if let op_editor_ui::widgets::PropertyPanelAction::Codegen(codegen_action) =

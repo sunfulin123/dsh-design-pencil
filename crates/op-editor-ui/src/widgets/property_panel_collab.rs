@@ -70,9 +70,17 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
         | A::SetTextVerticalAlign(_)
         | A::SetTextGrowth(_)
         | A::SetFontFamilyIndex(_)
-        | A::SetFontWeight(_) => G::Document(D::Unsupported(U::Typography)),
+        | A::SetFontWeight(_)
+        | A::ToggleTextBold
+        | A::ToggleTextItalic
+        | A::ToggleTextUnderline
+        | A::ToggleTextStrikethrough => G::Document(D::Unsupported(U::Typography)),
+        A::ToggleNodeVisible | A::ToggleNodeLocked => {
+            G::Document(D::Unsupported(U::VisibilityAndLocking))
+        }
 
         A::SetPropertyTab(_)
+        | A::CopyTextContent
         | A::ToggleCornerExpand
         | A::ToggleCompositingPicker(_)
         | A::GoToComponent

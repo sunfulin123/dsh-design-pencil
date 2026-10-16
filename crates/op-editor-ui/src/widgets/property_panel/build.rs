@@ -284,7 +284,17 @@ impl PropertyPanel {
         // the TS `nodeCount`) so the label tracks what Generate / Export
         // AI Bundle would actually run against this frame.
         let mut codegen = state.codegen.clone();
-        codegen.selection_snapshot = live_codegen_target_ids(state);
+        let target_ids = live_codegen_target_ids(state);
+        if codegen.code.is_empty() || codegen.selection_snapshot != target_ids {
+            codegen.code = op_codegen::generate_for_format(
+                &state.doc,
+                state.active_children(),
+                &target_ids,
+                codegen.framework.as_wire(),
+            );
+            codegen.phase = op_editor_core::codegen::CodegenPhase::Complete;
+        }
+        codegen.selection_snapshot = target_ids;
         let corner_expand_open = ui.corner_expand_open && snapshot.supports_per_corner;
         let mut font_picker = ui.font_picker.clone();
         if ui.font_picker_purpose != Some(op_editor_core::FontPickerPurpose::PropertyText) {
@@ -300,6 +310,7 @@ impl PropertyPanel {
         // logical coordinate space, so normalize the immutable paint snapshot.
         codegen.framework_scroll.offset /= density_scale;
         codegen.code_scroll.offset /= density_scale;
+        codegen.code_h_scroll.offset /= density_scale;
         font_picker.scroll.offset /= density_scale;
         // Effects / Interactions menus are floating, owning surfaces.  Do not
         // carry a stale body-action hover into the immutable paint snapshot

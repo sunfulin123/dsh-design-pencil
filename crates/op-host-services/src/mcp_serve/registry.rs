@@ -85,6 +85,9 @@ pub(super) fn rebuild_registry(
     register_tool!("get_component", get_component_snapshot(doc));
     register_tool!("batch_get", batch_get_snapshot(doc));
     register_tool!("read_nodes", read_nodes_snapshot(doc));
+    register_tool!("get_design_code_context", get_design_code_context_snapshot(doc));
+    register_tool!("get_accessibility_tree", get_accessibility_tree_snapshot(doc));
+    register_tool!("set_node_semantics", set_node_semantics_snapshot());
     register_tool!("codegen_plan", codegen_plan_snapshot(doc));
     register_tool!("codegen_submit_chunk", codegen_submit_chunk_snapshot());
     register_tool!("codegen_assemble", codegen_assemble_snapshot());

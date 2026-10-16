@@ -380,6 +380,12 @@ impl EditorState {
             PropertyFocus::PageBackgroundHex
             | PropertyFocus::FillHex(_)
             | PropertyFocus::StrokeHex
+            | PropertyFocus::NodeName
+            | PropertyFocus::TextContent
+            | PropertyFocus::NodeRole
+            | PropertyFocus::NodeExplain
+            | PropertyFocus::NodeA11yLabel
+            | PropertyFocus::ScreenPath
             | PropertyFocus::WidgetPlaceholder
             | PropertyFocus::WidgetValue
             | PropertyFocus::WidgetLabel

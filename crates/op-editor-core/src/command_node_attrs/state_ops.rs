@@ -25,6 +25,60 @@ use crate::walkers::find_node_mut;
 use jian_ops_schema::node::{BoolOrExpression, FontWeight, PenNode, TextContent};
 use jian_ops_schema::style::{BlurBody, PenEffect, PenStroke, ShadowBody, StrokeThickness};
 
+/// Mutably borrow `node` as a `TextNode`, or — when `node` is a wrapper
+/// `Frame`/`Group` holding a single `Text` child chain — borrow that single
+/// inner `TextNode`. Returns `None` if `node` is neither a `Text` nor a
+/// single-text wrapper.
+pub(crate) fn resolve_text_node_mut(
+    node: &mut PenNode,
+) -> Option<&mut jian_ops_schema::node::text::TextNode> {
+    match node {
+        PenNode::Text(t) => Some(t),
+        PenNode::Frame(f) => {
+            let children = f.children.as_mut()?;
+            if children.len() == 1 {
+                resolve_text_node_mut(&mut children[0])
+            } else {
+                None
+            }
+        }
+        PenNode::Group(g) => {
+            let children = g.children.as_mut()?;
+            if children.len() == 1 {
+                resolve_text_node_mut(&mut children[0])
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Immutably borrow `node` as a `TextNode`, or unwrap a single-text wrapper
+/// `Frame`/`Group` chain.
+pub fn resolve_text_node(node: &PenNode) -> Option<&jian_ops_schema::node::text::TextNode> {
+    match node {
+        PenNode::Text(t) => Some(t),
+        PenNode::Frame(f) => {
+            let children = f.children.as_ref()?;
+            if children.len() == 1 {
+                resolve_text_node(&children[0])
+            } else {
+                None
+            }
+        }
+        PenNode::Group(g) => {
+            let children = g.children.as_ref()?;
+            if children.len() == 1 {
+                resolve_text_node(&children[0])
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
 impl EditorState {
     /// `SetNodeRotation` — write rotation (degrees) on a node.
     pub(crate) fn cmd_set_node_rotation(&mut self, node_id: &NodeId, degrees: f32) -> bool {
@@ -38,8 +92,7 @@ impl EditorState {
         true
     }
 
-    /// `SetNodeText` — set the plain-text content of a Text node.
-    /// Rejects non-Text kinds (parity with shell-core).
+    /// `SetNodeText` — set the plain-text content of a Text node (or single-text wrapper).
     pub(crate) fn cmd_set_node_text(&mut self, node_id: &NodeId, text: &str) -> bool {
         if !node_id.is_real() {
             return false;
@@ -47,12 +100,11 @@ impl EditorState {
         let Some(node) = find_node_mut(self.active_children_mut(), node_id) else {
             return false;
         };
-        match node {
-            PenNode::Text(t) => {
-                t.content = TextContent::Plain(text.to_string());
-                true
-            }
-            _ => false,
+        if let Some(t) = resolve_text_node_mut(node) {
+            t.content = TextContent::Plain(text.to_string());
+            true
+        } else {
+            false
         }
     }
 
@@ -101,8 +153,7 @@ impl EditorState {
         }
     }
 
-    /// `SetNodeFontSize` — set the font size on a Text node. Rejects
-    /// non-Text kinds + non-positive sizes.
+    /// `SetNodeFontSize` — set the font size on a Text node (or single-text wrapper).
     pub(crate) fn cmd_set_node_font_size(&mut self, node_id: &NodeId, font_size: f32) -> bool {
         if !node_id.is_real() || !font_size.is_finite() || font_size <= 0.0 {
             return false;
@@ -110,17 +161,16 @@ impl EditorState {
         let Some(node) = find_node_mut(self.active_children_mut(), node_id) else {
             return false;
         };
-        match node {
-            PenNode::Text(t) => {
-                t.font_size = Some(font_size as f64);
-                true
-            }
-            _ => false,
+        if let Some(t) = resolve_text_node_mut(node) {
+            t.font_size = Some(font_size as f64);
+            true
+        } else {
+            false
         }
     }
 
     /// `SetNodeFontWeight` — set the font weight (1..=1000) on a Text
-    /// node. Rejects non-Text kinds + out-of-range weights.
+    /// node (or single-text wrapper).
     pub(crate) fn cmd_set_node_font_weight(&mut self, node_id: &NodeId, font_weight: u16) -> bool {
         if !node_id.is_real() || font_weight == 0 || font_weight > 1000 {
             return false;
@@ -128,12 +178,11 @@ impl EditorState {
         let Some(node) = find_node_mut(self.active_children_mut(), node_id) else {
             return false;
         };
-        match node {
-            PenNode::Text(t) => {
-                t.font_weight = Some(FontWeight::Number(font_weight as u32));
-                true
-            }
-            _ => false,
+        if let Some(t) = resolve_text_node_mut(node) {
+            t.font_weight = Some(FontWeight::Number(font_weight as u32));
+            true
+        } else {
+            false
         }
     }
 

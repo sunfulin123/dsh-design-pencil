@@ -736,3 +736,43 @@ fn css_variables_emit_dark_class_block() {
     let dark_block = css.split(".dark").nth(1).expect(".dark block");
     assert!(dark_block.contains("--background: #0f172a;"), "css: {css}");
 }
+
+#[test]
+fn three_formats_emit_design_jsx_tailwind_jsx_and_html_css() {
+    let doc = jian_ops_schema::load_str(
+        r##"{
+          "version":"1.0",
+          "variables":{"--brand":{"type":"color","value":"#3b82f6"}},
+          "children":[
+            {"type":"frame","id":"card","name":"Card","role":"card","layout":"vertical","gap":12,"padding":[16,24],"width":320,"height":"fit_content","cornerRadius":12,"fill":[{"type":"solid","color":"$--brand"}],
+             "children":[
+               {"type":"text","id":"title","name":"Title","content":"Signal UI","fontSize":18,"fontWeight":600,"fill":[{"type":"solid","color":"#ffffff"}]}
+             ]}
+          ]
+        }"##,
+    )
+    .expect("load fixture")
+    .value;
+    let roots = root_nodes(&doc);
+    let djsx = generate_for_format(&doc, roots, &[], "design-jsx");
+    assert!(
+        djsx.contains("<Frame name=\"Card\" role=\"card\" flex=\"col\""),
+        "{djsx}"
+    );
+    assert!(djsx.contains("gap={12} py={16} px={24}"), "{djsx}");
+    assert!(djsx.contains("<Text name=\"Title\""), "{djsx}");
+    assert!(djsx.contains(">Signal UI</Text>"), "{djsx}");
+
+    let tw = generate_for_format(&doc, roots, &[], "tailwind-jsx");
+    assert!(tw.contains("<article data-name=\"Card\" className=\"flex flex-col w-[320px] h-fit gap-[12px] py-[16px] px-[24px] bg-[var(--brand)] rounded-[12px]\">"), "{tw}");
+    assert!(tw.contains("<p data-name=\"Title\" className=\"text-[18px] font-semibold text-[#ffffff]\">Signal UI</p>"), "{tw}");
+
+    let html = generate_for_format(&doc, roots, &[], "html-css");
+    assert!(html.contains("--brand: #3b82f6;"), "{html}");
+    assert!(html.contains("<article data-name=\"Card\""), "{html}");
+    assert!(
+        html.contains("display: flex; flex-direction: column"),
+        "{html}"
+    );
+    assert!(html.contains("background: var(--brand)"), "{html}");
+}

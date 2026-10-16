@@ -351,7 +351,7 @@ impl PropertyPanel {
             size_hug_width: self.snapshot.size_hug_width,
             size_hug_height: self.snapshot.size_hug_height,
             clip_content: self.snapshot.can_clip_content,
-            text: caps.text && self.snapshot.text.is_some(),
+            text: self.snapshot.text.is_some(),
             icon: self.snapshot.icon.is_some(),
             widget: self.snapshot.widget.as_ref().map(|w| w.kind),
             widget_checked: self.snapshot.widget.as_ref().is_some_and(|w| w.checked),
@@ -382,6 +382,7 @@ impl PropertyPanel {
             fill_type: self.fill_type,
             gradient_stop_count: self.snapshot.gradient_stops.len(),
             interactions: caps.interactions,
+            has_screen: self.snapshot.interactions.screen.is_some(),
         }
     }
 }

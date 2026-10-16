@@ -22,9 +22,14 @@
 //! | `command_node_attrs/widget_props.rs`| widget text / number / bindings writers |
 //! | `command_node_attrs/state_ops.rs`   | `impl EditorState` command methods   |
 
+mod semantics_ops;
 mod slots;
 mod state_ops;
 mod widget_props;
+
+pub use semantics_ops::node_semantics;
+pub use state_ops::resolve_text_node;
+pub(crate) use state_ops::resolve_text_node_mut;
 
 /// Which string-typed widget prop a `SetNodeWidgetText` edit targets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

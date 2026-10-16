@@ -113,10 +113,8 @@ pub fn slides_tab_available(state: &EditorState) -> bool {
 /// paints there instead of the layer tree (see
 /// `host_canvas_geometry::pinned_chat`). Touch and managed hosts do not
 /// offer a conversation tab.
-pub fn chat_tab_active(state: &EditorState) -> bool {
-    !state.editor_ui.touch_chrome()
-        && state.editor_ui.embed != op_editor_core::EmbedHost::VsCode
-        && state.editor_ui.slides_panel.tab == LeftPanelTab::Chat
+pub fn chat_tab_active(_state: &EditorState) -> bool {
+    false
 }
 
 /// The row's three labels plus which optional tabs exist — the ONE
@@ -129,7 +127,7 @@ pub fn tab_row_desc(state: &EditorState) -> SlidesTabRow<'static> {
         chat_label: translate(ui, "leftPanel.tab.chat"),
         layers_label: translate(ui, "layers.title"),
         slides_label: translate(ui, slides_tab_label_key(state)),
-        chat_available: !ui.touch_chrome() && ui.embed != op_editor_core::EmbedHost::VsCode,
+        chat_available: false,
         slides_available: slides_tab_available(state),
     }
 }

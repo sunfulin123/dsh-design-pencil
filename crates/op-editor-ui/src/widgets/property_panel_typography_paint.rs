@@ -408,3 +408,142 @@ fn paint_font_picker_layout(
     }
     cx.backend.restore();
 }
+
+#[allow(clippy::too_many_arguments)]
+pub fn paint_font_weight_picker(
+    cx: &mut PaintCx<'_>,
+    theme: &Theme,
+    panel_rect: Rect,
+    visible: VisibleSections,
+    locale: op_editor_core::Locale,
+    active_weight: u16,
+    hover: Option<usize>,
+    pressed: Option<usize>,
+) {
+    use crate::widgets::property_panel::{FontWeightChoice, PropertyPanelAction};
+    let Some((pop, rows)) = font_weight_picker_layout(panel_rect, visible) else {
+        return;
+    };
+    cx.backend.fill_round_rect(pop, 8.0, theme.popover);
+    cx.backend.stroke_round_rect(pop, 8.0, theme.border, 1.0);
+    let active = FontWeightChoice::nearest(active_weight);
+    for (i, (action, row)) in rows.into_iter().enumerate() {
+        let PropertyPanelAction::SetFontWeight(choice) = action else {
+            continue;
+        };
+        let is_active = choice == active;
+        if is_active {
+            cx.backend
+                .fill_round_rect(row, 6.0, theme.row_selected_primary);
+        } else if hover == Some(i) || pressed == Some(i) {
+            paint_button_feedback_wash(
+                cx.backend,
+                theme,
+                row,
+                6.0,
+                hover == Some(i),
+                pressed == Some(i),
+            );
+        }
+        let row_label = format!(
+            "{}  {}",
+            choice.numeric_label(),
+            op_i18n::translate(locale, choice.label_key())
+        );
+        let label = TextLayout::single_run(
+            &row_label,
+            "system-ui",
+            12.0,
+            (if is_active {
+                theme.primary
+            } else {
+                theme.foreground
+            })
+            .to_jian(),
+            Point2D::new(0.0, 0.0),
+        );
+        cx.backend.draw_text(
+            &label,
+            Point2D::new(row.origin.x + 10.0, row.origin.y + 19.0),
+        );
+        if is_active {
+            draw_icon(
+                cx.backend,
+                Icon::Check,
+                Point2D::new(row.origin.x + row.size.x - 22.0, row.origin.y + 7.0),
+                14.0,
+                theme.primary,
+                1.6,
+            );
+        }
+    }
+}
+
+fn font_weight_picker_layout(
+    panel_rect: Rect,
+    visible: VisibleSections,
+) -> Option<(
+    Rect,
+    Vec<(crate::widgets::property_panel::PropertyPanelAction, Rect)>,
+)> {
+    let text_y = text_section_top(panel_rect, visible)?;
+    let rows = crate::widgets::property_panel_text::font_weight_picker_action_rects(
+        panel_rect.origin.x,
+        text_y,
+        panel_rect.size.x - PAD_X * 2.0,
+        visible.touch_controls,
+    );
+    let first = rows.first().map(|(_, rect)| *rect)?;
+    let last = rows.last().map(|(_, rect)| *rect).unwrap_or(first);
+    let popup = Rect {
+        origin: Point2D::new(first.origin.x, first.origin.y - 6.0),
+        size: Point2D::new(
+            first.size.x,
+            last.origin.y + last.size.y - first.origin.y + 12.0,
+        ),
+    };
+    Some((popup, rows))
+}
+
+pub(crate) fn font_weight_picker_rect(panel_rect: Rect, visible: VisibleSections) -> Option<Rect> {
+    font_weight_picker_layout(panel_rect, visible).map(|(popup, _)| popup)
+}
+
+pub(crate) fn text_section_top(panel_rect: Rect, visible: VisibleSections) -> Option<f32> {
+    if !visible.text {
+        return None;
+    }
+    Some(sections_top_before_text(panel_rect, visible))
+}
+
+pub(crate) fn sections_top_before_text(panel_rect: Rect, visible: VisibleSections) -> f32 {
+    use crate::widgets::property_panel_inputs::{INPUT_HEIGHT, SECTION_GAP, SECTION_HEADER_HEIGHT};
+    let mut y = panel_rect.origin.y;
+    y += crate::widgets::property_panel_inputs::TAB_HEIGHT;
+    y += crate::widgets::property_panel_inputs::HEADER_HEIGHT;
+    if visible.create_component {
+        y += crate::widgets::property_panel_inputs::CREATE_COMPONENT_BLOCK_H;
+    }
+    y += SECTION_HEADER_HEIGHT;
+    y += INPUT_HEIGHT + 6.0;
+    y += INPUT_HEIGHT + 12.0;
+    y += SECTION_GAP;
+    if visible.flex_layout {
+        y += crate::widgets::property_panel_flex::flex_section_height(
+            visible.flex_layout_mode,
+            visible.padding_edit_mode,
+            visible.touch_controls,
+        );
+    }
+    if visible.size_options {
+        y += SECTION_HEADER_HEIGHT;
+        y += INPUT_HEIGHT + 10.0;
+        y += crate::widgets::property_panel_inputs::size_check_row_height(visible.touch_controls)
+            * if visible.clip_content { 3.0 } else { 2.0 };
+        y += 12.0 + SECTION_GAP;
+    }
+    if visible.icon {
+        y += crate::widgets::property_panel_icon::icon_section_height();
+    }
+    y
+}

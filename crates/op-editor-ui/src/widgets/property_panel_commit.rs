@@ -34,6 +34,22 @@ pub fn property_focus_initial(focus: PropertyFocus, panel: &PropertyPanel) -> St
     use PropertyFocus as F;
     match focus {
         F::PageBackgroundHex => panel.page_background.clone().unwrap_or_default(),
+        F::NodeName => panel.snapshot.name.clone(),
+        F::TextContent => panel
+            .snapshot
+            .text
+            .as_ref()
+            .map(|t| t.content.clone())
+            .unwrap_or_default(),
+        F::NodeRole => panel.snapshot.role.clone(),
+        F::NodeExplain => panel.snapshot.explain.clone(),
+        F::NodeA11yLabel => panel.snapshot.a11y_label.clone(),
+        F::ScreenPath => panel
+            .snapshot
+            .interactions
+            .screen
+            .clone()
+            .unwrap_or_default(),
         F::PositionX => panel.snapshot.x.to_string(),
         F::PositionY => panel.snapshot.y.to_string(),
         F::SizeW => panel.snapshot.width.to_string(),
@@ -389,6 +405,48 @@ pub fn commit_property_focus(state: &mut EditorState) -> bool {
         }
         PropertyFocus::VideoSrc => {
             let _ = state.set_selected_video_src(draft.trim());
+        }
+        PropertyFocus::NodeName => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() && !draft.trim().is_empty() {
+                let _ = state.apply(op_editor_core::EditorCommand::SetNodeName {
+                    node_id: sel,
+                    name: draft.trim().to_string(),
+                });
+            }
+        }
+        PropertyFocus::TextContent => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.apply(op_editor_core::EditorCommand::SetNodeText {
+                    node_id: sel,
+                    text: draft,
+                });
+            }
+        }
+        PropertyFocus::NodeRole => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.set_node_role_str(&sel, &draft);
+            }
+        }
+        PropertyFocus::NodeExplain => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.set_node_explain_str(&sel, &draft);
+            }
+        }
+        PropertyFocus::NodeA11yLabel => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.set_node_a11y_label_str(&sel, &draft);
+            }
+        }
+        PropertyFocus::ScreenPath => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.set_node_screen_str(&sel, &draft);
+            }
         }
         _ => {
             if let Ok(value) = draft.trim().parse::<f32>() {

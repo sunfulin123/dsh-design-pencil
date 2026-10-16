@@ -192,38 +192,29 @@ impl<'a> DesignMdPanel<'a> {
             || s.generation_notes.is_some()
     }
 
-    /// The four header buttons `[import, auto-generate, export, close]`, right-aligned.
-    fn header_buttons(panel: Rect) -> [Rect; 4] {
+    /// The three header buttons `[import, export, close]`, right-aligned.
+    fn header_buttons(panel: Rect) -> [Rect; 3] {
         let y = panel.origin.y + (HEADER_H - BTN) / 2.0;
         let right = panel.origin.x + panel.size.x - PAD;
         let slot = |from_right: f32| Rect {
             origin: Point2D::new(right - (from_right + 1.0) * BTN - from_right * BTN_GAP, y),
             size: Point2D::new(BTN, BTN),
         };
-        // from_right 0 = close (rightmost) … 3 = import.
-        [slot(3.0), slot(2.0), slot(1.0), slot(0.0)]
+        // from_right 0 = close (rightmost) … 2 = import.
+        [slot(2.0), slot(1.0), slot(0.0)]
     }
 
-    fn empty_action_buttons(panel: Rect) -> [(DesignMdHit, DesignMdButton, Icon, Rect); 2] {
+    fn empty_action_buttons(panel: Rect) -> [(DesignMdHit, DesignMdButton, Icon, Rect); 1] {
         let w = 138.0;
         let h = 32.0;
-        let gap = 10.0;
         let y = panel.origin.y + panel.size.y / 2.0 + 42.0;
-        let left = panel.origin.x + (panel.size.x - w * 2.0 - gap) / 2.0;
-        [
-            (
-                DesignMdHit::Import,
-                DesignMdButton::Import,
-                Icon::FolderOpen,
-                Rect::xywh(left, y, w, h),
-            ),
-            (
-                DesignMdHit::AutoGenerate,
-                DesignMdButton::AutoGenerate,
-                Icon::Wand2,
-                Rect::xywh(left + w + gap, y, w, h),
-            ),
-        ]
+        let left = panel.origin.x + (panel.size.x - w) / 2.0;
+        [(
+            DesignMdHit::Import,
+            DesignMdButton::Import,
+            Icon::FolderOpen,
+            Rect::xywh(left, y, w, h),
+        )]
     }
 
     /// The raw markdown content of section `index`, capped at `limit`.
@@ -407,15 +398,12 @@ impl<'a> DesignMdPanel<'a> {
         if !panel.contains(point) {
             return None;
         }
-        let [import, auto, export, close] = Self::header_buttons(panel);
+        let [import, export, close] = Self::header_buttons(panel);
         if close.contains(point) {
             return Some(DesignMdHit::Close);
         }
         if import.contains(point) {
             return Some(DesignMdHit::Import);
-        }
-        if auto.contains(point) {
-            return Some(DesignMdHit::AutoGenerate);
         }
         if export.contains(point) {
             return Some(DesignMdHit::Export);
@@ -463,7 +451,7 @@ impl<'a> DesignMdPanel<'a> {
             13.0,
             self.theme.foreground,
         );
-        let [import, auto, export, close] = Self::header_buttons(rect);
+        let [import, export, close] = Self::header_buttons(rect);
         use DesignMdButton as B;
         self.icon_button(
             cx,
@@ -472,17 +460,7 @@ impl<'a> DesignMdPanel<'a> {
             self.hover == Some(B::Import),
             self.is_pressed(B::Import),
         );
-        self.icon_button(
-            cx,
-            auto,
-            if self.generating {
-                Icon::Loader
-            } else {
-                Icon::Wand2
-            },
-            self.hover == Some(B::AutoGenerate),
-            self.is_pressed(B::AutoGenerate),
-        );
+        let _ = self.generating;
         self.icon_button(
             cx,
             export,

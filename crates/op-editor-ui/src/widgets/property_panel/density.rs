@@ -186,7 +186,7 @@ mod tests {
             + if touch.visible_sections().text {
                 (crate::widgets::property_panel_text::text_button_height(true)
                     - crate::widgets::property_panel_text::text_button_height(false))
-                    * 3.0
+                    * 4.0
             } else {
                 0.0
             };
@@ -493,8 +493,8 @@ mod tests {
                 &panel.codegen,
             )
             .into_iter()
-            .find(|(action, _)| matches!(action, CodegenAction::Generate))
-            .expect("idle Code tab has Generate action");
+            .find(|(action, _)| matches!(action, CodegenAction::Copy))
+            .expect("live Code tab has Copy action");
         let physical_action = panel.physical_rect(logical, action_rect);
         assert_eq!(
             panel.hit_test_action(physical, center(physical_action)),
@@ -520,17 +520,10 @@ mod tests {
             );
         let framework_targets: Vec<_> = targets
             .into_iter()
-            .filter(|(action, _)| {
-                matches!(
-                    action,
-                    CodegenAction::SelectFramework(_)
-                        | CodegenAction::ScrollFrameworksLeft
-                        | CodegenAction::ScrollFrameworksRight
-                )
-            })
+            .filter(|(action, _)| matches!(action, CodegenAction::ToggleFrameworkPicker))
             .map(|(action, rect)| (action, panel.physical_rect(logical, rect)))
             .collect();
-        assert!(framework_targets.len() >= 4);
+        assert_eq!(framework_targets.len(), 1);
         for (action, rect) in framework_targets {
             assert!(rect.size.x >= 44.0, "{action:?} width was {rect:?}");
             assert!(rect.size.y >= 44.0, "{action:?} height was {rect:?}");
@@ -544,7 +537,7 @@ mod tests {
     #[test]
     fn desktop_code_framework_metrics_remain_compact() {
         let state = EditorState::sample();
-        let panel_rect = Rect::xywh(0.0, 56.0, 280.0, 700.0);
+        let panel_rect = Rect::xywh(0.0, 56.0, 180.0, 700.0);
         let targets = crate::widgets::property_panel_code::code_action_rects_in_panel(
             panel_rect,
             &state.codegen,
@@ -561,7 +554,7 @@ mod tests {
         assert_eq!(chevrons.len(), 2);
         for (_, rect) in chevrons {
             assert_close(rect.size.x, 18.0);
-            assert_close(rect.size.y, 22.0);
+            assert_close(rect.size.y, 28.0);
         }
     }
 

@@ -190,6 +190,13 @@ test('EngineSession supports V()/T() variable script helpers and syncs Design.md
       markdown: '# Design System: Test\n\n## Color Palette\n- **Brand Primary** (#E86343) - Primary action\n- **Surface Warm** (#FAF8F5) - Background\n',
     })
     assert.equal(dmd.isError, false)
+    const codeCtx = session.callTool('get_design_code_context', { format: 'all' })
+    assert.equal(codeCtx.isError, false)
+    const parsedCtx = JSON.parse(codeCtx.content[0].text)
+    assert.match(parsedCtx.code.designJsx, /<Frame/)
+    assert.match(parsedCtx.code.tailwindJsx, /data-name="Card"/)
+    assert.match(parsedCtx.code.htmlCss, /--accent:\s*#2563EB/)
+    assert.ok(Array.isArray(parsedCtx.nodes) && parsedCtx.nodes.length > 0)
     const doc = session.snapshot().document
     assert.deepEqual(doc.themes?.Mode, ['Light', 'Dark'])
     assert.equal(doc.variables?.['--accent']?.value, '#2563EB')

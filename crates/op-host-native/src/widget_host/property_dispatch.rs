@@ -98,6 +98,23 @@ impl WidgetHostNative {
                 // for the same reason).
                 self.ensure_system_fonts_loaded();
             }
+            O::FollowUp(F::CopyTextContent) => {
+                if let Some(t) = self
+                    .editor_state
+                    .selected_node()
+                    .and_then(op_editor_core::command_node_attrs::resolve_text_node)
+                {
+                    let content = match &t.content {
+                        jian_ops_schema::node::text::TextContent::Plain(s) => s.clone(),
+                        jian_ops_schema::node::text::TextContent::Styled(segs) => segs
+                            .iter()
+                            .map(|seg| seg.text.as_str())
+                            .collect::<Vec<_>>()
+                            .join(""),
+                    };
+                    self.editor_state.chat.queue_copy_text(content);
+                }
+            }
             O::HostOwned => self.apply_host_property_action(action),
         }
         if let Some(scope) = instance_scope {

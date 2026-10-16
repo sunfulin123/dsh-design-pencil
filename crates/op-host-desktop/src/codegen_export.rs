@@ -35,13 +35,55 @@ pub fn drain_codegen_file_actions(host: &mut WidgetHostNative, results: &Codegen
 /// Save the generated code: a single file when there are no assets, or a
 /// `.zip` (`component.<ext>` + `assets/<...>`) when image assets came back.
 fn handle_download(host: &WidgetHostNative, results: &CodegenResults) {
-    let Some(result) = results.get(
+    if let Some(result) = results.get(
         crate::codegen_session::document_identity(host),
         host.editor_state().codegen.framework,
-    ) else {
+    ) {
+        let artifact = match generated_artifact(result) {
+            Ok(Some(artifact)) => artifact,
+            Ok(None) => return,
+            Err(error) => {
+                show_save_error(host, None, &error.to_string());
+                return;
+            }
+        };
+        save_artifact(host, artifact);
         return;
+    }
+    let state = host.editor_state();
+    let code = if state.codegen.code.is_empty() {
+        let target_ids: Vec<String> = if !state.selection.set.is_empty() {
+            state
+                .selection
+                .set
+                .iter()
+                .map(|id| id.as_str().to_string())
+                .collect()
+        } else {
+            state
+                .active_children()
+                .iter()
+                .map(|n| op_editor_core::PenNodeExt::id_str(n).to_string())
+                .collect()
+        };
+        op_codegen::generate_for_format(
+            &state.doc,
+            state.active_children(),
+            &target_ids,
+            state.codegen.framework.as_wire(),
+        )
+    } else {
+        state.codegen.code.clone()
     };
-    let artifact = match generated_artifact(result) {
+    if code.is_empty() {
+        return;
+    }
+    let fallback_result = crate::codegen_session::CodegenResult {
+        code,
+        framework_ext: op_editor_host_core::codegen::framework_ext(state.codegen.framework).into(),
+        assets: Vec::new(),
+    };
+    let artifact = match generated_artifact(&fallback_result) {
         Ok(Some(artifact)) => artifact,
         Ok(None) => return,
         Err(error) => {

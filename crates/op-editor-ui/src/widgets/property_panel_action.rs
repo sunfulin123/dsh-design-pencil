@@ -139,6 +139,7 @@ pub type CompositingTarget = op_editor_core::CompositingPickerTarget;
 /// codegen session (P3) drains; Download/ExportBundle are host file IO.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CodegenAction {
+    ToggleFrameworkPicker,
     SelectFramework(op_editor_core::codegen::Framework),
     Generate,
     Regenerate,
@@ -430,6 +431,20 @@ pub enum PropertyPanelAction {
     /// "Remove all" — host clears the node's `onTap` handler (and the
     /// whole `events` field when nothing else is left in it).
     RemoveInteraction,
+    /// Copy the selected text node's (or single-text wrapper's) plain text content to the clipboard.
+    CopyTextContent,
+    /// Toggle bold weight (between 700 and 400) on the selected text node.
+    ToggleTextBold,
+    /// Toggle italic font style on the selected text node.
+    ToggleTextItalic,
+    /// Toggle underline decoration on the selected text node.
+    ToggleTextUnderline,
+    /// Toggle strikethrough decoration on the selected text node.
+    ToggleTextStrikethrough,
+    /// Toggle node visibility (`visible`) from the node header.
+    ToggleNodeVisible,
+    /// Toggle node lock (`locked`) from the node header.
+    ToggleNodeLocked,
     /// Code panel action — see `CodegenAction`.
     Codegen(CodegenAction),
 }

@@ -125,14 +125,15 @@ fn presenting_hides_the_row_and_an_empty_desktop_deck_keeps_it() {
     deck.editor_ui.exit_preview();
     assert!(tab_row_visible(&deck));
 
-    // A desktop document with no boards still has its Chat and Layers
-    // tabs — the row is permanent now; only the slides TAB is gated.
+    // A desktop document with no boards still has its Layers tab —
+    // the row is permanent now; only the slides TAB is gated, and
+    // built-in canvas AI Chat is disabled.
     let empty = deck_state(r#"{"version":"1.0.0","children":[]}"#);
     assert!(tab_row_visible(&empty));
     assert!(!slides_tab_available(&empty));
     let tabs = tab_row(&empty, PANEL).expect("the row outlives the boards");
     assert_eq!(tabs.slides, crate::Rect::ZERO, "no slides pill to click");
-    assert!(tabs.chat.size.x > 0.0);
+    assert_eq!(tabs.chat, crate::Rect::ZERO, "built-in chat pill is hidden");
 
     // Touch keeps the older rule: its rail is a Layers sheet and its
     // chat is a bottom sheet, so a boardless touch document shows no

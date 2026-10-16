@@ -332,7 +332,7 @@ mod tests {
 
         let expected = [
             (Framework::React, "tsx"),
-            (Framework::Vue, "vue"),
+            (Framework::Vue, "tsx"),
             (Framework::Svelte, "svelte"),
             (Framework::Html, "html"),
             (Framework::Flutter, "dart"),

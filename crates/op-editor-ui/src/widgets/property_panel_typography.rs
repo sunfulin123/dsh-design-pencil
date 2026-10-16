@@ -699,7 +699,10 @@ pub fn font_picker_max_scroll(
 // unchanged for the panel + hosts.
 #[path = "property_panel_typography_paint.rs"]
 mod paint;
-pub use paint::{paint_font_picker, paint_font_picker_at, paint_font_picker_at_for_ui};
+pub(crate) use paint::{font_weight_picker_rect, sections_top_before_text, text_section_top};
+pub use paint::{
+    paint_font_picker, paint_font_picker_at, paint_font_picker_at_for_ui, paint_font_weight_picker,
+};
 
 #[cfg(test)]
 #[path = "property_panel_typography_tests.rs"]

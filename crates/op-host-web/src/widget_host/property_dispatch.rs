@@ -112,6 +112,26 @@ impl WidgetHost {
                 // permission flow the picker paints the bundled group
                 // plus the TS fallback system list.
             }
+            O::FollowUp(F::CopyTextContent) => {
+                if let Some(t) = self
+                    .editor_state
+                    .selected_node()
+                    .and_then(op_editor_core::command_node_attrs::resolve_text_node)
+                {
+                    let content = match &t.content {
+                        jian_ops_schema::node::text::TextContent::Plain(s) => s.clone(),
+                        jian_ops_schema::node::text::TextContent::Styled(segs) => segs
+                            .iter()
+                            .map(|seg| seg.text.as_str())
+                            .collect::<Vec<_>>()
+                            .join(""),
+                    };
+                    #[cfg(feature = "canvaskit")]
+                    self.host_copy_text(&content);
+                    #[cfg(not(feature = "canvaskit"))]
+                    let _ = content;
+                }
+            }
             O::HostOwned => self.apply_host_property_action(action),
         }
         if let Some(scope) = instance_scope {
@@ -188,7 +208,47 @@ impl WidgetHost {
                 #[cfg(feature = "canvaskit")]
                 self.host_copy_text(&_code);
             }
-            CodegenFollowUp::Download => {}
+            CodegenFollowUp::Download => {
+                #[cfg(feature = "canvaskit")]
+                {
+                    let code = if self.editor_state.codegen.code.is_empty() {
+                        let target_ids: Vec<String> = if !self.editor_state.selection.set.is_empty()
+                        {
+                            self.editor_state
+                                .selection
+                                .set
+                                .iter()
+                                .map(|id| id.as_str().to_string())
+                                .collect()
+                        } else {
+                            self.editor_state
+                                .active_children()
+                                .iter()
+                                .map(|n| op_editor_core::PenNodeExt::id_str(n).to_string())
+                                .collect()
+                        };
+                        op_codegen::generate_for_format(
+                            &self.editor_state.doc,
+                            self.editor_state.active_children(),
+                            &target_ids,
+                            self.editor_state.codegen.framework.as_wire(),
+                        )
+                    } else {
+                        self.editor_state.codegen.code.clone()
+                    };
+                    if !code.is_empty() {
+                        let ext = match self.editor_state.codegen.framework {
+                            op_editor_core::codegen::Framework::Html => "html",
+                            _ => "tsx",
+                        };
+                        let _ = crate::web_clipboard::download_bytes(
+                            &format!("component.{ext}"),
+                            "text/plain; charset=utf-8",
+                            code.as_bytes(),
+                        );
+                    }
+                }
+            }
             CodegenFollowUp::ExportBundle => {
                 // Live structure bundle (TS code-panel.tsx
                 // `handleDownloadStructureBundle` → `buildAIStructureBundle`):

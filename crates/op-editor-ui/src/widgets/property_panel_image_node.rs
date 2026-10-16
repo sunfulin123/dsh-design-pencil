@@ -103,19 +103,11 @@ pub fn push_image_action_rects_with_video(
     }
     if IMAGE_REMOTE_ACTIONS_AVAILABLE {
         y += IMAGE_ROW_GAP;
-        let half_w = (usable_w - 4.0) / 2.0;
         out.push((
             PropertyPanelAction::ToggleImageSearchPopover,
             Rect {
                 origin: Point2D::new(x0 + PAD_X, y),
-                size: Point2D::new(half_w, IMAGE_BUTTON_H),
-            },
-        ));
-        out.push((
-            PropertyPanelAction::ToggleImageGeneratePopover,
-            Rect {
-                origin: Point2D::new(x0 + PAD_X + half_w + 4.0, y),
-                size: Point2D::new(half_w, IMAGE_BUTTON_H),
+                size: Point2D::new(usable_w, IMAGE_BUTTON_H),
             },
         ));
         y += IMAGE_BUTTON_H;
@@ -206,31 +198,17 @@ pub fn paint_image_node_section(
         y = paint_warning_row(cx, theme, warning, x, y, width);
     }
 
-    // Search / Generate buttons (TS outline buttons, flex-1 h-7) —
-    // desktop-only, mirrored by `image_section_height` /
-    // `push_image_action_rects` so paint + hit-test stay in sync.
     if IMAGE_REMOTE_ACTIONS_AVAILABLE {
         y += IMAGE_ROW_GAP;
-        let half_w = (usable_w - 4.0) / 2.0;
         paint_outline_button(
             cx,
             theme,
             Rect {
                 origin: Point2D::new(x + PAD_X, y),
-                size: Point2D::new(half_w, IMAGE_BUTTON_H),
+                size: Point2D::new(usable_w, IMAGE_BUTTON_H),
             },
             Icon::Search,
             op_i18n::translate(locale, "common.search"),
-        );
-        paint_outline_button(
-            cx,
-            theme,
-            Rect {
-                origin: Point2D::new(x + PAD_X + half_w + 4.0, y),
-                size: Point2D::new(half_w, IMAGE_BUTTON_H),
-            },
-            Icon::Sparkles,
-            op_i18n::translate(locale, "common.generate"),
         );
         y += IMAGE_BUTTON_H;
     }

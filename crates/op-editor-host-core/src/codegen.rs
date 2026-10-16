@@ -152,8 +152,7 @@ fn input_from_nodes(
 pub fn framework_ext(fw: op_editor_core::codegen::Framework) -> &'static str {
     use op_editor_core::codegen::Framework;
     match fw {
-        Framework::React | Framework::ReactNative => "tsx",
-        Framework::Vue => "vue",
+        Framework::React | Framework::Vue | Framework::ReactNative => "tsx",
         Framework::Svelte => "svelte",
         Framework::Html => "html",
         Framework::Flutter => "dart",

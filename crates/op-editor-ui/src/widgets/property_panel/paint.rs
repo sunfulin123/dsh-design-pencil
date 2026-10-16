@@ -121,7 +121,7 @@ impl Widget for PropertyPanel {
         // `tab_bottom - scroll` == `scrolled.origin.y + TAB_HEIGHT`,
         // matching the layout walker's `+= TAB_HEIGHT` step.
         let mut y = tab_bottom - scroll;
-        y = sections::paint_node_header(cx, &self.theme, &self.snapshot, x, y, w);
+        y = sections::paint_node_header(cx, &self.theme, &self.snapshot, &edit_ctx, x, y, w);
         if self.visible_sections().create_component {
             y = crate::widgets::property_panel_instance::paint_component_block(
                 cx,
@@ -194,7 +194,7 @@ impl Widget for PropertyPanel {
                 w,
             );
         }
-        if caps.text && self.snapshot.text.is_some() {
+        if (caps.text || self.snapshot.text.is_some()) && self.snapshot.text.is_some() {
             y = crate::widgets::property_panel_text::paint_text_section(
                 cx,
                 &self.theme,
@@ -311,6 +311,8 @@ impl Widget for PropertyPanel {
             y = sections::paint_interactions_section(
                 cx,
                 &self.theme,
+                &self.snapshot,
+                &edit_ctx,
                 &self.snapshot.interactions,
                 self.locale,
                 x,

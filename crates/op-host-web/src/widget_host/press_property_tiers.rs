@@ -25,6 +25,37 @@ impl WidgetHost {
         // 0c0. Fill-type picker — outside-click dismiss. A row
         // click applies the fill type; a click inside the popup body
         // is swallowed; any outside click closes the picker.
+        if self.editor_state.codegen.framework_picker_open {
+            if let Some(panel) = PropertyPanel::for_selection(&self.editor_state) {
+                let property_rect = Rect {
+                    origin: Point2D::new(
+                        viewport_width - self.editor_state.editor_ui.property_panel_width,
+                        TOP_BAR_HEIGHT,
+                    ),
+                    size: Point2D::new(
+                        self.editor_state.editor_ui.property_panel_width,
+                        (viewport_height - TOP_BAR_HEIGHT).max(0.0),
+                    ),
+                };
+                if let Some(action) = panel.hit_test_action(property_rect, Point2D::new(x, y)) {
+                    if matches!(
+                        action,
+                        op_editor_ui::widgets::PropertyPanelAction::Codegen(
+                            op_editor_ui::widgets::property_panel_action::CodegenAction::SelectFramework(_)
+                                | op_editor_ui::widgets::property_panel_action::CodegenAction::ToggleFrameworkPicker
+                        )
+                    ) {
+                        self.apply_property_action(action);
+                        return Some(true);
+                    }
+                }
+            }
+            self.editor_state.codegen.framework_picker_open = false;
+            self.editor_state.codegen.framework_hover = None;
+            self.mark_dirty();
+            return Some(true);
+        }
+
         if self.editor_state.editor_ui.fill_type_picker.open {
             let press = press_flow::press_fill_type_picker(
                 &mut self.editor_state,
@@ -261,21 +292,24 @@ impl WidgetHost {
                     (viewport_height - TOP_BAR_HEIGHT).max(0.0),
                 ),
             };
-            if let Some(anchor) = self.code_text_offset_at_screen(x, y) {
-                self.commit_property_family_focus_if_any();
-                self.editor_state.codegen.code_selection = Some(CodeSelection {
-                    anchor,
-                    focus: anchor,
-                });
-                self.code_selection_drag = Some(CodeSelectionDragState { anchor });
-                self.editor_state.chat.transcript_selection = None;
-                self.editor_state.codegen.framework_hover = None;
-                self.editor_state.codegen.action_hover = None;
-                self.editor_state.chat.focused = false;
-                self.mark_dirty();
-                return Some(true);
-            }
             let point = Point2D::new(x, y);
+            let hits_action = panel.hit_test_action(property_rect, point).is_some();
+            if !hits_action {
+                if let Some(anchor) = self.code_text_offset_at_screen(x, y) {
+                    self.commit_property_family_focus_if_any();
+                    self.editor_state.codegen.code_selection = Some(CodeSelection {
+                        anchor,
+                        focus: anchor,
+                    });
+                    self.code_selection_drag = Some(CodeSelectionDragState { anchor });
+                    self.editor_state.chat.transcript_selection = None;
+                    self.editor_state.codegen.framework_hover = None;
+                    self.editor_state.codegen.action_hover = None;
+                    self.editor_state.chat.focused = false;
+                    self.mark_dirty();
+                    return Some(true);
+                }
+            }
             if let Some(action) = panel.hit_test_action(property_rect, point) {
                 self.editor_state.editor_ui.pressed_button =
                     if let op_editor_ui::widgets::PropertyPanelAction::Codegen(codegen_action) =

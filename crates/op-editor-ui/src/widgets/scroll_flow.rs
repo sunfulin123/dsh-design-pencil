@@ -228,20 +228,31 @@ pub fn scroll_property_panel_body_2d(
             let cg = &mut state.codegen;
             return Some(scroll_by_max(&mut cg.framework_scroll, -strip_delta, max));
         }
-        let mut logical_codegen = state.codegen.clone();
-        logical_codegen.framework_scroll.offset =
-            panel.logical_length(logical_codegen.framework_scroll.offset);
-        logical_codegen.code_scroll.offset =
-            panel.logical_length(logical_codegen.code_scroll.offset);
+        let logical_codegen = panel.codegen.clone();
         if property_panel_code::code_preview_rect(logical_rect, &logical_codegen)
             .is_some_and(|rect| rect.contains(logical_point))
         {
-            let max = panel.physical_length(
+            let max_v = panel.physical_length(
                 property_panel_code::code_preview_max_scroll(logical_rect, &logical_codegen)
                     .unwrap_or(0.0),
             );
+            let max_h = panel.physical_length(
+                property_panel_code::code_preview_max_h_scroll(logical_rect, &logical_codegen)
+                    .unwrap_or(0.0),
+            );
             let cg = &mut state.codegen;
-            return Some(scroll_by_max(&mut cg.code_scroll, -delta_y, max));
+            cg.phase = op_editor_core::codegen::CodegenPhase::Complete;
+            if cg.code.is_empty() {
+                cg.code = logical_codegen.code;
+            }
+            let mut changed = false;
+            if delta_y != 0.0 && scroll_by_max(&mut cg.code_scroll, -delta_y, max_v) {
+                changed = true;
+            }
+            if delta_x != 0.0 && scroll_by_max(&mut cg.code_h_scroll, -delta_x, max_h) {
+                changed = true;
+            }
+            return Some(changed);
         }
     }
     // A wheel over the open colour-variable popup scrolls ITS list,

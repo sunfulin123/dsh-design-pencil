@@ -134,9 +134,13 @@ pub struct WidgetSummary {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextSummary {
+    pub content: String,
     pub font_family: String,
     pub font_size: f32,
     pub font_weight: u16,
+    pub italic: bool,
+    pub underline: bool,
+    pub strikethrough: bool,
     pub line_height_percent: f32,
     pub letter_spacing: f32,
     pub align: TextAlignValue,

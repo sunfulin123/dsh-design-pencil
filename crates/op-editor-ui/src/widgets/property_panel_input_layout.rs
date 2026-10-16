@@ -63,6 +63,10 @@ pub fn editable_input_rects(
 
     let mut y = panel_rect.origin.y;
     y += TAB_HEIGHT;
+    let header_name_rect = Rect {
+        origin: Point2D::new(x0 + PAD_X, y + 3.0),
+        size: Point2D::new((usable_w - 50.0).max(40.0), INPUT_HEIGHT),
+    };
     y += HEADER_HEIGHT;
     if visible.create_component {
         // Variant-aware: the instance pair adds a second button row.
@@ -98,6 +102,7 @@ pub fn editable_input_rects(
         });
     y += INPUT_HEIGHT;
     let mut rects = vec![
+        (PropertyFocus::NodeName, header_name_rect),
         (PropertyFocus::PositionX, x_rect),
         (PropertyFocus::PositionY, y_rect),
         (PropertyFocus::Rotation, rotation_rect),
@@ -360,6 +365,19 @@ pub fn editable_input_rects(
             y += crate::widgets::property_panel_effects::EFFECT_ROW_HEIGHT
                 + crate::widgets::property_panel_effects::EFFECT_ROW_GAP;
         }
+        if effects.is_empty() {
+            y += 8.0;
+        }
+        y += SECTION_GAP;
+    }
+    if visible.interactions {
+        let dummy = crate::widgets::property_panel_interactions::InteractionSummary {
+            screen: visible.has_screen.then(|| String::new()),
+            on_tap: Vec::new(),
+        };
+        crate::widgets::property_panel_interactions::push_interaction_input_rects(
+            &mut rects, &dummy, x0, y, w,
+        );
     }
     rects
 }

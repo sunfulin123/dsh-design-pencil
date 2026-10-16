@@ -195,14 +195,18 @@ fn inactive_property_tab_hover_paints_pill_background() {
         panel.paint(&mut cx, rect);
     }
 
-    let muted_pills = backend
+    let tab_fills = backend
         .fills
         .iter()
-        .filter(|(_, color)| color_eq(*color, panel.theme.muted))
+        .filter(|(r, color)| {
+            r.origin.y < 36.0
+                && (color_eq(*color, panel.theme.primary)
+                    || color_eq(*color, panel.theme.button_hover))
+        })
         .count();
-    assert!(
-        muted_pills >= 2,
-        "active Code tab and hovered inactive Design tab should both paint a visible pill"
+    assert_eq!(
+        tab_fills, 2,
+        "active Code tab underline and hovered inactive Design tab should both paint"
     );
 }
 

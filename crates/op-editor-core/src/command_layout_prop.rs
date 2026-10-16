@@ -481,62 +481,56 @@ fn set_container_align(node: &mut PenNode, ai: AlignItems) -> bool {
 }
 
 fn set_text_letter_spacing(node: &mut PenNode, v: f64) -> bool {
-    match node {
-        PenNode::Text(t) => {
-            t.letter_spacing = Some(v);
-            true
-        }
-        _ => false,
+    if let Some(t) = crate::command_node_attrs::resolve_text_node_mut(node) {
+        t.letter_spacing = Some(v);
+        true
+    } else {
+        false
     }
 }
 
 fn set_text_line_height(node: &mut PenNode, v: f64) -> bool {
-    match node {
-        PenNode::Text(t) => {
-            t.line_height = Some(v);
-            true
-        }
-        _ => false,
+    if let Some(t) = crate::command_node_attrs::resolve_text_node_mut(node) {
+        t.line_height = Some(v);
+        true
+    } else {
+        false
     }
 }
 
 fn set_text_align(node: &mut PenNode, ta: TextAlign) -> bool {
-    match node {
-        PenNode::Text(t) => {
-            t.text_align = Some(ta);
-            true
-        }
-        _ => false,
+    if let Some(t) = crate::command_node_attrs::resolve_text_node_mut(node) {
+        t.text_align = Some(ta);
+        true
+    } else {
+        false
     }
 }
 
 fn set_text_align_vertical(node: &mut PenNode, ta: TextAlignVertical) -> bool {
-    match node {
-        PenNode::Text(t) => {
-            t.text_align_vertical = Some(ta);
-            true
-        }
-        _ => false,
+    if let Some(t) = crate::command_node_attrs::resolve_text_node_mut(node) {
+        t.text_align_vertical = Some(ta);
+        true
+    } else {
+        false
     }
 }
 
 fn set_text_font_family(node: &mut PenNode, family: String) -> bool {
-    match node {
-        PenNode::Text(t) => {
-            t.font_family = Some(family);
-            true
-        }
-        _ => false,
+    if let Some(t) = crate::command_node_attrs::resolve_text_node_mut(node) {
+        t.font_family = Some(family);
+        true
+    } else {
+        false
     }
 }
 
 fn set_text_growth(node: &mut PenNode, tg: TextGrowth) -> bool {
-    match node {
-        PenNode::Text(t) => {
-            t.text_growth = Some(tg);
-            true
-        }
-        _ => false,
+    if let Some(t) = crate::command_node_attrs::resolve_text_node_mut(node) {
+        t.text_growth = Some(tg);
+        true
+    } else {
+        false
     }
 }
 

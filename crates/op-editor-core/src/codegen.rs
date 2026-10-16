@@ -22,18 +22,25 @@ pub enum Framework {
 }
 
 impl Framework {
-    pub const ALL: [Framework; 8] = [
-        Framework::React,
-        Framework::Vue,
-        Framework::Svelte,
-        Framework::Html,
-        Framework::Flutter,
-        Framework::SwiftUi,
-        Framework::Compose,
-        Framework::ReactNative,
-    ];
+    pub const ALL: [Framework; 3] = [Framework::React, Framework::Vue, Framework::Html];
 
     pub fn as_wire(self) -> &'static str {
+        match self {
+            Framework::React => "design-jsx",
+            Framework::Vue => "tailwind-jsx",
+            Framework::Svelte => "svelte",
+            Framework::Html => "html-css",
+            Framework::Flutter => "flutter",
+            Framework::SwiftUi => "swiftui",
+            Framework::Compose => "compose",
+            Framework::ReactNative => "react-native",
+        }
+    }
+
+    /// Stable framework name for AI prompts, logs and error text. Kept
+    /// separate from `as_wire` (which now selects the Code-panel generator)
+    /// so prompt wording does not change with the panel's format labels.
+    pub fn prompt_name(self) -> &'static str {
         match self {
             Framework::React => "react",
             Framework::Vue => "vue",
@@ -47,16 +54,26 @@ impl Framework {
     }
 
     pub fn from_wire(s: &str) -> Option<Framework> {
-        Framework::ALL.into_iter().find(|f| f.as_wire() == s)
+        match s {
+            "design-jsx" | "design_jsx" | "react" => Some(Framework::React),
+            "tailwind-jsx" | "tailwind_jsx" | "tailwind" | "vue" => Some(Framework::Vue),
+            "html-css" | "html_css" | "html" => Some(Framework::Html),
+            "svelte" => Some(Framework::Svelte),
+            "flutter" => Some(Framework::Flutter),
+            "swiftui" => Some(Framework::SwiftUi),
+            "compose" => Some(Framework::Compose),
+            "react-native" => Some(Framework::ReactNative),
+            _ => None,
+        }
     }
 
-    /// Human display name (capitalized), for UI labels. TS parity.
+    /// Human display name (capitalized), for UI labels. Matches OpenPencil (`Design JSX`, `Tailwind JSX`, `HTML/CSS`).
     pub fn display_name(self) -> &'static str {
         match self {
-            Framework::React => "React",
-            Framework::Vue => "Vue",
+            Framework::React => "Design JSX",
+            Framework::Vue => "Tailwind JSX",
             Framework::Svelte => "Svelte",
-            Framework::Html => "HTML",
+            Framework::Html => "HTML/CSS",
             Framework::Flutter => "Flutter",
             Framework::SwiftUi => "SwiftUI",
             Framework::Compose => "Compose",
@@ -68,7 +85,7 @@ impl Framework {
     pub fn skill_name(self) -> &'static str {
         match self {
             Framework::React => "codegen-react",
-            Framework::Vue => "codegen-vue",
+            Framework::Vue => "codegen-react",
             Framework::Svelte => "codegen-svelte",
             Framework::Html => "codegen-html",
             Framework::Flutter => "codegen-flutter",
@@ -126,6 +143,7 @@ impl CodeSelection {
 /// `framework_hover` because their state carries a selected framework value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CodegenHover {
+    FrameworkTrigger,
     Generate,
     Regenerate,
     Cancel,
@@ -173,6 +191,7 @@ pub struct CodegenCacheEntry {
     pub framework: Framework,
     pub code: String,
     pub code_scroll: jian_core::scroll::ScrollState,
+    pub code_h_scroll: jian_core::scroll::ScrollState,
     pub code_selection: Option<CodeSelection>,
     pub degraded: bool,
     pub assets: Vec<AssetMeta>,
@@ -201,6 +220,8 @@ pub struct CodegenState {
     /// Horizontal scroll offset (px, ≥ 0) of the framework tab strip, so the
     /// single-row selector scrolls to reach off-screen frameworks (TS parity).
     pub framework_scroll: jian_core::scroll::ScrollState,
+    /// Whether the format dropdown menu is currently open.
+    pub framework_picker_open: bool,
     /// The inactive framework chip the cursor is hovering, for a subtle
     /// background highlight. `None` when the cursor is off the strip.
     pub framework_hover: Option<Framework>,
@@ -211,6 +232,8 @@ pub struct CodegenState {
     pub code: String,
     /// Vertical scroll offset (px, >= 0) inside the generated-code preview.
     pub code_scroll: jian_core::scroll::ScrollState,
+    /// Horizontal scroll offset (px, >= 0) inside the generated-code preview.
+    pub code_h_scroll: jian_core::scroll::ScrollState,
     /// Text selection inside the generated-code preview.
     pub code_selection: Option<CodeSelection>,
     pub degraded: bool,
@@ -246,12 +269,14 @@ impl Default for CodegenState {
             framework: Framework::React,
             framework_cache: Arc::new(Vec::new()),
             framework_scroll: Default::default(),
+            framework_picker_open: false,
             framework_hover: None,
             action_hover: None,
             phase: CodegenPhase::Idle,
             progress: CodeGenProgress::default(),
             code: String::new(),
             code_scroll: Default::default(),
+            code_h_scroll: Default::default(),
             code_selection: None,
             degraded: false,
             assets: Vec::new(),
@@ -312,12 +337,14 @@ impl CodegenState {
             .cloned();
 
         self.framework = framework;
+        self.framework_picker_open = false;
         self.framework_hover = None;
         self.action_hover = None;
         self.phase = CodegenPhase::Idle;
         self.progress = CodeGenProgress::default();
         self.code.clear();
         self.code_scroll = Default::default();
+        self.code_h_scroll = Default::default();
         self.code_selection = None;
         self.degraded = false;
         self.assets.clear();
@@ -334,6 +361,7 @@ impl CodegenState {
             self.phase = CodegenPhase::Complete;
             self.code = cached.code.clone();
             self.code_scroll = cached.code_scroll;
+            self.code_h_scroll = cached.code_h_scroll;
             self.code_selection = cached.code_selection;
             self.degraded = cached.degraded;
             self.assets = cached.assets.clone();
@@ -355,6 +383,7 @@ impl CodegenState {
             framework: self.framework,
             code: self.code.clone(),
             code_scroll: self.code_scroll,
+            code_h_scroll: self.code_h_scroll,
             code_selection: self.code_selection,
             degraded: self.degraded,
             assets: self.assets.clone(),
@@ -395,16 +424,18 @@ mod tests {
         for fw in Framework::ALL {
             assert_eq!(Framework::from_wire(fw.as_wire()), Some(fw));
         }
+        assert_eq!(Framework::from_wire("design-jsx"), Some(Framework::React));
+        assert_eq!(Framework::from_wire("tailwind-jsx"), Some(Framework::Vue));
+        assert_eq!(Framework::from_wire("html-css"), Some(Framework::Html));
         assert_eq!(Framework::from_wire("react"), Some(Framework::React));
         assert_eq!(
             Framework::from_wire("react-native"),
             Some(Framework::ReactNative)
         );
         assert_eq!(Framework::from_wire("nope"), None);
-        // display_name is the capitalized UI label (TS parity).
-        assert_eq!(Framework::React.display_name(), "React");
-        assert_eq!(Framework::ReactNative.display_name(), "React Native");
-        assert_eq!(Framework::SwiftUi.display_name(), "SwiftUI");
+        assert_eq!(Framework::React.display_name(), "Design JSX");
+        assert_eq!(Framework::Vue.display_name(), "Tailwind JSX");
+        assert_eq!(Framework::Html.display_name(), "HTML/CSS");
     }
 
     #[test]

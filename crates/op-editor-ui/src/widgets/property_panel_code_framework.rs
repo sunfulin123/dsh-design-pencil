@@ -2,23 +2,22 @@
 //! panel. Kept separate because the selector is a self-contained horizontal
 //! scrolling control shared by native and web hosts.
 
-use super::{action_hovered, code_neutral_hover_color};
+use super::action_hovered;
 use crate::theme::Theme;
-use crate::widgets::icons::{draw_icon, Icon};
-use crate::widgets::property_panel_inputs::{
-    PAD_X, SECTION_GAP, SECTION_HEADER_HEIGHT, TAB_HEIGHT,
-};
+use crate::widgets::property_panel_inputs::{PAD_X, SECTION_GAP, TAB_HEIGHT};
 use crate::widgets::PaintCx;
 use crate::{Point2D, Rect};
 use op_editor_core::codegen::{CodegenHover, CodegenPhase, CodegenState, Framework};
 
-const CHIP_HEIGHT: f32 = 22.0;
-pub(super) const TOUCH_TARGET_SIZE: f32 = 30.0;
-const CHIP_PAD_X: f32 = 8.0;
-const CHIP_FONT_SIZE: f32 = 11.0;
-const CHIP_GAP: f32 = 2.0;
+const CHIP_HEIGHT: f32 = 28.0;
+pub(super) const TOUCH_TARGET_SIZE: f32 = 34.0;
+const CHIP_PAD_X: f32 = 10.0;
+const CHIP_FONT_SIZE: f32 = 12.0;
+const CHIP_GAP: f32 = 4.0;
 pub(super) const CHEVRON_ZONE_W: f32 = 18.0;
+const CHIP_TOP_PAD: f32 = 8.0;
 const CHIP_DIVIDER_GAP: f32 = 8.0;
+const DROPDOWN_ROW_H: f32 = 28.0;
 
 #[derive(Clone, Copy)]
 struct FrameworkStripMetrics {
@@ -45,10 +44,10 @@ fn strip_metrics(touch_controls: bool) -> FrameworkStripMetrics {
 
 fn framework_tab_label(fw: Framework) -> &'static str {
     match fw {
-        Framework::React => "React",
-        Framework::Vue => "Vue",
+        Framework::React => "Design JSX",
+        Framework::Vue => "Tailwind JSX",
         Framework::Svelte => "Svelte",
-        Framework::Html => "HTML",
+        Framework::Html => "HTML/CSS",
         Framework::Flutter => "Flutter",
         Framework::SwiftUi => "SwiftUI",
         Framework::Compose => "Compose",
@@ -104,7 +103,7 @@ pub fn framework_row_band(panel_top: f32) -> (f32, f32) {
 
 pub(crate) fn framework_row_band_for(panel_top: f32, touch_controls: bool) -> (f32, f32) {
     let metrics = strip_metrics(touch_controls);
-    let top = panel_top + TAB_HEIGHT + SECTION_HEADER_HEIGHT;
+    let top = panel_top + TAB_HEIGHT + CHIP_TOP_PAD;
     (top, top + metrics.chip_height)
 }
 
@@ -217,36 +216,47 @@ pub(crate) fn framework_at_for_touch(
         .map(|(framework, _)| framework)
 }
 
-fn paint_chevron(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    icon: Icon,
-    zone: Rect,
-    enabled: bool,
-    hovered: bool,
-) {
-    cx.backend.fill_round_rect(zone, 6.0, theme.muted);
-    if hovered {
-        cx.backend
-            .fill_round_rect(zone, 6.0, code_neutral_hover_color(theme));
+pub(super) fn framework_dropdown_trigger_rect(
+    x: f32,
+    y: f32,
+    width: f32,
+    touch_controls: bool,
+) -> Rect {
+    let metrics = strip_metrics(touch_controls);
+    let usable = (width - PAD_X * 2.0).max(0.0);
+    Rect {
+        origin: Point2D::new(x + PAD_X, y),
+        size: Point2D::new(usable, metrics.chip_height),
     }
-    let glyph = 14.0;
-    let color = if enabled {
-        theme.foreground
+}
+
+pub(super) fn framework_dropdown_option_rects(
+    x: f32,
+    y: f32,
+    width: f32,
+    touch_controls: bool,
+) -> Vec<(Framework, Rect)> {
+    let trigger = framework_dropdown_trigger_rect(x, y, width, touch_controls);
+    let row_h = if touch_controls {
+        TOUCH_TARGET_SIZE
     } else {
-        theme.muted_foreground
+        DROPDOWN_ROW_H
     };
-    draw_icon(
-        cx.backend,
-        icon,
-        Point2D::new(
-            zone.origin.x + (zone.size.x - glyph) / 2.0,
-            zone.origin.y + (zone.size.y - glyph) / 2.0,
-        ),
-        glyph,
-        color,
-        1.6,
-    );
+    let popup_top = trigger.origin.y + trigger.size.y + 4.0;
+    Framework::ALL
+        .iter()
+        .copied()
+        .enumerate()
+        .map(|(index, fw)| {
+            (
+                fw,
+                Rect {
+                    origin: Point2D::new(trigger.origin.x, popup_top + index as f32 * row_h),
+                    size: Point2D::new(trigger.size.x, row_h),
+                },
+            )
+        })
+        .collect()
 }
 
 pub(super) fn paint_framework_chips(
@@ -269,84 +279,93 @@ pub(super) fn paint_framework_chips_for(
     width: f32,
     touch_controls: bool,
 ) -> f32 {
-    let metrics = strip_metrics(touch_controls);
-    let usable = (width - PAD_X * 2.0).max(0.0);
-    let zones = framework_chevron_zones_for(x, y, width, touch_controls);
-    let inset = if zones.is_some() {
-        metrics.chevron_width
-    } else {
-        0.0
-    };
-    let band = Rect {
-        origin: Point2D::new(x + PAD_X + inset, y),
-        size: Point2D::new((usable - inset * 2.0).max(0.0), metrics.chip_height),
-    };
-    cx.backend.save();
-    cx.backend.clip_rect(band);
-    let labels: Vec<&str> = Framework::ALL
-        .iter()
-        .map(|framework| framework_tab_label(*framework))
-        .collect();
-    let rects: Vec<Rect> =
-        framework_chip_rects_for(x, y, width, state.framework_scroll.offset, touch_controls)
-            .into_iter()
-            .map(|(_, chip)| chip)
-            .collect();
-    let active = Framework::ALL
-        .iter()
-        .position(|framework| *framework == state.framework)
-        .unwrap_or(0);
+    let trigger = framework_dropdown_trigger_rect(x, y, width, touch_controls);
+    let tokens = crate::widgets::button::tokens_from_theme(theme);
     let interactive = !matches!(state.phase, CodegenPhase::Generating);
-    let hover = interactive
-        .then_some(state.framework_hover)
-        .flatten()
-        .and_then(|hovered| {
-            Framework::ALL
-                .iter()
-                .position(|framework| *framework == hovered)
-        });
-    jian_widgets::components::tabs::Tabs {
-        labels: &labels,
-        active,
-        hover,
+    jian_widgets::components::select_trigger::SelectTrigger {
+        icon_paths: None,
+        label: framework_tab_label(state.framework),
+        placeholder: "",
+        hovered: interactive
+            && (action_hovered(state, CodegenHover::FrameworkTrigger)
+                || state.framework_picker_open),
+        pressed: false,
+        enabled: interactive,
+        font_size: CHIP_FONT_SIZE,
+        bordered: true,
     }
-    .paint_content(
-        cx.backend,
-        &rects,
-        jian_widgets::components::tabs::ActiveStyle::PrimaryPill,
-        false,
-        CHIP_PAD_X,
-        CHIP_FONT_SIZE,
-        &crate::widgets::button::tokens_from_theme(theme),
-    );
-    cx.backend.restore();
+    .paint(cx.backend, trigger, &tokens);
 
-    if let Some((left, right)) = zones {
-        let max = framework_row_overflow_for(width, touch_controls);
-        paint_chevron(
-            cx,
-            theme,
-            Icon::ChevronLeft,
-            left,
-            interactive && state.framework_scroll.offset > 0.0,
-            interactive && action_hovered(state, CodegenHover::ScrollFrameworksLeft),
+    chips_body_top_for(y, touch_controls)
+}
+
+pub(super) fn paint_framework_dropdown_overlay(
+    cx: &mut PaintCx<'_>,
+    theme: &Theme,
+    state: &CodegenState,
+    x: f32,
+    y: f32,
+    width: f32,
+    touch_controls: bool,
+) {
+    if !state.framework_picker_open {
+        return;
+    }
+    let options = framework_dropdown_option_rects(x, y, width, touch_controls);
+    let Some((_, first)) = options.first() else {
+        return;
+    };
+    let Some((_, last)) = options.last() else {
+        return;
+    };
+    let popup = Rect {
+        origin: Point2D::new(first.origin.x, first.origin.y - 4.0),
+        size: Point2D::new(
+            first.size.x,
+            (last.origin.y + last.size.y - first.origin.y) + 8.0,
+        ),
+    };
+    let tokens = crate::widgets::button::tokens_from_theme(theme);
+    cx.backend.fill_round_rect(popup, 6.0, tokens.popover);
+    cx.backend.stroke_round_rect(popup, 6.0, tokens.border, 1.0);
+    for (fw, row_rect) in options {
+        let is_selected = fw == state.framework;
+        let is_hovered = state.framework_hover == Some(fw);
+        if is_hovered {
+            cx.backend.fill_rect(row_rect, tokens.button_hover);
+        } else if is_selected {
+            cx.backend.fill_rect(row_rect, tokens.row_selected_primary);
+        }
+        if is_selected {
+            cx.backend.stroke_svg_path(
+                "M20 6 9 17l-5-5",
+                Point2D::new(
+                    row_rect.origin.x + 8.0,
+                    row_rect.origin.y + (row_rect.size.y - 14.0) / 2.0,
+                ),
+                14.0,
+                tokens.primary,
+                1.75,
+            );
+        }
+        let color = if is_selected {
+            tokens.primary
+        } else {
+            tokens.popover_foreground
+        };
+        let layout = crate::TextLayout::single_run(
+            framework_tab_label(fw),
+            "Inter",
+            CHIP_FONT_SIZE,
+            color.to_jian(),
+            Point2D::new(0.0, 0.0),
         );
-        paint_chevron(
-            cx,
-            theme,
-            Icon::ChevronRight,
-            right,
-            interactive && state.framework_scroll.offset < max,
-            interactive && action_hovered(state, CodegenHover::ScrollFrameworksRight),
+        cx.backend.draw_text(
+            &layout,
+            Point2D::new(
+                row_rect.origin.x + 28.0,
+                jian_widgets::centered_text_baseline_y(row_rect, CHIP_FONT_SIZE),
+            ),
         );
     }
-    let divider_y = y + metrics.chip_height + CHIP_DIVIDER_GAP / 2.0;
-    cx.backend.fill_rect(
-        Rect {
-            origin: Point2D::new(x + PAD_X, divider_y),
-            size: Point2D::new(usable, 1.0),
-        },
-        theme.border,
-    );
-    chips_body_top_for(y, touch_controls)
 }

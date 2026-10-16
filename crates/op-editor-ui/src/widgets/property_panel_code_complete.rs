@@ -17,14 +17,11 @@ const CODE_PAD_Y: f32 = 10.0;
 const CODE_GUTTER_W: f32 = 28.0;
 const CODE_TEXT_GAP: f32 = 10.0;
 const CODE_CHAR_W: f32 = CODE_FONT_SIZE * 0.55;
-const ACTION_ROW_GAP: f32 = 12.0;
-const ACTION_CHIP_H: f32 = 30.0;
-const ACTION_CHIP_GAP: f32 = 8.0;
+const ACTION_CHIP_SIZE: f32 = 26.0;
+const ACTION_CHIP_GAP: f32 = 6.0;
 const ACTION_CHIP_ICON_SIZE: f32 = 14.0;
-const ACTION_CHIP_PAD_X: f32 = 12.0;
-const ACTION_CHIP_TEXT_GAP: f32 = 8.0;
+const ACTION_CORNER_INSET: f32 = 8.0;
 const BODY_BOTTOM_PAD: f32 = 12.0;
-const ACTION_LABEL_FONT_SIZE: f32 = 13.0;
 
 #[derive(Clone, Copy)]
 pub(super) struct CompleteLayout {
@@ -36,8 +33,7 @@ pub(super) struct CompleteLayout {
 }
 
 pub(super) fn complete_action_row_y_in_panel(state: &CodegenState, layout: CompleteLayout) -> f32 {
-    let code_y = code_area_y(state, layout.y, layout.progress_row_h);
-    code_y + code_area_height(state, layout) + ACTION_ROW_GAP
+    code_area_y(state, layout.y, layout.progress_row_h) + ACTION_CORNER_INSET
 }
 
 pub(super) fn code_area_y(state: &CodegenState, y: f32, progress_row_h: f32) -> f32 {
@@ -51,37 +47,23 @@ pub(super) fn code_area_y(state: &CodegenState, y: f32, progress_row_h: f32) -> 
     y
 }
 
-pub(super) fn action_chip_rects(x: f32, y: f32, w: f32, strings: CodePanelStrings) -> [Rect; 4] {
-    let usable = w - PAD_X * 2.0;
-    let preferred = [
-        action_chip_width(strings.copy()),
-        action_chip_width(strings.save()),
-        action_chip_width(strings.bundle()),
-        action_chip_width(strings.regen()),
-    ];
-    let preferred_total =
-        preferred.iter().sum::<f32>() + ACTION_CHIP_GAP * (preferred.len() - 1) as f32;
-    let fits_preferred = preferred_total <= usable;
-    let widths = if fits_preferred {
-        preferred
-    } else {
-        let fallback = ((usable - ACTION_CHIP_GAP * 3.0) / 4.0).max(ACTION_CHIP_H);
-        [fallback; 4]
+pub(super) fn action_chip_rects(x: f32, y: f32, w: f32, _strings: CodePanelStrings) -> [Rect; 4] {
+    let total = ACTION_CHIP_SIZE * 2.0 + ACTION_CHIP_GAP;
+    let right_edge = x + w - PAD_X - ACTION_CORNER_INSET;
+    let start_x = (right_edge - total).max(x + PAD_X + ACTION_CORNER_INSET);
+    let r0 = Rect {
+        origin: Point2D::new(start_x, y),
+        size: Point2D::new(ACTION_CHIP_SIZE, ACTION_CHIP_SIZE),
     };
-    let total = widths.iter().sum::<f32>() + ACTION_CHIP_GAP * (widths.len() - 1) as f32;
-    let mut cursor = if fits_preferred {
-        x + w - PAD_X - total
-    } else {
-        x + PAD_X
+    let r1 = Rect {
+        origin: Point2D::new(start_x + ACTION_CHIP_SIZE + ACTION_CHIP_GAP, y),
+        size: Point2D::new(ACTION_CHIP_SIZE, ACTION_CHIP_SIZE),
     };
-    std::array::from_fn(|i| {
-        let rect = Rect {
-            origin: Point2D::new(cursor, y),
-            size: Point2D::new(widths[i], ACTION_CHIP_H),
-        };
-        cursor += widths[i] + ACTION_CHIP_GAP;
-        rect
-    })
+    let zero = Rect {
+        origin: Point2D::new(0.0, 0.0),
+        size: Point2D::new(0.0, 0.0),
+    };
+    [r0, r1, zero, zero]
 }
 
 pub(super) fn paint_complete_body_in_panel(
@@ -122,35 +104,34 @@ pub(super) fn paint_complete_body_in_panel(
         );
         y += layout.progress_row_h;
     }
-    let code_h = code_area_height_from_y(y, layout.panel_bottom);
-    let code_rect = code_area_rect(layout.x, y, layout.w, code_h);
-    y = paint_code_area(
+    let code_top = y;
+    let code_h = code_area_height_from_y(code_top, layout.panel_bottom);
+    let code_rect = code_area_rect(layout.x, code_top, layout.w, code_h);
+    let bottom_y = paint_code_area(
         cx,
         theme,
         &state.code,
         state.code_selection,
         state.code_scroll.offset,
+        state.code_h_scroll.offset,
         code_rect,
     );
     let actions = [
-        (Icon::Copy, strings.copy(), CodegenHover::Copy),
-        (Icon::Download, strings.save(), CodegenHover::Download),
-        (Icon::Sparkles, strings.bundle(), CodegenHover::ExportBundle),
-        (Icon::RefreshCw, strings.regen(), CodegenHover::Regenerate),
+        (Icon::Copy, CodegenHover::Copy),
+        (Icon::Download, CodegenHover::Download),
     ];
-    let rects = action_chip_rects(layout.x, y, layout.w, strings);
-    for ((icon, label, hover), rect) in actions.iter().zip(rects) {
+    let rects = action_chip_rects(layout.x, code_top + ACTION_CORNER_INSET, layout.w, strings);
+    for ((icon, hover), rect) in actions.iter().zip(rects.iter().take(2)) {
         paint_action_chip(
             cx,
             theme,
             *icon,
-            label,
-            rect,
+            *rect,
             action_hovered(state, *hover),
             pressed == Some(*hover),
         );
     }
-    y + ACTION_CHIP_H + 12.0
+    bottom_y
 }
 
 pub(super) fn code_text_offset_at_in_panel(
@@ -171,12 +152,16 @@ pub(super) fn code_text_offset_at_in_panel(
         .code_scroll
         .offset
         .clamp(0.0, max_scroll_for_code(&state.code, rect));
+    let h_scroll = state
+        .code_h_scroll
+        .offset
+        .clamp(0.0, max_h_scroll_for_code(&state.code, rect));
     let line_index = ((point.y - code_text_top(rect) + scroll) / CODE_LINE_H)
         .floor()
         .max(0.0) as usize;
     let line_index = line_index.min(lines.len() - 1);
     let span = lines[line_index];
-    let rel_x = (point.x - code_text_x(rect)).max(0.0);
+    let rel_x = (point.x - code_text_x(rect) + h_scroll).max(0.0);
     let col = (rel_x / CODE_CHAR_W).round().max(0.0) as usize;
     Some((span.start + byte_offset_for_col(span.text, col)).min(last_end))
 }
@@ -191,15 +176,24 @@ pub(super) fn code_preview_max_scroll(state: &CodegenState, layout: CompleteLayo
     max_scroll_for_code(&state.code, rect)
 }
 
+pub(super) fn code_preview_max_h_scroll(state: &CodegenState, layout: CompleteLayout) -> f32 {
+    let rect = code_area_rect_for_panel(state, layout);
+    max_h_scroll_for_code(&state.code, rect)
+}
+
 fn paint_code_area(
     cx: &mut PaintCx<'_>,
     theme: &Theme,
     code: &str,
     selection: Option<CodeSelection>,
     scroll: f32,
+    h_scroll: f32,
     rect: Rect,
 ) -> f32 {
-    let scroll = scroll.clamp(0.0, max_scroll_for_code(code, rect));
+    let max_v = max_scroll_for_code(code, rect);
+    let max_h = max_h_scroll_for_code(code, rect);
+    let scroll = scroll.clamp(0.0, max_v);
+    let h_scroll = h_scroll.clamp(0.0, max_h);
     let lines = visible_line_spans(code, rect, scroll);
     cx.backend
         .fill_round_rect(rect, INPUT_RADIUS, code_surface(theme));
@@ -217,9 +211,6 @@ fn paint_code_area(
         ),
         code_gutter_rule(theme),
     );
-    if let Some(selection) = selection {
-        paint_code_selection(cx, theme, &lines, selection, code.len(), rect);
-    }
     for line in lines.iter() {
         let n = (line.index + 1).to_string();
         let line_no_w = measure_code_text(cx, &n);
@@ -234,16 +225,48 @@ fn paint_code_area(
             &layout,
             Point2D::new(gutter_right - 8.0 - line_no_w, line.baseline_y),
         );
+    }
+    let text_clip = Rect::xywh(
+        gutter_right + 1.0,
+        rect.origin.y,
+        (rect.origin.x + rect.size.x - (gutter_right + 1.0)).max(0.0),
+        rect.size.y,
+    );
+    cx.backend.save();
+    cx.backend.clip_rect(text_clip);
+    if let Some(selection) = selection {
+        paint_code_selection(cx, theme, &lines, selection, code.len(), rect, h_scroll);
+    }
+    for line in lines.iter() {
         paint_highlighted_code_line(
             cx,
             theme,
             line.span.text,
-            code_text_x(rect),
+            code_text_x(rect) - h_scroll,
             line.baseline_y,
         );
     }
     cx.backend.restore();
-    rect.origin.y + rect.size.y + ACTION_ROW_GAP
+    if max_h > 0.0 {
+        let track_x = gutter_right + 6.0;
+        let track_w = (rect.origin.x + rect.size.x - track_x - 6.0).max(0.0);
+        if track_w > 24.0 {
+            let content_w = track_w + max_h;
+            let thumb_w = ((track_w / content_w) * track_w).clamp(24.0, track_w);
+            let thumb_x = track_x + (h_scroll / max_h) * (track_w - thumb_w);
+            let thumb_y = rect.origin.y + rect.size.y - 6.0;
+            cx.backend.fill_round_rect(
+                Rect::xywh(thumb_x, thumb_y, thumb_w, 3.0),
+                1.5,
+                Color {
+                    a: 0.35,
+                    ..theme.muted_foreground
+                },
+            );
+        }
+    }
+    cx.backend.restore();
+    rect.origin.y + rect.size.y + BODY_BOTTOM_PAD
 }
 
 fn paint_code_selection(
@@ -253,6 +276,7 @@ fn paint_code_selection(
     selection: CodeSelection,
     code_len: usize,
     rect: Rect,
+    h_scroll: f32,
 ) {
     if selection.is_collapsed() {
         return;
@@ -263,7 +287,7 @@ fn paint_code_selection(
     if start >= end {
         return;
     }
-    let text_x = code_text_x(rect);
+    let text_x = code_text_x(rect) - h_scroll;
     for line in lines.iter() {
         let span = line.span;
         if start > span.end || end < span.start {
@@ -362,6 +386,21 @@ fn max_scroll_for_code(code: &str, rect: Rect) -> f32 {
     (content_h - viewport_h).max(0.0)
 }
 
+fn max_h_scroll_for_code(code: &str, rect: Rect) -> f32 {
+    let max_cols = code
+        .lines()
+        .map(|line| {
+            line.chars()
+                .map(|c| if c.is_ascii() { 1usize } else { 2usize })
+                .sum::<usize>()
+        })
+        .max()
+        .unwrap_or(0) as f32;
+    let content_w = max_cols * (CODE_FONT_SIZE * 0.62) + CODE_PAD_X * 2.0;
+    let viewport_w = (rect.origin.x + rect.size.x - code_text_x(rect) - CODE_PAD_X).max(0.0);
+    (content_w - viewport_w).max(0.0)
+}
+
 fn byte_offset_for_col(line: &str, col: usize) -> usize {
     if col == 0 {
         return 0;
@@ -385,7 +424,7 @@ fn code_area_height_from_y(code_y: f32, panel_bottom: Option<f32>) -> f32 {
     let Some(panel_bottom) = panel_bottom else {
         return CODE_AREA_MIN_H;
     };
-    let available = panel_bottom - code_y - ACTION_ROW_GAP - ACTION_CHIP_H - BODY_BOTTOM_PAD;
+    let available = panel_bottom - code_y - BODY_BOTTOM_PAD;
     available.max(CODE_AREA_MIN_H)
 }
 
@@ -666,7 +705,6 @@ fn paint_action_chip(
     cx: &mut PaintCx<'_>,
     theme: &Theme,
     icon: Icon,
-    label: &str,
     rect: Rect,
     hovered: bool,
     pressed: bool,
@@ -677,30 +715,16 @@ fn paint_action_chip(
     }
     cx.backend
         .stroke_round_rect(rect, INPUT_RADIUS, theme.border, 1.0);
-    let cy = rect.origin.y + rect.size.y / 2.0;
+    let cx_pt = rect.origin.x + (rect.size.x - ACTION_CHIP_ICON_SIZE) / 2.0;
+    let cy_pt = rect.origin.y + (rect.size.y - ACTION_CHIP_ICON_SIZE) / 2.0;
     draw_icon(
         cx.backend,
         icon,
-        Point2D::new(
-            rect.origin.x + ACTION_CHIP_PAD_X,
-            cy - ACTION_CHIP_ICON_SIZE / 2.0,
-        ),
+        Point2D::new(cx_pt, cy_pt),
         ACTION_CHIP_ICON_SIZE,
         theme.foreground,
-        1.4,
+        1.5,
     );
-    draw_line(
-        cx,
-        label,
-        theme.foreground,
-        rect.origin.x + ACTION_CHIP_PAD_X + ACTION_CHIP_ICON_SIZE + ACTION_CHIP_TEXT_GAP,
-        cy + 4.5,
-    );
-}
-
-fn action_chip_width(label: &str) -> f32 {
-    let label_w = label.chars().count() as f32 * ACTION_LABEL_FONT_SIZE * 0.55;
-    ACTION_CHIP_PAD_X * 2.0 + ACTION_CHIP_ICON_SIZE + ACTION_CHIP_TEXT_GAP + label_w
 }
 
 #[cfg(test)]

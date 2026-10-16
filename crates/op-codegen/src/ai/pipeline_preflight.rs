@@ -33,7 +33,7 @@ pub(super) fn model_output_failure(framework: Framework, code: &str) -> Option<S
     (!plausible_code(framework, code)).then(|| {
         format!(
             "model returned text without recognizable {} code structure",
-            framework.as_wire()
+            framework.prompt_name()
         )
     })
 }
@@ -409,7 +409,7 @@ mod tests {
             assert!(
                 model_output_failure(framework, "Here is the requested implementation.").is_some(),
                 "{}",
-                framework.as_wire()
+                framework.prompt_name()
             );
         }
         for (framework, code) in [

@@ -64,6 +64,7 @@ mod batch_program_update_tests;
 pub mod bulk_vars;
 #[cfg(test)]
 mod bulk_vars_tests;
+pub mod code_context_tool;
 mod codegen_plan_store;
 pub mod codegen_tools;
 #[cfg(test)]
@@ -189,6 +190,10 @@ pub use batch_program_objects::parse_program_objects;
 pub use bulk_vars::{
     apply_design_system_snapshot, get_variables_snapshot, set_themes_snapshot,
     set_variables_snapshot, GetVariables, SetThemes, SetVariables,
+};
+pub use code_context_tool::{
+    build_a11y_intent_node, get_accessibility_tree_snapshot, get_design_code_context_snapshot,
+    set_node_semantics_snapshot, GetAccessibilityTree, GetDesignCodeContext, SetNodeSemantics,
 };
 pub use codegen_tools::{
     codegen_assemble_snapshot, codegen_clean_snapshot, codegen_plan_snapshot,

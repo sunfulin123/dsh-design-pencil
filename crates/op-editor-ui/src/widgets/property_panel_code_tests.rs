@@ -260,7 +260,7 @@ fn generating_phase_paints_compact_progress_card() {
         },
         ..CodegenState::default()
     };
-    let body_y = chips_body_top(SECTION_HEADER_HEIGHT);
+    let body_y = chips_body_top(8.0);
     let backend = paint_capture(&state, &theme, 300.0);
 
     assert!(
@@ -303,8 +303,8 @@ fn generating_running_step_rotates_loader_icon_from_host_clock() {
 
 #[test]
 fn code_action_rects_idle_has_generate_and_bundle() {
-    let s = CodegenState::default(); // Idle, React
-                                     // Wide width so all 8 chips fit the single row (no scroll clipping).
+    let s = CodegenState::default(); // Idle, Design JSX
+                                     // Wide width so all 3 chips fit the single row (no scroll clipping).
     let rects = code_action_rects(0.0, 0.0, 2000.0, &s);
     assert!(rects
         .iter()
@@ -312,12 +312,12 @@ fn code_action_rects_idle_has_generate_and_bundle() {
     assert!(rects
         .iter()
         .any(|(a, _)| matches!(a, CodegenAction::ExportBundle)));
-    // all 8 framework chips present
+    // all 3 format chips present
     let chips = rects
         .iter()
         .filter(|(a, _)| matches!(a, CodegenAction::SelectFramework(_)))
         .count();
-    assert_eq!(chips, 8);
+    assert_eq!(chips, 3);
     // No overflow at 2000px → no scroll chevrons.
     assert_eq!(framework_row_overflow(2000.0), 0.0);
     assert!(!rects
@@ -332,9 +332,9 @@ fn code_action_rects_idle_has_generate_and_bundle() {
 /// left + right scroll-chevron zones (the FIX-1 step buttons).
 #[test]
 fn code_action_rects_narrow_has_scroll_chevrons() {
-    let s = CodegenState::default(); // Idle, React.
-    assert!(framework_row_overflow(280.0) > 0.0);
-    let rects = code_action_rects(0.0, 0.0, 280.0, &s);
+    let s = CodegenState::default(); // Idle, Design JSX.
+    assert!(framework_row_overflow(180.0) > 0.0);
+    let rects = code_action_rects(0.0, 0.0, 180.0, &s);
     assert!(rects
         .iter()
         .any(|(a, _)| matches!(a, CodegenAction::ScrollFrameworksLeft)));
@@ -361,39 +361,39 @@ fn framework_at_hits_first_chip() {
 #[test]
 fn framework_chips_use_ts_compact_padding() {
     let chips = framework_chip_rects(0.0, 0.0, 2000.0, 0.0);
-    let (_, flutter) = chips
+    let (_, html) = chips
         .iter()
-        .find(|(fw, _)| *fw == Framework::Flutter)
-        .expect("Flutter chip should be present");
-    let expected_w = "flutter".chars().count() as f32 * 11.0 * 0.55 + 16.0;
+        .find(|(fw, _)| *fw == Framework::Html)
+        .expect("HTML/CSS chip should be present");
+    let expected_w = "HTML/CSS".chars().count() as f32 * 12.0 * 0.55 + 20.0;
 
     assert!(
-        (flutter.size.x - expected_w).abs() < 0.01,
-        "framework chips should use TS px-2 horizontal padding and 11px text"
+        (html.size.x - expected_w).abs() < 0.01,
+        "framework chips should use 10px horizontal padding and 12px text"
     );
     assert!(
-        (flutter.size.y - 22.0).abs() < 0.01,
-        "framework chips should match the compact TS tab height"
+        (html.size.y - 28.0).abs() < 0.01,
+        "framework chips should match the 28px height"
     );
 }
 
 #[test]
-fn react_native_chip_uses_short_ts_label() {
+fn tailwind_jsx_chip_uses_exact_label() {
     let chips = framework_chip_rects(0.0, 0.0, 2000.0, 0.0);
-    let (_, react_native) = chips
+    let (_, tailwind_jsx) = chips
         .iter()
-        .find(|(fw, _)| *fw == Framework::ReactNative)
-        .expect("React Native chip should be present");
-    let expected_w = "RN".chars().count() as f32 * 11.0 * 0.55 + 16.0;
+        .find(|(fw, _)| *fw == Framework::Vue)
+        .expect("Tailwind JSX chip should be present");
+    let expected_w = "Tailwind JSX".chars().count() as f32 * 12.0 * 0.55 + 20.0;
 
     assert!(
-        (react_native.size.x - expected_w).abs() < 0.01,
-        "React Native framework chip should use the TS short label"
+        (tailwind_jsx.size.x - expected_w).abs() < 0.01,
+        "Tailwind JSX framework chip should use the exact label width"
     );
 }
 
 #[test]
-fn code_action_rects_complete_has_copy_and_regen() {
+fn code_action_rects_complete_has_copy_and_save() {
     let s = CodegenState {
         phase: CodegenPhase::Complete,
         code: "x".into(),
@@ -403,7 +403,13 @@ fn code_action_rects_complete_has_copy_and_regen() {
     assert!(rects.iter().any(|(a, _)| matches!(a, CodegenAction::Copy)));
     assert!(rects
         .iter()
+        .any(|(a, _)| matches!(a, CodegenAction::Download)));
+    assert!(!rects
+        .iter()
         .any(|(a, _)| matches!(a, CodegenAction::Regenerate)));
+    assert!(!rects
+        .iter()
+        .any(|(a, _)| matches!(a, CodegenAction::ExportBundle)));
 }
 
 #[test]
@@ -428,22 +434,20 @@ fn complete_actions_use_compact_toolbar_on_wide_panels() {
     let actions = [
         action_rect(CodegenAction::Copy),
         action_rect(CodegenAction::Download),
-        action_rect(CodegenAction::ExportBundle),
-        action_rect(CodegenAction::Regenerate),
     ];
-    let total_w = actions[3].origin.x + actions[3].size.x - actions[0].origin.x;
+    let total_w = actions[1].origin.x + actions[1].size.x - actions[0].origin.x;
 
     assert!(
-        total_w <= 360.0,
-        "complete action row should not stretch across wide panels, got {total_w}"
+        total_w <= 64.0,
+        "complete action row should be compact icon-only buttons, got {total_w}"
     );
     assert!(
-        actions.iter().all(|rect| rect.size.x <= 96.0),
-        "complete action chips should stay content-sized, got {actions:?}"
+        actions.iter().all(|rect| (rect.size.x - 26.0).abs() < 0.01),
+        "complete action chips should be 26x26 icon buttons, got {actions:?}"
     );
     assert!(
-        actions.iter().all(|rect| (rect.size.y - 30.0).abs() < 0.01),
-        "complete action chips should use the compact toolbar height, got {actions:?}"
+        actions.iter().all(|rect| (rect.size.y - 26.0).abs() < 0.01),
+        "complete action chips should be 26x26 icon buttons, got {actions:?}"
     );
 }
 
@@ -459,13 +463,22 @@ fn complete_code_preview_hit_test_maps_points_to_code_offsets() {
         size: Point2D::new(360.0, 700.0),
     };
     let char_w = 11.0 * 0.55;
+    let first_line_y = code_body_y(panel_rect) + 18.0;
 
     assert_eq!(
-        code_text_offset_at(panel_rect, &state, Point2D::new(66.0 + char_w * 6.0, 112.0)),
+        code_text_offset_at(
+            panel_rect,
+            &state,
+            Point2D::new(66.0 + char_w * 6.0, first_line_y)
+        ),
         Some(6)
     );
     assert_eq!(
-        code_text_offset_at(panel_rect, &state, Point2D::new(66.0 + char_w * 5.0, 128.0)),
+        code_text_offset_at(
+            panel_rect,
+            &state,
+            Point2D::new(66.0 + char_w * 5.0, first_line_y + 16.0)
+        ),
         Some("import React\n".len() + 5)
     );
     assert_eq!(
@@ -508,12 +521,12 @@ fn complete_code_preview_expands_to_panel_height() {
         "code preview should grow with the panel height, got {code_rect:?}"
     );
     assert!(
-        copy_rect.origin.y > code_rect.origin.y + code_rect.size.y,
-        "action row should stay below the expanded preview"
+        code_rect.contains(copy_rect.origin),
+        "icon action buttons should sit inside the top-right corner of the code preview"
     );
     assert!(
-        copy_rect.origin.y + copy_rect.size.y <= panel_rect.origin.y + panel_rect.size.y - 8.0,
-        "action row should remain inside the panel"
+        copy_rect.origin.x > code_rect.origin.x + code_rect.size.x - 96.0,
+        "icon action buttons should be right-aligned inside the code preview"
     );
 }
 
@@ -543,11 +556,13 @@ fn complete_code_preview_hit_test_respects_vertical_scroll() {
         .sum::<usize>()
         + 4;
 
+    let first_line_y = code_body_y(panel_rect) + 18.0;
+
     assert_eq!(
         code_text_offset_at(
             panel_rect,
             &state,
-            Point2D::new(66.0 + 11.0 * 0.55 * 4.0, 112.0)
+            Point2D::new(66.0 + 11.0 * 0.55 * 4.0, first_line_y)
         ),
         Some(expected)
     );
@@ -651,7 +666,8 @@ fn code_action_rects_error_has_regenerate_only_button() {
         .filter(|(a, _)| {
             !matches!(
                 a,
-                CodegenAction::SelectFramework(_)
+                CodegenAction::ToggleFrameworkPicker
+                    | CodegenAction::SelectFramework(_)
                     | CodegenAction::ScrollFrameworksLeft
                     | CodegenAction::ScrollFrameworksRight
             )
@@ -755,21 +771,21 @@ fn code_action_rects_generate_center_round_trips() {
     assert_eq!(hits, vec![CodegenAction::Generate]);
 }
 
-/// The 8 framework chips lay out in a SINGLE row (one shared y), each with
-/// a positive-size rect; the strip overflows the 280px panel (so it
+/// The 3 format chips lay out in a SINGLE row (one shared y), each with
+/// a positive-size rect; the strip overflows a narrow 180px panel (so it
 /// scrolls), and a positive scroll shifts every chip left by that amount.
 #[test]
 fn framework_chips_single_row_and_scroll() {
     let chips = framework_chip_rects(0.0, 0.0, 2000.0, 0.0);
-    assert_eq!(chips.len(), 8);
+    assert_eq!(chips.len(), 3);
     for (_, r) in &chips {
         assert!(r.size.x > 0.0 && r.size.y > 0.0);
     }
     let rows: std::collections::BTreeSet<i32> =
         chips.iter().map(|(_, r)| r.origin.y as i32).collect();
     assert_eq!(rows.len(), 1);
-    // Wider than a 280px panel → must scroll to reach the trailing chips.
-    assert!(framework_row_overflow(280.0) > 0.0);
+    // Wider than a 180px panel → must scroll to reach the trailing chips.
+    assert!(framework_row_overflow(180.0) > 0.0);
     // A positive scroll shifts each chip left by exactly that amount.
     let scrolled = framework_chip_rects(0.0, 0.0, 2000.0, 40.0);
     for ((_, a), (_, b)) in chips.iter().zip(scrolled.iter()) {

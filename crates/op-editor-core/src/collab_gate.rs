@@ -212,6 +212,8 @@ impl PropertyFocus {
 
         match self {
             P::PositionX => D::NodeProperty(F::X),
+            P::NodeName => D::NodeProperty(F::Name),
+            P::TextContent => D::NodeProperty(F::Content),
             P::PositionY => D::NodeProperty(F::Y),
             P::Rotation => D::NodeProperty(F::Rotation),
             P::PositionR | P::CornerTL | P::CornerTR | P::CornerBL | P::CornerBR => {
@@ -244,7 +246,11 @@ impl PropertyFocus {
             P::FontSize | P::FontWeight | P::LineHeight | P::LetterSpacing => {
                 D::Unsupported(U::Typography)
             }
-            P::WidgetPlaceholder
+            P::NodeRole
+            | P::NodeExplain
+            | P::NodeA11yLabel
+            | P::ScreenPath
+            | P::WidgetPlaceholder
             | P::WidgetValue
             | P::WidgetLabel
             | P::WidgetLeadingIcon

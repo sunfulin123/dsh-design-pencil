@@ -170,10 +170,11 @@ fn interaction_row_count(interactions: &InteractionSummary) -> usize {
         0 | 1 => 1,
         n => n + 1,
     };
-    screen_row + tap_rows
+    // +3 rows for Role, A11y Label, and Design Note (Explain)
+    screen_row + tap_rows + 3
 }
 
-/// Total vertical space the Interactions section consumes. Mirrors
+/// Total vertical space the Interactions & Semantics section consumes. Mirrors
 /// the `n * (INPUT_HEIGHT + 6.0) + 6.0 + SECTION_GAP` row-stacking
 /// math `paint_interactions_section` walks.
 pub fn interactions_section_height(interactions: &InteractionSummary) -> f32 {
@@ -181,11 +182,62 @@ pub fn interactions_section_height(interactions: &InteractionSummary) -> f32 {
     SECTION_HEADER_HEIGHT + n * (INPUT_HEIGHT + 6.0) + 6.0 + SECTION_GAP
 }
 
+/// Emit the editable input rects for the Semantics & Interactions section
+/// (Role, A11y Label, Explain Note, and optional Screen route).
+pub fn push_interaction_input_rects(
+    rects: &mut Vec<(op_editor_core::PropertyFocus, Rect)>,
+    interactions: &InteractionSummary,
+    x: f32,
+    y: f32,
+    width: f32,
+) {
+    use op_editor_core::PropertyFocus;
+    let usable_w = width - PAD_X * 2.0;
+    let half_w = (usable_w - 8.0) / 2.0;
+    let tap_rows = match interactions.on_tap.len() {
+        0 | 1 => 1,
+        n => n + 1,
+    };
+    let mut row_y = y + SECTION_HEADER_HEIGHT + (INPUT_HEIGHT + 6.0) * tap_rows as f32;
+    if interactions.screen.is_some() {
+        rects.push((
+            PropertyFocus::ScreenPath,
+            Rect {
+                origin: Point2D::new(x + PAD_X, row_y),
+                size: Point2D::new(usable_w, INPUT_HEIGHT),
+            },
+        ));
+        row_y += INPUT_HEIGHT + 6.0;
+    }
+    // Role (left half) + A11y Label (right half)
+    rects.push((
+        PropertyFocus::NodeRole,
+        Rect {
+            origin: Point2D::new(x + PAD_X, row_y),
+            size: Point2D::new(half_w, INPUT_HEIGHT),
+        },
+    ));
+    rects.push((
+        PropertyFocus::NodeA11yLabel,
+        Rect {
+            origin: Point2D::new(x + PAD_X + half_w + 8.0, row_y),
+            size: Point2D::new(half_w, INPUT_HEIGHT),
+        },
+    ));
+    row_y += INPUT_HEIGHT + 6.0;
+    // Design Note / Explain (full width)
+    rects.push((
+        PropertyFocus::NodeExplain,
+        Rect {
+            origin: Point2D::new(x + PAD_X, row_y),
+            size: Point2D::new(usable_w, INPUT_HEIGHT),
+        },
+    ));
+}
+
 /// Emit the section's clickable-row rects: the empty-state / single
 /// tap row (`ToggleInteractionMenu`), or a multi-action row's
-/// trailing `RemoveInteraction` row. The Screen row and read-only
-/// multi-action rows contribute height but no rect — matches
-/// `paint_interactions_section` exactly.
+/// trailing `RemoveInteraction` row.
 pub fn push_interaction_action_rects(
     out: &mut Vec<(PropertyPanelAction, Rect)>,
     interactions: &InteractionSummary,
@@ -195,9 +247,6 @@ pub fn push_interaction_action_rects(
 ) {
     let usable_w = width - PAD_X * 2.0;
     let mut row_y = y + SECTION_HEADER_HEIGHT;
-    if interactions.screen.is_some() {
-        row_y += INPUT_HEIGHT + 6.0;
-    }
     let row_rect = |row_y: f32| Rect {
         origin: Point2D::new(x + PAD_X, row_y),
         size: Point2D::new(usable_w, INPUT_HEIGHT),
@@ -213,41 +262,36 @@ pub fn push_interaction_action_rects(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn paint_interactions_section(
     cx: &mut PaintCx<'_>,
     theme: &Theme,
+    snapshot: &crate::widgets::property_panel::NodeSnapshot,
+    edit: &crate::widgets::property_panel_sections::EditContext<'_>,
     interactions: &InteractionSummary,
     locale: op_editor_core::Locale,
     x: f32,
     y: f32,
     width: f32,
 ) -> f32 {
-    let mut y = paint_section_label(
-        cx,
-        theme,
-        translate(locale, "interactions.title", "Interactions"),
-        x,
-        y,
-        width,
+    use crate::widgets::property_panel_inputs::paint_input_with_prefix_focused_state;
+    use op_editor_core::PropertyFocus;
+    let is_zh = matches!(
+        locale,
+        op_editor_core::Locale::ZhCn | op_editor_core::Locale::ZhTw
     );
+    let section_title = if is_zh {
+        "语义与交互"
+    } else {
+        "Semantics & Interactions"
+    };
+    let mut y = paint_section_label(cx, theme, section_title, x, y, width);
     let row_w = width - PAD_X * 2.0;
+    let half_w = (row_w - 8.0) / 2.0;
     let row_rect = |y: f32| Rect {
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(row_w, INPUT_HEIGHT),
     };
-    if let Some(screen) = &interactions.screen {
-        paint_plain_row(
-            cx,
-            theme,
-            row_rect(y),
-            &format!(
-                "{}: {}",
-                translate(locale, "interactions.screen", "Screen"),
-                screen
-            ),
-        );
-        y += INPUT_HEIGHT + 6.0;
-    }
     match interactions.on_tap.len() {
         0 => {
             paint_dropdown(
@@ -281,6 +325,67 @@ pub fn paint_interactions_section(
             y += INPUT_HEIGHT + 6.0;
         }
     }
+    if let Some(screen) = &interactions.screen {
+        paint_input_with_prefix_focused_state(
+            cx,
+            theme,
+            row_rect(y),
+            translate(locale, "interactions.screen", "Screen"),
+            edit.value_for(PropertyFocus::ScreenPath, screen),
+            edit.focus == Some(PropertyFocus::ScreenPath),
+            edit.caret_at(PropertyFocus::ScreenPath),
+            edit.select_all_at(PropertyFocus::ScreenPath),
+            edit.input_at(PropertyFocus::ScreenPath),
+            edit.now_ms,
+        );
+        y += INPUT_HEIGHT + 6.0;
+    }
+    // Role + A11y Label
+    paint_input_with_prefix_focused_state(
+        cx,
+        theme,
+        Rect {
+            origin: Point2D::new(x + PAD_X, y),
+            size: Point2D::new(half_w, INPUT_HEIGHT),
+        },
+        if is_zh { "角色" } else { "Role" },
+        edit.value_for(PropertyFocus::NodeRole, &snapshot.role),
+        edit.focus == Some(PropertyFocus::NodeRole),
+        edit.caret_at(PropertyFocus::NodeRole),
+        edit.select_all_at(PropertyFocus::NodeRole),
+        edit.input_at(PropertyFocus::NodeRole),
+        edit.now_ms,
+    );
+    paint_input_with_prefix_focused_state(
+        cx,
+        theme,
+        Rect {
+            origin: Point2D::new(x + PAD_X + half_w + 8.0, y),
+            size: Point2D::new(half_w, INPUT_HEIGHT),
+        },
+        "A11y",
+        edit.value_for(PropertyFocus::NodeA11yLabel, &snapshot.a11y_label),
+        edit.focus == Some(PropertyFocus::NodeA11yLabel),
+        edit.caret_at(PropertyFocus::NodeA11yLabel),
+        edit.select_all_at(PropertyFocus::NodeA11yLabel),
+        edit.input_at(PropertyFocus::NodeA11yLabel),
+        edit.now_ms,
+    );
+    y += INPUT_HEIGHT + 6.0;
+    // Design Note / Explain
+    paint_input_with_prefix_focused_state(
+        cx,
+        theme,
+        row_rect(y),
+        if is_zh { "注释" } else { "Note" },
+        edit.value_for(PropertyFocus::NodeExplain, &snapshot.explain),
+        edit.focus == Some(PropertyFocus::NodeExplain),
+        edit.caret_at(PropertyFocus::NodeExplain),
+        edit.select_all_at(PropertyFocus::NodeExplain),
+        edit.input_at(PropertyFocus::NodeExplain),
+        edit.now_ms,
+    );
+    y += INPUT_HEIGHT + 6.0;
     y += 6.0;
     paint_section_divider(cx, theme, x, y, width);
     y + SECTION_GAP

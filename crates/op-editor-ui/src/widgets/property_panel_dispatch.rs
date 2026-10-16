@@ -17,9 +17,8 @@
 //!   6. [`apply_property_action`] + the host's own `HostOwned` match,
 //!   7. `finish_instance_write` / history push / `mark_dirty`.
 
-use op_editor_core::{EditorState, NodeId};
+use op_editor_core::EditorState;
 
-use crate::widgets::property_panel_action::CompositingTarget;
 use crate::widgets::property_panel_layout_ops as layout_ops;
 use crate::widgets::PropertyPanelAction;
 
@@ -27,9 +26,13 @@ use crate::widgets::PropertyPanelAction;
 // font / colour resolution helpers live in a sibling module (800-line
 // cap); re-exported so both hosts keep one `property_panel_dispatch::`
 // entry point.
-use crate::widgets::property_panel_dispatch_support::font_picker_family_at;
 pub use crate::widgets::property_panel_dispatch_support::{
-    apply_codegen_action, color_target, color_variable_name_at, focus_effect_param, CodegenFollowUp,
+    apply_codegen_action, apply_instance_lifecycle_action, color_target, color_variable_name_at,
+    compositing_picker_target, focus_effect_param, updates_document, CodegenFollowUp,
+    InstanceLifecycleOutcome,
+};
+use crate::widgets::property_panel_dispatch_support::{
+    apply_node_text_and_interaction_action, font_picker_family_at,
 };
 
 /// Platform work the shared dispatcher cannot do itself.
@@ -45,6 +48,8 @@ pub enum PropertyActionFollowUp {
     /// web host drains its own permission flow after the press and
     /// ignores it.
     EnsureSystemFontsLoaded,
+    /// Copy the selected node's text content to the platform clipboard.
+    CopyTextContent,
 }
 
 /// What [`apply_property_action`] did with an action.
@@ -58,20 +63,6 @@ pub enum PropertyActionOutcome {
     HostOwned,
 }
 
-/// Result of [`apply_instance_lifecycle_action`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum InstanceLifecycleOutcome {
-    /// Not an instance-lifecycle action — continue the normal dispatch.
-    Ignored,
-    /// Handled: the host refits the viewport when `page_switched`,
-    /// applies `select` (in that order — `zoom_to_fit` reads the canvas
-    /// region, which the selection can widen), marks dirty and returns.
-    Handled {
-        page_switched: bool,
-        select: Option<NodeId>,
-    },
-}
-
 /// Host-owned state the shared arms need to touch. Built inline at the
 /// call site so the borrows stay disjoint from `&mut EditorState`.
 pub struct PropertyActionContext<'a> {
@@ -83,107 +74,7 @@ pub struct PropertyActionContext<'a> {
     pub effect_radius_drag: &'a mut Option<usize>,
 }
 
-/// Does this action write the document through a lightweight core
-/// mutator that doesn't capture history itself? Those need the host's
-/// snapshot-and-compare choke point so an instance redirect finishes
-/// before equality is tested and a same-value selection never creates
-/// an empty undo entry.
-pub fn updates_document(action: &PropertyPanelAction) -> bool {
-    matches!(
-        action,
-        PropertyPanelAction::SetNodeBlendMode(_)
-            | PropertyPanelAction::SetNodeMaskType(_)
-            | PropertyPanelAction::SetFillBlendMode { .. }
-            | PropertyPanelAction::AddFill
-            | PropertyPanelAction::RemoveFill(_)
-            | PropertyPanelAction::SetFillType { .. }
-            | PropertyPanelAction::SetImageFillMode(_)
-            | PropertyPanelAction::ClearPageBackground
-    )
-}
-
 pub use crate::widgets::property_panel_collab::collab_gate_action;
-
-/// Translate the widget-facade compositing target into the core one.
-pub fn compositing_picker_target(
-    target: CompositingTarget,
-) -> op_editor_core::CompositingPickerTarget {
-    match target {
-        CompositingTarget::NodeBlend => op_editor_core::CompositingPickerTarget::NodeBlend,
-        CompositingTarget::NodeMask => op_editor_core::CompositingPickerTarget::NodeMask,
-        CompositingTarget::FillBlend(index) => {
-            op_editor_core::CompositingPickerTarget::FillBlend(index)
-        }
-    }
-}
-
-/// Instance / component lifecycle actions. They act on the REAL Ref
-/// node, so they dispatch BEFORE the instance-write redirect swaps in
-/// the merged display node.
-pub fn apply_instance_lifecycle_action(
-    state: &mut EditorState,
-    action: &PropertyPanelAction,
-) -> InstanceLifecycleOutcome {
-    use PropertyPanelAction as A;
-    match action {
-        A::GoToComponent => {
-            let mut page_switched = false;
-            let mut select = None;
-            if let Some(jian_ops_schema::node::PenNode::Ref(reference)) = state.selected_node() {
-                let master = NodeId::new(reference.target.clone());
-                // Cross-page master: selection resolves against the
-                // ACTIVE page only, so switch pages first.
-                if let Some(pages) = state.doc.pages.as_ref() {
-                    let target_page = pages.iter().position(|page| {
-                        op_editor_core::walkers::find_node(&page.children, &master).is_some()
-                    });
-                    if let Some(index) = target_page {
-                        if index != state.ui.active_page_index {
-                            let _ = state.set_active_page(index);
-                            page_switched = true;
-                        }
-                    }
-                }
-                select = Some(master);
-            }
-            InstanceLifecycleOutcome::Handled {
-                page_switched,
-                select,
-            }
-        }
-        A::DetachInstance | A::DetachComponent => {
-            let id = state.selection.anchor.clone();
-            if id.is_real() {
-                let _ = state.detach_component(&id);
-            }
-            InstanceLifecycleOutcome::Handled {
-                page_switched: false,
-                select: None,
-            }
-        }
-        A::ToggleInstanceComponentPicker => {
-            let anchor = state.selection.anchor.as_str().to_string();
-            state.editor_ui.toggle_instance_component_picker(&anchor);
-            state.editor_ui.close_fill_type_picker();
-            state.editor_ui.close_compositing_picker();
-            InstanceLifecycleOutcome::Handled {
-                page_switched: false,
-                select: None,
-            }
-        }
-        A::SetInstanceComponent(component_id) => {
-            let instance_id = state.selection.anchor.clone();
-            let component_id = NodeId::new(component_id.clone());
-            let _ = state.set_instance_component(&instance_id, &component_id);
-            state.editor_ui.close_instance_component_picker();
-            InstanceLifecycleOutcome::Handled {
-                page_switched: false,
-                select: None,
-            }
-        }
-        _ => InstanceLifecycleOutcome::Ignored,
-    }
-}
 
 /// Apply the editor-state half of a PropertyPanel action.
 pub fn apply_property_action(
@@ -202,8 +93,40 @@ pub fn apply_property_action(
         | A::DetachComponent
         | A::ToggleInstanceComponentPicker
         | A::SetInstanceComponent(_) => Handled,
+        // Set the active PropertyPanel tab without allowing direct action
+        // dispatch to reopen Code in a Compact layout. Returns whether the stored
+        // value changed.
         A::SetPropertyTab(tab) => {
-            state.editor_ui.set_property_tab(*tab);
+            if state.editor_ui.set_property_tab(*tab)
+                && matches!(
+                    state.editor_ui.effective_property_tab(),
+                    op_editor_core::PropertyTab::Code
+                )
+            {
+                let target_ids: Vec<String> = if !state.selection.set.is_empty() {
+                    state
+                        .selection
+                        .set
+                        .iter()
+                        .map(|id| id.as_str().to_string())
+                        .collect()
+                } else {
+                    state
+                        .active_children()
+                        .iter()
+                        .map(|n| op_editor_core::PenNodeExt::id_str(n).to_string())
+                        .collect()
+                };
+                let fw = state.codegen.framework;
+                state.codegen.code = op_codegen::generate_for_format(
+                    &state.doc,
+                    state.active_children(),
+                    &target_ids,
+                    fw.as_wire(),
+                );
+                state.codegen.selection_snapshot = target_ids;
+                state.codegen.phase = op_editor_core::codegen::CodegenPhase::Complete;
+            }
             Handled
         }
         A::ToggleCompositingPicker(target) => {
@@ -710,77 +633,17 @@ pub fn apply_property_action(
                 Some(op_editor_core::editor_ui_state::FileAction::PickFillImage);
             Handled
         }
-        A::ToggleInteractionMenu => {
-            let ui = &mut state.editor_ui;
-            ui.toggle_interaction_menu();
-            ui.close_fill_type_picker();
-            ui.image_fill_popover_open = false;
-            ui.close_font_picker();
-            ui.font_weight_picker_open = false;
-            ui.export_scale_picker_open = false;
-            ui.export_format_picker_open = false;
-            ui.close_color_variable_picker();
-            Handled
-        }
-        A::SetInteractionNavigate { path } => {
-            let node_id = state.selection.anchor.clone();
-            if node_id.is_real() {
-                state.commit_history();
-                let patch_json =
-                    crate::widgets::property_panel_interactions::navigate_patch_json(path.as_str());
-                let _ = state.apply(op_editor_core::EditorCommand::PatchNodeData {
-                    node_id,
-                    patch_json,
-                    page_id: None,
-                });
-            }
-            state.editor_ui.close_interaction_menu();
-            Handled
-        }
-        A::SetInteractionPop => {
-            let node_id = state.selection.anchor.clone();
-            if node_id.is_real() {
-                state.commit_history();
-                let _ = state.apply(op_editor_core::EditorCommand::PatchNodeData {
-                    node_id,
-                    patch_json: crate::widgets::property_panel_interactions::POP_PATCH_JSON
-                        .to_string(),
-                    page_id: None,
-                });
-            }
-            state.editor_ui.close_interaction_menu();
-            Handled
-        }
-        A::RemoveInteraction => {
-            let node_id = state.selection.anchor.clone();
-            if node_id.is_real() {
-                // Clear only `onTap` — if the node's `events` block
-                // carries no other handler afterward, drop the whole
-                // field (no `"events":{}` shell left behind); else
-                // re-serialize the trimmed block so any sibling handler
-                // (`onChange`, …) survives untouched.
-                use op_editor_core::pen_node_ext::PenNodeExt;
-                let mut handlers = state
-                    .selected_node()
-                    .and_then(|n| n.events().cloned())
-                    .unwrap_or_default();
-                handlers.on_tap = None;
-                let patch_json = if handlers == jian_ops_schema::events::EventHandlers::default() {
-                    r#"{"events":null}"#.to_string()
-                } else {
-                    let value = serde_json::to_value(&handlers).unwrap_or(serde_json::Value::Null);
-                    format!(r#"{{"events":{value}}}"#)
-                };
-                state.commit_history();
-                let _ = state.apply(op_editor_core::EditorCommand::PatchNodeData {
-                    node_id,
-                    patch_json,
-                    page_id: None,
-                });
-            }
-            state.editor_ui.close_interaction_menu();
-            Handled
-        }
+        A::ToggleInteractionMenu
+        | A::SetInteractionNavigate { .. }
+        | A::SetInteractionPop
+        | A::RemoveInteraction
+        | A::CopyTextContent
+        | A::ToggleTextBold
+        | A::ToggleTextItalic
+        | A::ToggleTextUnderline
+        | A::ToggleTextStrikethrough
+        | A::ToggleNodeVisible
+        | A::ToggleNodeLocked => apply_node_text_and_interaction_action(state, action),
         // Image Search / Generate popovers ride host-owned selection
         // drag + input-blur glue.
         A::ToggleImageSearchPopover
