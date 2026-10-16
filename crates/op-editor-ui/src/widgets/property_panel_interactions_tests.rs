@@ -172,55 +172,33 @@ fn pop_patch_json_matches_wire_screen_navigation_shape() {
     assert_eq!(POP_PATCH_JSON, r#"{"events":{"onTap":[{"pop":null}]}}"#);
 }
 
-// ── Section height + action-rect row math stay aligned ──────────────
+// ── Section height + input-rect row math stay aligned ──────────────
 
 #[test]
-fn empty_state_has_one_clickable_row() {
+fn empty_state_has_no_dropdown_action_and_four_inputs() {
     let summary = InteractionSummary::default();
     let mut out = Vec::new();
     push_interaction_action_rects(&mut out, &summary, 0.0, 0.0, 280.0);
-    assert_eq!(out.len(), 1);
-    assert!(matches!(
-        out[0].0,
-        PropertyPanelAction::ToggleInteractionMenu
-    ));
+    assert!(out.is_empty());
+
+    let mut inputs = Vec::new();
+    push_interaction_input_rects(&mut inputs, &summary, 0.0, 0.0, 280.0);
+    assert_eq!(inputs.len(), 4);
+    assert_eq!(inputs[0].0, op_editor_core::PropertyFocus::NodeRole);
+    assert_eq!(
+        inputs[1].0,
+        op_editor_core::PropertyFocus::NodeInteractionDesc
+    );
+    assert_eq!(inputs[2].0, op_editor_core::PropertyFocus::NodeA11yLabel);
+    assert_eq!(inputs[3].0, op_editor_core::PropertyFocus::NodeExplain);
+    assert_eq!(inputs[0].1.size.y, INPUT_HEIGHT);
+    assert_eq!(inputs[1].1.size.y, TEXTAREA_HEIGHT);
+    assert_eq!(inputs[2].1.size.y, TEXTAREA_HEIGHT);
+    assert_eq!(inputs[3].1.size.y, TEXTAREA_HEIGHT);
 }
 
 #[test]
-fn single_action_has_one_clickable_toggle_row() {
-    let summary = InteractionSummary {
-        screen: None,
-        on_tap: vec![TapActionSummary::Pop],
-    };
-    let mut out = Vec::new();
-    push_interaction_action_rects(&mut out, &summary, 0.0, 0.0, 280.0);
-    assert_eq!(out.len(), 1);
-    assert!(matches!(
-        out[0].0,
-        PropertyPanelAction::ToggleInteractionMenu
-    ));
-}
-
-#[test]
-fn multi_action_has_only_a_remove_all_row() {
-    let summary = InteractionSummary {
-        screen: None,
-        on_tap: vec![
-            TapActionSummary::Pop,
-            TapActionSummary::Navigate {
-                verb: NavigateVerb::Replace,
-                path: "/a".to_string(),
-            },
-        ],
-    };
-    let mut out = Vec::new();
-    push_interaction_action_rects(&mut out, &summary, 0.0, 0.0, 280.0);
-    assert_eq!(out.len(), 1);
-    assert!(matches!(out[0].0, PropertyPanelAction::RemoveInteraction));
-}
-
-#[test]
-fn screen_row_adds_height_but_no_click_rect() {
+fn screen_row_adds_height_and_screen_input_rect() {
     let with_screen = InteractionSummary {
         screen: Some("/home".to_string()),
         on_tap: Vec::new(),
@@ -229,11 +207,10 @@ fn screen_row_adds_height_but_no_click_rect() {
     assert!(
         interactions_section_height(&with_screen) > interactions_section_height(&without_screen)
     );
-    let mut out = Vec::new();
-    push_interaction_action_rects(&mut out, &with_screen, 0.0, 0.0, 280.0);
-    // Still exactly one clickable row (the empty-state Add row) — the
-    // Screen row contributes height only.
-    assert_eq!(out.len(), 1);
+    let mut inputs = Vec::new();
+    push_interaction_input_rects(&mut inputs, &with_screen, 0.0, 0.0, 280.0);
+    assert_eq!(inputs.len(), 5);
+    assert_eq!(inputs[1].0, op_editor_core::PropertyFocus::ScreenPath);
 }
 
 // ── Navigate/Back/Remove popover rows ────────────────────────────────

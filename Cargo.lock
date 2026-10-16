@@ -1419,6 +1419,7 @@ version = "0.8.5"
 dependencies = [
  "base64",
  "jian-ops-schema",
+ "op-design-lint",
  "op-editor-core",
  "op-figma",
  "op-html",

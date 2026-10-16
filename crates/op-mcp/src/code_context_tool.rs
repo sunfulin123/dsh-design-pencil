@@ -166,26 +166,27 @@ pub fn build_a11y_intent_node(node: &PenNode) -> Value {
     if let Some(name) = base.name.as_deref().filter(|s| !s.is_empty()) {
         obj.insert("name".into(), json!(name));
     }
-    let role = base.role.clone().or_else(|| {
-        sem.and_then(|s| s.role)
-            .and_then(|r| serde_json::to_value(r).ok())
-            .and_then(|v| v.as_str().map(str::to_string))
-    });
-    if let Some(role) = role.filter(|s| !s.is_empty()) {
+    let role = op_editor_core::command_node_attrs::effective_node_role(node, false);
+    if !role.is_empty() {
         obj.insert("role".into(), json!(role));
     }
-    let explain = base
-        .explain
-        .clone()
-        .or_else(|| sem.and_then(|s| s.ai_description.clone()));
-    if let Some(explain) = explain.filter(|s| !s.is_empty()) {
+    let explain = op_editor_core::command_node_attrs::effective_node_explain(node, false);
+    if !explain.is_empty() {
         obj.insert("explain".into(), json!(explain));
     }
-    if let Some(label) = sem
-        .and_then(|s| s.label.as_deref())
-        .filter(|s| !s.is_empty())
-    {
-        obj.insert("ariaLabel".into(), json!(label));
+    let aria_label = op_editor_core::command_node_attrs::effective_node_a11y_label(node, false);
+    if !aria_label.is_empty() {
+        obj.insert("ariaLabel".into(), json!(aria_label));
+    }
+    let interaction_desc =
+        op_editor_core::command_node_attrs::effective_node_interaction_desc(node, false);
+    if !interaction_desc.is_empty() {
+        obj.insert("interactionDescription".into(), json!(interaction_desc));
+    }
+    let component_desc =
+        op_editor_core::command_node_attrs::effective_component_description(node, false);
+    if !component_desc.is_empty() {
+        obj.insert("componentDescription".into(), json!(component_desc));
     }
     if let Some(hint) = sem
         .and_then(|s| s.hint.as_deref())

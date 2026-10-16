@@ -25,8 +25,8 @@
 use crate::theme::Theme;
 use crate::widgets::property_panel::PropertyPanelAction;
 use crate::widgets::property_panel_inputs::{
-    paint_dropdown, paint_section_divider, paint_section_label, INPUT_HEIGHT, INPUT_RADIUS, PAD_X,
-    SECTION_GAP, SECTION_HEADER_HEIGHT,
+    paint_section_divider, paint_section_label, INPUT_HEIGHT, INPUT_RADIUS, PAD_X, SECTION_GAP,
+    SECTION_HEADER_HEIGHT,
 };
 use crate::widgets::PaintCx;
 use crate::{Point2D, Rect, TextLayout};
@@ -46,6 +46,7 @@ pub enum NavigateVerb {
 }
 
 impl NavigateVerb {
+    #[allow(dead_code)]
     fn as_str(self) -> &'static str {
         match self {
             NavigateVerb::Push => "push",
@@ -160,30 +161,26 @@ pub fn document_screen_paths(state: &op_editor_core::EditorState) -> Vec<String>
 
 // ── Section paint + geometry ────────────────────────────────────────
 
-/// Number of rows the section paints: an optional Screen row, plus
-/// either one clickable row (empty / single action) or N read-only
-/// rows + a trailing "Remove all" row (multiple actions). Shared by
-/// the height calc + the action-rect walker so they can't drift.
-fn interaction_row_count(interactions: &InteractionSummary) -> usize {
-    let screen_row = usize::from(interactions.screen.is_some());
-    let tap_rows = match interactions.on_tap.len() {
-        0 | 1 => 1,
-        n => n + 1,
-    };
-    // +3 rows for Role, A11y Label, and Design Note (Explain)
-    screen_row + tap_rows + 3
-}
+use crate::widgets::property_panel_inputs::TEXTAREA_HEIGHT;
 
-/// Total vertical space the Interactions & Semantics section consumes. Mirrors
-/// the `n * (INPUT_HEIGHT + 6.0) + 6.0 + SECTION_GAP` row-stacking
-/// math `paint_interactions_section` walks.
+/// Total vertical space the Interactions & Semantics section consumes:
+/// - 1 single-line Role input (`INPUT_HEIGHT`)
+/// - optional Screen route input (`INPUT_HEIGHT`)
+/// - 3 multi-line Textarea boxes (`TEXTAREA_HEIGHT` each): Interaction Action,
+///   Accessibility (`无障碍`), and Design Note (`注释`).
 pub fn interactions_section_height(interactions: &InteractionSummary) -> f32 {
-    let n = interaction_row_count(interactions) as f32;
-    SECTION_HEADER_HEIGHT + n * (INPUT_HEIGHT + 6.0) + 6.0 + SECTION_GAP
+    let single_rows = 1.0 + f32::from(u8::from(interactions.screen.is_some()));
+    let textarea_rows = 3.0;
+    SECTION_HEADER_HEIGHT
+        + single_rows * (INPUT_HEIGHT + 6.0)
+        + textarea_rows * (TEXTAREA_HEIGHT + 6.0)
+        + 6.0
+        + SECTION_GAP
 }
 
 /// Emit the editable input rects for the Semantics & Interactions section
-/// (Role, A11y Label, Explain Note, and optional Screen route).
+/// (Role single-line input, optional Screen route, and 3 Textarea boxes:
+/// Interaction Action, Accessibility Label, and Design Note).
 pub fn push_interaction_input_rects(
     rects: &mut Vec<(op_editor_core::PropertyFocus, Rect)>,
     interactions: &InteractionSummary,
@@ -193,12 +190,16 @@ pub fn push_interaction_input_rects(
 ) {
     use op_editor_core::PropertyFocus;
     let usable_w = width - PAD_X * 2.0;
-    let half_w = (usable_w - 8.0) / 2.0;
-    let tap_rows = match interactions.on_tap.len() {
-        0 | 1 => 1,
-        n => n + 1,
-    };
-    let mut row_y = y + SECTION_HEADER_HEIGHT + (INPUT_HEIGHT + 6.0) * tap_rows as f32;
+    let mut row_y = y + SECTION_HEADER_HEIGHT;
+    // Row 1: Semantic Role (single-line input)
+    rects.push((
+        PropertyFocus::NodeRole,
+        Rect {
+            origin: Point2D::new(x + PAD_X, row_y),
+            size: Point2D::new(usable_w, INPUT_HEIGHT),
+        },
+    ));
+    row_y += INPUT_HEIGHT + 6.0;
     if interactions.screen.is_some() {
         rects.push((
             PropertyFocus::ScreenPath,
@@ -209,57 +210,44 @@ pub fn push_interaction_input_rects(
         ));
         row_y += INPUT_HEIGHT + 6.0;
     }
-    // Role (left half) + A11y Label (right half)
+    // Textarea 1: Interaction Action description
     rects.push((
-        PropertyFocus::NodeRole,
+        PropertyFocus::NodeInteractionDesc,
         Rect {
             origin: Point2D::new(x + PAD_X, row_y),
-            size: Point2D::new(half_w, INPUT_HEIGHT),
+            size: Point2D::new(usable_w, TEXTAREA_HEIGHT),
         },
     ));
+    row_y += TEXTAREA_HEIGHT + 6.0;
+    // Textarea 2: Accessibility Label / aria-label
     rects.push((
         PropertyFocus::NodeA11yLabel,
         Rect {
-            origin: Point2D::new(x + PAD_X + half_w + 8.0, row_y),
-            size: Point2D::new(half_w, INPUT_HEIGHT),
+            origin: Point2D::new(x + PAD_X, row_y),
+            size: Point2D::new(usable_w, TEXTAREA_HEIGHT),
         },
     ));
-    row_y += INPUT_HEIGHT + 6.0;
-    // Design Note / Explain (full width)
+    row_y += TEXTAREA_HEIGHT + 6.0;
+    // Textarea 3: Design Note / Explain
     rects.push((
         PropertyFocus::NodeExplain,
         Rect {
             origin: Point2D::new(x + PAD_X, row_y),
-            size: Point2D::new(usable_w, INPUT_HEIGHT),
+            size: Point2D::new(usable_w, TEXTAREA_HEIGHT),
         },
     ));
 }
 
-/// Emit the section's clickable-row rects: the empty-state / single
-/// tap row (`ToggleInteractionMenu`), or a multi-action row's
-/// trailing `RemoveInteraction` row.
+/// Legacy action-rect hook kept for layout-walker compatibility. The
+/// interaction field is now a descriptive Textarea (`NodeInteractionDesc`)
+/// rather than a dropdown menu.
 pub fn push_interaction_action_rects(
-    out: &mut Vec<(PropertyPanelAction, Rect)>,
-    interactions: &InteractionSummary,
-    x: f32,
-    y: f32,
-    width: f32,
+    _out: &mut Vec<(PropertyPanelAction, Rect)>,
+    _interactions: &InteractionSummary,
+    _x: f32,
+    _y: f32,
+    _width: f32,
 ) {
-    let usable_w = width - PAD_X * 2.0;
-    let mut row_y = y + SECTION_HEADER_HEIGHT;
-    let row_rect = |row_y: f32| Rect {
-        origin: Point2D::new(x + PAD_X, row_y),
-        size: Point2D::new(usable_w, INPUT_HEIGHT),
-    };
-    match interactions.on_tap.len() {
-        0 | 1 => {
-            out.push((PropertyPanelAction::ToggleInteractionMenu, row_rect(row_y)));
-        }
-        n => {
-            row_y += (INPUT_HEIGHT + 6.0) * n as f32;
-            out.push((PropertyPanelAction::RemoveInteraction, row_rect(row_y)));
-        }
-    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -274,7 +262,10 @@ pub fn paint_interactions_section(
     y: f32,
     width: f32,
 ) -> f32 {
-    use crate::widgets::property_panel_inputs::paint_input_with_prefix_focused_state;
+    use crate::widgets::property_panel_inputs::{
+        paint_input_with_prefix_and_placeholder, paint_input_with_prefix_focused_state,
+        paint_textarea_with_label,
+    };
     use op_editor_core::PropertyFocus;
     let is_zh = matches!(
         locale,
@@ -287,44 +278,35 @@ pub fn paint_interactions_section(
     };
     let mut y = paint_section_label(cx, theme, section_title, x, y, width);
     let row_w = width - PAD_X * 2.0;
-    let half_w = (row_w - 8.0) / 2.0;
     let row_rect = |y: f32| Rect {
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(row_w, INPUT_HEIGHT),
     };
-    match interactions.on_tap.len() {
-        0 => {
-            paint_dropdown(
-                cx,
-                theme,
-                row_rect(y),
-                translate(locale, "interactions.addInteraction", "+ Add interaction"),
-            );
-            y += INPUT_HEIGHT + 6.0;
-        }
-        1 => {
-            paint_dropdown(
-                cx,
-                theme,
-                row_rect(y),
-                &tap_action_label(locale, &interactions.on_tap[0]),
-            );
-            y += INPUT_HEIGHT + 6.0;
-        }
-        _ => {
-            for action in &interactions.on_tap {
-                paint_plain_row(cx, theme, row_rect(y), &tap_action_label(locale, action));
-                y += INPUT_HEIGHT + 6.0;
-            }
-            paint_dropdown(
-                cx,
-                theme,
-                row_rect(y),
-                translate(locale, "interactions.removeAll", "Remove all"),
-            );
-            y += INPUT_HEIGHT + 6.0;
-        }
-    }
+    let textarea_rect = |y: f32| Rect {
+        origin: Point2D::new(x + PAD_X, y),
+        size: Point2D::new(row_w, TEXTAREA_HEIGHT),
+    };
+
+    // Row 1: Semantic Role (single-line input, as requested: "除了role")
+    paint_input_with_prefix_and_placeholder(
+        cx,
+        theme,
+        row_rect(y),
+        if is_zh { "角色" } else { "Role" },
+        edit.value_for(PropertyFocus::NodeRole, &snapshot.role),
+        if is_zh {
+            "如 button / navbar / card"
+        } else {
+            "e.g. button, navbar"
+        },
+        edit.focus == Some(PropertyFocus::NodeRole),
+        edit.caret_at(PropertyFocus::NodeRole),
+        edit.select_all_at(PropertyFocus::NodeRole),
+        edit.input_at(PropertyFocus::NodeRole),
+        edit.now_ms,
+    );
+    y += INPUT_HEIGHT + 6.0;
+
     if let Some(screen) = &interactions.screen {
         paint_input_with_prefix_focused_state(
             cx,
@@ -340,90 +322,76 @@ pub fn paint_interactions_section(
         );
         y += INPUT_HEIGHT + 6.0;
     }
-    // Role + A11y Label
-    paint_input_with_prefix_focused_state(
+
+    // Textarea 1: Interaction Action description (no longer a dropdown)
+    paint_textarea_with_label(
         cx,
         theme,
-        Rect {
-            origin: Point2D::new(x + PAD_X, y),
-            size: Point2D::new(half_w, INPUT_HEIGHT),
+        textarea_rect(y),
+        if is_zh { "交互动作" } else { "Interaction" },
+        edit.value_for(
+            PropertyFocus::NodeInteractionDesc,
+            &snapshot.interaction_desc,
+        ),
+        if is_zh {
+            "描述当前动作，如：点击进入详情、返回上一页、跳转新页面"
+        } else {
+            "Describe action, e.g. open details, go back, navigate"
         },
-        if is_zh { "角色" } else { "Role" },
-        edit.value_for(PropertyFocus::NodeRole, &snapshot.role),
-        edit.focus == Some(PropertyFocus::NodeRole),
-        edit.caret_at(PropertyFocus::NodeRole),
-        edit.select_all_at(PropertyFocus::NodeRole),
-        edit.input_at(PropertyFocus::NodeRole),
+        edit.focus == Some(PropertyFocus::NodeInteractionDesc),
+        edit.caret_at(PropertyFocus::NodeInteractionDesc),
+        edit.select_all_at(PropertyFocus::NodeInteractionDesc),
+        edit.input_at(PropertyFocus::NodeInteractionDesc),
         edit.now_ms,
     );
-    paint_input_with_prefix_focused_state(
+    y += TEXTAREA_HEIGHT + 6.0;
+
+    // Textarea 2: Accessibility Label / aria-label
+    paint_textarea_with_label(
         cx,
         theme,
-        Rect {
-            origin: Point2D::new(x + PAD_X + half_w + 8.0, y),
-            size: Point2D::new(half_w, INPUT_HEIGHT),
+        textarea_rect(y),
+        if is_zh {
+            "无障碍说明 (aria-label)"
+        } else {
+            "Accessibility (aria-label)"
         },
-        "A11y",
         edit.value_for(PropertyFocus::NodeA11yLabel, &snapshot.a11y_label),
+        if is_zh {
+            "供读屏器与 AI 识别的元素名称与无障碍语义"
+        } else {
+            "Screen reader & AI accessible label"
+        },
         edit.focus == Some(PropertyFocus::NodeA11yLabel),
         edit.caret_at(PropertyFocus::NodeA11yLabel),
         edit.select_all_at(PropertyFocus::NodeA11yLabel),
         edit.input_at(PropertyFocus::NodeA11yLabel),
         edit.now_ms,
     );
-    y += INPUT_HEIGHT + 6.0;
-    // Design Note / Explain
-    paint_input_with_prefix_focused_state(
+    y += TEXTAREA_HEIGHT + 6.0;
+
+    // Textarea 3: Design Note / Explain
+    paint_textarea_with_label(
         cx,
         theme,
-        row_rect(y),
-        if is_zh { "注释" } else { "Note" },
+        textarea_rect(y),
+        if is_zh { "设计注释" } else { "Design Note" },
         edit.value_for(PropertyFocus::NodeExplain, &snapshot.explain),
+        if is_zh {
+            "补充业务意图、布局约束或代码还原说明"
+        } else {
+            "Intent, layout constraints, or codegen notes"
+        },
         edit.focus == Some(PropertyFocus::NodeExplain),
         edit.caret_at(PropertyFocus::NodeExplain),
         edit.select_all_at(PropertyFocus::NodeExplain),
         edit.input_at(PropertyFocus::NodeExplain),
         edit.now_ms,
     );
-    y += INPUT_HEIGHT + 6.0;
+    y += TEXTAREA_HEIGHT + 6.0;
     y += 6.0;
     paint_section_divider(cx, theme, x, y, width);
     y + SECTION_GAP
-}
-
-/// Human-readable row label for one authored `onTap` action, e.g.
-/// `Tap → Navigate (replace) /profile` / `Tap → Back (pop)` /
-/// `Tap → set` (unknown key, read-only).
-fn tap_action_label(locale: op_editor_core::Locale, action: &TapActionSummary) -> String {
-    let prefix = translate(locale, "interactions.tapPrefix", "Tap →");
-    match action {
-        TapActionSummary::Navigate { verb, path } => format!(
-            "{prefix} {} ({}) {path}",
-            translate(locale, "interactions.navigate", "Navigate"),
-            verb.as_str(),
-        ),
-        TapActionSummary::Pop => {
-            format!(
-                "{prefix} {}",
-                translate(locale, "interactions.back", "Back (pop)")
-            )
-        }
-        TapActionSummary::Other(key) => format!("{prefix} {key}"),
-    }
-}
-
-fn paint_plain_row(cx: &mut PaintCx<'_>, theme: &Theme, rect: Rect, text: &str) {
-    let layout = TextLayout::single_run(
-        text,
-        "system-ui",
-        12.0,
-        (theme.muted_foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
-    cx.backend.draw_text(
-        &layout,
-        Point2D::new(rect.origin.x + 2.0, rect.origin.y + 19.0),
-    );
 }
 
 // ── Navigate/Back/Remove edit menu ──────────────────────────────────

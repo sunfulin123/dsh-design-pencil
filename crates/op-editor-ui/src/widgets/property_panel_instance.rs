@@ -159,6 +159,18 @@ pub(crate) fn option_index_at(
         .map(|_| index)
 }
 
+pub fn component_description_rect(x: f32, y: f32, width: f32, state: ComponentButtonState) -> Rect {
+    use crate::widgets::property_panel_inputs::{
+        COMPONENT_DESC_HEIGHT, CREATE_COMPONENT_PAD_BOTTOM,
+    };
+    let block_h = create_component_block_height(state);
+    let desc_y = y + block_h - CREATE_COMPONENT_PAD_BOTTOM - COMPONENT_DESC_HEIGHT;
+    Rect {
+        origin: Point2D::new(x + PAD_X, desc_y),
+        size: Point2D::new(width - PAD_X * 2.0, COMPONENT_DESC_HEIGHT),
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn paint_component_block(
     cx: &mut PaintCx<'_>,
@@ -167,6 +179,41 @@ pub fn paint_component_block(
     state: ComponentButtonState,
     options: &[InstanceComponentOption],
     current_target: Option<&str>,
+    visible_top: f32,
+    visible_bottom: f32,
+    x: f32,
+    y: f32,
+    width: f32,
+) -> f32 {
+    paint_component_block_with_description(
+        cx,
+        theme,
+        labels,
+        state,
+        options,
+        current_target,
+        None,
+        None,
+        op_editor_core::Locale::ZhCn,
+        visible_top,
+        visible_bottom,
+        x,
+        y,
+        width,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn paint_component_block_with_description(
+    cx: &mut PaintCx<'_>,
+    theme: &Theme,
+    labels: &PropertyLabels,
+    state: ComponentButtonState,
+    options: &[InstanceComponentOption],
+    current_target: Option<&str>,
+    snapshot: Option<&crate::widgets::property_panel::NodeSnapshot>,
+    edit: Option<&crate::widgets::property_panel_sections::EditContext<'_>>,
+    locale: op_editor_core::Locale,
     visible_top: f32,
     visible_bottom: f32,
     x: f32,
@@ -275,6 +322,49 @@ pub fn paint_component_block(
                 }
             }
         }
+    }
+    let desc_rect = component_description_rect(x, y, width, state);
+    if desc_rect.origin.y < visible_bottom && desc_rect.origin.y + desc_rect.size.y > visible_top {
+        let is_zh = matches!(
+            locale,
+            op_editor_core::Locale::ZhCn | op_editor_core::Locale::ZhTw
+        );
+        let fallback_desc = snapshot
+            .map(|s| s.component_description.as_str())
+            .unwrap_or("");
+        let value = edit
+            .map(|e| {
+                e.value_for(
+                    op_editor_core::PropertyFocus::ComponentDescription,
+                    fallback_desc,
+                )
+            })
+            .unwrap_or(fallback_desc);
+        let focused = edit
+            .is_some_and(|e| e.focus == Some(op_editor_core::PropertyFocus::ComponentDescription));
+        crate::widgets::property_panel_inputs::paint_textarea_with_label(
+            cx,
+            theme,
+            desc_rect,
+            if is_zh {
+                "组件说明"
+            } else {
+                "Component Description"
+            },
+            value,
+            if is_zh {
+                "描述该组件的用途、适用场景与可复用参数（供 AI 与团队调用）"
+            } else {
+                "Describe what this component does and how AI can reuse it"
+            },
+            focused,
+            edit.and_then(|e| e.caret_at(op_editor_core::PropertyFocus::ComponentDescription)),
+            edit.is_some_and(|e| {
+                e.select_all_at(op_editor_core::PropertyFocus::ComponentDescription)
+            }),
+            edit.and_then(|e| e.input_at(op_editor_core::PropertyFocus::ComponentDescription)),
+            edit.map_or(0, |e| e.now_ms),
+        );
     }
     y + create_component_block_height(state)
 }

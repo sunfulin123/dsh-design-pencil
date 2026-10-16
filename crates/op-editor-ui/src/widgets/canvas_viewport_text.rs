@@ -21,7 +21,7 @@
 //!   every line except the last (TS `ck.TextAlign.Justify` behaviour);
 //!   gap-free (e.g. CJK) lines are left-aligned.
 
-use crate::layout_scene::{SceneNode, SceneTextAlign, SceneTextRun};
+use crate::layout_scene::{SceneNode, SceneTextAlign, SceneTextRun, SceneTextVerticalAlign};
 use crate::widgets::canvas_text_edit::text_edit_layout;
 use crate::widgets::canvas_viewport::EditCaret;
 use crate::widgets::PaintCx;
@@ -370,13 +370,16 @@ pub(crate) fn paint_text_node(
         }
     }
     if !text.is_empty() {
-        // TS `pen-renderer` draws text at the node's authored top-left
-        // and does not apply `textAlignVertical` during paint. Figma
-        // exports already bake vertical placement into `x/y`; applying
-        // middle/bottom again shifts imported labels away from their
-        // TS positions.
-        // Only authored line boxes opt into shaped fallback metrics.
-        let baseline_offset = if paint_node.line_height > 0.0 {
+        // `textAlignVertical` places the whole text block inside the node
+        // box (`layout.v_offset`). `middle` (the default) additionally
+        // centres each line by its INK rather than by its font ascent /
+        // descent box: Latin metrics put CJK glyphs high in the box and
+        // leave blank space at the bottom. `top` / `bottom` keep the
+        // font-metric baseline. Only authored line boxes opt into shaped
+        // fallback metrics.
+        let baseline_offset = if layout.v_align == SceneTextVerticalAlign::Middle {
+            layout.ink_centered_baseline(0)
+        } else if paint_node.line_height > 0.0 {
             cx.backend.text_first_baseline(&TextBaselineRequest {
                 text: layout.lines.first().map_or("", String::as_str),
                 font_family: family,
@@ -388,7 +391,7 @@ pub(crate) fn paint_text_node(
         } else {
             cx.backend.text_ascent_family(font_size, family, weight)
         };
-        let first_baseline_y = world_rect.origin.y + baseline_offset;
+        let first_baseline_y = world_rect.origin.y + layout.v_offset + baseline_offset;
         let last_line = layout.lines.len().saturating_sub(1);
         for (idx, line) in layout.lines.iter().enumerate() {
             if line.is_empty() {
@@ -425,7 +428,14 @@ pub(crate) fn paint_text_node(
                 } else {
                     0.0
                 };
-            let baseline_y = first_baseline_y + idx as f32 * layout.line_h;
+            let baseline_y = if layout.v_align == SceneTextVerticalAlign::Middle {
+                world_rect.origin.y
+                    + layout.v_offset
+                    + idx as f32 * layout.line_h
+                    + layout.ink_centered_baseline(idx)
+            } else {
+                first_baseline_y + idx as f32 * layout.line_h
+            };
             let mut x = x0;
             for_each_slice_range(
                 &paint_node.text_runs,

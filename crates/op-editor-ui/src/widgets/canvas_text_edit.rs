@@ -13,7 +13,7 @@
 //! viewport transform as a canvas transform); the host converts
 //! screen presses to doc points before calling [`TextEditLayout::offset_at_point`].
 
-use crate::layout_scene::{SceneNode, SceneTextAlign};
+use crate::layout_scene::{SceneNode, SceneTextAlign, SceneTextVerticalAlign};
 use crate::{Point2D, Rect, RenderBackend};
 use jian_core::text_input::prev_char_boundary;
 
@@ -36,9 +36,64 @@ pub struct TextEditLayout {
     pub letter_spacing: f32,
     /// Width the per-line alignment distributes against.
     pub align_width: f32,
-    /// Node bounds origin (doc space) — the first line's top-left.
+    /// Doc-space top-left of the first line box. Already includes
+    /// [`Self::v_offset`], so caret / selection / hit-testing follow the
+    /// painted glyphs when the node box is taller than the text block.
     pub origin: Point2D,
     pub text_align: SceneTextAlign,
+    /// Vertical alignment applied to the text block inside the node box.
+    pub v_align: SceneTextVerticalAlign,
+    /// Offset of the text block from the node box top (`textAlignVertical`).
+    pub v_offset: f32,
+}
+
+/// Ink centre of a CJK / full-width line, as a fraction of the font size
+/// above the alphabetic baseline. CJK faces draw glyphs in a square em
+/// box that sits ~0.12em below the baseline and ~0.87em above it, so the
+/// visual centre is the same (~0.375em) whichever face renders it.
+const CJK_INK_CENTER_EM: f32 = 0.375;
+/// Same measure for Latin lines (between cap-height and x-height centres).
+const LATIN_INK_CENTER_EM: f32 = 0.34;
+
+/// True for characters drawn in a full-width CJK / kana / hangul /
+/// fullwidth-form em box.
+pub(crate) fn is_cjk_char(c: char) -> bool {
+    matches!(c as u32,
+        0x1100..=0x11FF | 0x2E80..=0x303F | 0x3040..=0x33FF | 0x3400..=0x4DBF
+        | 0x4E00..=0x9FFF | 0xA960..=0xA97F | 0xAC00..=0xD7FF | 0xF900..=0xFAFF
+        | 0xFE30..=0xFE4F | 0xFF00..=0xFFEF | 0x20000..=0x3FFFF)
+}
+
+/// Distance from the baseline up to the visual centre of `line`'s ink.
+pub(crate) fn ink_center_above_baseline(line: &str, font_size: f32) -> f32 {
+    let em = if line.chars().any(is_cjk_char) {
+        CJK_INK_CENTER_EM
+    } else {
+        LATIN_INK_CENTER_EM
+    };
+    em * font_size
+}
+
+impl TextEditLayout {
+    /// Baseline of line `idx` measured from the first line box top when
+    /// the block is ink-centred (`textAlignVertical: middle`): each line's
+    /// ink centre lands on the centre of its own line box.
+    pub fn ink_centered_baseline(&self, idx: usize) -> f32 {
+        let line = self.lines.get(idx).map_or("", String::as_str);
+        self.line_h / 2.0 + ink_center_above_baseline(line, self.font_size)
+    }
+}
+
+/// Offset of the text block from the node box top for `align`.
+fn vertical_block_offset(align: SceneTextVerticalAlign, box_h: f32, block_h: f32) -> f32 {
+    if box_h <= 0.0 {
+        return 0.0;
+    }
+    match align {
+        SceneTextVerticalAlign::Top => 0.0,
+        SceneTextVerticalAlign::Middle => (box_h - block_h) / 2.0,
+        SceneTextVerticalAlign::Bottom => box_h - block_h,
+    }
 }
 
 /// Resolve the painted line layout for `node` — paint-parity
@@ -109,15 +164,23 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
         }
     }
     let line_starts = line_start_offsets(text, &lines);
+    let line_h = font_size * line_height;
+    let v_offset = vertical_block_offset(
+        node.text_vertical_align,
+        node.bounds.size.y,
+        line_h * lines.len() as f32,
+    );
     TextEditLayout {
         line_starts,
         font_size,
         weight,
-        line_h: font_size * line_height,
+        line_h,
         letter_spacing,
         align_width: wrap_width_doc.unwrap_or(node.bounds.size.x),
-        origin: node.bounds.origin,
+        origin: Point2D::new(node.bounds.origin.x, node.bounds.origin.y + v_offset),
         text_align: node.text_align,
+        v_align: node.text_vertical_align,
+        v_offset,
         lines,
     }
 }

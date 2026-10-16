@@ -65,10 +65,20 @@ pub fn editable_input_rects(
     y += TAB_HEIGHT;
     let header_name_rect = Rect {
         origin: Point2D::new(x0 + PAD_X, y + 3.0),
-        size: Point2D::new((usable_w - 50.0).max(40.0), INPUT_HEIGHT),
+        size: Point2D::new((usable_w - 52.0).max(40.0), INPUT_HEIGHT),
     };
+    let mut rects = vec![(PropertyFocus::NodeName, header_name_rect)];
     y += HEADER_HEIGHT;
     if visible.create_component {
+        rects.push((
+            PropertyFocus::ComponentDescription,
+            crate::widgets::property_panel_instance::component_description_rect(
+                x0,
+                y,
+                w,
+                visible.component_button,
+            ),
+        ));
         // Variant-aware: the instance pair adds a second button row.
         y += crate::widgets::property_panel_inputs::create_component_block_height(
             visible.component_button,
@@ -101,12 +111,11 @@ pub fn editable_input_rects(
             }
         });
     y += INPUT_HEIGHT;
-    let mut rects = vec![
-        (PropertyFocus::NodeName, header_name_rect),
+    rects.extend([
         (PropertyFocus::PositionX, x_rect),
         (PropertyFocus::PositionY, y_rect),
         (PropertyFocus::Rotation, rotation_rect),
-    ];
+    ]);
     if let Some(radius_rect) = radius_rect {
         rects.push((PropertyFocus::PositionR, radius_rect));
     }

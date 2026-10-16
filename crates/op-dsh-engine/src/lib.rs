@@ -396,9 +396,10 @@ impl DesignEngine {
         for root in self.state.active_children_mut() {
             let before = root.clone();
             let fixes = op_editor_core::command_refine::refine_child_subtree(root);
-            if !fixes.is_empty() && *root != before {
+            op_editor_core::command_node_attrs::enrich_subtree_explain(root, true);
+            if *root != before {
                 changed = true;
-                repairs += fixes.len();
+                repairs += fixes.len().max(1);
                 for fix in fixes {
                     records.push(json!({
                         "pass": "refine_child_subtree",
@@ -430,14 +431,65 @@ impl DesignEngine {
     }
 
     fn call_get_design_quality(&self) -> String {
+        use op_design_lint::IssueCategory;
+
+        let mut geometry_issues = Vec::new();
+        let mut layout_issues = Vec::new();
+        let mut contrast_issues = Vec::new();
+        let mut icon_issues = Vec::new();
+        let mut structure_issues = Vec::new();
+        let mut empty_shells = Vec::new();
+        let mut intent_questions = Vec::new();
+
+        for root in self.state.active_children() {
+            for issue in op_design_lint::detect_all(root, &self.state.doc) {
+                let detail = format!("{}: {}", issue.node_id, issue.reason);
+                match issue.category {
+                    IssueCategory::MixedSiblingCornerRadius
+                    | IssueCategory::SiblingInconsistency
+                    | IssueCategory::TextCornerRadius
+                    | IssueCategory::UnexpectedRotation => geometry_issues.push(detail),
+                    IssueCategory::MixedSiblingPadding
+                    | IssueCategory::EdgeSectionPadding
+                    | IssueCategory::StackedHorizontalPadding
+                    | IssueCategory::TextExplicitHeight
+                    | IssueCategory::TopAnchoredBars
+                    | IssueCategory::NoBaselineBars
+                    | IssueCategory::AbsolutePositioningShare => layout_issues.push(detail),
+                    IssueCategory::TextBgContrast => contrast_issues.push(json!({
+                        "nodeId": issue.node_id,
+                        "reason": issue.reason,
+                        "currentValue": issue.current_value,
+                        "suggestedValue": issue.suggested_value,
+                    })),
+                    IssueCategory::EmptyPath => icon_issues.push(detail),
+                    IssueCategory::EmptyFilledPanel | IssueCategory::InvisibleContainer => {
+                        empty_shells.push(detail);
+                    }
+                    IssueCategory::SlopPurpleGlowGradient
+                    | IssueCategory::SlopThreeCardFeatureRow
+                    | IssueCategory::SlopRoundedCardWall => intent_questions.push(detail),
+                    IssueCategory::RedundantWrapper
+                    | IssueCategory::ExcessiveNestingDepth
+                    | IssueCategory::ExcessiveFrameEffects
+                    | IssueCategory::TextEffect
+                    | IssueCategory::TextStroke
+                    | IssueCategory::WidgetA11y
+                    | IssueCategory::ShaderBudget
+                    | IssueCategory::ShaderInvalid
+                    | IssueCategory::MotionBudget => structure_issues.push(detail),
+                }
+            }
+        }
+
         ok_reply(json!({
-            "geometryIssues": [],
-            "layoutIssues": [],
-            "contrastIssues": [],
-            "iconIssues": [],
-            "structureIssues": [],
-            "emptyShells": [],
-            "intentQuestions": [],
+            "geometryIssues": geometry_issues,
+            "layoutIssues": layout_issues,
+            "contrastIssues": contrast_issues,
+            "iconIssues": icon_issues,
+            "structureIssues": structure_issues,
+            "emptyShells": empty_shells,
+            "intentQuestions": intent_questions,
             "variableIssues": [],
             "imageSlots": [],
             "navIssues": [],

@@ -12,6 +12,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 base64 = "0.22"
 jian-ops-schema = { path = "../../vendor/jian/crates/jian-ops-schema" }
+op-design-lint = { path = "../op-design-lint" }
 op-editor-core = { path = "../op-editor-core" }
 op-figma = { path = "../op-figma" }
 op-html = { path = "../op-html" }

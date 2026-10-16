@@ -42,6 +42,8 @@ pub fn property_focus_initial(focus: PropertyFocus, panel: &PropertyPanel) -> St
             .map(|t| t.content.clone())
             .unwrap_or_default(),
         F::NodeRole => panel.snapshot.role.clone(),
+        F::NodeInteractionDesc => panel.snapshot.interaction_desc.clone(),
+        F::ComponentDescription => panel.snapshot.component_description.clone(),
         F::NodeExplain => panel.snapshot.explain.clone(),
         F::NodeA11yLabel => panel.snapshot.a11y_label.clone(),
         F::ScreenPath => panel
@@ -428,6 +430,18 @@ pub fn commit_property_focus(state: &mut EditorState) -> bool {
             let sel = state.selection.anchor.clone();
             if sel.is_real() {
                 let _ = state.set_node_role_str(&sel, &draft);
+            }
+        }
+        PropertyFocus::NodeInteractionDesc => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.set_node_interaction_desc_str(&sel, &draft);
+            }
+        }
+        PropertyFocus::ComponentDescription => {
+            let sel = state.selection.anchor.clone();
+            if sel.is_real() {
+                let _ = state.set_node_component_desc_str(&sel, &draft);
             }
         }
         PropertyFocus::NodeExplain => {

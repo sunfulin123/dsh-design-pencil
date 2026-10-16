@@ -95,6 +95,7 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
         for hidden in [
             TopBarHit::ToggleFileMenu,
             TopBarHit::OpenImportMenu,
+            TopBarHit::OpenExportMenu,
             TopBarHit::ToggleGitPanel,
             TopBarHit::OpenAgentSettings,
             TopBarHit::Collaboration,
@@ -110,7 +111,6 @@ fn managed_embed_hides_host_controls_and_keeps_document_tools() {
         for retained in [
             TopBarHit::ToggleSidebar,
             TopBarHit::OpenAssetCenter,
-            TopBarHit::OpenExportMenu,
             TopBarHit::TogglePreview,
         ] {
             assert!(

@@ -120,10 +120,14 @@ pub enum PropertyFocus {
     WidgetStep,
     /// Node header inline rename.
     NodeName,
+    /// Component usage & capability description (shown in the top component block).
+    ComponentDescription,
     /// Text-node (or single-text wrapper) plain content.
     TextContent,
     /// Node semantic role (`base.role` / `semantics.role`).
     NodeRole,
+    /// Node interaction action description (e.g. "进入详情", "返回上一页", "跳转新页面").
+    NodeInteractionDesc,
     /// Node design explanation / AI note (`base.explain` / `semantics.aiDescription`).
     NodeExplain,
     /// Node accessibility label (`semantics.label` / `aria-label`).
@@ -162,8 +166,10 @@ impl PropertyFocus {
         matches!(
             self,
             PropertyFocus::NodeName
+                | PropertyFocus::ComponentDescription
                 | PropertyFocus::TextContent
                 | PropertyFocus::NodeRole
+                | PropertyFocus::NodeInteractionDesc
                 | PropertyFocus::NodeExplain
                 | PropertyFocus::NodeA11yLabel
                 | PropertyFocus::ScreenPath

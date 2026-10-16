@@ -280,7 +280,7 @@ pub fn paint_node_header(
     } else if snapshot.is_instance {
         (INSTANCE_ACCENT, true)
     } else {
-        (theme.foreground, false)
+        (theme.secondary_foreground, false)
     };
     let mut text_x = x + PAD_X;
     if badge {
@@ -294,7 +294,7 @@ pub fn paint_node_header(
         );
         text_x += 18.0;
     }
-    let actions_w = 50.0;
+    let actions_w = 52.0;
     let name_rect = Rect {
         origin: Point2D::new(text_x, y + 3.0),
         size: Point2D::new(
@@ -302,20 +302,42 @@ pub fn paint_node_header(
             INPUT_HEIGHT,
         ),
     };
-    if edit.focus == Some(PropertyFocus::NodeName) {
+    let name_focused = edit.focus == Some(PropertyFocus::NodeName);
+    if name_focused {
         cx.backend.fill_round_rect(name_rect, 4.0, theme.muted);
         cx.backend
             .stroke_round_rect(name_rect, 4.0, theme.primary, 1.0);
     }
-    let label = TextLayout::single_run(
-        title,
-        "system-ui",
-        14.0,
-        (title_color).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
-    cx.backend
-        .draw_text(&label, Point2D::new(text_x + 4.0, y + 22.0));
+    cx.backend.save();
+    cx.backend.clip_rect(name_rect);
+    if !name_focused
+        || !edit.paint_input_view_at(
+            cx,
+            theme,
+            PropertyFocus::NodeName,
+            name_rect,
+            13.0,
+            4.0,
+            y + 21.0,
+        )
+    {
+        let max_text_w = (name_rect.size.x - 8.0).max(16.0);
+        let fitted_title =
+            crate::widgets::text_metrics::fit_chrome(cx.backend, title, max_text_w, 13.0);
+        let label = TextLayout::single_run(
+            &fitted_title,
+            "system-ui",
+            13.0,
+            (title_color).to_jian(),
+            Point2D::new(0.0, 0.0),
+        )
+        .with_font_weight(600);
+        cx.backend.draw_text(
+            &label,
+            Point2D::new(text_x + if name_focused { 4.0 } else { 0.0 }, y + 21.0),
+        );
+    }
+    cx.backend.restore();
     let right_x = x + w - PAD_X;
     let lock_icon = if snapshot.locked {
         Icon::Lock

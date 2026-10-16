@@ -294,19 +294,6 @@ impl TopBar {
             );
         }
 
-        // Export quick menu — a download glyph on every document; the
-        // dropdown decides which formats the document actually offers.
-        rx -= ICON_BUTTON;
-        paint_icon_button(
-            cx,
-            &self.theme,
-            rx,
-            center_y,
-            Icon::Download,
-            self.is_hovered(TopBarButton::OpenExportMenu),
-            self.is_pressed(TopBarButton::OpenExportMenu),
-        );
-
         // Asset Center — templates and styles the document can draw on.
         rx -= ICON_BUTTON;
         paint_icon_button(

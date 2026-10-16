@@ -142,9 +142,49 @@ fn text_node_paint_honors_horizontal_alignment_and_backend_ascent() {
         "center-aligned text should move away from the left edge"
     );
     assert_eq!(
-        origin.y, 15.0,
-        "canvas text places the alphabetic baseline at the backend-reported ascent"
+        origin.y, 46.8,
+        "middle-aligned text is ink-centred inside the taller box"
     );
+}
+
+#[test]
+fn top_aligned_text_keeps_backend_ascent_baseline() {
+    let mut node = SceneNode::leaf("t", NodeKind::Text);
+    node.bounds = Rect::xywh(0.0, 0.0, 200.0, 80.0);
+    node.text = Some("Hi".to_string());
+    node.font_family = "Georgia".to_string();
+    node.font_size = 20.0;
+    node.line_height = 1.0;
+    node.text_vertical_align = SceneTextVerticalAlign::Top;
+    let mut backend = TextCaptureBackend::default();
+    let mut cx = PaintCx {
+        backend: &mut backend,
+    };
+    paint_text_node(&mut cx, &node, node.bounds, 1.0, &None);
+    assert_eq!(backend.origins[0].y, 15.0);
+}
+
+#[test]
+fn cjk_text_ink_center_matches_box_center_for_every_vertical_align_default() {
+    for (h, fs) in [(20.0_f32, 14.0_f32), (44.0, 20.0), (120.0, 32.0)] {
+        let mut node = SceneNode::leaf("t", NodeKind::Text);
+        node.bounds = Rect::xywh(0.0, 0.0, 400.0, h);
+        node.text = Some("热卖好物推荐".to_string());
+        node.font_size = fs;
+        node.line_height = 1.5;
+        node.text_vertical_align = SceneTextVerticalAlign::Middle;
+        let mut backend = TextCaptureBackend::default();
+        let mut cx = PaintCx {
+            backend: &mut backend,
+        };
+        paint_text_node(&mut cx, &node, node.bounds, 1.0, &None);
+        let ink_center = backend.origins[0].y - 0.375 * fs;
+        assert!(
+            (ink_center - h / 2.0).abs() < 0.01,
+            "ink centre {ink_center} vs box centre {} (h={h}, fs={fs})",
+            h / 2.0
+        );
+    }
 }
 
 #[test]

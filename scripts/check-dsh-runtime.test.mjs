@@ -66,7 +66,7 @@ test('runtime release has no native build or Agent SDK installation', async () =
   const workflow = await releaseWorkflow()
   const steps = workflow.jobs.runtime.steps
   assert.equal(workflow.jobs.runtime['runs-on'], 'ubuntu-24.04')
-  assert.equal(workflow.env.OPENPENCIL_DSH_RUNTIME_VERSION, '0.8.5-synapse.3')
+  assert.equal(workflow.env.OPENPENCIL_DSH_RUNTIME_VERSION, '0.8.5-synapse.4')
   assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-engine.sh'))
   assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-web.sh'))
   assert.doesNotMatch(JSON.stringify(steps), /op-host-web-server|darwin-arm64|brew install|bun install|npm ci/)

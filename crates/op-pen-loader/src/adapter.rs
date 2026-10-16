@@ -99,12 +99,13 @@ fn make_measure_backend() -> Rc<dyn MeasureBackend> {
 }
 
 /// Skia-free estimate backend — the CanvasKit web build links no jian-skia /
-/// skia-safe. It is a character-count heuristic (~10% width error); the
-/// CanvasKit backend re-measures glyphs exactly at paint time, so layout drift
-/// is bounded to flex sizing of unconstrained text.
+/// skia-safe. It is a character-count heuristic (~10% width error for Latin)
+/// that counts CJK / full-width characters as `1 em` cells; the CanvasKit
+/// backend re-measures glyphs exactly at paint time, so layout drift is
+/// bounded to flex sizing of unconstrained text.
 #[cfg(not(feature = "skia-measure"))]
 fn make_measure_backend() -> Rc<dyn MeasureBackend> {
-    jian_core::layout::measure::default_backend()
+    Rc::new(crate::script_estimate::ScriptAwareEstimate)
 }
 
 use crate::path_bounds::path_bounds_from_anchors;

@@ -381,8 +381,10 @@ impl EditorState {
             | PropertyFocus::FillHex(_)
             | PropertyFocus::StrokeHex
             | PropertyFocus::NodeName
+            | PropertyFocus::ComponentDescription
             | PropertyFocus::TextContent
             | PropertyFocus::NodeRole
+            | PropertyFocus::NodeInteractionDesc
             | PropertyFocus::NodeExplain
             | PropertyFocus::NodeA11yLabel
             | PropertyFocus::ScreenPath

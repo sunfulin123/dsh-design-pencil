@@ -647,8 +647,12 @@ mod tests {
     fn desktop_opacity_keeps_the_two_column_geometry() {
         let panel_width = 256.0;
         assert_close(
-            crate::widgets::property_panel_layer::opacity_input_width(panel_width, false, false),
+            crate::widgets::property_panel_layer::opacity_input_width(panel_width, true, false),
             (panel_width - crate::widgets::property_panel_inputs::PAD_X * 2.0 - 8.0) / 2.0,
+        );
+        assert_close(
+            crate::widgets::property_panel_layer::opacity_input_width(panel_width, false, false),
+            panel_width - crate::widgets::property_panel_inputs::PAD_X * 2.0,
         );
     }
 }

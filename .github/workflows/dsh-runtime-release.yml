@@ -13,7 +13,7 @@ permissions:
 
 env:
   RUSTUP_TOOLCHAIN: '1.96.0'
-  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.3'
+  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.4'
 
 jobs:
   runtime:

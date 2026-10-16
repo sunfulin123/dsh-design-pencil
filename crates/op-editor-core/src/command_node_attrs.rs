@@ -27,7 +27,10 @@ mod slots;
 mod state_ops;
 mod widget_props;
 
-pub use semantics_ops::node_semantics;
+pub use semantics_ops::{
+    effective_component_description, effective_node_a11y_label, effective_node_explain,
+    effective_node_interaction_desc, effective_node_role, enrich_subtree_explain, node_semantics,
+};
 pub use state_ops::resolve_text_node;
 pub(crate) use state_ops::resolve_text_node_mut;
 

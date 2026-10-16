@@ -644,11 +644,164 @@ fn impeccable_typeset_and_polish(
                 });
             }
         }
+
+        // Sibling isomorphism (`/polish`): when a horizontal or vertical
+        // container holds >= 2 structural card/row siblings with a dominant
+        // uniform cornerRadius, align outlier non-pill sibling radii to the
+        // majority value so sibling cards/rows share identical geometry.
+        if matches!(
+            frame.container.layout,
+            Some(LayoutMode::Horizontal | LayoutMode::Vertical)
+        ) {
+            if let Some(children) = frame.children.as_mut() {
+                normalize_sibling_frame_isomorphism(children, fixes);
+            }
+        }
     }
 
     if let Some(children) = node.children_mut() {
         for child in children {
             impeccable_typeset_and_polish(child, current_uniform_radius, fixes);
         }
+    }
+}
+
+fn is_isomorphic_sibling_candidate(frame: &jian_ops_schema::node::FrameNode) -> bool {
+    let role = frame
+        .base
+        .role
+        .as_deref()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    if role == "divider"
+        || role == "spacer"
+        || role == "header"
+        || role == "footer"
+        || role == "hero"
+    {
+        return false;
+    }
+    matches!(
+        role.as_str(),
+        "card"
+            | "product-card"
+            | "product card"
+            | "nav-link"
+            | "nav link"
+            | "row"
+            | "menuitem"
+            | "button"
+            | "icon-button"
+            | "icon button"
+    )
+}
+
+fn normalize_sibling_frame_isomorphism(children: &mut [PenNode], fixes: &mut Vec<RefineFix>) {
+    use jian_ops_schema::node::CornerRadius;
+
+    let mut role_radii: std::collections::BTreeMap<String, Vec<i32>> =
+        std::collections::BTreeMap::new();
+    for child in children.iter() {
+        let PenNode::Frame(f) = child else { continue };
+        if !is_isomorphic_sibling_candidate(f) {
+            continue;
+        }
+        let role_key = f
+            .base
+            .role
+            .as_deref()
+            .unwrap_or("")
+            .trim()
+            .to_ascii_lowercase();
+        if let Some(CornerRadius::Uniform(r)) = f.container.corner_radius {
+            if (0.0..99.0).contains(&r) {
+                role_radii
+                    .entry(role_key)
+                    .or_default()
+                    .push(r.round() as i32);
+            }
+        }
+    }
+
+    for (role_key, radii) in role_radii {
+        if radii.len() < 2 {
+            continue;
+        }
+        let mut counts: std::collections::BTreeMap<i32, usize> = std::collections::BTreeMap::new();
+        for &r in &radii {
+            *counts.entry(r).or_default() += 1;
+        }
+        if counts.len() < 2 {
+            continue;
+        }
+        let Some((&majority_r, &majority_count)) = counts.iter().max_by_key(|(_, &c)| c) else {
+            continue;
+        };
+        if majority_count * 2 <= radii.len() {
+            continue;
+        }
+        const RADIUS_LADDER: &[i32] = &[0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32];
+        let snapped_majority = RADIUS_LADDER
+            .iter()
+            .copied()
+            .min_by_key(|&c| (majority_r - c).abs())
+            .unwrap_or(majority_r);
+        let target_r = snapped_majority as f64;
+        for child in children.iter_mut() {
+            let PenNode::Frame(f) = child else { continue };
+            if !is_isomorphic_sibling_candidate(f) {
+                continue;
+            }
+            let r_key = f
+                .base
+                .role
+                .as_deref()
+                .unwrap_or("")
+                .trim()
+                .to_ascii_lowercase();
+            if r_key != role_key {
+                continue;
+            }
+            if let Some(CornerRadius::Uniform(r)) = f.container.corner_radius {
+                if (0.0..99.0).contains(&r) && (r - target_r).abs() > 0.5 {
+                    f.container.corner_radius = Some(CornerRadius::Uniform(target_r));
+                    fixes.push(RefineFix {
+                        node_id: f.base.id.clone(),
+                        node_name: f.base.name.clone(),
+                        fix: format!(
+                            "Aligned sibling {role_key} cornerRadius from {r} to majority {target_r}"
+                        ),
+                    });
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod sibling_isomorphism_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn aligns_outlier_sibling_card_corner_radius_to_snapped_majority() {
+        let mut root: PenNode = serde_json::from_value(json!({
+            "type": "frame",
+            "id": "rail",
+            "layout": "horizontal",
+            "children": [
+                { "type": "frame", "id": "c1", "role": "card", "cornerRadius": 16, "children": [] },
+                { "type": "frame", "id": "c2", "role": "card", "cornerRadius": 16, "children": [] },
+                { "type": "frame", "id": "c3", "role": "card", "cornerRadius": 8, "children": [] }
+            ]
+        }))
+        .expect("deserialize");
+        let fixes = refine_child_subtree(&mut root);
+        assert!(fixes
+            .iter()
+            .any(|f| f.node_id == "c3" && f.fix.contains("majority 16")));
+        let v = serde_json::to_value(&root).expect("serialize");
+        assert_eq!(v["children"][2]["cornerRadius"], 16.0);
     }
 }

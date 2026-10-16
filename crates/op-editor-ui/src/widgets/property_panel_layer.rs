@@ -93,10 +93,10 @@ pub fn paint_layer_section(
 pub(crate) fn opacity_input_width(
     panel_width: f32,
     has_polygon_sides: bool,
-    touch_controls: bool,
+    _touch_controls: bool,
 ) -> f32 {
     let usable_w = panel_width - PAD_X * 2.0;
-    if touch_controls && !has_polygon_sides {
+    if !has_polygon_sides {
         usable_w
     } else {
         (usable_w - 8.0) / 2.0
@@ -171,6 +171,9 @@ fn paint_labeled_input(
     if focused {
         cx.backend
             .stroke_round_rect(rect, INPUT_RADIUS, theme.primary, 1.5);
+    } else {
+        cx.backend
+            .stroke_round_rect(rect, INPUT_RADIUS, theme.border, 1.0);
     }
     cx.backend.save();
     cx.backend.clip_rect(rect);

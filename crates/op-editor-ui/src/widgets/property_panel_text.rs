@@ -332,6 +332,8 @@ pub fn paint_text_section(
     };
     cx.backend
         .fill_round_rect(copy_rect, INPUT_RADIUS, theme.muted);
+    cx.backend
+        .stroke_round_rect(copy_rect, INPUT_RADIUS, theme.border, 1.0);
     draw_icon(
         cx.backend,
         Icon::Copy,
@@ -351,6 +353,8 @@ pub fn paint_text_section(
     };
     cx.backend
         .fill_round_rect(family_rect, INPUT_RADIUS, theme.muted);
+    cx.backend
+        .stroke_round_rect(family_rect, INPUT_RADIUS, theme.border, 1.0);
     // The trigger shows the first family of the stack, painted in
     // that family (TS trigger: `style={{ fontFamily: value }}` +
     // `displayName(value)`).
@@ -388,6 +392,8 @@ pub fn paint_text_section(
     };
     cx.backend
         .fill_round_rect(weight_rect, INPUT_RADIUS, theme.muted);
+    cx.backend
+        .stroke_round_rect(weight_rect, INPUT_RADIUS, theme.border, 1.0);
     let weight_label = op_i18n::translate(
         locale,
         FontWeightChoice::nearest(text.font_weight).label_key(),
@@ -441,6 +447,8 @@ pub fn paint_text_section(
     };
     cx.backend
         .fill_round_rect(fmt_track, INPUT_RADIUS, theme.muted);
+    cx.backend
+        .stroke_round_rect(fmt_track, INPUT_RADIUS, theme.border, 1.0);
     for (i, (icon, is_on)) in [
         (Icon::Bold, text.font_weight >= 600),
         (Icon::Italic, text.italic),

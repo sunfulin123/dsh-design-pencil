@@ -41,9 +41,34 @@ I(root, {type: "text", content: "Brand", fontFamily: "IBM Plex Mono", fontSize: 
         lines[2].contains(r#""fontFamily":"IBM Plex Mono""#),
         "explicit font must be preserved: {program}"
     );
-    assert!(lines[2].contains(r#""fontSize":19"#), "{program}");
+    assert!(
+        lines[2].contains(r#""fontSize":18"#),
+        "off-scale fontSize 19 snaps to nearest scale 18: {program}"
+    );
     assert!(lines[2].contains(r#""lineHeight":1.1"#), "{program}");
     assert!(!lines[2].contains(r#""fontFamily":"Inter""#), "{program}");
+}
+
+#[test]
+fn script_runner_supports_all_seven_ui_component_macros_and_grid_snapping() {
+    let program = run_script_to_program(
+        r#"const root = I(null, {type: "frame", name: "Root", gap: 15, padding: [13, 25], cornerRadius: 15});
+const card = UI.Card(root, {gap: 15, padding: 13, cornerRadius: 15});
+UI.SectionHeader(card, {title: "Title", subtitle: "Subtitle"});
+UI.Button(card, {label: "Save", icon: "sparkles"});
+UI.IconButton(card, {icon: "settings"});
+UI.Input(card, {placeholder: "Search"});
+UI.Badge(card, {label: "New"});
+UI.NavItem(card, {label: "Home", icon: "layers", active: true});"#,
+    )
+    .expect("all 7 UI macros and grid snapping run");
+    assert!(program.contains(r#""gap":16"#), "{program}");
+    assert!(program.contains(r#""padding":[12,24]"#), "{program}");
+    assert!(program.contains(r#""cornerRadius":16"#), "{program}");
+    assert!(program.contains(r#""role":"icon-button""#), "{program}");
+    assert!(program.contains(r#""name":"Section Title""#), "{program}");
+    assert!(program.contains(r#""role":"nav-link""#), "{program}");
+    assert!(program.contains(r#""height":44"#), "{program}");
 }
 
 #[test]

@@ -107,31 +107,28 @@ impl TopBar {
         slots
     }
 
-    /// Export quick-menu button — a plain icon button directly left of
-    /// Play. Shown on every document (the menu decides which rows apply),
-    /// so it needs no visibility predicate; paint, hit-test, and the
-    /// dropdown anchor all route through here.
+    /// Export quick-menu button (hidden — top-bar download button removed).
+    /// Returns a zero-width rect at the Asset Center edge so legacy anchor callers compile cleanly.
     pub fn export_button_rect(&self, top_bar_rect: Rect) -> Rect {
+        let asset_center = self.asset_center_button_rect(top_bar_rect);
+        Rect {
+            origin: Point2D::new(
+                asset_center.origin.x + asset_center.size.x,
+                asset_center.origin.y,
+            ),
+            size: Point2D::new(0.0, 0.0),
+        }
+    }
+
+    /// Asset Center button — a palette glyph directly left of Play (or
+    /// Maximize when Play is hidden).
+    pub fn asset_center_button_rect(&self, top_bar_rect: Rect) -> Rect {
         let right = top_bar_rect.origin.x + top_bar_rect.size.x;
         Rect {
             origin: Point2D::new(
                 right - PAD - ICON_BUTTON * (self.right_icon_slots_after_export() + 1.0),
                 top_bar_rect.origin.y + 8.0,
             ),
-            size: Point2D::new(ICON_BUTTON, ICON_BUTTON),
-        }
-    }
-
-    /// Asset Center button — a palette glyph directly left of Download.
-    ///
-    /// It sits with Download rather than with the theme/locale cluster
-    /// because both act on the document's content; Sun and Globe act on the
-    /// application. Offered on every document, so it needs no visibility
-    /// predicate.
-    pub fn asset_center_button_rect(&self, top_bar_rect: Rect) -> Rect {
-        let export = self.export_button_rect(top_bar_rect);
-        Rect {
-            origin: Point2D::new(export.origin.x - ICON_BUTTON, export.origin.y),
             size: Point2D::new(ICON_BUTTON, ICON_BUTTON),
         }
     }
@@ -422,7 +419,7 @@ impl TopBar {
                 }
                 self.preview_button_rect(top_bar_rect)
             }
-            B::OpenExportMenu => self.export_button_rect(top_bar_rect),
+            B::OpenExportMenu => return None,
             B::OpenAssetCenter => self.asset_center_button_rect(top_bar_rect),
             B::ToggleTheme => self.theme_button_rect(top_bar_rect),
             B::ToggleLocale => self.globe_rect(top_bar_rect),

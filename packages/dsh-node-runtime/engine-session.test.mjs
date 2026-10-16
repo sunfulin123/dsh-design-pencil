@@ -346,3 +346,105 @@ test('convertHtmlToDocument renders complex flex/grid/icon HTML with auto-layout
   assert.ok(converted.autoLayoutFrames >= 3, `expected >=3 auto-layout frames, got ${converted.autoLayoutFrames}`)
   assert.ok(converted.variablesCount >= 2, `expected extracted color variables, got ${converted.variablesCount}`)
 })
+
+test('EngineSession snaps off-grid spacing/radius/fontSize and expands UI.* component macros', () => {
+  const session = new EngineSession({
+    version: '0.8.5',
+    children: [
+      { id: 'root', type: 'frame', name: 'Page', width: 1440, height: 900, layout: 'vertical', children: [] },
+    ],
+  })
+  try {
+    const batch = session.callTool('batch_design', {
+      script: [
+        'const card = UI.Card("root", { name: "Feature Card", gap: 15, padding: [13, 25], cornerRadius: 15 });',
+        'UI.SectionHeader(card, { title: "Overview", subtitle: "Snapped metrics" });',
+        'UI.Button(card, { label: "Get Started", variant: "primary", size: "lg", icon: "sparkles" });',
+        'UI.Input(card, { placeholder: "Search items...", icon: "search" });',
+        'UI.Badge(card, { label: "Pro" });',
+        'UI.NavItem(card, { label: "Dashboard", icon: "layers", active: true });',
+        'const custom = I(card, { type: "text", name: "Off-scale text", content: "Hello", fontSize: 17 });',
+      ].join('\n'),
+    })
+    assert.equal(batch.isError, false, JSON.stringify(batch))
+    const rootChildren = session.snapshot().document.children[0].children
+    assert.equal(rootChildren.length, 1)
+    const card = rootChildren[0]
+    assert.equal(card.role, 'card')
+    assert.equal(card.gap, 16, 'off-grid gap 15 should snap to 16')
+    assert.deepEqual(card.padding, [12, 24], 'off-grid padding [13, 25] should snap to [12, 24]')
+    assert.equal(card.cornerRadius, 16, 'off-grid cornerRadius 15 should snap to 16')
+    const navItem = card.children.find(c => c.role === 'nav-link')
+    assert.equal(navItem.height, 44, 'UI.NavItem default height must be 44px to satisfy touch-target minimum')
+    const offScaleText = card.children.at(-1)
+    assert.equal(offScaleText.fontSize, 16, 'off-scale fontSize 17 should snap to 16')
+
+    const updated = session.callTool('update_node', {
+      nodeId: card.id,
+      data: { gap: 19, cornerRadius: 11 },
+    })
+    assert.equal(updated.isError, false, JSON.stringify(updated))
+    const cardAfter = session.snapshot().document.children[0].children[0]
+    assert.equal(cardAfter.gap, 20, 'update_node gap 19 should snap to 20')
+    assert.equal(cardAfter.cornerRadius, 10, 'update_node cornerRadius 11 should snap to 10')
+
+    const quality = session.callTool('get_design_quality', {})
+    assert.equal(quality.isError, false, JSON.stringify(quality))
+    assert.ok(Array.isArray(quality.structuredContent.geometryIssues))
+  } finally {
+    session.close()
+  }
+})
+
+test('EngineSession preserves exact authored geometry when preserveAuthoredGeometry is true', () => {
+  const session = new EngineSession({
+    version: '0.8.5',
+    children: [
+      { id: 'root', type: 'frame', name: 'Page', width: 320, height: 800, layout: 'vertical', children: [] },
+    ],
+    editorMeta: { preserveAuthoredGeometry: true },
+  })
+  try {
+    const batch = session.callTool('batch_design', {
+      script: 'I("root", { type: "frame", name: "Replica", gap: 13, padding: 13, cornerRadius: 15 });',
+    })
+    assert.equal(batch.isError, false, JSON.stringify(batch))
+    const replica = session.snapshot().document.children[0].children[0]
+    assert.equal(replica.gap, 13, 'preserveAuthoredGeometry must retain exact gap 13')
+    assert.equal(replica.padding, 13, 'preserveAuthoredGeometry must retain exact padding 13')
+    assert.equal(replica.cornerRadius, 15, 'preserveAuthoredGeometry must retain exact cornerRadius 15')
+
+    const updated = session.callTool('update_node', {
+      nodeId: replica.id,
+      data: { gap: 19, cornerRadius: 11 },
+    })
+    assert.equal(updated.isError, false, JSON.stringify(updated))
+    const replicaAfter = session.snapshot().document.children[0].children[0]
+    assert.equal(replicaAfter.gap, 19, 'preserveAuthoredGeometry update_node must retain exact gap 19')
+    assert.equal(replicaAfter.cornerRadius, 11, 'preserveAuthoredGeometry update_node must retain exact cornerRadius 11')
+  } finally {
+    session.close()
+  }
+})
+test('EngineSession lays out CJK text one em per character', () => {
+  const session = new EngineSession({
+    version: '1.0',
+    children: [{
+      id: 'f', type: 'frame', name: 'F', width: 400, height: 120, layout: 'horizontal',
+      children: [{
+        id: 't', type: 'text', name: 'T', content: '热卖好物推荐', fontSize: 20,
+        textGrowth: 'auto', width: 'fit_content', height: 'fit_content',
+      }],
+    }],
+  })
+  try {
+    const layout = session.callTool('snapshot_layout', { maxDepth: 4 })
+    assert.equal(layout.isError, false, JSON.stringify(layout))
+    const find = nodes => nodes?.flatMap(n => [n, ...find(n.children)]) ?? []
+    const text = find(layout.structuredContent.layout ?? layout.structuredContent.nodes).find(n => n.id === 't')
+    assert.ok(text, JSON.stringify(layout.structuredContent).slice(0, 400))
+    assert.equal(text.width, 120)
+  } finally {
+    session.dispose?.()
+  }
+})

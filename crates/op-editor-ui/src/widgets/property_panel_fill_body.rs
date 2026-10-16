@@ -57,16 +57,18 @@ pub(crate) fn paint_fill_solid_body(
     if hex_focused && variable_ref.is_none() {
         cx.backend
             .stroke_round_rect(hex_rect, INPUT_RADIUS, theme.primary, 1.5);
+    } else {
+        cx.backend
+            .stroke_round_rect(hex_rect, INPUT_RADIUS, theme.border, 1.0);
     }
-    cx.backend.fill_round_rect(
-        Rect {
-            // Vertically centre the 16-tall swatch in the 30-tall row.
-            origin: Point2D::new(hex_rect.origin.x + 6.0, hex_rect.origin.y + 7.0),
-            size: Point2D::new(16.0, 16.0),
-        },
-        3.0,
-        fill,
-    );
+    let swatch_rect = Rect {
+        // Vertically centre the 16-tall swatch in the 30-tall row.
+        origin: Point2D::new(hex_rect.origin.x + 6.0, hex_rect.origin.y + 7.0),
+        size: Point2D::new(16.0, 16.0),
+    };
+    cx.backend.fill_round_rect(swatch_rect, 3.0, fill);
+    cx.backend
+        .stroke_round_rect(swatch_rect, 3.0, theme.border, 1.0);
     let hex_x = hex_rect.origin.x + 30.0;
     let painted_hex = variable_ref.is_none()
         && edit.paint_input_view_at(

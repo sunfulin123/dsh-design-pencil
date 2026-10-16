@@ -87,6 +87,19 @@ impl EditorState {
         let Some(reference) = reference else {
             return false;
         };
+        // A selection that already spans the entire reference width/height
+        // has Left == Center == Right == 0 simultaneously. Do not report all
+        // three alignment buttons as active at once.
+        let spans_full_axis = bounds.iter().all(|rect| {
+            if action.is_horizontal() {
+                (rect.w - reference.w).abs() < 1e-3 || rect.w >= reference.w
+            } else {
+                (rect.h - reference.h).abs() < 1e-3 || rect.h >= reference.h
+            }
+        });
+        if spans_full_axis {
+            return false;
+        }
         bounds.iter().all(|rect| {
             let delta = match action {
                 AlignAction::Left => rect.x - reference.x,
@@ -108,7 +121,20 @@ impl EditorState {
         }
         match editable.as_slice() {
             [] => false,
-            [only] => parent_aggregate_bounds(self.active_children(), only).is_some(),
+            [only] => {
+                let children = self.active_children();
+                let Some(reference) = parent_aggregate_bounds(children, only) else {
+                    return false;
+                };
+                let Some(rect) = find_node(children, only).map(aggregate_bounds) else {
+                    return false;
+                };
+                if action.is_horizontal() {
+                    (rect.w - reference.w).abs() >= 1e-3 && rect.w < reference.w
+                } else {
+                    (rect.h - reference.h).abs() >= 1e-3 && rect.h < reference.h
+                }
+            }
             _ => true,
         }
     }
@@ -522,6 +548,26 @@ mod tests {
 
         assert!(s.undo());
         assert_eq!(authored_local_position(&s, "n20"), (15.0, 10.0));
+    }
+
+    #[test]
+    fn full_width_child_does_not_highlight_all_horizontal_alignments() {
+        let topbar = rect("n20", "Topbar", 0.0, 0.0, 1192.0, 72.0);
+        let page = frame("n10", "Page", 0.0, 0.0, 1192.0, 900.0, vec![topbar]);
+        let mut s = state_with(vec![page]);
+        s.set_single_selection(NodeId::new("n20"));
+
+        assert!(!s.is_selection_aligned(AlignAction::Left));
+        assert!(!s.is_selection_aligned(AlignAction::CenterH));
+        assert!(!s.is_selection_aligned(AlignAction::Right));
+        assert!(!s.can_align_selected(AlignAction::Left));
+        assert!(!s.can_align_selected(AlignAction::CenterH));
+        assert!(!s.can_align_selected(AlignAction::Right));
+
+        // Vertical axis still has slack (72 < 900), so Top is active and CenterV/Bottom are enabled.
+        assert!(s.is_selection_aligned(AlignAction::Top));
+        assert!(s.can_align_selected(AlignAction::CenterV));
+        assert!(s.can_align_selected(AlignAction::Bottom));
     }
 
     #[test]

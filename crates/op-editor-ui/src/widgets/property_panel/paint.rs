@@ -123,13 +123,16 @@ impl Widget for PropertyPanel {
         let mut y = tab_bottom - scroll;
         y = sections::paint_node_header(cx, &self.theme, &self.snapshot, &edit_ctx, x, y, w);
         if self.visible_sections().create_component {
-            y = crate::widgets::property_panel_instance::paint_component_block(
+            y = crate::widgets::property_panel_instance::paint_component_block_with_description(
                 cx,
                 &self.theme,
                 &self.labels,
                 self.visible_sections().component_button,
                 &self.instance_component_options,
                 self.instance_component_target.as_deref(),
+                Some(&self.snapshot),
+                Some(&edit_ctx),
+                self.locale,
                 tab_bottom,
                 rect.origin.y + rect.size.y,
                 x,

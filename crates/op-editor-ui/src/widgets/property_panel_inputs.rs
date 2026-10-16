@@ -88,12 +88,17 @@ pub const CREATE_COMPONENT_PAD_TOP: f32 = 8.0;
 pub const CREATE_COMPONENT_BTN_H: f32 = 30.0;
 pub const CREATE_COMPONENT_PAD_BOTTOM: f32 = 12.0;
 pub const CREATE_COMPONENT_ICON: f32 = 14.0;
-/// Total vertical space the create-component block consumes.
-pub const CREATE_COMPONENT_BLOCK_H: f32 =
-    CREATE_COMPONENT_PAD_TOP + CREATE_COMPONENT_BTN_H + CREATE_COMPONENT_PAD_BOTTOM;
 /// Gap between the instance variant's two rows (Go to component /
-/// Detach instance).
+/// Detach instance) and between the button and component description textarea.
 pub const CREATE_COMPONENT_ROW_GAP: f32 = 6.0;
+pub const COMPONENT_DESC_HEIGHT: f32 = 58.0;
+/// Total vertical space the create-component block consumes (includes the
+/// component description textarea).
+pub const CREATE_COMPONENT_BLOCK_H: f32 = CREATE_COMPONENT_PAD_TOP
+    + CREATE_COMPONENT_BTN_H
+    + CREATE_COMPONENT_ROW_GAP
+    + COMPONENT_DESC_HEIGHT
+    + CREATE_COMPONENT_PAD_BOTTOM;
 
 /// Component / instance accent colours — TS `text-purple-400`
 /// (#a855f7) for components, `#9281f7` for instances.
@@ -143,9 +148,10 @@ pub fn paint_section_label(
         label,
         "system-ui",
         12.0,
-        (theme.foreground).to_jian(),
+        (theme.secondary_foreground).to_jian(),
         Point2D::new(0.0, 0.0),
-    );
+    )
+    .with_font_weight(600);
     cx.backend
         .draw_text(&label_layout, Point2D::new(x + PAD_X, y + 16.0));
     y + SECTION_HEADER_HEIGHT
@@ -228,10 +234,32 @@ pub fn paint_input_with_prefix_focused_state(
     input: Option<&TextInputState>,
     now_ms: u64,
 ) {
+    paint_input_with_prefix_and_placeholder(
+        cx, theme, rect, prefix, value, "", focused, caret, select_all, input, now_ms,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn paint_input_with_prefix_and_placeholder(
+    cx: &mut PaintCx<'_>,
+    theme: &Theme,
+    rect: Rect,
+    prefix: &str,
+    value: &str,
+    placeholder: &str,
+    focused: bool,
+    caret: Option<usize>,
+    select_all: bool,
+    input: Option<&TextInputState>,
+    now_ms: u64,
+) {
     cx.backend.fill_round_rect(rect, INPUT_RADIUS, theme.muted);
     if focused {
         cx.backend
             .stroke_round_rect(rect, INPUT_RADIUS, theme.primary, 1.5);
+    } else {
+        cx.backend
+            .stroke_round_rect(rect, INPUT_RADIUS, theme.border, 1.0);
     }
     let prefix_layout = TextLayout::single_run(
         prefix,
@@ -250,6 +278,7 @@ pub fn paint_input_with_prefix_focused_state(
     let prefix_w = text_metrics::measure_chrome(cx.backend, prefix, 12.0);
     let value_x = rect.origin.x + 10.0 + prefix_w + 8.0;
     let baseline_y = rect.origin.y + rect.size.y / 2.0 + 4.0;
+    let avail_w = (rect.origin.x + rect.size.x - 8.0 - value_x).max(0.0);
     if let (true, Some(input)) = (focused, input) {
         paint_text_input_view_value(
             cx,
@@ -257,10 +286,7 @@ pub fn paint_input_with_prefix_focused_state(
             input,
             Rect {
                 origin: Point2D::new(value_x, rect.origin.y),
-                size: Point2D::new(
-                    (rect.origin.x + rect.size.x - 8.0 - value_x).max(0.0),
-                    rect.size.y,
-                ),
+                size: Point2D::new(avail_w, rect.size.y),
             },
             12.0,
             0.0,
@@ -280,15 +306,33 @@ pub fn paint_input_with_prefix_focused_state(
             rect.origin.x + rect.size.x - 8.0,
         );
     }
-    let value_layout = TextLayout::single_run(
-        value,
-        "system-ui",
-        12.0,
-        (theme.foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
-    cx.backend
-        .draw_text(&value_layout, Point2D::new(value_x, baseline_y));
+    if value.is_empty() && !focused && !placeholder.is_empty() {
+        let fitted = text_metrics::fit_chrome(cx.backend, placeholder, avail_w, 11.0);
+        let placeholder_layout = TextLayout::single_run(
+            &fitted,
+            "system-ui",
+            11.0,
+            (theme.muted_foreground).to_jian(),
+            Point2D::new(0.0, 0.0),
+        );
+        cx.backend
+            .draw_text(&placeholder_layout, Point2D::new(value_x, baseline_y));
+    } else {
+        let display_val = if focused {
+            std::borrow::Cow::Borrowed(value)
+        } else {
+            std::borrow::Cow::Owned(text_metrics::fit_chrome(cx.backend, value, avail_w, 12.0))
+        };
+        let value_layout = TextLayout::single_run(
+            &display_val,
+            "system-ui",
+            12.0,
+            (theme.foreground).to_jian(),
+            Point2D::new(0.0, 0.0),
+        );
+        cx.backend
+            .draw_text(&value_layout, Point2D::new(value_x, baseline_y));
+    }
     if let Some(pos) = caret {
         let value_w =
             text_metrics::measure_chrome(cx.backend, &value[..pos.min(value.len())], 12.0);
@@ -301,6 +345,8 @@ pub fn paint_input_with_prefix_focused_state(
         );
     }
 }
+
+pub use crate::widgets::property_panel_text_input::{paint_textarea_with_label, TEXTAREA_HEIGHT};
 
 #[allow(dead_code)]
 pub fn paint_input_with_suffix(
@@ -346,6 +392,9 @@ pub fn paint_input_with_suffix_focused_state(
     if focused {
         cx.backend
             .stroke_round_rect(rect, INPUT_RADIUS, theme.primary, 1.5);
+    } else {
+        cx.backend
+            .stroke_round_rect(rect, INPUT_RADIUS, theme.border, 1.0);
     }
     let value_x = rect.origin.x + 10.0;
     // Centre the text vertically in the box: for the standard 30px input
@@ -461,6 +510,9 @@ pub fn paint_input_with_icon_focused_state(
     if focused {
         cx.backend
             .stroke_round_rect(rect, INPUT_RADIUS, theme.primary, 1.5);
+    } else {
+        cx.backend
+            .stroke_round_rect(rect, INPUT_RADIUS, theme.border, 1.0);
     }
     // Icon at 10 px from the left edge — matches the prefix-text
     // inputs (X / Y / W / H), so a row of mixed icon + prefix
@@ -548,8 +600,12 @@ pub fn paint_input_with_icon_focused_state(
 #[allow(dead_code)]
 pub fn paint_dropdown(cx: &mut PaintCx<'_>, theme: &Theme, rect: Rect, value: &str) {
     cx.backend.fill_round_rect(rect, INPUT_RADIUS, theme.muted);
+    cx.backend
+        .stroke_round_rect(rect, INPUT_RADIUS, theme.border, 1.0);
+    let max_w = (rect.size.x - 36.0).max(16.0);
+    let fitted = text_metrics::fit_chrome(cx.backend, value, max_w, 12.0);
     let value_layout = TextLayout::single_run(
-        value,
+        &fitted,
         "system-ui",
         12.0,
         (theme.foreground).to_jian(),
@@ -557,12 +613,12 @@ pub fn paint_dropdown(cx: &mut PaintCx<'_>, theme: &Theme, rect: Rect, value: &s
     );
     cx.backend.draw_text(
         &value_layout,
-        Point2D::new(rect.origin.x + 12.0, rect.origin.y + 19.0),
+        Point2D::new(rect.origin.x + 10.0, rect.origin.y + 19.0),
     );
     draw_icon(
         cx.backend,
         Icon::ChevronDown,
-        Point2D::new(rect.origin.x + rect.size.x - 22.0, rect.origin.y + 5.0),
+        Point2D::new(rect.origin.x + rect.size.x - 22.0, rect.origin.y + 7.0),
         16.0,
         theme.muted_foreground,
         1.4,

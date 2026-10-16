@@ -186,6 +186,10 @@ pub struct NodeSnapshot {
     pub explain: String,
     /// Accessibility label (`semantics.label`).
     pub a11y_label: String,
+    /// Interaction action description (`semantics.hint` or derived from `events.onTap`).
+    pub interaction_desc: String,
+    /// Component usage & capability description (`semantics.aiDescription` / `base.explain`).
+    pub component_description: String,
     /// Whether this node is a top-level Frame on the active page (eligible for `screen` route).
     pub is_top_level_frame: bool,
 }

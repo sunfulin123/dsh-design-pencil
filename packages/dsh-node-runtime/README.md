@@ -48,7 +48,7 @@ node --test crates/op-host-web/tests/op_ck_bridge_*.test.mjs
 
 The builds emit ignored Node.js bindings into `wasm/` and browser assets into `web-bundle/`. They do not build an App, native daemon, or Skia. `op-mcp` retains native text measurement by default; this engine disables that feature. Cargo defaults to the two DSH WASM owners instead of the standalone App.
 
-`scripts/stage-dsh-runtime.mjs` stages a checksummed Node/WASM payload from a clean committed checkout. Its file whitelist excludes vendors, Rust source, build caches, tests, type declarations and Agent resources. GitHub webpage publication of `runtime-v0.8.5-synapse.3` runs the Node/WASM release workflow; it uploads validated assets without replacing the tag or overwriting existing assets. No release was published as part of this implementation.
+`scripts/stage-dsh-runtime.mjs` stages a checksummed Node/WASM payload from a clean committed checkout. Its file whitelist excludes vendors, Rust source, build caches, tests, type declarations and Agent resources. GitHub webpage publication of `runtime-v0.8.5-synapse.4` runs the Node/WASM release workflow; it uploads validated assets without replacing the tag or overwriting existing assets. No release was published as part of this implementation.
 
 ## Delivery status
 

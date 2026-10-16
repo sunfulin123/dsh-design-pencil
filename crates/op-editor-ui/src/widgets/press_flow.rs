@@ -376,7 +376,7 @@ pub fn apply_shared_top_bar_hit(
             TopBarPress::Handled
         }
         TopBarHit::OpenExportMenu => {
-            core_press::toggle_export_quick_menu(&mut state.editor_ui);
+            core_press::close_export_quick_menu(&mut state.editor_ui);
             TopBarPress::Handled
         }
         // Same dismissal set the export button applies: the Asset Center is

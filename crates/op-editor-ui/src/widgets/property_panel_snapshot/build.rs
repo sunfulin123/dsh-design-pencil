@@ -132,6 +132,8 @@ impl NodeSnapshot {
             role: String::new(),
             explain: String::new(),
             a11y_label: String::new(),
+            interaction_desc: String::new(),
+            component_description: String::new(),
             is_top_level_frame: false,
         }
     }
@@ -218,6 +220,8 @@ impl NodeSnapshot {
             role: String::new(),
             explain: String::new(),
             a11y_label: String::new(),
+            interaction_desc: String::new(),
+            component_description: String::new(),
             is_top_level_frame: false,
         })
     }
@@ -327,27 +331,21 @@ impl NodeSnapshot {
             is_reusable: matches!(node, PenNode::Frame(f) if f.reusable == Some(true)),
             visible: base.visible.unwrap_or(true),
             locked: base.locked.unwrap_or(false),
-            role: base
-                .role
-                .clone()
-                .or_else(|| {
-                    op_editor_core::command_node_attrs::node_semantics(node)
-                        .and_then(|s| s.role)
-                        .and_then(|r| serde_json::to_value(r).ok())
-                        .and_then(|v| v.as_str().map(str::to_string))
-                })
-                .unwrap_or_default(),
-            explain: base
-                .explain
-                .clone()
-                .or_else(|| {
-                    op_editor_core::command_node_attrs::node_semantics(node)
-                        .and_then(|s| s.ai_description.clone())
-                })
-                .unwrap_or_default(),
-            a11y_label: op_editor_core::command_node_attrs::node_semantics(node)
-                .and_then(|s| s.label.clone())
-                .unwrap_or_default(),
+            role: op_editor_core::command_node_attrs::effective_node_role(node, is_top_level),
+            explain: op_editor_core::command_node_attrs::effective_node_explain(node, is_top_level),
+            a11y_label: op_editor_core::command_node_attrs::effective_node_a11y_label(
+                node,
+                is_top_level,
+            ),
+            interaction_desc: op_editor_core::command_node_attrs::effective_node_interaction_desc(
+                node,
+                is_top_level,
+            ),
+            component_description:
+                op_editor_core::command_node_attrs::effective_component_description(
+                    node,
+                    is_top_level,
+                ),
             is_top_level_frame: is_top_level && matches!(node, PenNode::Frame(_)),
         }
     }

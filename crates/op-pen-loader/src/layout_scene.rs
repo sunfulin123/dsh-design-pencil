@@ -474,9 +474,10 @@ fn text_align_to_scene(value: &str) -> SceneTextAlign {
 
 fn text_vertical_align_to_scene(value: &str) -> SceneTextVerticalAlign {
     match value {
-        "middle" => SceneTextVerticalAlign::Middle,
+        "top" => SceneTextVerticalAlign::Top,
         "bottom" => SceneTextVerticalAlign::Bottom,
-        _ => SceneTextVerticalAlign::Top,
+        // Unauthored text is ink-centred in its box (`middle`).
+        _ => SceneTextVerticalAlign::Middle,
     }
 }
 

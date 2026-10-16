@@ -126,7 +126,7 @@ impl Theme {
         theme.muted = if dark {
             rgb(44, 44, 46)
         } else {
-            rgb(255, 255, 255)
+            rgb(244, 245, 247)
         };
         theme.secondary = theme.muted;
         theme.secondary_foreground = theme.foreground;

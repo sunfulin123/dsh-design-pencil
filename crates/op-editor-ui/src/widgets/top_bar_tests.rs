@@ -191,7 +191,7 @@ fn narrow_dirty_title_drops_git_before_filename_extension_or_status() {
     let rect = Rect {
         origin: Point2D::ZERO,
         size: Point2D::new(
-            620.0 + ICON_BUTTON * 2.0 + home_span - removed_import_span,
+            620.0 + ICON_BUTTON + home_span - removed_import_span,
             TOP_BAR_HEIGHT,
         ),
     };
@@ -360,16 +360,13 @@ fn agent_chip_hit_area_tracks_measured_text_width() {
 
 #[test]
 fn maximize_button_hit_tests_to_toggle_fullscreen() {
-    // The Play button is unconditionally available (desktop-only, not
-    // experimental-gated); this test asserts the full Maximize | Play |
-    // Download | Sun cluster layout.
     let bar = TopBar::new("Untitled");
     let rect = Rect {
         origin: Point2D::new(0.0, 0.0),
         size: Point2D::new(1000.0, TOP_BAR_HEIGHT),
     };
     let cy = 8.0 + ICON_BUTTON / 2.0;
-    // Right cluster (right -> left): Maximize | Play | Download | Sun.
+    // Right cluster (right -> left): Maximize | Play | Palette | Sun.
     // Rightmost icon (Maximize) -> ToggleFullscreen.
     let fs_cx = 1000.0 - PAD - ICON_BUTTON / 2.0;
     assert_eq!(
@@ -382,29 +379,20 @@ fn maximize_button_hit_tests_to_toggle_fullscreen() {
         bar.hit_test(rect, Point2D::new(play_cx, cy)),
         Some(TopBarHit::TogglePreview),
     );
-    // 3rd from right (Download) -> OpenExportMenu.
-    let export_cx = 1000.0 - PAD - 2.0 * ICON_BUTTON - ICON_BUTTON / 2.0;
-    assert_eq!(
-        bar.hit_test(rect, Point2D::new(export_cx, cy)),
-        Some(TopBarHit::OpenExportMenu),
-    );
-    // 4th from right (Palette) -> OpenAssetCenter.
-    let asset_cx = 1000.0 - PAD - 3.0 * ICON_BUTTON - ICON_BUTTON / 2.0;
+    // 3rd from right (Palette) -> OpenAssetCenter.
+    let asset_cx = 1000.0 - PAD - 2.0 * ICON_BUTTON - ICON_BUTTON / 2.0;
     assert_eq!(
         bar.hit_test(rect, Point2D::new(asset_cx, cy)),
         Some(TopBarHit::OpenAssetCenter),
     );
-    // 5th from right (Sun) -> ToggleTheme.
-    let sun_cx = 1000.0 - PAD - 4.0 * ICON_BUTTON - ICON_BUTTON / 2.0;
+    // 4th from right (Sun) -> ToggleTheme.
+    let sun_cx = 1000.0 - PAD - 3.0 * ICON_BUTTON - ICON_BUTTON / 2.0;
     assert_eq!(
         bar.hit_test(rect, Point2D::new(sun_cx, cy)),
         Some(TopBarHit::ToggleTheme),
     );
 }
 
-/// The export button anchors its own dropdown, so paint, hit-test and the
-/// anchor must all agree on where it is — and it must not steal the Play
-/// button's slot on a host that hides Play (web).
 #[test]
 fn export_button_sits_left_of_play_and_right_of_theme() {
     let bar = TopBar::new("Untitled");
@@ -412,40 +400,28 @@ fn export_button_sits_left_of_play_and_right_of_theme() {
         origin: Point2D::new(0.0, 0.0),
         size: Point2D::new(1000.0, TOP_BAR_HEIGHT),
     };
-    let export = bar.export_button_rect(rect);
-    let cy = export.origin.y + export.size.y / 2.0;
+    let asset = bar.asset_center_button_rect(rect);
+    let cy = asset.origin.y + asset.size.y / 2.0;
+    assert_eq!(bar.export_button_rect(rect).size.x, 0.0);
     assert_eq!(
-        bar.hit_test(rect, Point2D::new(export.origin.x + 2.0, cy)),
-        Some(TopBarHit::OpenExportMenu),
-        "left edge of the painted button is inside its hit area",
+        bar.hit_test(rect, Point2D::new(asset.origin.x + 2.0, cy)),
+        Some(TopBarHit::OpenAssetCenter),
     );
     assert_eq!(
-        bar.hit_test(
-            rect,
-            Point2D::new(export.origin.x + export.size.x - 2.0, cy)
-        ),
-        Some(TopBarHit::OpenExportMenu),
-        "right edge of the painted button is inside its hit area",
+        bar.hit_test(rect, Point2D::new(asset.origin.x + asset.size.x - 2.0, cy)),
+        Some(TopBarHit::OpenAssetCenter),
     );
-    // Neighbours: Play claims the slot to the right, theme the one left.
     if bar.preview_button_visible() {
         assert_eq!(
             bar.hit_test(
                 rect,
-                Point2D::new(export.origin.x + export.size.x + ICON_BUTTON / 2.0, cy)
+                Point2D::new(asset.origin.x + asset.size.x + ICON_BUTTON / 2.0, cy)
             ),
             Some(TopBarHit::TogglePreview),
         );
     }
     assert_eq!(
-        bar.hit_test(rect, Point2D::new(export.origin.x - ICON_BUTTON / 2.0, cy)),
-        Some(TopBarHit::OpenAssetCenter),
-    );
-    assert_eq!(
-        bar.hit_test(
-            rect,
-            Point2D::new(export.origin.x - ICON_BUTTON - ICON_BUTTON / 2.0, cy)
-        ),
+        bar.hit_test(rect, Point2D::new(asset.origin.x - ICON_BUTTON / 2.0, cy)),
         Some(TopBarHit::ToggleTheme),
     );
 }

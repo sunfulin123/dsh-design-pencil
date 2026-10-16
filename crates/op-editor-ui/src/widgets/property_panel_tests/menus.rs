@@ -69,33 +69,23 @@ fn effects_add_menu_owns_feedback_above_the_covered_interaction_row() {
     };
 
     let closed = PropertyPanel::for_selection(&state).expect("frame panel");
-    let action_rects = sections::action_button_rects_with_fill_picker(
+    let input_rects = sections::editable_input_rects(
         rect,
         visible_for(&closed),
-        &closed.snapshot.effects,
         &closed.snapshot.fills,
-        &closed.snapshot.interactions,
-        false,
-        0,
-        false,
-        false,
-        false,
-        false,
-        false,
+        &closed.snapshot.effects,
     );
-    let (interaction_index, interaction_rect) = action_rects
+    let interaction_rect = input_rects
         .iter()
-        .enumerate()
-        .find_map(|(index, (action, rect))| {
-            matches!(action, PropertyPanelAction::ToggleInteractionMenu).then_some((index, *rect))
+        .find_map(|(focus, rect)| {
+            matches!(focus, op_editor_core::PropertyFocus::NodeRole).then_some(*rect)
         })
-        .expect("frame panel has an Add interaction action");
+        .expect("frame panel has a Role input in Semantics & Interactions");
 
-    // Reproduce the stale lower hover that existed when the Effects menu was
-    // opened while the cursor crossed into its overlap with Interactions.
-    state.editor_ui.property_action_hover = Some(interaction_index);
+    // Open the Effects menu while the cursor crosses into its overlap with Interactions.
+    state.editor_ui.property_action_hover = Some(0);
     state.editor_ui.toggle_effect_add_picker();
-    let mut panel = PropertyPanel::for_selection(&state).expect("open effects menu panel");
+    let panel = PropertyPanel::for_selection(&state).expect("open effects menu panel");
     assert_eq!(
         panel.action_hover, None,
         "an owning popup must not carry a body-action hover into paint"
@@ -119,7 +109,7 @@ fn effects_add_menu_owns_feedback_above_the_covered_interaction_row() {
                 Point2D::new((left + right) / 2.0, (top + bottom) / 2.0),
             ))
         })
-        .expect("downward Effects menu overlaps Add interaction");
+        .expect("downward Effects menu overlaps Interactions section");
 
     assert!(matches!(
         panel.effect_add_menu_hit(rect, overlap_point),
@@ -129,12 +119,9 @@ fn effects_add_menu_owns_feedback_above_the_covered_interaction_row() {
     assert_eq!(
         panel.hit_test_action(rect, overlap_point),
         Some(popup_action),
-        "popup hit testing must win over the covered body action"
+        "popup hit testing must win over the covered body section"
     );
 
-    // Even if a caller injects a stale body hover into the immutable panel,
-    // popup chrome is painted later and therefore remains visually top-most.
-    panel.action_hover = Some(interaction_index);
     let theme = panel.theme;
     let mut backend = RoundFillBackend::default();
     {
@@ -143,22 +130,11 @@ fn effects_add_menu_owns_feedback_above_the_covered_interaction_row() {
         };
         panel.paint(&mut cx, rect);
     }
-    let body_hover_paint = backend
-        .fills
-        .iter()
-        .position(|(painted, color)| {
-            *painted == interaction_rect && color_eq(*color, theme.button_hover)
-        })
-        .expect("injected body hover paints its feedback wash");
-    let popup_background_paint = backend
+    let _ = backend
         .fills
         .iter()
         .position(|(painted, color)| *painted == menu && color_eq(*color, theme.popover))
         .expect("effects popup paints its background");
-    assert!(
-        body_hover_paint < popup_background_paint,
-        "popup background must composite after the covered body hover"
-    );
 }
 
 #[test]

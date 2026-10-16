@@ -475,12 +475,7 @@ impl TopBar {
         if self.preview_button_visible() && self.preview_button_rect(rect).contains(point) {
             return Some(TopBarHit::TogglePreview);
         }
-        // Download (just left of Play) → export quick menu. Offered on
-        // every document; the menu itself decides which rows apply.
-        if (self.export_button_rect(rect)).contains(point) {
-            return Some(TopBarHit::OpenExportMenu);
-        }
-        // Palette (just left of Download) → Asset Center.
+        // Palette (just left of Play) → Asset Center.
         if (self.asset_center_button_rect(rect)).contains(point) {
             return Some(TopBarHit::OpenAssetCenter);
         }

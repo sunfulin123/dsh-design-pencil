@@ -30,7 +30,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     const path = join(runtime, file)
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, file === 'package.json' ? JSON.stringify({
-      name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.3',
+      name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.4',
       type: 'commonjs', engines: { node: '>=24' },
     }) : file)
   }
@@ -40,7 +40,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.equal(manifest.runtime, 'node-wasm')
   assert.equal(manifest.entrypoint, 'cli.mjs')
   assert.equal(manifest.node, '>=24')
-  assert.equal(manifest.openPencilVersion, '0.8.5-synapse.3')
+  assert.equal(manifest.openPencilVersion, '0.8.5-synapse.4')
   assert.ok(manifest.files['wasm/op_dsh_engine_bg.wasm'])
   assert.ok(manifest.files['web-bundle/op_host_web_bg.wasm'])
   assert.ok(manifest.files['web-bundle/assets/i18n/ja.json'])

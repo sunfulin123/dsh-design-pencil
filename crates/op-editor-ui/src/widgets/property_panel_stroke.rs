@@ -245,15 +245,17 @@ fn paint_stroke_main_row(
     if hex_focused && stroke_variable_ref.is_none() {
         cx.backend
             .stroke_round_rect(hex_rect, INPUT_RADIUS, theme.primary, 1.5);
+    } else {
+        cx.backend
+            .stroke_round_rect(hex_rect, INPUT_RADIUS, theme.border, 1.0);
     }
-    cx.backend.fill_round_rect(
-        Rect {
-            origin: Point2D::new(hex_rect.origin.x + 6.0, hex_rect.origin.y + 7.0),
-            size: Point2D::new(16.0, 16.0),
-        },
-        3.0,
-        stroke_color,
-    );
+    let swatch_rect = Rect {
+        origin: Point2D::new(hex_rect.origin.x + 6.0, hex_rect.origin.y + 7.0),
+        size: Point2D::new(16.0, 16.0),
+    };
+    cx.backend.fill_round_rect(swatch_rect, 3.0, stroke_color);
+    cx.backend
+        .stroke_round_rect(swatch_rect, 3.0, theme.border, 1.0);
     paint_stroke_hex_text(cx, theme, edit, stroke_variable_ref, stroke_color, hex_rect);
     if show_variable_button {
         paint_color_variable_button(

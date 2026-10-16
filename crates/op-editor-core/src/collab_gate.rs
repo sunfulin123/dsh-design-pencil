@@ -247,6 +247,8 @@ impl PropertyFocus {
                 D::Unsupported(U::Typography)
             }
             P::NodeRole
+            | P::ComponentDescription
+            | P::NodeInteractionDesc
             | P::NodeExplain
             | P::NodeA11yLabel
             | P::ScreenPath

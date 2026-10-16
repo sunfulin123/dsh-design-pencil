@@ -17,9 +17,7 @@ use crate::widgets::PaintCx;
 use crate::{Point2D, Rect, TextLayout};
 use op_editor_core::{FlexLayout, PaddingEditMode, PropertyFocus};
 
-const DIR_BUTTON_W: f32 = 56.0;
 const DIR_BUTTON_H: f32 = 32.0;
-const DIR_GAP: f32 = 8.0;
 const ADVANCED_TOP_GAP: f32 = 10.0;
 const SUB_LABEL_H: f32 = 18.0;
 const GRID_CELL_W: f32 = 34.0;
@@ -153,7 +151,7 @@ pub fn paint_flex_section(
     width: f32,
 ) -> f32 {
     let mut y = paint_section_label(cx, theme, labels.flex_layout, x, y, width);
-    paint_direction_buttons(cx, theme, snapshot.flex_layout, x, y);
+    paint_direction_buttons(cx, theme, snapshot.flex_layout, x, y, width);
     y += DIR_BUTTON_H + 12.0;
     if snapshot.flex_layout != FlexLayout::Free {
         y += ADVANCED_TOP_GAP;
@@ -264,8 +262,8 @@ pub fn push_flex_action_rects(
         FlexLayout::Vertical,
         FlexLayout::Horizontal,
     ];
-    // Continuous even cells over the same footprint the ToggleGroup paints.
-    let cell_w = (DIR_BUTTON_W * 3.0 + DIR_GAP * 2.0) / 3.0;
+    // Continuous even cells over the full usable width.
+    let cell_w = (width - PAD_X * 2.0) / 3.0;
     for (i, mode) in modes.iter().enumerate() {
         out.push((
             PropertyPanelAction::SetFlexLayout(*mode),
@@ -368,19 +366,17 @@ fn paint_direction_buttons(
     active: FlexLayout,
     x: f32,
     y: f32,
+    width: f32,
 ) {
     let modes = [
         (FlexLayout::Free, Icon::LayoutGrid),
         (FlexLayout::Vertical, Icon::Rows3),
         (FlexLayout::Horizontal, Icon::Columns3),
     ];
-    // Fixed-width icon segmented control via jian ToggleGroup; font_size 14
-    // yields an 18px icon (font + 4), matching the previous cells. The outer
-    // rect spans the same footprint (3 buttons + 2 gaps) the hit walker covers.
     let labels: Vec<&str> = modes.iter().map(|_| "").collect();
     let icon_paths: Vec<&[&str]> = modes.iter().map(|(_, icon)| icon.paths()).collect();
     let active_idx = modes.iter().position(|(m, _)| *m == active).unwrap_or(0);
-    let total_w = DIR_BUTTON_W * 3.0 + DIR_GAP * 2.0;
+    let total_w = width - PAD_X * 2.0;
     jian_widgets::components::toggle_group::ToggleGroup {
         options: &labels,
         icons: Some(&icon_paths),
@@ -412,6 +408,7 @@ fn paint_alignment_and_gap(
 ) -> f32 {
     let usable_w = width - PAD_X * 2.0;
     let grid_w = GRID_CELL_W * 3.0 + GRID_GAP * 2.0;
+    let gap_x = x + PAD_X + grid_w + GRID_COL_GAP;
     paint_sub_label(
         cx,
         theme,
@@ -419,11 +416,15 @@ fn paint_alignment_and_gap(
         x + PAD_X,
         y,
     );
-    // No "间距" sub-label over the gap column — TS GapSection has no
-    // header; the three radio rows are the whole control.
+    paint_sub_label(
+        cx,
+        theme,
+        op_i18n::translate(locale, "layout.gap"),
+        gap_x,
+        y,
+    );
     let grid_y = y + SUB_LABEL_H;
     paint_alignment_grid(cx, theme, snapshot, x + PAD_X, grid_y, touch_controls);
-    let gap_x = x + PAD_X + grid_w + GRID_COL_GAP;
     let gap_w = usable_w - grid_w - GRID_COL_GAP;
     let content_x = gap_x + RADIO_GUTTER;
     let content_w = gap_w - RADIO_GUTTER;
@@ -445,10 +446,6 @@ fn paint_alignment_and_gap(
         origin: Point2D::new(content_x, r0_y),
         size: Point2D::new(content_w, row_h),
     };
-    // Space-between / space-around distribute the gap automatically, so
-    // the explicit gap value is ignored. Paint the input disabled
-    // (muted, no caret) — it also emits no focus rect, so edits are
-    // rejected (see `push_flex_input_rects`).
     let is_space = matches!(
         justify,
         LayoutJustifyValue::SpaceBetween | LayoutJustifyValue::SpaceAround
@@ -456,6 +453,8 @@ fn paint_alignment_and_gap(
     if is_space {
         cx.backend
             .fill_round_rect(gap_rect, INPUT_RADIUS, theme.muted);
+        cx.backend
+            .stroke_round_rect(gap_rect, INPUT_RADIUS, theme.border, 1.0);
         let muted = TextLayout::single_run(
             &gap_text,
             "system-ui",
@@ -662,6 +661,7 @@ fn paint_alignment_grid(
         ),
     };
     cx.backend.fill_round_rect(bg, 6.0, theme.muted);
+    cx.backend.stroke_round_rect(bg, 6.0, theme.border, 1.0);
     for row in 0..3 {
         for col in 0..3 {
             let justify = if is_vertical {
