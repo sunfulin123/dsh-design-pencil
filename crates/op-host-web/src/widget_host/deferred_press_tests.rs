@@ -54,6 +54,7 @@ fn first_layer_row_point(host: &WidgetHost, viewport_h: f32) -> Point2D {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn chat_model_row_press_selects_and_closes_immediately() {
     let mut host = WidgetHost::new();
     seed_two_chat_models(&mut host);
@@ -82,6 +83,7 @@ fn chat_model_row_press_selects_and_closes_immediately() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn chat_model_row_wins_over_variables_panel_and_preset_menu() {
     let mut host = WidgetHost::new();
     seed_two_chat_models(&mut host);
@@ -122,6 +124,7 @@ fn chat_model_row_wins_over_variables_panel_and_preset_menu() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn right_press_on_model_picker_does_not_open_layer_context_menu() {
     let mut host = WidgetHost::new();
     seed_layer_for_context_menu(&mut host);
@@ -150,6 +153,7 @@ fn right_press_on_model_picker_does_not_open_layer_context_menu() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn header_press_closes_model_picker_without_minimizing_pinned_chat() {
     let mut host = WidgetHost::new();
     host.editor_state.editor_ui.enter_chat_tab();
@@ -185,6 +189,7 @@ fn hidden_chat_rect_closes_stale_model_picker_before_lower_press() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn chat_model_picker_visible_over_topbar_wins_press() {
     let mut host = WidgetHost::new();
     seed_two_chat_models(&mut host);

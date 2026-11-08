@@ -122,6 +122,12 @@ pub struct ContainerProps {
     pub align_items: Option<AlignItems>,
     #[serde(default, alias = "clip", skip_serializing_if = "Option::is_none")]
     pub clip_content: Option<bool>,
+    /// Reversed canvas stacking: children[0] normally paints in front; when
+    /// true the LAST child paints in front instead. Layout order is unchanged;
+    /// only paint and hit-test order flip. Importers set it to reproduce
+    /// Figma's stacking for the order they store children in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub item_reverse_z_index: Option<bool>,
     /// Direct child ids that remain pinned while this container scrolls.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sticky_children: Option<Vec<String>>,
@@ -155,6 +161,14 @@ mod tests {
             container.sticky_children.as_deref(),
             Some(["header".to_owned(), "tabs".to_owned()].as_slice())
         );
+        assert_eq!(serde_json::to_string(&container).unwrap(), json);
+    }
+
+    #[test]
+    fn item_reverse_z_index_round_trips() {
+        let json = r#"{"itemReverseZIndex":true}"#;
+        let container: ContainerProps = serde_json::from_str(json).unwrap();
+        assert_eq!(container.item_reverse_z_index, Some(true));
         assert_eq!(serde_json::to_string(&container).unwrap(), json);
     }
 

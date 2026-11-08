@@ -60,24 +60,7 @@ fn resolve_value<'a>(
     match value {
         VariableValue::Scalar(s) => Some(s),
         VariableValue::Themed(entries) => {
-            for e in entries {
-                if let Some(t) = &e.theme {
-                    if t.iter().all(|(k, v)| active.get(k) == Some(v)) {
-                        return Some(&e.value);
-                    }
-                }
-            }
-            // No themed match → the un-themed default entry → the
-            // FIRST entry (TS `resolveThemedValue` falls back to
-            // `values[0]`). Without the last step a fully-themed
-            // value list — the shape the panel writes once a second
-            // variant exists — resolves to nothing until the user
-            // manually picks an axis value.
-            entries
-                .iter()
-                .find(|e| e.theme.is_none())
-                .or_else(|| entries.first())
-                .map(|e| &e.value)
+            crate::variables_resolve::resolve_themed_value(entries, active)
         }
     }
 }

@@ -41,6 +41,7 @@ pub mod accessibility_regions;
 pub mod collab_avatar_runtime;
 pub mod font_catalog;
 pub mod image_runtime;
+pub mod raster_epoch;
 // The render scene now lives in the `jian-scene` crate and `scene_vars` in
 // op-editor-core. Re-exported here so existing consumer paths keep resolving
 // (`op_editor_ui::layout_scene::*` / `::layout_scene_hit::*` / `::scene_vars::*`),
@@ -50,6 +51,7 @@ pub use op_editor_core::scene_vars;
 pub mod scene_bounds;
 pub mod svg_export;
 pub mod theme;
+pub mod ui_scale;
 pub mod util;
 pub mod widgets;
 

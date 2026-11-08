@@ -436,6 +436,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            shared_styles: None,
         };
 
         let ordinary = serde_json::to_string(&doc).expect("ordinary serialize");
@@ -515,6 +516,7 @@ mod tests {
                 design_md: None,
                 conversion: None,
                 motion: None,
+                shared_styles: None,
             };
             let mut output = Vec::new();
             let stats = write_document_with_extension(
@@ -684,6 +686,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            shared_styles: None,
         };
         let thumbnails = image_thumbs::capture_snapshot();
         let error = write_document_with_extension(

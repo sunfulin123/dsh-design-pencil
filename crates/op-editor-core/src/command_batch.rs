@@ -55,8 +55,10 @@ fn batchable(cmd: &EditorCommand) -> bool {
         // pin. Nested batches are rejected so rollback stays
         // single-level.
         C::SetActiveTool { .. }
+        | C::SetUiScale { .. }
         | C::SetViewport { .. }
         | C::CopySelected
+        | C::Design(crate::DesignCommand::CopyProperties { .. })
         | C::CutSelected
         | C::PasteClipboard { .. }
         | C::Undo
@@ -129,6 +131,9 @@ fn batchable(cmd: &EditorCommand) -> bool {
         | C::SetNodeStrokeWidth { .. }
         | C::SetNodeStrokeSideWidth { .. }
         | C::AlignSelected { .. }
+        | C::Design(crate::DesignCommand::ArrangeNodes { .. })
+        | C::Design(crate::DesignCommand::SharedStyle { .. })
+        | C::Design(crate::DesignCommand::VariableModes { .. })
         | C::SetNodeFillHex { .. }
         | C::SetNodeName { .. }
         | C::SetImageVideoSrc { .. }

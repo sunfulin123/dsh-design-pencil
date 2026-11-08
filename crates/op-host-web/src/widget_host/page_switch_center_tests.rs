@@ -1,6 +1,28 @@
 use super::WidgetHost;
 use op_editor_ui::widgets::LayerPanelHit;
-use op_editor_ui::Point2D;
+use op_editor_ui::{Color, Point2D, Rect, RenderBackend, TextLayout};
+
+struct NullBackend;
+
+impl RenderBackend for NullBackend {
+    fn begin_frame(&mut self) {}
+    fn end_frame(&mut self) {}
+    fn fill_rect(&mut self, _: Rect, _: Color) {}
+    fn stroke_rect(&mut self, _: Rect, _: Color, _: f32) {}
+    fn draw_text(&mut self, _: &TextLayout, _: Point2D) {}
+    fn clip_rect(&mut self, _: Rect) {}
+    fn stroke_line(&mut self, _: Point2D, _: Point2D, _: Color, _: f32) {}
+    fn fill_round_rect(&mut self, _: Rect, _: f32, _: Color) {}
+    fn stroke_round_rect(&mut self, _: Rect, _: f32, _: Color, _: f32) {}
+    fn stroke_svg_path(&mut self, _: &str, _: Point2D, _: f32, _: Color, _: f32) {}
+    fn save(&mut self) {}
+    fn restore(&mut self) {}
+    fn translate(&mut self, _: Point2D) {}
+    fn resize(&mut self, _: u32, _: u32) {}
+    fn dpi_scale(&self) -> f32 {
+        1.0
+    }
+}
 
 const VIEWPORT_W: f32 = 1200.0;
 const VIEWPORT_H: f32 = 800.0;
@@ -74,6 +96,9 @@ fn page_row_switch_fits_new_page_after_cached_scene() {
     assert!(far_rows.iter().any(|row| row.node_id.as_str() == "far"));
     assert!(std::rc::Rc::ptr_eq(&far_rows, &host.layer_panel().items));
 
+    // The click only records the switch; the next frame builds the page and
+    // applies the deferred fit (a heavy page would first show a loading cover).
+    host.paint_editor(&mut NullBackend, VIEWPORT_W, VIEWPORT_H);
     // Resolve the active scene so the assertion derives its expected centre
     // from the same layout path used by paint, not from authored fixture math.
     host.refresh_layout_scene();

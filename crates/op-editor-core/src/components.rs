@@ -695,6 +695,7 @@ mod tests {
             version: "1.0.0".into(),
             name: None,
             themes: None,
+            theme: None,
             variables: None,
             pages: None,
             children: vec![frame(
@@ -724,6 +725,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            shared_styles: None,
             responsive: None,
         };
         if let PenNode::Frame(f) = &mut doc.children[0] {

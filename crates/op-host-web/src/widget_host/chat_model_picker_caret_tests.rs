@@ -61,6 +61,7 @@ fn chat_input_arrows_move_caret_for_insert_and_backspace() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn chat_model_picker_clear_button_empties_search() {
     let mut host = WidgetHost::new();
     host.set_now_ms(456);
@@ -89,6 +90,7 @@ fn chat_model_picker_clear_button_empties_search() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn opening_model_picker_clears_covered_hover_before_next_cursor_move() {
     let mut host = WidgetHost::new();
     host.editor_state

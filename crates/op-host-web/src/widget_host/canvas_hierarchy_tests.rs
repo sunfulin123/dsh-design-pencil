@@ -1,4 +1,4 @@
-//! Web host regression coverage for Pencil-style canvas hierarchy depth.
+//! Web host regression coverage for direct-selection canvas hierarchy depth.
 
 use super::WidgetHost;
 use op_editor_core::{NodeId, Tool};
@@ -39,7 +39,10 @@ fn screen_at(host: &WidgetHost, doc_x: f32, doc_y: f32) -> Point2D {
 }
 
 #[test]
-fn hover_and_double_press_drill_exactly_one_level_then_consume_stamp() {
+fn hover_and_press_directly_select_the_deepest_node_and_scope_its_parent() {
+    // d5df5872 switched the canvas to direct selection: hover and press both
+    // resolve the deepest rendered node, and the press enters its parent as
+    // the sibling scope instead of drilling one level per click.
     let mut host = seed();
     // Absolute bounds nest at root 500, level-1 520, level-2 540,
     // level-3 560. This point is inside all four rendered nodes.
@@ -48,49 +51,26 @@ fn hover_and_double_press_drill_exactly_one_level_then_consume_stamp() {
     assert!(host.apply_cursor_move(point.x, point.y));
     assert_eq!(
         host.editor_state.editor_ui.canvas_hover_node,
-        Some(NodeId::new("level-1")),
-        "idle hover resolves to the root scope's direct child"
+        Some(NodeId::new("level-3")),
+        "idle hover resolves to the deepest node under the pointer"
     );
 
-    host.set_now_ms(1_000);
-    assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
-    assert_eq!(host.editor_state.selection.anchor, NodeId::new("level-1"));
-    assert_eq!(host.editor_state.editor_ui.entered_container, None);
-    assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));
-
-    host.set_now_ms(1_200);
-    assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
-    assert_eq!(
-        host.editor_state.selection.anchor,
-        NodeId::new("level-2"),
-        "the second press drills only to the direct child under the pointer"
-    );
-    assert_eq!(
-        host.editor_state.editor_ui.entered_container,
-        Some(NodeId::new("level-1"))
-    );
-    assert_eq!(
-        host.editor_state.editor_ui.canvas_hover_node,
-        Some(NodeId::new("level-2")),
-        "stationary-pointer hover rebases to the newly entered depth"
-    );
-    assert_eq!(
-        host.editor_state.editor_ui.last_canvas_click, None,
-        "a completed double press consumes its stamp"
-    );
-    let _ = host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H);
-
-    host.set_now_ms(1_300);
-    assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
-    assert_eq!(
-        host.editor_state.selection.anchor,
-        NodeId::new("level-2"),
-        "a third press starts a fresh click instead of drilling to level-3"
-    );
-    assert_eq!(
-        host.editor_state.editor_ui.entered_container,
-        Some(NodeId::new("level-1"))
-    );
+    for now_ms in [1_000, 1_200, 1_600] {
+        host.set_now_ms(now_ms);
+        assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
+        assert_eq!(
+            host.editor_state.selection.anchor,
+            NodeId::new("level-3"),
+            "every press at {now_ms}ms selects the deepest node directly"
+        );
+        assert_eq!(
+            host.editor_state.editor_ui.entered_container,
+            Some(NodeId::new("level-2")),
+            "the selected node's parent becomes the sibling scope"
+        );
+        // A release without movement has nothing to repaint.
+        let _ = host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H);
+    }
 }
 
 #[test]

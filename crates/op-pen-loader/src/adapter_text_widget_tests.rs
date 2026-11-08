@@ -343,7 +343,7 @@ fn styled_text_builds_runs_and_keeps_flat_string() {
       "pages":[{"id":"p","name":"P","children":[
         {"type":"text","id":"t","fontSize":16,"fontStyle":"italic","underline":true,
          "content":[
-           {"text":"Hello ","fontWeight":700,"fill":"#ff0000"},
+           {"text":"Hello ","fontFamily":"Georgia","fontWeight":700,"fill":"#ff0000"},
            {"text":"world","fontSize":24,"fontStyle":"normal","underline":false,"strikethrough":true}
          ]}
       ]}],
@@ -359,6 +359,10 @@ fn styled_text_builds_runs_and_keeps_flat_string() {
     let first = &t.text_runs[0];
     assert_eq!(first.text, "Hello ");
     assert_eq!(first.font_weight, 700);
+    assert_eq!(
+        serde_json::to_value(first).unwrap()["font_family"],
+        "Georgia"
+    );
     assert_eq!(first.font_size, 0.0, "no per-seg size → inherit sentinel");
     assert_eq!(first.fill, Some([1.0, 0.0, 0.0, 1.0]));
     assert!(first.italic, "no per-seg style → inherits node italic");

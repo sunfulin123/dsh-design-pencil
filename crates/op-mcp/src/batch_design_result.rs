@@ -48,6 +48,22 @@ impl McpTool for BatchDesign {
         "batch_design"
     }
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
+        let outcome = self.call_unchecked(args);
+        let command = match &outcome {
+            ToolOutcome::OkWithCommand(_, command) | ToolOutcome::OkJsonWithCommand(_, command) => {
+                command
+            }
+            _ => return outcome,
+        };
+        match super::path_geometry::validate_command_paths(command) {
+            Ok(()) => outcome,
+            Err(message) => ToolOutcome::Err(ToolErrorCode::InvalidArgument, message),
+        }
+    }
+}
+
+impl BatchDesign {
+    fn call_unchecked(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
         // `script` must be gated BEFORE the `operations` shortcut below —
         // otherwise a caller that (invalidly) sends both `script` and
         // `operations` would silently run the `operations` path instead of

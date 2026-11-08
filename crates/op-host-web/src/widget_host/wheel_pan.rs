@@ -166,7 +166,7 @@ impl WidgetHost {
     /// physical scroll distance while canvas zoom receives device-sensitive
     /// acceleration, so making pinch responsive does not make property and
     /// layer panels jump.
-    pub(crate) fn apply_wheel_with_canvas_delta(
+    pub(in crate::widget_host) fn wheel_layout(
         &mut self,
         x: f32,
         y: f32,
@@ -243,7 +243,7 @@ impl WidgetHost {
         // canvas-region offset (sidebar collapse aware).
         let (cx0, cy0, _cw, _ch) = self.canvas_region(viewport_width, viewport_height);
         let cursor = Point2D::new(x - cx0, y - cy0);
-        self.editor_state.viewport.zoom_at(cursor, canvas_delta_y);
+        self.zoom_at_layout(cursor, canvas_delta_y);
         // A wheel zoom only changes the viewport (camera); the document-space
         // layout scene is unchanged, so keep the layout cache intact — no
         // `mark_dirty()` (matches native `scroll.rs`). The wheel listener
@@ -256,7 +256,7 @@ impl WidgetHost {
     /// swipe pans, pinch / Cmd+wheel / mouse-wheel zooms. Public
     /// host API — a future trackpad-gesture runner wires this.
     #[allow(dead_code)]
-    pub fn apply_pan_gesture(
+    pub(in crate::widget_host) fn pan_gesture_layout(
         &mut self,
         x: f32,
         y: f32,
@@ -327,7 +327,7 @@ impl WidgetHost {
         true
     }
 
-    pub fn apply_pan_press(
+    pub(in crate::widget_host) fn pan_press_layout(
         &mut self,
         x: f32,
         y: f32,

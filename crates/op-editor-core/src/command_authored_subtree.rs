@@ -87,6 +87,9 @@ impl EditorState {
             }
             roots.extend(nodes);
         }
+        if replacement.is_some() {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
         true
     }
 }

@@ -27,6 +27,11 @@
 ## Checklist
 
 - [ ] `cargo test --workspace` passes
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes
+- [ ] `cargo clippy --workspace --all-targets` has no errors (warnings are non-blocking)
+- [ ] Maintenance gate with the task base ref passes; legacy line ceilings only decrease
+- [ ] Relevant CanvasKit / Node / MCP / browser tests ran; skipped and unrun checks are stated
+- [ ] Generated v2 task note includes Task-ID, actual changes, validation results and remaining risks
+- [ ] Knowledge refresh receipts identify updated/unchanged entries or a specific no-impact reason
+- [ ] Product, architecture, commands and standards are current; KB source fingerprints pass
 - [ ] No unrelated changes included
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)

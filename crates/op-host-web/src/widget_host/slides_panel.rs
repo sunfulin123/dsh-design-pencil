@@ -296,13 +296,15 @@ impl WidgetHost {
     /// Frame one board in the canvas region. Camera only.
     fn frame_slide_board(&mut self, board_id: &str, viewport_w: f32, viewport_h: f32) {
         self.refresh_layout_scene();
-        op_editor_ui::widgets::host_overlay_geometry::zoom_to_fit_node(
-            &mut self.editor_state,
-            &self.layout_scene,
-            board_id,
-            viewport_w,
-            viewport_h,
-        );
+        if let Some(bounds) = self
+            .layout_scene
+            .active_page()
+            .and_then(|page| page.find(board_id))
+            .map(|node| node.aggregate_bounds())
+        {
+            let (_, _, width, height) = self.canvas_region(viewport_w, viewport_h);
+            self.fit_camera_layout(bounds, width, height, 48.0);
+        }
     }
 
     /// Wheel / trackpad scroll over the slide list.

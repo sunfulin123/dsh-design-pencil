@@ -36,6 +36,7 @@ impl CanvasKitBackend {
 
     /// Register a user-imported font under its selectable family name.
     pub fn register_imported_font(&mut self, family: &str, bytes: &[u8]) -> bool {
+        op_editor_ui::raster_epoch::bump_fonts();
         match crate::vf_normalize::with_default_wght_400(bytes) {
             Some(patched) => self.ck.register_imported_font(family, &patched),
             None => self.ck.register_imported_font(family, bytes),
@@ -44,6 +45,7 @@ impl CanvasKitBackend {
 
     /// Register a fresh browser import and return its parsed family name.
     pub fn register_imported_font_from_bytes(&mut self, bytes: &[u8]) -> Option<String> {
+        op_editor_ui::raster_epoch::bump_fonts();
         let family = crate::font_meta::parse_family(bytes)?;
         self.register_imported_font(&family, bytes)
             .then_some(family)
@@ -51,6 +53,7 @@ impl CanvasKitBackend {
 
     /// Register an app-bundled design face below imported and system faces.
     pub fn register_bundled_font(&mut self, family: &str, bytes: &[u8]) -> bool {
+        op_editor_ui::raster_epoch::bump_fonts();
         self.ck.register_bundled_font(family, bytes)
     }
 

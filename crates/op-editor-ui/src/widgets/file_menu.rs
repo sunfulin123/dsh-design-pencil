@@ -41,6 +41,7 @@ fn t(ui: &EditorUiState, key: &str) -> &'static str {
         "recentFiles" => "fileMenu.recentFiles",
         "noRecentFiles" => "fileMenu.noRecentFiles",
         "clearHistory" => "fileMenu.clearHistory",
+        "recovery" => "drafts.title",
         _ => return "",
     };
     let translated = op_i18n::translate(ui.effective_locale(), full);
@@ -103,6 +104,7 @@ pub enum FileMenuChoice {
     ExportPptx,
     OpenRecent(usize),
     ClearRecent,
+    RecoverDrafts,
 }
 
 pub struct FileMenu<'a> {
@@ -201,6 +203,10 @@ impl<'a> FileMenu<'a> {
         6 + usize::from(self.has_save_as_template_row()) + self.export_rows()
     }
 
+    fn recovery_row(&self) -> usize {
+        self.recent_row_start() + self.recent.len() + 1
+    }
+
     /// Label for the batch-export row: naming the selected frames when
     /// the selection would narrow the scope, else "all frames".
     fn export_all_label(&self) -> String {
@@ -229,6 +235,9 @@ impl<'a> FileMenu<'a> {
         h += ROW_HEIGHT * recent_len as f32;
         h += DIVIDER_GAP * 2.0 + 1.0;
         h += ROW_HEIGHT; // Clear history
+        if self.ui.draft_recovery_supported {
+            h += DIVIDER_GAP * 2.0 + 1.0 + ROW_HEIGHT;
+        }
         h += PAD_Y;
         h
     }
@@ -254,6 +263,9 @@ impl<'a> FileMenu<'a> {
     pub fn choice_for_row(&self, row: usize) -> Option<FileMenuChoice> {
         let recent_start = self.recent_row_start();
         match row {
+            row if self.ui.draft_recovery_supported && row == self.recovery_row() => {
+                Some(FileMenuChoice::RecoverDrafts)
+            }
             0 => Some(FileMenuChoice::Home),
             1 => Some(FileMenuChoice::NewFile),
             2 => Some(FileMenuChoice::NewFromTemplate),
@@ -329,6 +341,10 @@ impl<'a> FileMenu<'a> {
         y += DIVIDER_GAP * 2.0 + 1.0;
         if !self.recent.is_empty() && row_hit(panel.origin.x, y, point) {
             return MenuHit::Row(row);
+        }
+        y += ROW_HEIGHT + DIVIDER_GAP * 2.0 + 1.0;
+        if self.ui.draft_recovery_supported && row_hit(panel.origin.x, y, point) {
+            return MenuHit::Row(self.recovery_row());
         }
         MenuHit::Inside
     }

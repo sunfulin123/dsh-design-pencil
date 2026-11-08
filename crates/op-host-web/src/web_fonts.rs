@@ -11,8 +11,11 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::repaint_ctx::RepaintContext;
-use jian_ops_schema::node::{PenNode, TextContent};
+use jian_ops_schema::node::PenNode;
+#[cfg(test)]
+use jian_ops_schema::node::TextContent;
 use js_sys::{Array, Function, Promise, Reflect, Uint8Array};
+#[cfg(test)]
 use op_editor_core::pen_node_ext::PenNodeExt;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
@@ -241,9 +244,49 @@ fn used_font_families<C: RepaintContext + 'static>(inner: &InnerRc<C>) -> Vec<St
     let Ok(b) = inner.try_borrow() else {
         return Vec::new();
     };
-    used_font_families_from_state(b.host().editor_state())
+    let host = b.host();
+    let generation = host.scene_generation();
+    let mut families = SCENE_FONTS
+        .with(|slot| {
+            slot.borrow()
+                .as_ref()
+                .filter(|(cached, _)| *cached == generation)
+                .map(|(_, families)| families.clone())
+        })
+        .unwrap_or_else(|| {
+            let families = host.scene_text_font_families();
+            SCENE_FONTS.with(|slot| *slot.borrow_mut() = Some((generation, families.clone())));
+            families
+        });
+    families.extend(selected_text_family(host.editor_state()));
+    normalized_families(families)
 }
 
+thread_local! {
+    /// Font stacks of the current scene, keyed by its generation. Reading the
+    /// built scene avoids re-expanding component instances on every event.
+    static SCENE_FONTS: RefCell<Option<(u64, Vec<String>)>> = const { RefCell::new(None) };
+}
+
+fn selected_text_family(state: &op_editor_core::EditorState) -> Option<String> {
+    match state.selected_node() {
+        Some(PenNode::Text(text)) => text.font_family.clone(),
+        _ => None,
+    }
+}
+
+fn normalized_families(families: Vec<String>) -> Vec<String> {
+    families
+        .into_iter()
+        .flat_map(|family| op_editor_core::font_catalog::split_font_family_stack(&family))
+        .filter(|family| !op_editor_core::font_catalog::is_generic_or_system_font_alias(family))
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+/// State-only scan (tests): expands the active page's component instances.
+#[cfg(test)]
 fn used_font_families_from_state(state: &op_editor_core::EditorState) -> Vec<String> {
     let mut families = Vec::new();
     let authored = state.active_children();
@@ -255,20 +298,11 @@ fn used_font_families_from_state(state: &op_editor_core::EditorState) -> Vec<Str
         authored
     };
     collect_text_font_families(active_canvas, &mut families);
-    if let Some(PenNode::Text(text)) = state.selected_node() {
-        if let Some(family) = text.font_family.as_ref() {
-            families.push(family.clone());
-        }
-    }
-    families
-        .into_iter()
-        .flat_map(|family| op_editor_core::font_catalog::split_font_family_stack(&family))
-        .filter(|family| !op_editor_core::font_catalog::is_generic_or_system_font_alias(family))
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect()
+    families.extend(selected_text_family(state));
+    normalized_families(families)
 }
 
+#[cfg(test)]
 fn nodes_have_refs(nodes: &[PenNode]) -> bool {
     nodes.iter().any(|node| {
         matches!(node, PenNode::Ref(_))
@@ -278,6 +312,7 @@ fn nodes_have_refs(nodes: &[PenNode]) -> bool {
     })
 }
 
+#[cfg(test)]
 fn collect_text_font_families(nodes: &[PenNode], out: &mut Vec<String>) {
     for node in nodes {
         if let PenNode::Text(text) = node {
@@ -341,6 +376,7 @@ fn request_font_bytes<C: RepaintContext + 'static>(inner: &InnerRc<C>, family: S
             let ok = b.register_system_font(&family_bytes, &bytes);
             mark_font_load_finished(&key_bytes, ok);
             if ok {
+                op_editor_ui::raster_epoch::bump_fonts();
                 b.host_mut().mark_editor_state_dirty();
                 // A newly-registered system-font face changes text metrics
                 // without touching the doc; the web scene cache has no
@@ -511,6 +547,7 @@ fn refresh_imported_font_snapshot<C: RepaintContext + 'static>(inner: &InnerRc<C
         .editor_state_mut()
         .editor_ui
         .imported_font_families = Arc::new(families);
+    op_editor_ui::raster_epoch::bump_fonts();
     b.host_mut().mark_editor_state_dirty();
     b.host_mut().refresh_missing_fonts_prompt();
     // A font change alters text metrics/rendering without touching the doc, and

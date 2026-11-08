@@ -34,6 +34,28 @@ impl WidgetHost {
         viewport_width: f32,
         viewport_height: f32,
     ) -> accesskit::TreeUpdate {
+        self.with_ui_scale(|host, scale| {
+            let mut tree =
+                host.accessibility_tree_layout(viewport_width / scale, viewport_height / scale);
+            for (_, node) in &mut tree.nodes {
+                if let Some(bounds) = node.bounds() {
+                    node.set_bounds(accesskit::Rect {
+                        x0: bounds.x0 * f64::from(scale),
+                        y0: bounds.y0 * f64::from(scale),
+                        x1: bounds.x1 * f64::from(scale),
+                        y1: bounds.y1 * f64::from(scale),
+                    });
+                }
+            }
+            tree
+        })
+    }
+
+    fn accessibility_tree_layout(
+        &mut self,
+        viewport_width: f32,
+        viewport_height: f32,
+    ) -> accesskit::TreeUpdate {
         // Keep the canvas scene in sync with editor state (cheap no-op when
         // not dirty) so the CanvasViewport widget matches what paint draws.
         self.refresh_layout_scene();
@@ -141,9 +163,10 @@ mod tests {
             ids.contains(&node_id(WidgetId::new(CANVAS_WIDGET_ID))),
             "canvas"
         );
+        // fb91df6f retired the in-editor chat; DSH owns AI chat.
         assert!(
-            ids.contains(&node_id(WidgetId::new(AI_CHAT_WIDGET_ID))),
-            "chat"
+            !ids.contains(&node_id(WidgetId::new(AI_CHAT_WIDGET_ID))),
+            "no chat region"
         );
         // Root advertises every emitted child.
         let (_, root) = &update.nodes[0];
@@ -163,6 +186,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
     fn focused_chat_input_takes_focus() {
         let mut h = host();
         h.editor_state.chat.focused = true;

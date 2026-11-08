@@ -40,6 +40,8 @@ fn is_zero_i8(v: &i8) -> bool {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextRunPayload {
     pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
     #[serde(default)]
     pub font_size: f32,
     #[serde(default)]

@@ -79,7 +79,7 @@ const sniffsAsSvg = (bytes) => {
     );
     const trimmed = head.replace(/^﻿/, '').trimStart();
     return trimmed.startsWith('<') && trimmed.includes('<svg');
-  } catch (_error) {
+  } catch {
     return false;
   }
 };
@@ -177,13 +177,13 @@ export function createWebImageCaches(CK) {
       img.onload = () => {
         try {
           settle(installRasterizedSvg(key, img));
-        } catch (_error) {
+        } catch {
           settle(false);
         }
       };
       img.onerror = () => settle(false);
       img.src = url;
-    } catch (_error) {
+    } catch {
       settle(false);
     }
   };
@@ -283,7 +283,7 @@ export function createWebImageCaches(CK) {
       fullImageCacheBytes += bytes;
       evictFullImages();
       return fullImageCache.has(key);
-    } catch (_error) {
+    } catch {
       deleteImage(image);
       return false;
     }
@@ -324,7 +324,7 @@ export function createWebImageCaches(CK) {
       thumbnailCacheBytes += bytes;
       evictThumbnails();
       return image;
-    } catch (_error) {
+    } catch {
       deleteImage(image);
       rememberThumbnailFailure(key);
       return null;
@@ -378,7 +378,7 @@ export function createWebImageCaches(CK) {
       } else {
         canvas.drawImageRect(image, src, dst, paint, false);
       }
-    } catch (_error) {
+    } catch {
       const key = imageKey(lo, hi);
       discardThumbnail(key);
       rememberThumbnailFailure(key);

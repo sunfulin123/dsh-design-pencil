@@ -113,8 +113,12 @@ fn direct_child_hover_hint_replays_parent_and_child_rotation_flip_chain() {
         viewport.paint(&mut cx, Rect::xywh(0.0, 0.0, 300.0, 240.0));
     }
 
-    let transforms = active_transforms_at_first_line_stroke(&backend, HOVER_OUTLINE_COLOR)
-        .expect("a direct child should paint dashed hierarchy strokes");
+    // The focus outline is dashed too, so pick a stroke on direct-b's edge.
+    let direct_b = Rect::xywh(100.0, 40.0, 80.0, 100.0);
+    let transforms = active_transforms_at_line_stroke(&backend, HOVER_OUTLINE_COLOR, |from, to| {
+        line_lies_on_rect_edge(from, to, direct_b)
+    })
+    .expect("a direct child should paint dashed hierarchy strokes");
     assert_eq!(
         transforms.rotations.len(),
         1,

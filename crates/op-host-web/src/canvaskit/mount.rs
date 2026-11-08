@@ -50,8 +50,23 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
 
     let mut host = crate::widget_host::WidgetHost::new();
     let search = window.location().search().unwrap_or_default();
+    host.frame_perf.set_enabled(
+        search
+            .trim_start_matches('?')
+            .split('&')
+            .any(|kv| kv == "perf=1"),
+    );
+    crate::render_mode::set_render_only(crate::render_mode::render_only_requested(&search));
+    if search
+        .trim_start_matches('?')
+        .split('&')
+        .any(|kv| kv == "tiles=0")
+    {
+        host.canvas_tiles.disable();
+    }
     host.editor_state_mut().editor_ui.embed = op_editor_core::EmbedHost::VsCode;
     let credential_load = crate::web_settings::load_into(host.editor_state_mut());
+    super::ui_scale::restore(host.editor_state_mut());
     // Theme is device-level, so it is resolved from its own unpartitioned key
     // rather than from the partition blob just loaded. On a browser that has
     // never run the split build this adopts the blob's theme and writes the
@@ -110,8 +125,10 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
         canvas: canvas.clone(),
         a11y,
         ime,
+        cursor_before_eyedropper: None,
         video_overlay,
     }));
+    super::ui_scale::install(&inner);
     // Reset the credential-sync queue BEFORE the first repaint and before the
     // rAF coalescer is installed below. `repaint` calls
     // `web_credential_sync::credential_changed` whenever a credential edit
@@ -127,6 +144,7 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
         // shell supports user font import — flip the flag the shared picker
         // reads to paint the Imported group + "Import font…" row (#Phase 4).
         b.host.editor_state_mut().editor_ui.font_import_supported = true;
+        b.host.editor_state_mut().editor_ui.diagram_import_supported = true;
         // Same for the Styles tab's DESIGN.md import: a hidden `<input
         // type=file>` is a file dialog for this purpose, so the box paints its
         // "choose file" button alongside the paste area rather than offering
@@ -192,6 +210,7 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
     // Fetch the app-shipped design fonts the wasm bundle omits (async; releases
     // the gate above and repaints once every request has settled).
     crate::bundled_fonts_web::load_bundled_fonts_at_mount(&inner);
+    super::import_fonts::start(&inner);
     // Re-register any user-imported fonts persisted in IndexedDB (async; repaints
     // when the read lands so their text re-shapes with the imported typeface).
     crate::web_fonts::load_imported_fonts_at_mount(&inner);
@@ -269,6 +288,8 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     return;
                 }
                 crate::live_sync_glue::start(&inner_for_sync, sync_for_start.clone());
+                super::render_sampling::start(&inner_for_sync, sync_for_start.clone());
+                super::render_screenshot::start(&inner_for_sync, sync_for_start.clone());
                 if managed {
                     crate::vscode_bridge::emit_ready(&inner_for_ready);
                 } else if crate::live_sync::bridge_token().is_some() {

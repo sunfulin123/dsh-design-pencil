@@ -364,6 +364,7 @@ fn empty_document() -> jian_ops_schema::PenDocument {
         version: env!("CARGO_PKG_VERSION").to_owned(),
         name: None,
         themes: None,
+        theme: None,
         variables: None,
         pages: None,
         children: Vec::new(),
@@ -377,6 +378,7 @@ fn empty_document() -> jian_ops_schema::PenDocument {
         design_md: None,
         conversion: None,
         motion: None,
+        shared_styles: None,
         // A fresh empty document never opts into the responsive schema.
         responsive: None,
     }

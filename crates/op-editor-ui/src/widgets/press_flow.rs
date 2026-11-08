@@ -368,6 +368,7 @@ pub fn apply_shared_top_bar_hit(
             TopBarPress::Handled
         }
         TopBarHit::ToggleTheme => {
+            state.editor_ui.temporary_theme_override = None;
             state.editor_ui.theme_mode = state.editor_ui.theme_mode.flipped();
             TopBarPress::Handled
         }

@@ -90,6 +90,7 @@ fn insert_node_can_insert_on_requested_page_without_switching_active_page() {
     let mut s = state_with(vec![]);
     s.doc.pages = Some(vec![
         PenPage {
+            theme: None,
             id: "page-1".into(),
             name: "Page 1".into(),
             children: vec![frame("n1", "Current", 0.0, 0.0, 100.0, 100.0, vec![])],
@@ -98,6 +99,7 @@ fn insert_node_can_insert_on_requested_page_without_switching_active_page() {
             lifecycle: None,
         },
         PenPage {
+            theme: None,
             id: "page-2".into(),
             name: "Page 2".into(),
             children: Vec::new(),

@@ -9,8 +9,8 @@ use super::press_ctx::PressCtx;
 use super::{CodeSelectionDragState, WidgetHost};
 use op_editor_core::codegen::CodeSelection;
 use op_editor_ui::widgets::press_flow;
-use op_editor_ui::widgets::{PropertyPanel, TOP_BAR_HEIGHT};
-use op_editor_ui::{Point2D, Rect};
+use op_editor_ui::widgets::PropertyPanel;
+use op_editor_ui::Point2D;
 
 impl WidgetHost {
     /// Fill-type, compositing, effects, colour-variable, and export
@@ -27,16 +27,11 @@ impl WidgetHost {
         // is swallowed; any outside click closes the picker.
         if self.editor_state.codegen.framework_picker_open {
             if let Some(panel) = PropertyPanel::for_selection(&self.editor_state) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        viewport_width - self.editor_state.editor_ui.property_panel_width,
-                        TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (viewport_height - TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = press_flow::property_panel_rect(
+                    &self.editor_state,
+                    viewport_width,
+                    viewport_height,
+                );
                 if let Some(action) = panel.hit_test_action(property_rect, Point2D::new(x, y)) {
                     if matches!(
                         action,
@@ -115,16 +110,11 @@ impl WidgetHost {
             || self.editor_state.editor_ui.export_format_picker_open
         {
             if let Some(panel) = PropertyPanel::for_selection(&self.editor_state) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        viewport_width - self.editor_state.editor_ui.property_panel_width,
-                        TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (viewport_height - TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = press_flow::property_panel_rect(
+                    &self.editor_state,
+                    viewport_width,
+                    viewport_height,
+                );
                 if let Some(action) = panel.hit_test_action(property_rect, Point2D::new(x, y)) {
                     if matches!(
                         action,
@@ -169,16 +159,11 @@ impl WidgetHost {
         if self.editor_state.editor_ui.font_picker.open {
             use op_editor_ui::widgets::PropertyPanelAction as A;
             if let Some(panel) = PropertyPanel::for_selection(&self.editor_state) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        viewport_width - self.editor_state.editor_ui.property_panel_width,
-                        TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (viewport_height - TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = press_flow::property_panel_rect(
+                    &self.editor_state,
+                    viewport_width,
+                    viewport_height,
+                );
                 let point = Point2D::new(x, y);
                 if let Some(action) = panel.hit_test_action(property_rect, point) {
                     if matches!(
@@ -212,16 +197,11 @@ impl WidgetHost {
         {
             use op_editor_ui::widgets::PropertyPanelAction as A;
             if let Some(panel) = PropertyPanel::for_selection(&self.editor_state) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        viewport_width - self.editor_state.editor_ui.property_panel_width,
-                        TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (viewport_height - TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = press_flow::property_panel_rect(
+                    &self.editor_state,
+                    viewport_width,
+                    viewport_height,
+                );
                 if let Some(action) = panel.hit_test_action(property_rect, Point2D::new(x, y)) {
                     if matches!(
                         action,
@@ -282,16 +262,11 @@ impl WidgetHost {
         if let Some(panel) =
             PropertyPanel::for_selection_with_scene(&self.editor_state, &self.layout_scene)
         {
-            let property_rect = Rect {
-                origin: Point2D::new(
-                    viewport_width - self.editor_state.editor_ui.property_panel_width,
-                    TOP_BAR_HEIGHT,
-                ),
-                size: Point2D::new(
-                    self.editor_state.editor_ui.property_panel_width,
-                    (viewport_height - TOP_BAR_HEIGHT).max(0.0),
-                ),
-            };
+            let property_rect = press_flow::property_panel_rect(
+                &self.editor_state,
+                viewport_width,
+                viewport_height,
+            );
             let point = Point2D::new(x, y);
             let hits_action = panel.hit_test_action(property_rect, point).is_some();
             if !hits_action {

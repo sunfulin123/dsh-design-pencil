@@ -78,6 +78,11 @@ pub enum EffectAddMenuHit {
 }
 
 pub struct PropertyPanel {
+    pub component_inspector: Option<crate::widgets::property_panel_components::ComponentInspector>,
+    pub design_system_inspector:
+        op_editor_core::design_system_inspector_draft::DesignSystemInspectorDraft,
+    pub text_inspector: op_editor_core::text_inspector_draft::TextInspectorDraft,
+    pub text_inspector_enabled: bool,
     pub id: WidgetId,
     pub snapshot: NodeSnapshot,
     pub theme: Theme,
@@ -312,13 +317,96 @@ impl PropertyPanel {
         if self.page_only {
             return crate::widgets::property_panel_page::content_height();
         }
-        sections::property_panel_content_height(
+        let base = sections::property_panel_content_height(
             panel_rect,
             self.visible_sections(),
             &self.snapshot.effects,
             &self.snapshot.fills,
             &self.snapshot.interactions,
-        )
+        );
+        base + self.component_inspector.as_ref().map_or(0.0, |model| {
+            crate::widgets::property_panel_components::height(model, self.locale)
+        }) + if !self.is_multi {
+            crate::widgets::property_panel_design_system::HEIGHT
+        } else {
+            0.0
+        }
+    }
+
+    pub(crate) fn component_inspector_rect(&self, panel_rect: Rect) -> Option<Rect> {
+        let model = self.component_inspector.as_ref()?;
+        let base = sections::property_panel_content_height(
+            panel_rect,
+            self.visible_sections(),
+            &self.snapshot.effects,
+            &self.snapshot.fills,
+            &self.snapshot.interactions,
+        );
+        let scrolled = self.scrolled_rect(panel_rect);
+        Some(Rect::xywh(
+            scrolled.origin.x,
+            scrolled.origin.y + base,
+            scrolled.size.x,
+            crate::widgets::property_panel_components::height(model, self.locale),
+        ))
+    }
+
+    pub(crate) fn design_system_inspector_rect(&self, panel_rect: Rect) -> Option<Rect> {
+        if self.is_multi || self.page_only {
+            return None;
+        }
+        let base = sections::property_panel_content_height(
+            panel_rect,
+            self.visible_sections(),
+            &self.snapshot.effects,
+            &self.snapshot.fills,
+            &self.snapshot.interactions,
+        );
+        let component_height = self.component_inspector.as_ref().map_or(0.0, |model| {
+            crate::widgets::property_panel_components::height(model, self.locale)
+        });
+        let scrolled = self.scrolled_rect(panel_rect);
+        Some(Rect::xywh(
+            scrolled.origin.x,
+            scrolled.origin.y + base + component_height,
+            scrolled.size.x,
+            crate::widgets::property_panel_design_system::HEIGHT,
+        ))
+    }
+
+    pub(crate) fn body_action_rects(&self, panel_rect: Rect) -> Vec<(PropertyPanelAction, Rect)> {
+        let mut actions = sections::action_button_rects_with_fill_picker(
+            self.scrolled_rect(panel_rect),
+            self.visible_sections(),
+            &self.snapshot.effects,
+            &self.snapshot.fills,
+            &self.snapshot.interactions,
+            self.fill_type_picker.open,
+            self.fill_type_picker_index,
+            self.font_picker.open,
+            self.font_weight_picker_open,
+            self.export_scale_picker_open,
+            self.export_format_picker_open,
+            self.padding_mode_popover_open,
+        );
+        if let (Some(model), Some(bounds)) = (
+            &self.component_inspector,
+            self.component_inspector_rect(panel_rect),
+        ) {
+            actions.extend(crate::widgets::property_panel_components::actions(
+                model,
+                self.locale,
+                bounds,
+            ));
+        }
+        if let Some(bounds) = self.design_system_inspector_rect(panel_rect) {
+            actions.extend(crate::widgets::property_panel_design_system::action_rects(
+                bounds.origin.x,
+                bounds.origin.y,
+                bounds.size.x - crate::widgets::property_panel_inputs::PAD_X * 2.0,
+            ));
+        }
+        actions
     }
 
     /// Section-visibility mask for the current selection, threaded

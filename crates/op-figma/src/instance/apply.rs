@@ -311,6 +311,13 @@ pub(super) fn apply_to_node(
     let is_instance =
         figma.get_str("type") == Some("INSTANCE") || figma.get("symbolData").is_some();
     if is_instance {
+        // Property values assigned to this nested instance from an outer
+        // override path join its own assignments (outer values win).
+        if let Some(assigned) = ov.and_then(|entry| entry.get_array("componentPropAssignments")) {
+            let mut own = super::bindings::own_assignments(&figma);
+            super::bindings::merge_assignments(&mut own, assigned);
+            figma.set("componentPropAssignments", FigValue::Array(own));
+        }
         let component_text = component_text_assignment(ov);
         if nested_ov.is_some() || component_text.is_some() {
             let existing: Vec<FigValue> = figma

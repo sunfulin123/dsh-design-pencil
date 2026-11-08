@@ -41,6 +41,53 @@ fn centre(rect: Rect) -> Point2D {
 }
 
 #[test]
+fn managed_style_card_waits_for_its_id_receipt_before_pinning() {
+    let mut state = open_state();
+    state.editor_ui.scene_template_center.tab = AssetCenterTab::Styles;
+    state.editor_ui.managed_assets = Some(Default::default());
+    state
+        .editor_ui
+        .managed_assets
+        .as_mut()
+        .unwrap()
+        .install(
+            1,
+            vec![
+                serde_json::json!({"id":"user:managed-pin","name":"Managed","kind":"style-guide"}),
+            ],
+        )
+        .unwrap();
+    let card = SceneTemplatePanel::for_editor(&state)
+        .unwrap()
+        .card_rects(PANEL)[0]
+        .1;
+    let before = state.doc.clone();
+    assert_eq!(press(&mut state, centre(card)), Some(true));
+    assert_eq!(state.doc, before);
+    assert_eq!(state.editor_ui.pinned_style_guide, None);
+    let action = state
+        .editor_ui
+        .managed_assets
+        .as_mut()
+        .unwrap()
+        .pending
+        .pop_front()
+        .unwrap();
+    assert_eq!(action.0, "get_style_guide");
+    assert_eq!(action.1["id"], "user:managed-pin");
+    state.editor_ui.pinned_style_guide = Some("user:managed-pin".into());
+    assert_eq!(press(&mut state, centre(card)), Some(true));
+    assert_eq!(state.editor_ui.pinned_style_guide, None);
+    assert!(state
+        .editor_ui
+        .managed_assets
+        .as_ref()
+        .unwrap()
+        .pending
+        .is_empty());
+}
+
+#[test]
 fn the_top_bar_palette_button_opens_the_panel() {
     use crate::widgets::{TopBar, TopBarHit, TOP_BAR_HEIGHT};
 

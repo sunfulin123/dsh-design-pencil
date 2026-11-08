@@ -151,6 +151,7 @@ fn tools_list_response_includes_all_registered_tools() {
         "set_node_stroke_width",
         "set_node_stroke_side_width",
         "align_selected",
+        "arrange_nodes",
         "set_node_fill_hex",
         "set_node_flip",
         "set_ellipse_arc",

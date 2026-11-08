@@ -134,6 +134,8 @@ pub struct BatchInsertItem {
 /// touching the document so a bad arg never half-mutates it.
 #[derive(Debug, Clone, PartialEq)]
 pub enum EditorCommand {
+    /// Device preference only: no document edit, history entry or camera zoom.
+    SetUiScale { percent: u16 },
     /// Set a color variable's value by name. Routes through the active-
     /// theme discipline (`set_variable_color`).
     SetVariableColor { name: String, hex: String },
@@ -597,4 +599,6 @@ pub enum EditorCommand {
     ///
     /// [`EditorState::promote_legacy_widgets`]: crate::EditorState::promote_legacy_widgets
     PromoteLegacyWidgets,
+    /// A design operation ported from open-pencil (Tidy / Pack, …).
+    Design(crate::design_command::DesignCommand),
 }

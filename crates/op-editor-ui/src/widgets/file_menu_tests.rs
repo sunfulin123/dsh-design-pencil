@@ -15,6 +15,44 @@ fn menu_panel(menu: &FileMenu<'_>) -> Rect {
     }
 }
 
+#[test]
+fn recovery_row_is_capability_gated_and_shares_paint_hit_geometry() {
+    let mut ui = EditorUiState::default();
+    let baseline = FileMenu::for_editor_ui(&ui, vec![]).height();
+    ui.draft_recovery_supported = true;
+    for recent in [vec![], two_recents()] {
+        let menu = FileMenu::for_editor_ui(&ui, recent);
+        let panel = menu_panel(&menu);
+        let point = Point2D::new(
+            panel.origin.x + 30.0,
+            panel.origin.y + panel.size.y - PAD_Y - ROW_HEIGHT / 2.0,
+        );
+        assert_eq!(
+            menu.hit_test(panel, point),
+            Some(FileMenuChoice::RecoverDrafts)
+        );
+        let mut capture = TextCaptureBackend::default();
+        menu.paint(
+            &mut PaintCx {
+                backend: &mut capture,
+            },
+            panel,
+        );
+        let (_, text_baseline) = capture
+            .texts
+            .iter()
+            .find(|(text, _)| text == t(&ui, "recovery"))
+            .expect("recovery row is painted");
+        assert_eq!(
+            menu.hit_test(panel, Point2D::new(point.x, text_baseline.y - 5.0)),
+            Some(FileMenuChoice::RecoverDrafts)
+        );
+        if menu.recent.is_empty() {
+            assert!(menu.height() > baseline);
+        }
+    }
+}
+
 #[derive(Default)]
 struct TextCaptureBackend {
     texts: Vec<(String, Point2D)>,

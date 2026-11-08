@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "草稿復原",
+        "drafts.notice" => "復原會取代目前文件，可一次復原操作，並會先建立保護性備份。不會儲存繫結檔案。",
+        "drafts.create" => "建立檢查點",
+        "drafts.label" => "檢查點名稱",
+        "drafts.empty" => "尚無復原副本。",
+        "drafts.restoreConfirm" => "復原此副本？",
+        "drafts.deleteConfirm" => "永久刪除此復原副本？",
+        "drafts.syncError" => "請等待本機編輯同步完成後重試。",
+        "drafts.refresh" => "重新整理",
+        "drafts.failed" => "復原請求失敗：{{message}}",
+        "drafts.loading" => "正在更新復原副本…",
+        "drafts.autosave" => "自動儲存",
+        "drafts.checkpoint" => "檢查點",
+        "drafts.backup" => "保護性備份",
+        "colorPicker.sampleError" => "色彩取樣失敗：{{message}}",
+        "statusbar.interfaceScale" => "介面縮放",
+        "statusbar.viewOptions" => "檢視選項",
     "preview.emptyPage" => "目前頁面沒有可預覽的可見畫板。",
     "preview.noFrame" => "無裝置邊框",
     "preview.fit" => "符合視窗",

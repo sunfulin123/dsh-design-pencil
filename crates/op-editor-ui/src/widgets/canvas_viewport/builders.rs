@@ -14,6 +14,18 @@ use crate::{Color, Point2D, Rect};
 use op_editor_core::EditorState;
 use op_editor_core::Viewport as DocViewport;
 impl<'a> CanvasViewport<'a> {
+    /// Whether the page content paints exactly as the document scene says,
+    /// with nothing animated or edited in place — the precondition for
+    /// showing retained tiles instead of a live walk.
+    pub fn content_is_static(&self) -> bool {
+        self.text_editing.is_none()
+            && self.starter_ghost.is_none()
+            && self.node_drag_overlay.is_none()
+            && !self.node_drag_active
+            && self.cull_override.is_none()
+            && op_editor_core::agent_indicators::snapshot_at_if_active(self.now_ms).is_none()
+    }
+
     /// Build the canvas widget for a paint pass.
     ///
     /// Editor state — `viewport` / selection / `tool` / pen-draft /
@@ -86,6 +98,7 @@ impl<'a> CanvasViewport<'a> {
             ),
             fast_interaction: false,
             cull_override: None,
+            content_layer: Default::default(),
         }
     }
 
@@ -139,6 +152,7 @@ impl<'a> CanvasViewport<'a> {
             collab_presence: Vec::new(),
             fast_interaction: false,
             cull_override: None,
+            content_layer: Default::default(),
         }
     }
 

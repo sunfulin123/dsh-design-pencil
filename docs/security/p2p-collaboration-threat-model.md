@@ -695,7 +695,7 @@ The gate verifies:
   are absent;
 - both macOS bundle paths and the pre-notarization release path preserve the
   exact local-network and Bonjour plist declarations;
-- collaboration Rust files stay within the repository's 800-line limit.
+- collaboration Rust business files follow the repository's 500-effective-code-line policy and non-growing legacy baseline; test files are exempt.
 
 The independent `collab-security.yml` workflow also compiles `op-collab` for
 `wasm32-unknown-unknown`, runs the full protocol/state-machine/property suite,

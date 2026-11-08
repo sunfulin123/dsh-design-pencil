@@ -208,7 +208,10 @@ fn double_clicking_selected_crop_enters_crop_edit_mode() {
     host.set_now_ms(1_000);
     assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
     assert_eq!(host.editor_state.selection.anchor, NodeId::new("photo"));
-    assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));
+    assert!(
+        !host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H),
+        "a click without movement needs no repaint"
+    );
 
     host.set_now_ms(1_200);
     assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
@@ -265,7 +268,10 @@ fn layer_selected_deep_crop_leaf_enters_edit_after_two_canvas_presses() {
         NodeId::new("deep-photo"),
         "the first press preserves the exact Layer-panel crop selection"
     );
-    assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));
+    assert!(
+        !host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H),
+        "a click without movement needs no repaint"
+    );
 
     host.set_now_ms(1_200);
     assert!(host.apply_canvas_node_press(path, 0.0, 0.0, false, VIEWPORT_H));
@@ -277,7 +283,7 @@ fn layer_selected_deep_crop_leaf_enters_edit_after_two_canvas_presses() {
 }
 
 #[test]
-fn selected_crop_with_deeper_child_keeps_one_level_drill_behavior() {
+fn double_press_on_child_of_selected_crop_never_edits_the_ancestor_crop() {
     let mut host = seed_deep_hierarchy("crop-with-child");
     let path = vec![
         NodeId::new("outer"),
@@ -288,18 +294,24 @@ fn selected_crop_with_deeper_child_keeps_one_level_drill_behavior() {
 
     host.set_now_ms(1_000);
     assert!(host.apply_canvas_node_press(path.clone(), 0.0, 0.0, false, VIEWPORT_H));
-    assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));
+    assert!(
+        !host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H),
+        "a click without movement needs no repaint"
+    );
     host.set_now_ms(1_200);
     assert!(host.apply_canvas_node_press(path, 0.0, 0.0, false, VIEWPORT_H));
 
+    // Direct selection (d5df5872) resolves the deepest child; a double press
+    // on it must never enter the ancestor's crop edit mode.
     assert_eq!(host.editor_state.editor_ui.image_crop_editing, None);
     assert_eq!(
         host.editor_state.selection.anchor,
-        NodeId::new("crop-with-child"),
-        "double press drills one level instead of editing the ancestor crop"
+        NodeId::new("crop-child"),
+        "double press keeps the directly selected child instead of editing the ancestor crop"
     );
     assert_eq!(
         host.editor_state.editor_ui.entered_container,
-        Some(NodeId::new("middle"))
+        Some(NodeId::new("crop-with-child")),
+        "the selected child's parent becomes the sibling scope"
     );
 }

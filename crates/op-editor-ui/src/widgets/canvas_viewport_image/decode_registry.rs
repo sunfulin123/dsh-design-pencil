@@ -66,12 +66,14 @@ pub fn take_pending_decodes(max: usize) -> Vec<PendingDecode> {
 }
 
 pub fn mark_decode_done(id: u64) {
+    crate::raster_epoch::bump();
     if let Ok(mut registry) = decodes().lock() {
         registry.in_flight.remove(&id);
     }
 }
 
 pub fn mark_decode_failed(id: u64) {
+    crate::raster_epoch::bump();
     let Ok(mut registry) = decodes().lock() else {
         return;
     };

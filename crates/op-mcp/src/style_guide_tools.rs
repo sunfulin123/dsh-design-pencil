@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 
 use op_ai_skills::style_guide::{
-    select_style_guide, style_guide_registry, user_style_guides, Platform, SelectOptions,
-    STYLE_GUIDE_TAGS,
+    find_style_guide, select_style_guide, style_guide_registry, user_style_guides, Platform,
+    SelectOptions, STYLE_GUIDE_TAGS,
 };
 
 use super::{McpTool, ToolErrorCode, ToolOutcome};
@@ -41,6 +41,21 @@ impl McpTool for GetStyleGuide {
     }
 
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
+        if let Some(id) = args.get("id") {
+            let Some(guide) = find_style_guide(id) else {
+                return ToolOutcome::Err(
+                    ToolErrorCode::InvalidArgument,
+                    format!("unknown style guide id {id:?}"),
+                );
+            };
+            return ToolOutcome::OkJson(
+                serde_json::json!({
+                    "id":guide.id(),"name":guide.name,"tags":guide.tags,
+                    "platform":guide.platform.as_str(),"content":guide.content,
+                })
+                .to_string(),
+            );
+        }
         let tags = match parse_tags(args.get("tags").map(String::as_str)) {
             Ok(tags) => tags,
             Err(e) => return ToolOutcome::Err(ToolErrorCode::InvalidArgument, e.to_string()),

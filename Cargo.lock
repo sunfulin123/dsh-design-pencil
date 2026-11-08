@@ -1418,13 +1418,17 @@ name = "op-dsh-engine"
 version = "0.8.5"
 dependencies = [
  "base64",
+ "jian-core",
  "jian-ops-schema",
+ "op-ai-skills",
+ "op-codegen",
  "op-design-lint",
  "op-editor-core",
  "op-figma",
  "op-html",
  "op-mcp",
  "op-pen-loader",
+ "op-preview-core",
  "serde_json",
  "wasm-bindgen",
 ]
@@ -1439,6 +1443,7 @@ dependencies = [
  "jian-ops-schema",
  "jian-widgets",
  "op-ai",
+ "op-design-lint",
  "op-i18n",
  "op-orchestrator",
  "op-util",
@@ -1545,6 +1550,7 @@ dependencies = [
  "jian-ops-schema",
  "markup5ever_rcdom",
  "op-util",
+ "roxmltree",
  "serde_json",
  "url",
  "zip",
@@ -1577,6 +1583,8 @@ dependencies = [
 name = "op-mcp"
 version = "0.8.5"
 dependencies = [
+ "base64",
+ "flate2",
  "jian-ops-schema",
  "jian-scene",
  "op-ai-skills",
@@ -1588,9 +1596,11 @@ dependencies = [
  "op-pen-loader",
  "op-util",
  "regex",
+ "roxmltree",
  "rquickjs",
  "serde",
  "serde_json",
+ "svgtypes",
  "tracing",
 ]
 

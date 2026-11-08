@@ -230,6 +230,19 @@ impl<'a> Widget for FileMenu<'a> {
                 h(self.recent_row_start() + self.recent.len()),
             );
         }
+        if self.ui.draft_recovery_supported {
+            y = paint_divider(cx, &self.theme, rect, y + ROW_HEIGHT);
+            paint_row(
+                cx,
+                &self.theme,
+                rect.origin.x,
+                y,
+                Icon::Undo,
+                t(self.ui, "recovery"),
+                "",
+                h(self.recovery_row()),
+            );
+        }
     }
 
     fn access_node(&self) -> accesskit::Node {

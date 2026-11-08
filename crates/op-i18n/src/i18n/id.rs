@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "Ubah Nama",
+        "layerMenu.copyProperties" => "Salin properti",
+        "layerMenu.pasteProperties" => "Tempel properti",
+        "layerMenu.tidyUp" => "Rapikan",
+        "layerMenu.packHorizontal" => "Rapatkan horizontal",
+        "layerMenu.packVertical" => "Rapatkan vertikal",
+        "layerMenu.designError" => "Tidak dapat mengedit: {{reason}}",
         "common.duplicate" => "Duplikat",
         "common.delete" => "Hapus",
         "common.cancel" => "Batal",
@@ -778,6 +784,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Mengurai file Figma…",
         "importProgress.htmlTitle" => "Mengurai HTML dan aset halaman…",
         "importProgress.htmlSubtitle" => "Memuat gaya dan gambar. Mohon tunggu.",
+        "canvas.pageLoading" => "Memuat halaman…",
         "importProgress.largeFileSubtitle" => "File besar membutuhkan beberapa detik. Mohon tunggu.",
         "account.signedOutHint" => "Masuk untuk menyinkronkan pengaturan dan preferensi Anda",
         "code.noUsableCode" => "AI tidak mengembalikan kode yang dapat digunakan. Coba lagi atau ganti model AI.",

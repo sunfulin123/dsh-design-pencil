@@ -153,6 +153,11 @@ impl EditorState {
         let is_flow_child = selected_is_flow_child(self.active_children(), &sel);
         let mut wrote = false;
         if let Some(node) = find_node_mut(self.active_children_mut(), &sel) {
+            let (width, height) = crate::aspect_lock::constrained_dimensions(
+                node,
+                (axes.width() && bounds.w.is_finite() && bounds.w > 0.0).then_some(bounds.w),
+                (axes.height() && bounds.h.is_finite() && bounds.h > 0.0).then_some(bounds.h),
+            );
             if !is_flow_child {
                 if let Some(x) = new_x.filter(|value| value.is_finite()) {
                     node.base_mut().x = Some(x);
@@ -163,12 +168,12 @@ impl EditorState {
                     wrote = true;
                 }
             }
-            if axes.width() && bounds.w.is_finite() && bounds.w > 0.0 {
-                node.set_width_px(bounds.w);
+            if let Some(width) = width {
+                node.set_width_px(width);
                 wrote = true;
             }
-            if axes.height() && bounds.h.is_finite() && bounds.h > 0.0 {
-                node.set_height_px(bounds.h);
+            if let Some(height) = height {
+                node.set_height_px(height);
                 wrote = true;
             }
             if axes.width() {

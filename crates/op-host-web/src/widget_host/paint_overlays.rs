@@ -273,6 +273,8 @@ impl WidgetHost {
         // over the window (native §13). The web runner doesn't raise
         // `file_drop_active` yet; painting the guard keeps z-order
         // parity for when DOM drag events get wired.
+        self.paint_view_options(backend, viewport_width, viewport_height);
+        self.paint_eyedropper(backend, viewport_width, viewport_height);
         if self.editor_state.editor_ui.file_drop_active {
             let (drop_left, _y, drop_w, drop_h) =
                 self.canvas_region(viewport_width, viewport_height);

@@ -367,13 +367,18 @@ mod host_palette_tests {
 
     #[test]
     fn managed_light_theme_uses_dsh_white_surfaces_and_blue_focus() {
-        let mut ui = EditorUiState::default();
-        ui.embed = op_editor_core::EmbedHost::VsCode;
+        let mut ui = EditorUiState {
+            embed: op_editor_core::EmbedHost::VsCode,
+            ..Default::default()
+        };
         ui.set_host_theme_override(Some(ThemeMode::Light));
         let theme = theme_for(&ui);
         assert_eq!(theme.background, crate::Color::WHITE);
         assert_eq!(theme.card, crate::Color::WHITE);
-        assert_eq!(theme.canvas_surface, crate::Color::WHITE);
+        assert_eq!(
+            theme.canvas_surface,
+            crate::util::parse_hex_color("#f4f4f4").unwrap()
+        );
         assert_eq!(
             theme.primary,
             crate::util::parse_hex_color("#4176e6").unwrap()
@@ -386,8 +391,10 @@ mod host_palette_tests {
     #[test]
     fn managed_brand_ink_is_not_used_as_interaction_accent() {
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
-            let mut ui = EditorUiState::default();
-            ui.embed = op_editor_core::EmbedHost::VsCode;
+            let mut ui = EditorUiState {
+                embed: op_editor_core::EmbedHost::VsCode,
+                ..Default::default()
+            };
             ui.set_host_theme_override(Some(mode));
             let ink = if mode == ThemeMode::Dark {
                 "#f9fafb"
@@ -415,8 +422,10 @@ mod host_palette_tests {
     #[test]
     fn host_focus_and_selection_tokens_preserve_alpha_in_both_modes() {
         for mode in [ThemeMode::Light, ThemeMode::Dark] {
-            let mut ui = EditorUiState::default();
-            ui.embed = op_editor_core::EmbedHost::VsCode;
+            let mut ui = EditorUiState {
+                embed: op_editor_core::EmbedHost::VsCode,
+                ..Default::default()
+            };
             ui.set_host_theme_override(Some(mode));
             ui.host_theme_palette = [
                 ("primary".into(), "#112233".into()),

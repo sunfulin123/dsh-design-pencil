@@ -14,12 +14,22 @@ use crate::{
 use jian_ops_schema::node::text::FontStyleKind;
 use jian_ops_schema::node::{
     AlignItems, CornerRadius, FontWeight, ImageFitMode, JustifyContent, LayoutMode,
-    NumberOrExpression, Padding, PenNode, TextAlign, TextContent,
+    NumberOrExpression, Padding, PenNode, TextAlign,
 };
 use jian_ops_schema::sizing::{SizingBehavior, SizingKeyword};
 use jian_ops_schema::style::{PenEffect, PenFill, StrokeThickness};
 use jian_ops_schema::PenDocument;
 use op_editor_core::pen_node_ext::PenNodeExt;
+
+#[path = "rich_text.rs"]
+pub(crate) mod rich_text;
+
+#[path = "component_behaviour.rs"]
+pub(crate) mod component_behaviour;
+
+#[cfg(test)]
+#[path = "rich_text_tests.rs"]
+mod rich_text_tests;
 
 /// Deterministic `HTML/CSS` generator.
 pub struct HtmlCss;
@@ -425,6 +435,11 @@ fn emit_html_css_node(
     depth: usize,
     out: &mut String,
 ) {
+    if component_behaviour::emit_component(doc, node, parent, false, out, emit_html_css_node)
+        || component_behaviour::emit_bound(doc, node, parent, depth, false, out, emit_html_css_node)
+    {
+        return;
+    }
     if node_hidden(node) {
         return;
     }
@@ -580,6 +595,17 @@ fn emit_html_css_node(
             if let Some(ls) = n.letter_spacing.filter(|v| v.abs() > f64::EPSILON) {
                 styles.push(format!("letter-spacing: {}px", fmt_num(ls)));
             }
+            if n.truncates() {
+                styles.push("overflow: hidden".into());
+                if n.max_lines.unwrap_or(1) == 1 {
+                    styles.push("white-space: nowrap".into());
+                    styles.push("text-overflow: ellipsis".into());
+                } else {
+                    styles.push("display: -webkit-box".into());
+                    styles.push("-webkit-box-orient: vertical".into());
+                    styles.push(format!("-webkit-line-clamp: {}", n.max_lines.unwrap_or(1)));
+                }
+            }
             match n.text_align {
                 Some(TextAlign::Center) => styles.push("text-align: center".into()),
                 Some(TextAlign::Right) => styles.push("text-align: right".into()),
@@ -593,13 +619,7 @@ fn emit_html_css_node(
             } else {
                 format!(" style=\"{}\"", styles.join("; "))
             };
-            let content = match &n.content {
-                TextContent::Plain(s) => html_escape(s),
-                TextContent::Styled(segs) => segs
-                    .iter()
-                    .map(|seg| html_escape(&seg.text))
-                    .collect::<String>(),
-            };
+            let content = rich_text::body(n, false);
             out.push_str(&format!(
                 "{indent}<p{data_name}{style_attr}>{content}</p>\n"
             ));

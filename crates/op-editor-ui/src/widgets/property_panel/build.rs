@@ -319,6 +319,17 @@ impl PropertyPanel {
         let action_hover_blocked =
             ui.effect_add_picker_open || ui.interaction_menu_open || ui.compositing_picker.open;
         Self {
+            component_inspector:
+                crate::widgets::property_panel_components::ComponentInspector::for_state(state),
+            design_system_inspector:
+                op_editor_core::design_system_inspector_draft::DesignSystemInspectorDraft::for_state(
+                    state,
+                ),
+            text_inspector: op_editor_core::text_inspector_draft::TextInspectorDraft::for_state(
+                state,
+            ),
+            text_inspector_enabled:
+                op_editor_core::text_inspector_draft::TextInspectorDraft::editable(state),
             id: WidgetId::new(2000),
             alignment_enabled: crate::widgets::align_toolbar::AlignToolbar::enabled_actions(state),
             alignment_active: crate::widgets::align_toolbar::AlignToolbar::active_actions(state),

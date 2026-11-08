@@ -149,6 +149,7 @@ pub(super) fn rebuild_registry(
         set_node_stroke_side_width_snapshot()
     );
     register_tool!("align_selected", align_selected_snapshot());
+    register_tool!("arrange_nodes", arrange_nodes_snapshot());
     register_tool!("set_node_fill_hex", set_node_fill_hex_snapshot());
     register_tool!("set_node_flip", set_node_flip_snapshot());
     register_tool!("set_ellipse_arc", set_ellipse_arc_snapshot());

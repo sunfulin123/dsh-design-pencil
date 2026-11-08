@@ -61,6 +61,15 @@ pub fn editor_state_to_layout_scene(state: &op_editor_core::EditorState) -> Layo
 pub fn editor_state_to_active_page_layout_scene(
     state: &op_editor_core::EditorState,
 ) -> LayoutScene {
+    editor_state_to_page_layout_scene(state, state.ui.active_page_index)
+}
+
+/// Build the editor scene for page `page_index` only (clamped to the last
+/// page), e.g. to capture a page that is not on screen.
+pub fn editor_state_to_page_layout_scene(
+    state: &op_editor_core::EditorState,
+    page_index: usize,
+) -> LayoutScene {
     let (mut pages, active_page_index, roots): (
         Vec<ScenePage>,
         usize,
@@ -69,10 +78,7 @@ pub fn editor_state_to_active_page_layout_scene(
         if doc_pages.is_empty() {
             return LayoutScene::default();
         }
-        let active_page_index = state
-            .ui
-            .active_page_index
-            .min(doc_pages.len().saturating_sub(1));
+        let active_page_index = page_index.min(doc_pages.len().saturating_sub(1));
         let pages = doc_pages
             .iter()
             .map(|page| ScenePage {
@@ -128,10 +134,20 @@ pub fn editor_state_to_active_page_layout_scene(
     }
     if op_editor_core::variables_resolve::roots_have_tokens(prepared.as_ref()) {
         let mut owned = prepared.into_owned();
+        let mut active_theme = state.ui.variables.active_theme.clone();
+        if let Some(theme) = state
+            .doc
+            .pages
+            .as_ref()
+            .and_then(|pages| pages.get(active_page_index))
+            .and_then(|page| page.theme.as_ref())
+        {
+            active_theme.extend(theme.clone());
+        }
         op_editor_core::variables_resolve::resolve_roots_for_canvas(
             &mut owned,
             &state.doc,
-            &state.ui.variables.active_theme,
+            &active_theme,
         );
         prepared = std::borrow::Cow::Owned(owned);
     }

@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "เปลี่ยนชื่อ",
+        "layerMenu.copyProperties" => "คัดลอกคุณสมบัติ",
+        "layerMenu.pasteProperties" => "วางคุณสมบัติ",
+        "layerMenu.tidyUp" => "จัดระเบียบ",
+        "layerMenu.packHorizontal" => "จัดชิดแนวนอน",
+        "layerMenu.packVertical" => "จัดชิดแนวตั้ง",
+        "layerMenu.designError" => "แก้ไขไม่ได้: {{reason}}",
         "common.duplicate" => "ทำซ้ำ",
         "common.delete" => "ลบ",
         "common.cancel" => "ยกเลิก",
@@ -780,6 +786,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "กำลังแยกวิเคราะห์ไฟล์ Figma…",
         "importProgress.htmlTitle" => "กำลังแยกวิเคราะห์ HTML และทรัพยากรของหน้า…",
         "importProgress.htmlSubtitle" => "กำลังโหลดสไตล์และรูปภาพ โปรดรอสักครู่",
+        "canvas.pageLoading" => "กำลังโหลดหน้า…",
         "importProgress.largeFileSubtitle" => "ไฟล์ขนาดใหญ่ใช้เวลาสองสามวินาที โปรดรอสักครู่",
         "account.signedOutHint" => "ลงชื่อเข้าใช้เพื่อซิงค์การตั้งค่าและค่ากำหนดของคุณ",
         "code.noUsableCode" => "AI ไม่ได้ส่งคืนโค้ดที่ใช้งานได้ ลองอีกครั้งหรือเปลี่ยนโมเดล AI",

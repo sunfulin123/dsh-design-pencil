@@ -673,35 +673,23 @@ fn export_quick_menu_row_press_raises_pending_file_action() {
     );
 }
 
-/// The download button and its dropdown must agree with each other and
-/// stay clear of the theme / Play buttons around them.
+/// aa8c6eaa retired the top-bar download button; exports stay reachable
+/// through the export menu and MCP, but the bar must not hit-test a ghost.
 #[test]
-fn download_button_press_opens_the_export_menu() {
-    let mut host = WidgetHost::new();
+fn top_bar_no_longer_exposes_a_download_button() {
+    let host = WidgetHost::new();
     let bar = op_editor_ui::widgets::TopBar::for_editor_ui(&host.editor_state.editor_ui);
     let top_bar_rect = Rect {
         origin: Point2D::new(0.0, 0.0),
         size: Point2D::new(W, TOP_BAR_HEIGHT),
     };
     let button = bar.export_button_rect(top_bar_rect);
-    assert_eq!(
-        bar.hit_test(
-            top_bar_rect,
-            Point2D::new(
-                button.origin.x + button.size.x / 2.0,
-                button.origin.y + button.size.y / 2.0
-            )
-        ),
+    assert_eq!(button.size, Point2D::new(0.0, 0.0));
+    assert_ne!(
+        bar.hit_test(top_bar_rect, button.origin),
         Some(TopBarHit::OpenExportMenu)
     );
-
-    assert!(host.apply_press(
-        button.origin.x + button.size.x / 2.0,
-        button.origin.y + button.size.y / 2.0,
-        W,
-        H,
-    ));
-    assert!(host.editor_state.editor_ui.export_quick_menu_open);
+    assert!(!host.editor_state.editor_ui.export_quick_menu_open);
 }
 
 #[test]

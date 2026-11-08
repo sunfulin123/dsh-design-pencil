@@ -4,6 +4,28 @@ use std::collections::BTreeSet;
 
 type Lookup = fn(&str) -> Option<&'static str>;
 
+#[test]
+fn diagram_import_menu_label_has_direct_values_in_all_fifteen_locales() {
+    for (name, _, _, lookup) in tables() {
+        let expected = if name == "zh_cn" {
+            "导入 Mermaid / draw.io…"
+        } else {
+            "Import Mermaid / draw.io…"
+        };
+        assert_eq!(lookup("diagram.import"), Some(expected), "locale {name}");
+        let expected_error = if name == "zh_cn" {
+            "图表导入失败：{{message}}"
+        } else {
+            "Diagram import failed: {{message}}"
+        };
+        assert_eq!(
+            lookup("diagram.importFailed"),
+            Some(expected_error),
+            "locale {name}"
+        );
+    }
+}
+
 fn tables() -> [(&'static str, &'static str, &'static str, Lookup); 15] {
     [
         (
@@ -206,6 +228,18 @@ fn table_keys(name: &str, main: &str, git: &str) -> BTreeSet<String> {
     for key in source_keys(name, main)
         .into_iter()
         .chain(source_keys(name, git))
+        .chain(source_keys(
+            "component inspector",
+            include_str!("component_inspector.rs"),
+        ))
+        .chain(source_keys(
+            "design system inspector",
+            include_str!("design_system_inspector.rs"),
+        ))
+        .chain(source_keys(
+            "diagram import",
+            include_str!("diagram_import.rs"),
+        ))
     {
         assert!(
             keys.insert(key.to_string()),
@@ -251,7 +285,7 @@ fn placeholders(value: &str) -> BTreeSet<String> {
 fn every_locale_has_exactly_the_english_key_set() {
     let all_tables = tables();
     let expected = table_keys(all_tables[0].0, all_tables[0].1, all_tables[0].2);
-    assert_eq!(expected.len(), 1874, "update the intentional catalog size");
+    assert_eq!(expected.len(), 2007, "update the intentional catalog size");
 
     for (name, main, git, lookup) in all_tables {
         let actual = table_keys(name, main, git);

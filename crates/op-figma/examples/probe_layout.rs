@@ -1,18 +1,18 @@
 //! Preserve-mode layout probe for a real `.fig` file.
 //!
 //! Prints converted parent-local geometry beside the absolute geometry
-//! consumed by the renderer, and can raster the matched subtree through the
-//! same scene painter used by the desktop canvas.
+//! consumed by the renderer. Raster shots need the native skia export stack,
+//! which this repository does not vendor; use the `get_screenshot` MCP tool
+//! against a running editor to inspect rendered output instead.
 //!
 //! Usage:
-//! `cargo run -p op-figma --example probe_layout -- <file.fig> --page <name> --target <name> [--ancestor N] [--depth N] [--shot out.png]`
+//! `cargo run -p op-figma --example probe_layout -- <file.fig> --page <name> --target <name> [--ancestor N] [--depth N]`
 
 use jian_ops_schema::node::base::PenNodeBase;
 use jian_ops_schema::node::PenNode;
 use jian_ops_schema::sizing::SizingBehavior;
 use op_editor_ui::layout_scene::{SceneNode, ScenePage};
 use op_figma::{parse_fig_binary, FigLayoutMode};
-use op_host_services::export::{export_node_raster, RasterFormat};
 
 #[derive(Debug)]
 struct Options {
@@ -24,7 +24,6 @@ struct Options {
     ancestor: usize,
     depth: usize,
     limit: usize,
-    shot: Option<String>,
 }
 
 fn main() {
@@ -71,18 +70,6 @@ fn main() {
         println!("path: {names}");
         dump_node(context, parent_origin, scene_page, 0, options.depth);
     }
-
-    if let Some(target) = options.shot.as_deref() {
-        let path = matches.first().expect("--shot requires at least one match");
-        let context_index = path.len().saturating_sub(1 + options.ancestor);
-        let id = &base_of(path[context_index]).id;
-        let target = std::path::Path::new(target);
-        if let Some(parent) = target.parent() {
-            std::fs::create_dir_all(parent).expect("create shot directory");
-        }
-        export_node_raster(&scene, id, target, RasterFormat::Png, 2.0).expect("render shot");
-        println!("shot={}", target.display());
-    }
 }
 
 fn options() -> Options {
@@ -119,7 +106,6 @@ fn options() -> Options {
         limit: value("--limit")
             .and_then(|value| value.parse().ok())
             .unwrap_or(10),
-        shot: value("--shot"),
     }
 }
 

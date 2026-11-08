@@ -40,10 +40,10 @@ fn char_advance(c: char, font_size: f32, ratio: f32) -> f32 {
 }
 
 /// Per authored line widths (explicit `\n` separated), tracking included.
-fn line_widths(runs: &[StyledRun<'_>], font_size: f32, weight: u16) -> Vec<f32> {
-    let ratio = latin_ratio(weight);
+fn line_widths(runs: &[StyledRun<'_>]) -> Vec<f32> {
     let mut lines = vec![0.0_f32];
     for run in runs {
+        let ratio = latin_ratio(run.font_weight);
         let spacing = if run.letter_spacing.is_finite() {
             run.letter_spacing
         } else {
@@ -53,7 +53,7 @@ fn line_widths(runs: &[StyledRun<'_>], font_size: f32, weight: u16) -> Vec<f32> 
             if ch == '\n' {
                 lines.push(0.0);
             } else if let Some(w) = lines.last_mut() {
-                *w += char_advance(ch, font_size, ratio) + spacing;
+                *w += char_advance(ch, run.font_size, ratio) + spacing;
             }
         }
     }
@@ -71,8 +71,7 @@ impl MeasureBackend for ScriptAwareEstimate {
             };
         }
         let max_size = req.runs.iter().map(|r| r.font_size).fold(0.0, f32::max);
-        let max_weight = req.runs.iter().map(|r| r.font_weight).max().unwrap_or(0);
-        let widths = line_widths(req.runs, max_size, max_weight);
+        let widths = line_widths(req.runs);
         let natural_w = widths.iter().copied().fold(0.0, f32::max);
         let line_mult = if req.line_height > 0.0 {
             req.line_height
@@ -124,6 +123,24 @@ mod tests {
             line_height: 0.0,
             max_width,
         })
+    }
+
+    #[test]
+    fn mixed_run_intrinsic_width_uses_each_runs_size_and_weight() {
+        let mut small = run(" small中", 18.0);
+        small.font_weight = 700;
+        let runs = [run("BIG", 64.0), small];
+        let result = ScriptAwareEstimate.measure(&MeasureRequest {
+            runs: &runs,
+            line_height: 1.2,
+            max_width: None,
+        });
+        let expected = 3.0 * 64.0 * 0.58 + 6.0 * 18.0 * 0.64 + 18.0;
+        assert!(
+            (result.width - expected).abs() < 0.001,
+            "mixed runs must not inherit the largest run's font: {} vs {expected}",
+            result.width
+        );
     }
 
     #[test]

@@ -19,6 +19,9 @@ use jian_ops_schema::PenDocument;
 #[path = "web_sync_error.rs"]
 mod web_sync_error;
 pub use web_sync_error::WebSyncError;
+#[path = "web_sync_patch.rs"]
+mod web_sync_patch;
+pub use web_sync_patch::PagePatchOutcome;
 
 /// A whole-document live-sync payload plus editor-only view state carried by
 /// the response wrapper. These fields intentionally stay outside
@@ -34,6 +37,12 @@ pub struct WebSyncDocument {
     /// means "unknown", not "no scenario", so appliers keep their current
     /// value rather than clearing it.
     pub scenario: Option<crate::scene_template_catalog::TemplateScene>,
+    /// Validated saved view, outside the canonical document schema.
+    pub viewport: Option<crate::Viewport>,
+    /// A changed hint, including removal (reset), must be applied even when
+    /// the content version has not advanced.
+    pub viewport_changed: bool,
+    pub metadata_only_push: bool,
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -43,6 +52,8 @@ struct WireEditorMeta {
     active_page_index: Option<usize>,
     #[serde(default, alias = "preserve_authored_geometry")]
     preserve_authored_geometry: Option<bool>,
+    #[serde(default, deserialize_with = "crate::Viewport::deserialize_optional")]
+    viewport: Option<crate::Viewport>,
 }
 
 /// Tracks the last document version this client has applied, so a poll/SSE
@@ -71,6 +82,9 @@ pub struct WebSyncClient {
     /// existing document-only hash APIs retain their historical behavior.
     baseline_active_page_index: usize,
     baseline_preserve_authored_geometry: bool,
+    applied_viewport: Option<crate::Viewport>,
+    viewport_epoch: u64,
+    metadata_only_push: bool,
 }
 
 /// FNV-1a 64-bit — tiny, dependency-free content hash for the push baseline.
@@ -128,21 +142,50 @@ impl WebSyncClient {
         &self,
         body: &str,
     ) -> Result<Option<WebSyncDocument>, WebSyncError> {
+        self.next_document_with_view_force(body, false)
+    }
+
+    fn next_document_with_view_force(
+        &self,
+        body: &str,
+        force: bool,
+    ) -> Result<Option<WebSyncDocument>, WebSyncError> {
         let value: serde_json::Value =
             serde_json::from_str(body).map_err(|e| WebSyncError::ResponseParse(e.to_string()))?;
+        let document = value.get("document").ok_or(WebSyncError::MissingDocument)?;
+        self.next_document_from_value(&value, document.get("editorMeta"), force, || {
+            serde_json::from_value(document.clone())
+                .map_err(|e| WebSyncError::DocumentParse(e.to_string()))
+        })
+    }
+
+    /// Shared tail of a document pull: staleness check, wrapper metadata,
+    /// and `build_document` only when the reply is newer than what was applied.
+    pub(crate) fn next_document_from_value(
+        &self,
+        value: &serde_json::Value,
+        editor_meta: Option<&serde_json::Value>,
+        force: bool,
+        build_document: impl FnOnce() -> Result<PenDocument, WebSyncError>,
+    ) -> Result<Option<WebSyncDocument>, WebSyncError> {
         let version = value
             .get("version")
             .and_then(serde_json::Value::as_u64)
             .ok_or(WebSyncError::MissingVersion)?;
-        // Already up to date (and past the first sync) → nothing to apply.
-        if self.initialized && version <= self.applied_version {
+        if self.initialized && version < self.applied_version {
             return Ok(None);
         }
-        let document = value.get("document").ok_or(WebSyncError::MissingDocument)?;
-        let nested_meta = document
-            .get("editorMeta")
+        let nested_meta = editor_meta
             .and_then(|meta| serde_json::from_value::<WireEditorMeta>(meta.clone()).ok())
             .unwrap_or_default();
+        let viewport = value
+            .get("viewport")
+            .map(|value| crate::Viewport::deserialize_optional(value).ok().flatten())
+            .unwrap_or(nested_meta.viewport);
+        let viewport_changed = viewport != self.applied_viewport;
+        if self.initialized && version == self.applied_version && !viewport_changed && !force {
+            return Ok(None);
+        }
         let active_page_index = value
             .get("activePageIndex")
             .and_then(serde_json::Value::as_u64)
@@ -154,8 +197,7 @@ impl WebSyncClient {
             .and_then(serde_json::Value::as_bool)
             .or(nested_meta.preserve_authored_geometry)
             .unwrap_or(false);
-        let doc: PenDocument = serde_json::from_value(document.clone())
-            .map_err(|e| WebSyncError::DocumentParse(e.to_string()))?;
+        let doc = build_document()?;
         let scenario = value
             .get("scenario")
             .and_then(serde_json::Value::as_str)
@@ -166,6 +208,10 @@ impl WebSyncClient {
             active_page_index,
             preserve_authored_geometry,
             scenario,
+            viewport,
+            viewport_changed,
+            metadata_only_push: value.get("metadataOnlyPush").and_then(|v| v.as_bool())
+                == Some(true),
         }))
     }
 
@@ -222,17 +268,60 @@ impl WebSyncClient {
             Option<crate::scene_template_catalog::TemplateScene>,
         ) -> bool,
     {
-        match self.next_document_with_metadata(body)? {
+        self.sync_with_view_state(body, |next| {
+            apply(
+                next.document,
+                next.version,
+                next.active_page_index,
+                next.preserve_authored_geometry,
+                next.scenario,
+            )
+        })
+    }
+
+    /// Apply a complete response including saved canvas-view metadata. View
+    /// changes share the content version and do not require a document swap.
+    pub fn sync_with_view_state<F>(&mut self, body: &str, apply: F) -> Result<bool, WebSyncError>
+    where
+        F: FnOnce(WebSyncDocument) -> bool,
+    {
+        self.sync_with_view_state_force(body, false, apply)
+    }
+
+    /// Explicit accept-remote can restore the same server view after a rejected
+    /// local camera edit, even when the server's content version is unchanged.
+    pub fn sync_with_view_state_force<F>(
+        &mut self,
+        body: &str,
+        force: bool,
+        apply: F,
+    ) -> Result<bool, WebSyncError>
+    where
+        F: FnOnce(WebSyncDocument) -> bool,
+    {
+        let next = self.next_document_with_view_force(body, force)?;
+        self.commit_next_document(next, apply)
+    }
+
+    /// Applies `next` (when present) and commits its version only if `apply`
+    /// reports success.
+    pub(crate) fn commit_next_document<F>(
+        &mut self,
+        next: Option<WebSyncDocument>,
+        apply: F,
+    ) -> Result<bool, WebSyncError>
+    where
+        F: FnOnce(WebSyncDocument) -> bool,
+    {
+        match next {
             Some(next) => {
                 let version = next.version;
-                if apply(
-                    next.document,
-                    version,
-                    next.active_page_index,
-                    next.preserve_authored_geometry,
-                    next.scenario,
-                ) {
+                let viewport = next.viewport;
+                let metadata_only_push = next.metadata_only_push;
+                if apply(next) {
                     self.mark_applied(version);
+                    self.note_applied_viewport(viewport.unwrap_or(crate::Viewport::IDENTITY));
+                    self.metadata_only_push = metadata_only_push;
                     Ok(true)
                 } else {
                     Ok(false)
@@ -315,6 +404,50 @@ impl WebSyncClient {
         )
     }
 
+    /// Include the captured camera and its acknowledged baseline for an atomic
+    /// compare-and-set. Metadata-only callers may omit content only after the
+    /// daemon explicitly advertises support.
+    pub fn wrap_view_state_push(
+        &self,
+        doc_json: &str,
+        active_page_index: usize,
+        preserve_authored_geometry: bool,
+        metadata_only: bool,
+        viewport: crate::Viewport,
+    ) -> String {
+        let mut body = Self::wrap_push_body_with_base_editor_meta_and_mode(
+            doc_json,
+            self.last_version(),
+            active_page_index,
+            preserve_authored_geometry,
+            metadata_only,
+        );
+        let base = self.applied_viewport.unwrap_or(crate::Viewport::IDENTITY);
+        body.pop();
+        body.push_str(&format!(
+            r#","viewport":{{"panX":{},"panY":{},"zoom":{}}},"baseViewport":{{"panX":{},"panY":{},"zoom":{}}}}}"#,
+            viewport.pan_x, viewport.pan_y, viewport.zoom, base.pan_x, base.pan_y, base.zoom,
+        ));
+        body
+    }
+
+    pub fn metadata_only_push_supported(&self) -> bool {
+        self.metadata_only_push
+    }
+
+    pub fn viewport_epoch(&self) -> u64 {
+        self.viewport_epoch
+    }
+
+    pub fn viewport_needs_push(&self, viewport: crate::Viewport) -> bool {
+        self.initialized && viewport != self.applied_viewport.unwrap_or(crate::Viewport::IDENTITY)
+    }
+
+    pub fn note_applied_viewport(&mut self, viewport: crate::Viewport) {
+        self.applied_viewport = (viewport != crate::Viewport::IDENTITY).then_some(viewport);
+        self.viewport_epoch = self.viewport_epoch.wrapping_add(1);
+    }
+
     /// True once the first daemon document has been applied. The push path is
     /// gated on this: the host page may reset the daemon document on refresh,
     /// but the browser must still pull that authoritative post-reset state
@@ -335,6 +468,32 @@ impl WebSyncClient {
     pub fn parse_version_probe(body: &str) -> Option<u64> {
         let value: serde_json::Value = serde_json::from_str(body).ok()?;
         value.get("version")?.as_u64()
+    }
+
+    /// Whether a version probe proves the full document reply would be a
+    /// no-op, so the poll can skip downloading and parsing it.
+    ///
+    /// An equal-version reply only matters when the daemon camera moved or a
+    /// UI-scale hint is pending — the same conditions under which
+    /// [`next_document_with_view_force`](Self::next_document_with_view_force)
+    /// returns `None`. Probes from daemons that do not report `viewport` and
+    /// `uiScale` never skip, keeping their full-poll behaviour.
+    pub fn probe_skips_document(&self, probe_body: &str, force: bool) -> bool {
+        if force || !self.initialized {
+            return false;
+        }
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(probe_body) else {
+            return false;
+        };
+        let (Some(viewport), Some(ui_scale)) = (value.get("viewport"), value.get("uiScale")) else {
+            return false;
+        };
+        let Ok(viewport) = crate::Viewport::deserialize_optional(viewport) else {
+            return false;
+        };
+        value.get("version").and_then(serde_json::Value::as_u64) == Some(self.applied_version)
+            && ui_scale.is_null()
+            && viewport == self.applied_viewport
     }
 
     /// Record the local serialization of the document JUST applied from the

@@ -25,8 +25,8 @@ impl WidgetHostNative {
     /// Paste clipboard `text` into whichever text input currently owns
     /// the keyboard — the clone-wizard URL / destination, the git commit
     /// message, the remote / HTTPS draft, or a settings field. The built-in
-    /// Model list preserves normalized newlines; every other settings field
-    /// remains single-line. Other inputs route each character through
+    /// Model list and Markdown inspector preserve newlines; other settings
+    /// fields remain single-line. Other inputs route each character through
     /// [`Self::apply_text`], so their per-input filtering (e.g. the clone
     /// field's `!cloning` lock) still applies. Returns `true` if anything was
     /// inserted.
@@ -72,9 +72,11 @@ impl WidgetHostNative {
         if self.editor_state.editor_ui.agent_settings.focus.is_some() {
             return self.apply_settings_text_payload(text);
         }
+        let markdown =
+            self.editor_state.ui.property_focus == Some(op_editor_core::PropertyFocus::TextDesign(0));
         let mut inserted = false;
         for c in text.chars() {
-            if c.is_control() {
+            if c.is_control() && !(markdown && matches!(c, '\n' | '\t')) {
                 continue;
             }
             if self.apply_text(c) {

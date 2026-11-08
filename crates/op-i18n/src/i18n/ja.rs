@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "名前を変更",
+        "layerMenu.copyProperties" => "プロパティをコピー",
+        "layerMenu.pasteProperties" => "プロパティを貼り付け",
+        "layerMenu.tidyUp" => "整列",
+        "layerMenu.packHorizontal" => "水平方向に詰める",
+        "layerMenu.packVertical" => "垂直方向に詰める",
+        "layerMenu.designError" => "編集できません：{{reason}}",
         "common.duplicate" => "複製",
         "common.delete" => "削除",
         "common.cancel" => "キャンセル",
@@ -780,6 +786,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Figma ファイルを解析しています…",
         "importProgress.htmlTitle" => "HTML とページ素材を解析しています…",
         "importProgress.htmlSubtitle" => "スタイルと画像を読み込んでいます。",
+        "canvas.pageLoading" => "ページを読み込んでいます…",
         "importProgress.largeFileSubtitle" => "大きなファイルは数秒かかります。お待ちください。",
         "account.signedOutHint" => "サインインすると設定と環境設定を同期できます",
         "code.noUsableCode" => "AI が利用可能なコードを返しませんでした。再試行するか、AI モデルを切り替えてください。",

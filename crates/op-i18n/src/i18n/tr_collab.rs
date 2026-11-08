@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Kurtarma kopyaları",
+        "drafts.notice" => "Geri yükleme geçerli belgeyi değiştirir ve tek adımda geri alınabilir. Önce koruyucu bir yedek oluşturulur. Bağlı dosya kaydedilmez.",
+        "drafts.create" => "Kontrol noktası oluştur",
+        "drafts.label" => "Kontrol noktası adı",
+        "drafts.empty" => "Henüz kurtarma kopyası yok.",
+        "drafts.restoreConfirm" => "Bu kopya geri yüklensin mi?",
+        "drafts.deleteConfirm" => "Bu kurtarma kopyası kalıcı olarak silinsin mi?",
+        "drafts.syncError" => "Yerel düzenlemelerin eşitlenmesini bekleyip yeniden deneyin.",
+        "drafts.refresh" => "Yenile",
+        "drafts.failed" => "Kurtarma isteği başarısız: {{message}}",
+        "drafts.loading" => "Kurtarma kopyaları güncelleniyor…",
+        "drafts.autosave" => "Otomatik kayıt",
+        "drafts.checkpoint" => "Kontrol noktası",
+        "drafts.backup" => "Koruyucu yedek",
+        "colorPicker.sampleError" => "Renk örnekleme başarısız: {{message}}",
+        "statusbar.interfaceScale" => "Arayüz ölçeği",
+        "statusbar.viewOptions" => "Görünüm seçenekleri",
     "preview.emptyPage" => "Bu sayfada önizlenecek görünür çerçeve yok.",
     "preview.noFrame" => "Çerçevesiz",
     "preview.fit" => "Sığdır",

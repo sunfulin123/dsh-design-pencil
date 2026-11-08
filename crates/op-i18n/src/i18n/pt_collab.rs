@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Cópias de recuperação",
+        "drafts.notice" => "A restauração substitui o documento atual e pode ser desfeita em uma etapa. Uma cópia de segurança é criada antes. O arquivo vinculado não é salvo.",
+        "drafts.create" => "Criar ponto de controle",
+        "drafts.label" => "Nome do ponto de controle",
+        "drafts.empty" => "Ainda não há cópias de recuperação.",
+        "drafts.restoreConfirm" => "Restaurar esta cópia?",
+        "drafts.deleteConfirm" => "Excluir esta cópia permanentemente?",
+        "drafts.syncError" => "Aguarde a sincronização das alterações locais e tente novamente.",
+        "drafts.refresh" => "Atualizar",
+        "drafts.failed" => "Falha na recuperação: {{message}}",
+        "drafts.loading" => "Atualizando cópias de recuperação…",
+        "drafts.autosave" => "Salvamento automático",
+        "drafts.checkpoint" => "Ponto de controle",
+        "drafts.backup" => "Cópia de segurança",
+        "colorPicker.sampleError" => "Falha ao obter amostra de cor: {{message}}",
+        "statusbar.interfaceScale" => "Escala da interface",
+        "statusbar.viewOptions" => "Opções de visualização",
     "preview.emptyPage" => "Esta página não tem quadros visíveis para visualizar.",
     "preview.noFrame" => "Sem moldura",
     "preview.fit" => "Ajustar",

@@ -243,9 +243,11 @@ impl PropertyFocus {
             P::PolygonSides | P::EllipseStart | P::EllipseSweep | P::EllipseInnerRadius => {
                 D::Unsupported(U::UnsupportedNodeProperty)
             }
-            P::FontSize | P::FontWeight | P::LineHeight | P::LetterSpacing => {
+            P::TextDesign(_) | P::FontSize | P::FontWeight | P::LineHeight | P::LetterSpacing => {
                 D::Unsupported(U::Typography)
             }
+            P::ComponentDesign(_) => D::Unsupported(U::Components),
+            P::DesignSystem(_) => D::Unsupported(U::VariablesThemes),
             P::NodeRole
             | P::ComponentDescription
             | P::NodeInteractionDesc
@@ -459,6 +461,7 @@ impl EditorCommand {
             | C::SetSelectionSet { .. }
             | C::ToggleNodeSelection { .. }
             | C::SetViewport { .. }
+            | C::SetUiScale { .. }
             | C::SetActiveTool { .. }
             | C::CopySelected => A::LocalUi,
             C::AddPage { .. }
@@ -486,6 +489,16 @@ impl EditorCommand {
                 A::Document(D::Unsupported(U::ClipboardPaste))
             }
             C::NudgeSelected { .. } | C::AlignSelected { .. } => A::Document(D::NodePropertyBatch),
+            C::Design(crate::DesignCommand::CopyProperties { .. }) => A::LocalUi,
+            C::Design(crate::DesignCommand::SharedStyle { .. }) => {
+                A::Document(D::Unsupported(U::VariablesThemes))
+            }
+            C::Design(crate::DesignCommand::VariableModes { .. }) => {
+                A::Document(D::Unsupported(U::VariablesThemes))
+            }
+            C::Design(crate::DesignCommand::ArrangeNodes { .. }) => {
+                A::Document(D::NodePropertyBatch)
+            }
             C::GroupSelected => A::Document(D::Group),
             C::UngroupSelected => A::Document(D::Ungroup),
             C::SetNodeRotation { .. } => A::Document(D::NodeProperty(F::Rotation)),

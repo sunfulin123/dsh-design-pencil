@@ -202,6 +202,7 @@ pub fn compute_frame_geometry(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn compute_presentation_geometry(
     kind: PreviewDeviceKind,
     mut canvas: Rect,

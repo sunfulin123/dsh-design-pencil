@@ -19,7 +19,7 @@ LOCALE_FILE = I18N_DIR.parent / "locale.rs"
 # intentional catalog size"). The two live apart, so adding keys means
 # bumping BOTH — the Studio entry surface bumped the Rust one and left
 # this at 1717, which only the WASM bundle job noticed.
-EXPECTED_KEY_COUNT = 1874
+EXPECTED_KEY_COUNT = 2007
 TABLE_SUFFIXES = ("", "_git", "_panel", "_collab")
 
 # Module stem, Locale variant, and the exact value returned by Locale::code().
@@ -241,6 +241,29 @@ def validate_locale_codes(locale_file: Path = LOCALE_FILE) -> None:
             f"expected={expected!r}, actual={actual!r}"
         )
 
+def parse_component_source(source: str, source_name: str, chinese: bool) -> dict[str, str]:
+    """Parse the shared component shard's (English, Chinese) literal pairs."""
+    catalog: dict[str, str] = {}
+    for key, offset in _source_arms(source, source_name):
+        offset = _skip_whitespace(source, offset)
+        if source[offset] != "(":
+            raise CatalogError(f"{source_name}: component strings require a literal pair")
+        english, offset = _parse_string_literal(source, _skip_whitespace(source, offset + 1), source_name)
+        offset = _skip_whitespace(source, offset)
+        if source[offset] != ",":
+            raise CatalogError(f"{source_name}: missing component string pair separator")
+        translated, offset = _parse_string_literal(source, _skip_whitespace(source, offset + 1), source_name)
+        offset = _skip_whitespace(source, offset)
+        if source[offset] == ",":
+            offset = _skip_whitespace(source, offset + 1)
+        if source[offset] != ")":
+            raise CatalogError(f"{source_name}: missing component string pair terminator")
+        _finish_arm(source, offset + 1, source_name)
+        if key in catalog:
+            raise CatalogError(f"{source_name}: duplicate component key {key!r}")
+        catalog[key] = translated if chinese else english
+    return catalog
+
 
 def load_catalogs(i18n_dir: Path = I18N_DIR) -> dict[str, dict[str, str]]:
     validate_locale_codes(i18n_dir.parent / "locale.rs")
@@ -258,6 +281,14 @@ def load_catalogs(i18n_dir: Path = I18N_DIR) -> dict[str, dict[str, str]]:
                     f"{sorted(duplicates)!r}"
                 )
             catalog.update(shard)
+        for shared_stem in ("component_inspector", "design_system_inspector", "diagram_import"):
+            shared_path = i18n_dir / f"{shared_stem}.rs"
+            shared = parse_component_source(
+                shared_path.read_text(encoding="utf-8"), str(shared_path), stem == "zh_cn"
+            )
+            if catalog.keys() & shared.keys():
+                raise CatalogError(f"locale {stem!r} duplicates shared inspector keys")
+            catalog.update(shared)
         catalogs[stem] = catalog
 
     english_keys = set(catalogs["en"])

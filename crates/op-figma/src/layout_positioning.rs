@@ -102,7 +102,7 @@ fn map_figma_constraints(figma: &FigValue) -> Constraints {
     }
 }
 
-fn base_mut(node: &mut PenNode) -> &mut PenNodeBase {
+pub(crate) fn base_mut(node: &mut PenNode) -> &mut PenNodeBase {
     match node {
         PenNode::Frame(node) => &mut node.base,
         PenNode::Group(node) => &mut node.base,

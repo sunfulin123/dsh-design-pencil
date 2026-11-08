@@ -11,8 +11,11 @@ export async function stageRuntime({ root, destination, revision }) {
   await rm(destination, { recursive: true, force: true })
   await mkdir(destination, { recursive: true })
   for (const path of [
-    'package.json', 'cli.mjs', 'document-file.mjs', 'document-store.mjs',
-    'engine-session.mjs', 'node-host.mjs', 'static-assets.mjs',
+    'package.json', 'cli.mjs', 'offline-cli.mjs', 'document-file.mjs', 'document-store.mjs',
+    'engine-session.mjs', 'node-host.mjs', 'static-assets.mjs', 'color-sampler.mjs', 'screenshot-renderer.mjs',
+    'draft-recovery.mjs', 'document-history.mjs',
+    'figma-rest-client.mjs', 'figma-images.mjs', 'figma-import-jobs.mjs', 'font-fetcher.mjs', 'font-inventory.mjs', 'headless-renderer.mjs',
+    'figma-fidelity.mjs', 'png-diff.mjs',
     'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/canvaskit',

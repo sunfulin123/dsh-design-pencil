@@ -161,6 +161,8 @@ impl SnapshotCtx<'_> {
             text_align,
             text_align_vertical: None,
             text_growth: Some(sizing.growth),
+            text_truncation: None,
+            max_lines: None,
             underline: None,
             strikethrough: None,
             fill,

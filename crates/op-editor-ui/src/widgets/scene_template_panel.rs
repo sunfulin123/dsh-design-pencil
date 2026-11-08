@@ -28,7 +28,7 @@ use op_editor_core::{
     AssetCenterTab, ButtonPressTarget, EditorState, Locale, SceneFilter, SceneTemplateFocus,
 };
 
-use super::asset_center_style_cards::{filtered_style_guide_cards, StyleGuideCard};
+use super::asset_center_style_cards::{cards_for_editor, StyleGuideCard};
 use super::panel_controls::{segment_rects, segment_track_width, segment_width_for};
 use super::prompt_center_panel::estimated_text_width;
 use super::scene_template_card_actions::basis_chip_reserved_width;
@@ -302,7 +302,10 @@ impl<'a> SceneTemplatePanel<'a> {
 
     /// Style guides surviving the search query, in registry order.
     pub fn style_cards(&self) -> Vec<StyleGuideCard> {
-        filtered_style_guide_cards(self.state.editor_ui.scene_template_center.search.text())
+        cards_for_editor(
+            self.state,
+            self.state.editor_ui.scene_template_center.search.text(),
+        )
     }
 
     /// The SHIPPED templates surviving the scene filter and the search query.

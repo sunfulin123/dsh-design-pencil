@@ -72,6 +72,22 @@ UI.NavItem(card, {label: "Home", icon: "layers", active: true});"#,
 }
 
 #[test]
+fn radius_snapping_preserves_authored_capsules() {
+    let program = run_script_to_program(
+        r#"const root = I(null, {type: "frame", name: "Root", width: 200, height: 100, cornerRadius: 15});
+I(root, {type: "switch", name: "Toggle", width: 48, height: 28, cornerRadius: 14});
+I(root, {type: "frame", name: "Chip", width: 90, height: 30, cornerRadius: 15});
+I(root, {type: "frame", name: "Card", width: 90, height: 60, cornerRadius: 14});"#,
+    )
+    .expect("script runs");
+    let lines: Vec<&str> = program.lines().collect();
+    assert!(lines[0].contains(r#""cornerRadius":16"#), "{program}");
+    assert!(lines[1].contains(r#""cornerRadius":14"#), "{program}");
+    assert!(lines[2].contains(r#""cornerRadius":15"#), "{program}");
+    assert!(lines[3].contains(r#""cornerRadius":12"#), "{program}");
+}
+
+#[test]
 fn cjk_text_raises_only_an_explicit_low_line_height() {
     let program = run_script_to_program(
         r#"I(null, {type: "text", content: "中文标题", fontFamily: "Inter", fontSize: 24, lineHeight: 1.2});

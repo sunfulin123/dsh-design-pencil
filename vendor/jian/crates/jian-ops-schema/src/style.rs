@@ -1,5 +1,28 @@
 use serde::{Deserialize, Serialize};
 
+/// Shared styles materialize these authored properties onto their linked nodes.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
+#[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SharedStyle {
+    pub name: String,
+    pub kind: SharedStyleKind,
+    pub properties: std::collections::BTreeMap<String, serde_json::Value>,
+    #[serde(default)]
+    pub node_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
+#[serde(rename_all = "snake_case")]
+pub enum SharedStyleKind {
+    Paint,
+    Text,
+    Effect,
+}
+
 // --- Blend mode ---
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]

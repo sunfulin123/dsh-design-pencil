@@ -205,6 +205,7 @@ impl WidgetHostNative {
                     | FileMenuChoice::ExportSlideshowHtml
                     | FileMenuChoice::ExportPptx
                     | FileMenuChoice::ClearRecent
+                    | FileMenuChoice::RecoverDrafts
                     // Opening the centre only shows a panel; the document is
                     // replaced later, and that step re-runs the gate itself.
                     | FileMenuChoice::NewFromTemplate => op_editor_core::CollabGateAction::LocalUi,
@@ -212,6 +213,17 @@ impl WidgetHostNative {
                 if !self.collab_allows_user_action(gate_action) {
                     self.editor_state.editor_ui.file_menu_open = false;
                     self.editor_state.editor_ui.file_menu.hover = None;
+                    return;
+                }
+                if choice == FileMenuChoice::RecoverDrafts {
+                    self.editor_state.editor_ui.show_toast(
+                        "drafts.failed",
+                        vec![("message".into(), "Recovery requires the Node-hosted editor".into())],
+                        op_editor_core::editor_toast::EditorToastLevel::Warn,
+                        self.now_ms,
+                    );
+                    self.editor_state.editor_ui.file_menu_open = false;
+                    self.mark_dirty();
                     return;
                 }
                 if choice == FileMenuChoice::NewFromTemplate {
@@ -247,7 +259,7 @@ impl WidgetHostNative {
                     FileMenuChoice::ClearRecent => FileAction::ClearRecent,
                     // Handled above — it opens a panel rather than queuing a
                     // file action.
-                    FileMenuChoice::NewFromTemplate | FileMenuChoice::SaveAsTemplate => return,
+                    FileMenuChoice::NewFromTemplate | FileMenuChoice::SaveAsTemplate | FileMenuChoice::RecoverDrafts => return,
                 });
                 self.editor_state.editor_ui.file_menu_open = false;
                 self.editor_state.editor_ui.file_menu.hover = None;

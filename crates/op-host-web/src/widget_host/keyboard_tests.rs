@@ -41,6 +41,32 @@ fn apply_key_unhandled_event_reports_no_change() {
 }
 
 #[test]
+fn appearance_shortcuts_copy_and_paste_without_stealing_text_input() {
+    let mut host = WidgetHost::new();
+    host.editor_state = EditorState::from_document(
+        jian_ops_schema::load_str(
+            r##"{"version":"0.8.5","children":[
+            {"type":"rectangle","id":"a","fill":[{"type":"solid","color":"#123456"}]},
+            {"type":"rectangle","id":"b","x":200}
+        ]}"##,
+        )
+        .unwrap()
+        .value,
+    );
+    host.editor_state.set_single_selection(NodeId::new("a"));
+    assert!(host.apply_appearance_shortcut(false));
+    host.editor_state.set_single_selection(NodeId::new("b"));
+    assert!(host.apply_appearance_shortcut(true));
+    let document = serde_json::to_value(&host.editor_state.doc).unwrap();
+    assert_eq!(
+        document["children"][0]["fill"],
+        document["children"][1]["fill"]
+    );
+    host.editor_state.ui.property_focus = Some(PropertyFocus::SizeW);
+    assert!(!host.apply_appearance_shortcut(false));
+}
+
+#[test]
 fn keydown_shortcut_cmd_shift_k_toggles_component_browser() {
     let mut host = WidgetHost::new();
     host.editor_state_dirty = false;

@@ -31,8 +31,10 @@ fn figma_family_with_css_separators_is_quoted_for_the_canonical_stack() {
 #[test]
 fn font_weight_parsed_from_style_name() {
     assert_eq!(parse_font_weight("semibold italic"), Some(600));
-    // "extra light" contains "light" → 300 (no "extralight" token).
-    assert_eq!(parse_font_weight("extra light"), Some(300));
+    // Figma style names keep spaces / hyphens ("Extra Light", "Semi Bold").
+    assert_eq!(parse_font_weight("extra light"), Some(200));
+    assert_eq!(parse_font_weight("semi bold"), Some(600));
+    assert_eq!(parse_font_weight("extra-bold italic"), Some(800));
     assert_eq!(parse_font_weight("extralight"), Some(200));
     assert_eq!(parse_font_weight("extrabold"), Some(800));
     assert_eq!(parse_font_weight("bold"), Some(700));
@@ -150,4 +152,25 @@ fn styled_segments_built_from_style_runs() {
         }
         TextContent::Plain(p) => panic!("expected styled, got plain {p:?}"),
     }
+}
+
+#[test]
+fn truncation_and_max_lines_mapped() {
+    let node = obj(vec![
+        ("textAutoResize", FigValue::Str("NONE".into())),
+        ("textTruncation", FigValue::Str("ENDING".into())),
+        ("maxLines", FigValue::Int(2)),
+    ]);
+    let props = map_figma_text_props(&node);
+    assert_eq!(props.text_truncation, Some(TextTruncation::Ending));
+    assert_eq!(props.max_lines, Some(2));
+    assert_eq!(props.text_growth, Some(TextGrowth::FixedWidthHeight));
+
+    let legacy = obj(vec![("textAutoResize", FigValue::Str("TRUNCATE".into()))]);
+    let props = map_figma_text_props(&legacy);
+    assert_eq!(props.text_truncation, Some(TextTruncation::Ending));
+    assert_eq!(props.text_growth, Some(TextGrowth::FixedWidthHeight));
+
+    let off = obj(vec![("textTruncation", FigValue::Str("DISABLED".into()))]);
+    assert_eq!(map_figma_text_props(&off).text_truncation, None);
 }

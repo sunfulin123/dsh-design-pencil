@@ -121,6 +121,9 @@ pub fn press_scene_template_center(
                     cleared
                 }
             } else {
+                if let Some(assets) = state.editor_ui.managed_assets.as_mut() {
+                    return Some(assets.queue("get_style_guide", serde_json::json!({"id":id})));
+                }
                 if let Some(guide) = op_ai_skills::style_guide::find_style_guide(&id) {
                     let mut spec = op_editor_core::parse_design_md(&guide.content);
                     if spec.project_name.is_none() {
@@ -210,6 +213,18 @@ fn confirm_style_import(state: &mut EditorState) -> bool {
 /// error: the user would be left looking at an unchanged gallery with no
 /// account of what happened to the file they picked.
 pub fn import_style_guide_text(state: &mut EditorState, raw: &str, fallback_name: &str) -> bool {
+    if let Some(assets) = state.editor_ui.managed_assets.as_mut() {
+        return match op_ai_skills::style_guide::parse_design_md(raw, fallback_name) {
+            Ok(guide) => assets.queue(
+                "import_design_md",
+                serde_json::json!({"markdown":raw,"name":guide.name}),
+            ),
+            Err(error) => {
+                state.editor_ui.scene_template_center.import.error_key = Some(error.message_key());
+                true
+            }
+        };
+    }
     match op_ai_skills::style_guide::import_design_md(raw, fallback_name) {
         Ok(imported) => {
             let id = imported.id.clone();
@@ -256,6 +271,9 @@ pub fn fail_style_import_unreadable(state: &mut EditorState) -> bool {
 /// resolver treats an unknown pin as no pin — but it would leave the Asset
 /// Center claiming a style is in force that is not in the list any more.
 pub fn delete_user_style_guide(state: &mut EditorState, id: &str) -> bool {
+    if let Some(assets) = state.editor_ui.managed_assets.as_mut() {
+        return assets.delete("style_guide", id);
+    }
     if op_ai_skills::style_guide::remove_user_style_guide(id).is_none() {
         return false;
     }
@@ -284,6 +302,10 @@ pub fn import_design_md_into_document(
     markdown: &str,
     fallback_name: &str,
 ) {
+    if state.editor_ui.managed_assets.is_some() {
+        import_style_guide_text(state, markdown, fallback_name);
+        return;
+    }
     let mut spec = op_editor_core::parse_design_md(markdown);
     if spec.project_name.is_none() && !fallback_name.is_empty() {
         spec.project_name = Some(fallback_name.to_string());
@@ -301,6 +323,9 @@ pub fn import_design_md_into_document(
 /// Synchronize the in-memory style-guide catalogue and `pinned_style_guide`
 /// from a document's persisted `design_md` on open/sync.
 pub fn sync_style_guide_from_design_md(state: &mut EditorState) {
+    if state.editor_ui.managed_assets.is_some() {
+        return;
+    }
     let Some(spec) = state.doc.design_md.as_ref() else {
         return;
     };
@@ -331,6 +356,9 @@ pub fn sync_style_guide_from_design_md(state: &mut EditorState) {
 /// directory. A host without a disk (the browser) drops the queue — its
 /// registry is always empty anyway.
 pub fn delete_user_scene_template(state: &mut EditorState, id: &str) -> bool {
+    if let Some(assets) = state.editor_ui.managed_assets.as_mut() {
+        return assets.delete("scene_template", id);
+    }
     if op_editor_core::user_scene_templates::remove_user_scene_template(id).is_none() {
         return false;
     }

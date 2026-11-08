@@ -123,7 +123,25 @@ export function opCkParseFontFamilyStack(family) {
 // named-face lookup instead of skipping ahead in the stack.
 // `bundledTypefaces` is optional so a caller that predates the bundled registry
 // still resolves imported + system.
-export function opCkResolveRegisteredTypeface(family, importedTypefaces, systemTypefacesByFamily, bundledTypefaces) {
+export function opCkMatchFontFace(faces, weight = 400, italic = false) {
+  const candidates = faces.filter(face => Boolean(face.italic) === Boolean(italic));
+  const list = candidates.length ? candidates : faces;
+  const requested = Number(weight) || 400;
+  const rank = face => {
+    const w = face.weight;
+    if (requested >= 400 && requested <= 500) {
+      if (w >= requested && w <= 500) return w - requested;
+      if (w < requested) return 1000 + requested - w;
+      return 2000 + w - requested;
+    }
+    return requested < 400
+      ? (w <= requested ? requested - w : 1000 + w - requested)
+      : (w >= requested ? w - requested : 1000 + requested - w);
+  };
+  return [...list].sort((a, b) => rank(a) - rank(b))[0] || null;
+}
+
+export function opCkResolveRegisteredTypeface(family, importedTypefaces, systemTypefacesByFamily, bundledTypefaces, weight = 400, italic = false, downloadedTypefaces) {
   for (const candidate of opCkParseFontFamilyStack(family)) {
     const familyKey = opCkNormalizeFontFamilyName(candidate);
     if (!familyKey) continue;
@@ -131,6 +149,12 @@ export function opCkResolveRegisteredTypeface(family, importedTypefaces, systemT
     const imported = importedTypefaces.get(familyKey);
     if (imported) {
       return { key: `imported:${familyKey}`, familyKey, source: 'imported', tf: imported.tf };
+    }
+    const downloaded = downloadedTypefaces?.get(familyKey);
+    if (downloaded?.length) {
+      const face = opCkMatchFontFace(downloaded, weight, italic);
+      return { key: `downloaded:${familyKey}:${face.weight}:${face.italic}`, familyKey,
+        source: 'downloaded', tf: face.tf, realWeight: face.weight, realItalic: face.italic };
     }
     const system = systemTypefacesByFamily.get(familyKey);
     if (system) {
@@ -179,7 +203,7 @@ export function opCkCreateRuntimeEffectCache(CK) {
             floatCount: Math.max(0, Math.trunc(Number(effect.getUniformFloatCount()) || 0)),
           };
         }
-      } catch (_error) {
+      } catch {
         if (effect && effect.delete) effect.delete();
         entry = null;
       }
@@ -214,7 +238,7 @@ export function opCkMakeRuntimeShader(entry, uniformNames, uniforms, uniformArit
       }
     }
     return entry.effect.makeShader(data, localMatrix) || null;
-  } catch (_error) {
+  } catch {
     return null;
   }
 }
@@ -341,6 +365,22 @@ export function opCkCreateBridge(CK, initialSurface, el, {
   }
   let surface = initialSurface;
   let canvas = surface.getCanvas();
+  let offscreen = null;
+  // Retained canvas tiles keyed by id: { image, surface }. The image is a
+  // snapshot sharing the surface's texture, so both live until dropTile.
+  const tileImages = new Map();
+  let tileSeq = 0;
+  let tileTarget = null;
+  const tileSrc = new Float32Array(4);
+  const tileDst = new Float32Array(4);
+  const deleteTile = tile => {
+    try { tile.image.delete(); } catch {}
+    try { tile.surface.delete(); } catch {}
+  };
+  const dropAllTiles = () => {
+    for (const tile of tileImages.values()) deleteTile(tile);
+    tileImages.clear();
+  };
   const runtimeEffects = opCkCreateRuntimeEffectCache(CK);
 
   const systemTypefaces = [];
@@ -356,6 +396,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
   // below system fonts: the browser has no bundled fonts of its own, so these
   // are fetched from the daemon at mount and registered here.
   const bundledTypefaces = new Map();
+  const downloadedTypefaces = new Map();
   const coverageCache = new Map();
   // Per-CHARACTER coverage segments for explicitly selected family text,
   // keyed on `(registry + family key, size, text)`. This used to
@@ -791,7 +832,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
         null,
         1,
       );
-    } catch (_error) {
+    } catch {
       return null;
     }
   };
@@ -813,7 +854,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
         null,
         1,
       );
-    } catch (_error) {
+    } catch {
       return null;
     }
   };
@@ -843,7 +884,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
         mesh.indices,
         true,
       );
-    } catch (_error) {
+    } catch {
       vertices = null;
     }
     if (!vertices) {
@@ -903,8 +944,8 @@ export function opCkCreateBridge(CK, initialSurface, el, {
   };
   // Resolve an explicit imported/system face in authored stack order. Generic
   // candidates intentionally return null and continue through browser text.
-  const familyTypefaceEntry = (family) => {
-    return opCkResolveRegisteredTypeface(family, importedTypefaces, systemTypefacesByFamily, bundledTypefaces);
+  const familyTypefaceEntry = (family, weight = 400, italic = false) => {
+    return opCkResolveRegisteredTypeface(family, importedTypefaces, systemTypefacesByFamily, bundledTypefaces, weight, italic, downloadedTypefaces);
   };
   // Shared "typeface + font for (family, sz)" so the family-aware draw and
   // measure paths build the SAME CK.Font and agree to sub-pixel. Cached per
@@ -953,7 +994,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       let ids = null;
       try {
         ids = f.getGlyphIDs(t);
-      } catch (e) {
+      } catch {
         ids = null;
       }
       f.delete();
@@ -1031,10 +1072,10 @@ export function opCkCreateBridge(CK, initialSurface, el, {
     // `getBounds` as a compatibility fallback.
     let bounds = null;
     if (typeof path.computeTightBounds === 'function') {
-      try { bounds = path.computeTightBounds(); } catch (_error) { bounds = null; }
+      try { bounds = path.computeTightBounds(); } catch { bounds = null; }
     }
     if (!pathIsFinite(bounds)) {
-      try { bounds = path.getBounds(); } catch (_error) { bounds = null; }
+      try { bounds = path.getBounds(); } catch { bounds = null; }
     }
     if (!pathIsFinite(bounds)) {
       path.transform(CK.Matrix.translated(x, y));
@@ -1154,11 +1195,13 @@ export function opCkCreateBridge(CK, initialSurface, el, {
     dispose() {
       if (disposed) return;
       disposed = true;
+      dropAllTiles();
       clearRegisteredFontCaches();
       clearBrowserTextCache();
       for (const path of svgPathCache.values()) path.delete();
       for (const filter of tintFilterCache.values()) filter.delete();
       for (const entry of [...systemTypefaces, ...importedTypefaces.values(), ...bundledTypefaces.values()]) entry.tf.delete();
+      for (const faces of downloadedTypefaces.values()) for (const face of faces) face.tf.delete();
       cachedFillPaint.delete();
       cachedStrokePaint.delete();
       cachedTintPaint.delete();
@@ -1179,7 +1222,174 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       while (canvas.getSaveCount() > 1) canvas.restore();
       surface.flush();
     },
+    samplePixel(x, y) {
+      return this.sampleRegion(x, y, 0);
+    },
+    sampleRegion(x, y, radius) {
+      if (!Number.isInteger(x) || !Number.isInteger(y)
+        || !Number.isInteger(radius) || radius < 0 || radius > 4) {
+        throw new Error('sample coordinates and radius must be bounded physical-pixel integers');
+      }
+      surface.flush();
+      const image = surface.makeImageSnapshot();
+      if (!image) throw new Error('CanvasKit could not snapshot the rendered surface');
+      try {
+        if (x < 0 || y < 0 || x >= image.width() || y >= image.height()) {
+          throw new Error('sample pixel is outside the rendered surface');
+        }
+        const left = Math.max(0, x - radius);
+        const top = Math.max(0, y - radius);
+        const width = Math.min(image.width(), x + radius + 1) - left;
+        const height = Math.min(image.height(), y + radius + 1) - top;
+        const rgba = image.readPixels(left, top, {
+          width, height, colorType: CK.ColorType.RGBA_8888,
+          alphaType: CK.AlphaType.Unpremul, colorSpace: CK.ColorSpace.SRGB,
+        });
+        if (!(rgba instanceof Uint8Array) || rgba.length !== width * height * 4) {
+          throw new Error('CanvasKit could not read the rendered RGBA8 region');
+        }
+        const side = radius * 2 + 1;
+        const patch = new Uint8Array(side * side * 4);
+        for (let row = 0; row < height; row++) {
+          const offset = ((top - y + radius + row) * side + left - x + radius) * 4;
+          patch.set(rgba.subarray(row * width * 4, (row + 1) * width * 4), offset);
+        }
+        return patch;
+      } finally {
+        image.delete();
+      }
+    },
     clear(r, g, b, a) { canvas.clear(col(r, g, b, a)); },
+
+    // Redirect drawing to a same-context offscreen surface for screenshots.
+    // The swapped surface is always restored by endOffscreenPng/abortOffscreen.
+    beginOffscreen(width, height) {
+      if (offscreen) throw new Error('An offscreen capture is already in progress');
+      if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1
+        || width > 4096 || height > 4096) {
+        throw new Error('offscreen size must be integers between 1 and 4096');
+      }
+      const info = {
+        width, height, colorType: CK.ColorType.RGBA_8888,
+        alphaType: CK.AlphaType.Premul, colorSpace: CK.ColorSpace.SRGB,
+      };
+      const target = (surface.makeSurface && surface.makeSurface(info)) || CK.MakeSurface(width, height);
+      if (!target) throw new Error('CanvasKit could not allocate an offscreen capture surface');
+      offscreen = { surface, canvas, target };
+      surface = target;
+      canvas = target.getCanvas();
+      canvas.clear(CK.TRANSPARENT);
+    },
+    endOffscreenPng() {
+      if (!offscreen) throw new Error('No offscreen capture is in progress');
+      const { target } = offscreen;
+      try {
+        target.flush();
+        const image = target.makeImageSnapshot();
+        if (!image) throw new Error('CanvasKit could not snapshot the capture surface');
+        try {
+          const png = image.encodeToBytes(CK.ImageFormat.PNG, 100);
+          if (!(png instanceof Uint8Array) || png.length === 0) {
+            throw new Error('CanvasKit could not encode the capture as PNG');
+          }
+          return png;
+        } finally {
+          image.delete();
+        }
+      } finally {
+        this.abortOffscreen();
+      }
+    },
+    // Rasterize one canvas tile into a same-context GPU surface. Drawing goes
+    // to the tile until endTile, which retains it as an image for drawTile.
+    beginTile(width, height) {
+      if (offscreen || tileTarget) return false;
+      const info = {
+        width, height, colorType: CK.ColorType.RGBA_8888,
+        alphaType: CK.AlphaType.Premul, colorSpace: CK.ColorSpace.SRGB,
+      };
+      const target = (surface.makeSurface && surface.makeSurface(info)) || CK.MakeSurface(width, height);
+      if (!target) return false;
+      tileTarget = { surface, canvas, target };
+      surface = target;
+      canvas = target.getCanvas();
+      canvas.clear(CK.TRANSPARENT);
+      return true;
+    },
+    endTile() {
+      if (!tileTarget) return 0;
+      const { target } = tileTarget;
+      let id = 0;
+      try {
+        while (canvas.getSaveCount() > 1) canvas.restore();
+        target.flush();
+        const image = target.makeImageSnapshot();
+        if (image) {
+          tileSeq = (tileSeq % 0x7fffffff) + 1;
+          id = tileSeq;
+          tileImages.set(id, { image, surface: target });
+        }
+      } finally {
+        ({ surface, canvas } = tileTarget);
+        if (!id) { try { target.delete(); } catch {} }
+        tileTarget = null;
+      }
+      return id;
+    },
+    // Draw a src pixel region of tile `id` into local dst. dst edges snap to
+    // device pixels so adjacent tiles meet without seams.
+    drawTile(id, sx, sy, sw, sh, dx, dy, dw, dh) {
+      const image = tileImages.get(id)?.image;
+      if (!image) return false;
+      const m = canvas.getTotalMatrix();
+      let l = dx, t = dy, r = dx + dw, b = dy + dh;
+      if (Math.abs(m[1]) < 1e-6 && Math.abs(m[3]) < 1e-6 && m[0] > 0 && m[4] > 0) {
+        l = (Math.round(dx * m[0] + m[2]) - m[2]) / m[0];
+        t = (Math.round(dy * m[4] + m[5]) - m[5]) / m[4];
+        r = (Math.round((dx + dw) * m[0] + m[2]) - m[2]) / m[0];
+        b = (Math.round((dy + dh) * m[4] + m[5]) - m[5]) / m[4];
+      }
+      canvas.drawImageRectOptions(
+        image, CK.LTRBRect(sx, sy, sx + sw, sy + sh), CK.LTRBRect(l, t, r, b),
+        CK.FilterMode.Linear, CK.MipmapMode.None, null,
+      );
+      return true;
+    },
+    // Batched drawTile: ids[i] with geo[i*8 .. i*8+8] = sx,sy,sw,sh,dx,dy,dw,dh.
+    // Returns the ids that are not retained.
+    drawTiles(ids, geo) {
+      const m = canvas.getTotalMatrix();
+      const axis = Math.abs(m[1]) < 1e-6 && Math.abs(m[3]) < 1e-6 && m[0] > 0 && m[4] > 0;
+      const missing = [];
+      for (let i = 0; i < ids.length; i++) {
+        const image = tileImages.get(ids[i])?.image;
+        if (!image) { missing.push(ids[i]); continue; }
+        const o = i * 8;
+        let l = geo[o + 4], t = geo[o + 5], r = l + geo[o + 6], b = t + geo[o + 7];
+        if (axis) {
+          l = (Math.round(l * m[0] + m[2]) - m[2]) / m[0];
+          t = (Math.round(t * m[4] + m[5]) - m[5]) / m[4];
+          r = (Math.round(r * m[0] + m[2]) - m[2]) / m[0];
+          b = (Math.round(b * m[4] + m[5]) - m[5]) / m[4];
+        }
+        tileSrc[0] = geo[o]; tileSrc[1] = geo[o + 1]; tileSrc[2] = geo[o] + geo[o + 2]; tileSrc[3] = geo[o + 1] + geo[o + 3];
+        tileDst[0] = l; tileDst[1] = t; tileDst[2] = r; tileDst[3] = b;
+        canvas.drawImageRectOptions(image, tileSrc, tileDst, CK.FilterMode.Linear, CK.MipmapMode.None, null);
+      }
+      return Uint32Array.from(missing);
+    },
+    dropTile(id) {
+      const tile = tileImages.get(id);
+      if (!tile) return;
+      tileImages.delete(id);
+      deleteTile(tile);
+    },
+    abortOffscreen() {
+      if (!offscreen) return;
+      ({ surface, canvas } = offscreen);
+      try { offscreen.target.delete(); } catch {}
+      offscreen = null;
+    },
 
     fillRect(x, y, w, h, r, g, b, a) { const p = fillPaint(r, g, b, a); canvas.drawRect(CK.LTRBRect(x, y, x + w, y + h), p); },
     strokeRect(x, y, w, h, r, g, b, a, sw) { const p = strokePaint(r, g, b, a, sw); canvas.drawRect(CK.LTRBRect(x, y, x + w, y + h), p); },
@@ -1500,21 +1710,21 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       // keeps the named family where it applies and never renders tofu,
       // matching native. Draw + measure split on the SAME registeredCoverage
       // segments and share drawScriptRun/registeredFamilyFont, so advances agree.
-      const familyEntry = familyTypefaceEntry(family);
+      const familyEntry = familyTypefaceEntry(family, weight, italic);
       const covSegs = familyEntry ? registeredCoverageSegments(familyEntry.key, familyEntry.tf, sz, t) : null;
       if (!covSegs || (covSegs.length === 1 && !covSegs[0].registered)) {
         drawScriptRun(t, x, y, sz, weight, italic, r, g, b, a);
         return;
       }
       const p = fillPaint(r, g, b, a);
-      if (weight >= 600 && isPaintStyle(CK.PaintStyle.StrokeAndFill)) {
+      if (weight >= 600 && familyEntry?.realWeight === undefined && isPaintStyle(CK.PaintStyle.StrokeAndFill)) {
         setPaintStyle(p, CK.PaintStyle.StrokeAndFill);
         p.setStrokeWidth(sz * 0.06);
       }
       let cx = x;
       for (const seg of covSegs) {
         if (seg.registered) {
-          const f = registeredFamilyFont(familyEntry.key, familyEntry.tf, sz, italic);
+          const f = registeredFamilyFont(familyEntry.key, familyEntry.tf, sz, italic && !familyEntry.realItalic);
           canvas.drawText(seg.text, cx, y, p, f);
           cx += runWidth(f, seg.text);
         } else {
@@ -1546,7 +1756,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       return this.measureTextStyled(t, sz, 400, false);
     },
     textAscent(family, sz, weight) {
-      const familyEntry = familyTypefaceEntry(family);
+      const familyEntry = familyTypefaceEntry(family, weight);
       const font = new CK.Font(familyEntry ? familyEntry.tf : tfFor('M', false), sz);
       let ascent = sz * 0.8;
       if (font.getMetrics) {
@@ -1561,7 +1771,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       const firstBreak = String(t || '').search(/[\r\n]/);
       const line = firstBreak < 0 ? String(t || '') : String(t || '').slice(0, firstBreak);
       const sample = line || 'M';
-      const familyEntry = familyTypefaceEntry(family);
+      const familyEntry = familyTypefaceEntry(family, weight, italic);
       const covSegs = familyEntry
         ? registeredCoverageSegments(familyEntry.key, familyEntry.tf, sz, sample)
         : null;
@@ -1603,7 +1813,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       if (covSegs && covSegs.some((seg) => seg.registered)) {
         for (const seg of covSegs) {
           if (seg.registered) {
-            includeFontMetrics(registeredFamilyFont(familyEntry.key, familyEntry.tf, sz, italic));
+            includeFontMetrics(registeredFamilyFont(familyEntry.key, familyEntry.tf, sz, italic && !familyEntry.realItalic));
           } else {
             includeFallback(seg.text);
           }
@@ -1619,7 +1829,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       return Number.isFinite(baseline) && baseline > 0 ? baseline : sz * 0.8;
     },
     measureTextFamilyStyled(t, family, sz, weight, italic) {
-      const familyEntry = familyTypefaceEntry(family);
+      const familyEntry = familyTypefaceEntry(family, weight, italic);
       const covSegs = familyEntry ? registeredCoverageSegments(familyEntry.key, familyEntry.tf, sz, t) : null;
       if (!covSegs || (covSegs.length === 1 && !covSegs[0].registered)) {
         // No registered family (or it covers nothing): the family-blind
@@ -1629,7 +1839,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       let w = 0;
       for (const seg of covSegs) {
         if (seg.registered) {
-          const f = registeredFamilyFont(familyEntry.key, familyEntry.tf, sz, italic);
+          const f = registeredFamilyFont(familyEntry.key, familyEntry.tf, sz, italic && !familyEntry.realItalic);
           w += runWidth(f, seg.text);
         } else {
           w += this.measureTextStyled(seg.text, sz, weight, italic);
@@ -1669,7 +1879,6 @@ export function opCkCreateBridge(CK, initialSurface, el, {
 
       // Collect runs into a flat array structure.
       const runs = [];
-      let hasNewline = false;
       for (let i = 0; i < texts.length; i++) {
         const text = String(texts[i] || '');
         const family = String(families[i] || '');
@@ -1677,7 +1886,6 @@ export function opCkCreateBridge(CK, initialSurface, el, {
         const weight = Number(weights[i]) || 400;
         const italic = Boolean(italics[i]);
         const letterSpacing = Number(spacing[i]) || 0;
-        if (text.includes('\n')) hasNewline = true;
         runs.push({ text, family, sz, weight, italic, letterSpacing });
       }
 
@@ -1849,6 +2057,33 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       clearRegisteredFontCaches();
       return true;
     },
+    registerFontFace(family, weight, italic, bytes) {
+      const key = primaryFamilyKey(family);
+      if (!key) return false;
+      const tf = CK.Typeface.MakeFreeTypeFaceFromData(copyBytes(bytes));
+      if (!tf) return false;
+      const faces = downloadedTypefaces.get(key) || [];
+      const previous = faces.findIndex(face => face.weight === weight && face.italic === italic);
+      const entry = { family, weight, italic, tf };
+      if (previous >= 0) {
+        faces[previous].tf.delete();
+        faces[previous] = entry;
+      } else {
+        faces.push(entry);
+      }
+      downloadedTypefaces.set(key, faces);
+      if (typeof FontFace === 'function' && typeof document !== 'undefined') {
+        const browserFace = new FontFace(family, copyBytes(bytes), {
+          weight: String(weight), style: italic ? 'italic' : 'normal',
+        });
+        browserFace.load().then(face => document.fonts.add(face), error => {
+          console.warn(`Imported browser font ${family} ${weight} failed`, error);
+        });
+      }
+      coverageCache.clear();
+      clearRegisteredFontCaches();
+      return true;
+    },
     // Register an app-bundled design face. Same replace-on-same-key discipline
     // as `registerImportedFont`; only the registry (and therefore the lookup
     // rank) differs.
@@ -1874,6 +2109,9 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       const out = [];
       for (const entry of importedTypefaces.values()) {
         if (entry && entry.family) out.push(entry.family);
+      }
+      for (const faces of downloadedTypefaces.values()) {
+        if (faces[0]?.family && !out.includes(faces[0].family)) out.push(faces[0].family);
       }
       return out;
     },
@@ -1985,8 +2223,10 @@ export function opCkCreateBridge(CK, initialSurface, el, {
     rotate(deg, px, py) { canvas.rotate(deg, px, py); },
 
     resize(w, h) {
+      // Tiles belong to the old surface's GPU context; the host redraws them.
+      dropAllTiles();
       el.width = w; el.height = h;
-      try { surface.delete(); } catch (e) {}
+      try { surface.delete(); } catch {}
       surface = createSurface(w, h);
       if (!surface) throw new Error('CanvasKit: surface allocation failed');
       canvas = surface.getCanvas();

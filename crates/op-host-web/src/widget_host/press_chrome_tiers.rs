@@ -61,6 +61,9 @@ impl WidgetHost {
         // StatusBar controls — Search frames content, `[-]` / `[+]`
         // step the zoom. The bar paints above the canvas / toolbar but below
         // the late PropertyPanel overlay pass.
+        if let Some(changed) = self.press_view_options(x, y, viewport_width, viewport_height) {
+            return Some(changed);
+        }
         if let Some(r) = self.status_bar_rect(viewport_width, viewport_height) {
             use op_editor_core::StatusBarButton;
             let bar = op_editor_ui::widgets::StatusBar::for_editor(&self.editor_state);

@@ -15,12 +15,19 @@ impl WidgetHost {
         // Seed the render scene once up front; subsequent frames
         // re-derive only when `editor_state_dirty` is set.
         let layout_scene = op_pen_loader::editor_state_to_active_page_layout_scene(&editor_state);
+        let scene_page_index = editor_state.ui.active_page_index;
         let last_chat_session_index = editor_state.chat.active_index();
         Self {
             editor_state,
             layout_scene,
             layout_transition: None,
             scene_cache: op_pen_loader::SceneBuildCache::new(),
+            scene_page_index,
+            scene_generation: 0,
+            page_loading_cover: None,
+            page_cover_frame: false,
+            pending_page_fit: None,
+            pending_offscreen_fit: false,
             editor_state_dirty: false,
             #[cfg(feature = "canvaskit")]
             doc_sync_dirty: false,
@@ -29,6 +36,7 @@ impl WidgetHost {
             theme: Theme::dark(),
             drag: None,
             space_pan: false,
+            ui_scale_active: 0.0,
             chat_drag: None,
             image_adjustment_drag: None,
             image_crop_drag: None,
@@ -57,6 +65,9 @@ impl WidgetHost {
             now_ms: 0,
             wall_now_secs: 0,
             toast_rect: None,
+            diagram_import_requested: false,
+            eyedropper: None,
+            draft_recovery_requested: false,
             last_viewport_w: 0.0,
             last_viewport_h: 0.0,
             last_cursor_x: 0.0,
@@ -87,6 +98,10 @@ impl WidgetHost {
             slideshow_cursor: None,
             slideshow_press_screen: None,
             bundled_fonts_pending: false,
+            frame_perf: Default::default(),
+            viewport_gesture: Default::default(),
+            screenshot_scene: None,
+            canvas_tiles: Default::default(),
         }
     }
 
@@ -177,13 +192,21 @@ impl WidgetHost {
     /// when the scene is already current. The input hit-test + the
     /// paint pass both call this before reading `layout_scene`.
     pub(in crate::widget_host) fn refresh_layout_scene(&mut self) {
-        if self.editor_state_dirty {
+        // A switch to a heavy page must present its loading cover before the
+        // blocking rebuild, whichever input or paint path asks first.
+        if self.editor_state_dirty && !self.page_cover_frame && !self.page_switch_awaits_cover() {
             // Only re-derive when the scene inputs (doc / theme / active page)
             // actually changed — most `editor_state_dirty` marks (hover, scroll,
             // selection, caret drafts, per-frame chat / codegen streaming) leave
             // them identical, and the scene carries no editor state.
-            if let Some(scene) = self.scene_cache.maybe_rebuild(&self.editor_state) {
-                self.layout_scene = scene;
+            if self
+                .scene_cache
+                .refresh(&self.editor_state, &mut self.layout_scene)
+            {
+                self.scene_page_index = self.editor_state.ui.active_page_index;
+                self.scene_generation = self.scene_generation.wrapping_add(1);
+                let replaced = self.scene_cache.take_replaced();
+                self.sync_tiles_after_scene(replaced);
             }
             self.editor_state_dirty = false;
         }
@@ -226,6 +249,7 @@ impl WidgetHost {
     /// `self.editor_state`.
     pub(in crate::widget_host) fn mark_dirty(&mut self) {
         self.editor_state_dirty = true;
+        self.viewport_gesture.content_epoch = self.viewport_gesture.content_epoch.wrapping_add(1);
         #[cfg(feature = "canvaskit")]
         {
             self.doc_sync_dirty = true;

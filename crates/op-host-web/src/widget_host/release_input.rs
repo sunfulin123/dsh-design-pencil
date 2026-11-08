@@ -33,7 +33,11 @@ impl WidgetHost {
     /// Mouse-release handler — commits any marquee drag, snaps a
     /// chat-panel drag to the nearest corner, or ends the canvas
     /// pan-drag.
-    pub fn apply_release_with_viewport(&mut self, viewport_w: f32, viewport_h: f32) -> bool {
+    pub(in crate::widget_host) fn release_layout(
+        &mut self,
+        viewport_w: f32,
+        viewport_h: f32,
+    ) -> bool {
         self.last_viewport_w = viewport_w;
         self.last_viewport_h = viewport_h;
         // Dispatch preview pointer up if preview is active
@@ -133,7 +137,7 @@ impl WidgetHost {
     /// API parity with the native shell; the browser runner wires
     /// the viewport-aware `apply_release_with_viewport` instead.
     #[allow(dead_code)]
-    pub fn apply_release(&mut self) -> bool {
+    pub(in crate::widget_host) fn release_without_viewport_layout(&mut self) -> bool {
         let pressed_released = self.release_pressed_feedback();
         // The cached viewport is what every other viewport-less path
         // here uses; leaving the gesture open would strand a row

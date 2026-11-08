@@ -102,6 +102,7 @@ features = [
   "ClipboardEvent",
   "CompositionEvent",
   "console",
+  "CssStyleDeclaration",
   "DataTransfer",
   "DataTransferItem",
   "DataTransferItemList",

@@ -164,6 +164,7 @@ pub fn editor_tree_update(
 
     // 7. StatusBar — floating bottom-right zoom pill.
     let status = StatusBar::for_editor(state);
+    let view_options = crate::widgets::view_options::ViewOptions::for_editor(state);
 
     // Assemble the ordered, present set. Order = reading order.
     let mut placed: Vec<PlacedWidget<'_>> = Vec::with_capacity(8);
@@ -186,6 +187,16 @@ pub fn editor_tree_update(
     if let Some(rect) = status_bar_rect {
         placed.push(PlacedWidget::new(&status, rect));
     }
+    if ui.view_options_open {
+        placed.push(PlacedWidget::new(
+            &view_options,
+            crate::widgets::view_options::ViewOptions::rect_at(
+                status_bar_rect,
+                window_bounds.size.x,
+                window_bounds.size.y,
+            ),
+        ));
+    }
 
     let focus = focus_target(state, canvas_width, canvas_height, property_panel.is_some());
     assemble_tree_update(window_bounds, &placed, focus)
@@ -203,6 +214,9 @@ pub fn focus_target(
     canvas_height: f32,
     property_panel_present: bool,
 ) -> WidgetId {
+    if state.editor_ui.view_options_open {
+        return WidgetId::new(crate::widgets::view_options::VIEW_OPTIONS_ID);
+    }
     if state.chat.focused {
         return WidgetId::new(AI_CHAT_WIDGET_ID);
     }

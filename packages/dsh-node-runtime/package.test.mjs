@@ -10,8 +10,11 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   context.after(() => rm(root, { recursive: true, force: true }))
   const runtime = join(root, 'packages/dsh-node-runtime')
   const files = [
-    'package.json', 'cli.mjs', 'document-file.mjs', 'document-store.mjs',
-    'engine-session.mjs', 'node-host.mjs', 'static-assets.mjs',
+    'package.json', 'cli.mjs', 'offline-cli.mjs', 'document-file.mjs', 'document-store.mjs',
+    'engine-session.mjs', 'node-host.mjs', 'static-assets.mjs', 'color-sampler.mjs', 'screenshot-renderer.mjs',
+    'draft-recovery.mjs', 'document-history.mjs',
+    'figma-rest-client.mjs', 'figma-images.mjs', 'figma-import-jobs.mjs', 'font-fetcher.mjs', 'font-inventory.mjs', 'headless-renderer.mjs',
+    'figma-fidelity.mjs', 'png-diff.mjs',
     'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/snippets/bridge.js',
@@ -39,9 +42,14 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   const manifest = await stageRuntime({ root, destination, revision: '1'.repeat(40) })
   assert.equal(manifest.runtime, 'node-wasm')
   assert.equal(manifest.entrypoint, 'cli.mjs')
+  assert.ok(manifest.files['offline-cli.mjs'])
   assert.equal(manifest.node, '>=24')
   assert.equal(manifest.openPencilVersion, '0.8.5-synapse.4')
   assert.ok(manifest.files['wasm/op_dsh_engine_bg.wasm'])
+  assert.ok(manifest.files['color-sampler.mjs'])
+  assert.ok(manifest.files['screenshot-renderer.mjs'])
+  assert.ok(manifest.files['draft-recovery.mjs'])
+  assert.ok(manifest.files['document-history.mjs'])
   assert.ok(manifest.files['web-bundle/op_host_web_bg.wasm'])
   assert.ok(manifest.files['web-bundle/assets/i18n/ja.json'])
   assert.ok(manifest.files['web-bundle/snippets/bridge.js'])

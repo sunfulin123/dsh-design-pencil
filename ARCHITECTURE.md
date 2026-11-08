@@ -1,0 +1,112 @@
+# 当前 DSH 架构
+
+本页定义当前产品边界；[crates/CLAUDE.md](crates/CLAUDE.md) 保留更细的上游模块说明，
+其中 native/desktop/旧 shell 命令不一定属于当前 workspace。
+
+## 运行时与所有权
+
+```text
+AI / DSH 宿主
+    │ JSON-RPC MCP / managed lifecycle
+    ▼
+Node host（packages/dsh-node-runtime）
+    ├── EngineSession → op-dsh-engine WASM
+    │                      └── op-mcp → EditorCommand → EditorState / PenDocument
+    ├── 文档版本、存储、冲突与增量同步
+    └── 截图请求 → 活跃浏览器 / 独立 headless Chrome
+                           │
+                           ▼
+                 op-host-web WASM → op-editor-ui → CanvasKit bridge
+```
+
+- [Cargo.toml](Cargo.toml) workspace members 只有 `op-dsh-engine`、`op-host-web`。
+  `op-editor-core/ui`、`op-mcp`、`op-figma`、`op-pen-loader` 等是共享 path dependency。
+- [DesignEngine](crates/op-dsh-engine/src/lib.rs) 持有 Rust editor state。
+  设计语义与 undo/redo 使用已有 command；Node 不复制 Rust 编辑规则。
+- [tool_catalog](crates/op-dsh-engine/src/tool_catalog.rs) 是 AI-facing tool 的发现/schema 入口，
+  `DesignEngine::call_tool` 分发调用；Node 增强导入、截图等宿主能力。
+- [EngineSession](packages/dsh-node-runtime/engine-session.mjs) 管理文档缓存及变更；
+  [node-host](packages/dsh-node-runtime/node-host.mjs) 管请求队列、同步、生命周期与资源释放。
+  Node 的文档 content version 不等于浏览器临时选择/相机状态。
+- [op-host-web](crates/op-host-web/src/lib.rs) 负责事件和浏览器 widget host；
+  平台无关 widget 留在 `op-editor-ui`，不能引入原生窗口/网络/GPU依赖。
+- SDK 是只读 viewer adapter，不是另一套可编辑文档或 MCP 实现。
+
+## 同步与错误
+
+文档 fingerprint 覆盖 content generation/revision 和 editor metadata。
+页面 patch 只用于能准确描述的变更；full reset 必须保留完整重同步路径。
+浏览器写入使用 baseVersion 防止覆盖并发编辑；content、selection、metadata 的
+版本/历史语义分别测试，不能把“HTTP 成功”视为“设计事务成功”。
+
+截图等待不能持有 renderer bootstrap 所需的 mutation queue。
+真实/近似 renderer 必须在结果中区分；颜色或 UI 验收不能接受不明来源的截图。
+输入失败、回滚和宿主拒绝必须成为明确 tool error，不能吞掉后返回成功。
+
+## 共享设计资产
+
+[AssetStore](packages/dsh-node-runtime/asset-store.mjs) 用 Node 标准库 SQLite 持久化
+用户模板、风格原始 Markdown 和 `.optheme` JSON；同目录的多个 host 共用事务与
+`assetsRevision`，不同目录相互隔离。默认目录是已绑定且存在的文档目录下的
+`.dsh-design/assets`；显式 `--asset-dir` 可跨文档共享。未绑定时仍可查询内置资产，
+但不能假装已持久化用户资产。
+
+[资产工具](packages/dsh-node-runtime/asset-tools.mjs) 同时服务 MCP 与 `/api/assets`。
+目录只返回元数据，正文按稳定 id 获取；目录读取期间 revision 改变会明确拒绝，
+不会发布混合快照。用户资产更新/改名/删除要求 `expectedRevision`；内置资产只读。
+模板限 50 个，单个 payload 和目录响应限 32 MiB；list 工具提供分页。
+Rust [资产语义](crates/op-dsh-engine/src/asset_semantics.rs) 复用已有解析、模板引用改写、
+变量/图片合并及命令；实例化和主题加载各占一个 undo，Node 保留未知节点扩展。
+保存模板包含选中节点引用的跨页 reusable master；删除资产不删除已插入的设计。
+MCP 和共享 HTTP API 的设计变更均经过原有 draft autosave。
+每次托管模板插入使用不冲突且兼容公式语法的命名空间；更新库模板不会重写旧实例。
+变量定义中的别名/公式与节点引用一起改写，完整别名可包含 slash；
+公式标识符遵循变量解析器的共享语法，slash 在公式中仍是除法。
+模板主题轴、默认选择和节点主题覆盖一起隔离，不改变目标文档原有主题。
+
+浏览器 [ManagedAssets](crates/op-editor-core/src/managed_assets.rs) 是每个 EditorState
+独立的目录视图，不写进进程全局用户 registry，也不进入文档历史。
+[同步桥](crates/op-host-web/src/managed_assets_sync.rs) 复用轻量版本 probe，仅 revision
+变化时拉目录；主题预设正文全部验证后按目录顺序一次发布。UI 导入/保存/删除在
+持久化确认后更新，未同步的设计不能直接保存或加载资产。绑定风格会将规范及变量
+同步到当前文档；不会只改一个不可供 AI 使用的装饰性 pin。
+
+[EditorControl](packages/dsh-node-runtime/editor-control.mjs) 等待真实编辑器确认主题，
+不持有其 poll/ack 或文档写入所需的队列。有效主题优先级：
+embedding host override > 临时 MCP override > 设备偏好。
+`persist` 默认 false；true 必须确认 effective 和 preference，保存失败/宿主强制主题/
+无编辑器/超时均明确报错。render-only Chrome 不冒充交互编辑器。
+
+## 画布渲染
+
+- 纯 tile geometry/planning 在 [canvas_tiles](crates/op-editor-ui/src/widgets/canvas_tiles.rs)。
+- host 缓存在 [canvas_tiles](crates/op-host-web/src/widget_host/canvas_tiles.rs)，
+  预算及失效接线在 [canvas_tiles_host](crates/op-host-web/src/widget_host/canvas_tiles_host.rs)。
+- [CanvasKit bridge](crates/op-host-web/src/op_ck_bridge.js) 持有 GPU image/surface；
+  相机交互复用瓦片，动态覆盖层实时绘制，缺瓦片时仍需完整内容兜底。
+- 文档、图片、字体、context resize 的失效生命周期必须一致。
+  详细已验证陷阱见 [KB](docs/kb/canvas-resources.md)。
+
+## 维护 harness
+
+[行数检查器](tools/check_code_line_cap.py) 用语法 token 统计实际代码行，
+[baseline](tools/code-line-baseline.json) 仅记录旧债。
+[任务工具](tools/task_notes.py) 生成独立记录、快照自有文件并校验/完成或归档任务；
+[共享状态](tools/task_state.py) 使用 Git 解析当前 worktree 私有目录，支持 `.git` 为文件的 linked worktree。
+快照保存内容指纹，不保存源码正文。一个 worktree 只登记一个活动任务，不能自动归因外部并发编辑。
+初始快照逐项校验自有路径和 SHA-256；缺失或损坏的指纹不能解释为新增文件。
+JSON 保存任务登记；标准库 SQLite 事务锁协调任务/知识写操作，进程退出自动释放操作锁。
+归档保留未完成状态和变更证据，释放活动登记，不冒充完成。
+[知识工具](tools/knowledge.py) 对 KB provenance 的来源指纹和复核证据进行检查，
+来源变化或删除必须重新复核；文字语义与实际验证真实性仍由 review 核对。
+[harness 检查器](tools/check_harness.py) 校验 notes：本地使用显式 Task-ID，
+CI 排除 base 中已闭合的 Task-ID，按最近完成的新 v2 记录核对当前文件和知识指纹；
+较早记录保留当时指纹，旧格式仅保留为历史。
+两者由 [maintenance wrapper](tools/check-maintenance.sh) 和
+[CI](.github/workflows/maintenance.yml) 调用，无需启动产品或接触用户文档。
+
+## 架构修改要求
+
+变更所有权、同步协议、公开接口、队列、缓存失效或 crate 依赖时：
+在本页更新真实数据流/边界，并在任务 notes 中写决策、备选、兼容/迁移和回滚方式。
+只有跨任务可复用且经验证的结论进入 KB；不要把设想当成既定架构。

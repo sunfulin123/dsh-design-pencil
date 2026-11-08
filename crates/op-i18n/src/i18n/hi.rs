@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "नाम बदलें",
+        "layerMenu.copyProperties" => "गुण कॉपी करें",
+        "layerMenu.pasteProperties" => "गुण पेस्ट करें",
+        "layerMenu.tidyUp" => "व्यवस्थित करें",
+        "layerMenu.packHorizontal" => "क्षैतिज सघन करें",
+        "layerMenu.packVertical" => "लंबवत सघन करें",
+        "layerMenu.designError" => "संपादन नहीं हो सका: {{reason}}",
         "common.duplicate" => "डुप्लिकेट",
         "common.delete" => "हटाएँ",
         "common.cancel" => "रद्द करें",
@@ -778,6 +784,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Figma फ़ाइल पार्स की जा रही है…",
         "importProgress.htmlTitle" => "HTML और पेज संसाधन पार्स किए जा रहे हैं…",
         "importProgress.htmlSubtitle" => "स्टाइल और छवियाँ लोड हो रही हैं। कृपया प्रतीक्षा करें।",
+        "canvas.pageLoading" => "पेज लोड हो रहा है…",
         "importProgress.largeFileSubtitle" => "बड़ी फ़ाइलों में कुछ सेकंड लगते हैं। कृपया प्रतीक्षा करें।",
         "account.signedOutHint" => "सेटिंग्स और प्राथमिकताएँ सिंक करने के लिए साइन इन करें",
         "code.noUsableCode" => "AI ने कोई उपयोगी कोड नहीं लौटाया। पुनः प्रयास करें या AI मॉडल बदलें।",

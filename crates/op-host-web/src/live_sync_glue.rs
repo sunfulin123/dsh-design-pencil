@@ -1,128 +1,37 @@
-//! Live-canvas sync glue — bidirectional document + selection sync between
-//! the browser shell and the web-canvas daemon. The Rust counterpart of the
-//! TS `apps/web/src/hooks/use-mcp-sync.ts`:
+//! Bidirectional browser ↔ daemon document and selection synchronization.
 //!
-//! * **Pull** (external MCP/CLI writes → browser canvas): a 400 ms tick
-//!   probes `GET /api/mcp/version` and fetches + applies the full document
-//!   only when the daemon's monotonic version advanced. TS receives
-//!   `document:update` pushes over SSE instead — a documented transport
-//!   divergence (the daemon's SSE stream carries version bumps only, and the
-//!   verified XHR machinery is reused); worst-case latency is one tick. Every
-//!   pull decision — the tick gate AND the apply-time re-check — is keyed on
-//!   the CURRENT `(document_generation, document_revision)` pair via
-//!   [`op_editor_core::sync_gate::SyncGate`], not on any cheap dirty hint.
-//! * **Push** (browser edits → daemon, so external MCP/CLI clients see them):
-//!   a 2000 ms tick — the TS `PUSH_DEBOUNCE_MS` cadence — serializes the live
-//!   document when `SyncGate::needs_push` says the current pair moved past
-//!   the last-synced baseline (the sole authoritative gate; a stored conflict
-//!   holds it closed until explicit resolution), skips the actual POST when
-//!   the content hash matches the daemon baseline (re-baselining directly so
-//!   the gate can't deadlock), and POSTs
-//!   `{document, baseVersion, activePageIndex, preserveAuthoredGeometry}` to
-//!   `/api/mcp/document`. Pushes over 2 MiB are skipped with a one-shot
-//!   console warning (TS `SYNC_MAX_BODY_BYTES` parity), baseline untouched. A
-//!   `version-conflict` response suspends the gate until the host resolves it
-//!   (no silent retry); other failures are dropped best-effort (TS catch{}
-//!   parity) — the next local edit retriggers.
-//! * **Selection push**: the 400 ms tick also samples the selection key and
-//!   POSTs `{selectedIds, activePageId}` to `/api/mcp/selection` when it
-//!   changed (TS debounces 300 ms; a 400 ms trailing sample is the same
-//!   order of latency). One-way browser → daemon, exactly like TS.
-//!
-//! Architectural divergence (documented): TS's BROWSER is the document
-//! authority (it pushes its document on `client:id` and the Nitro server only
-//! caches), while the Rust daemon is the authority after mount — so this glue
-//! never pushes before the first daemon document has been applied (subsumed
-//! by `SyncGate::needs_push`'s None-baseline rule). The static host page calls
-//! `/api/mcp/sync-reset` before mounting so a browser refresh starts from the
-//! starter document instead of replaying the previous transient web `.op`
-//! state; bootstrap pushes remain disabled so stale page state cannot
-//! overwrite a deliberately opened daemon document. Live screenshot requests
-//! are served by the `--serve-web` daemon's MCP route from this same synced
-//! document authority, rather than by browser-side capture.
+//! Polls fetch `/api/mcp/document` even when its content version is unchanged:
+//! viewport and top-level `uiScale` hints can change without document edits.
+//! UI scale applies independently of content/conflict gates. Document swaps
+//! still honor `SyncGate`; bootstrap is clean and later external edits undoable.
+//! Pushes are debounced, content-hash suppressed and bounded to 2 MiB, with
+//! conflicts held until explicit resolution or recoverable session acceptance.
+//! Selection is pushed independently; the daemon is the document authority.
 
 use std::cell::{Cell, RefCell};
-use std::io::{self, Write};
 use std::rc::{Rc, Weak};
 
 use op_editor_core::sync_gate::SyncGate;
-use op_editor_core::web_sync::{self, WebSyncClient};
+use op_editor_core::web_sync::WebSyncClient;
 
 use crate::live_sync;
+use crate::live_sync_json::{serialize_sync_document, SyncDocumentJson, SYNC_MAX_BODY_BYTES};
 use crate::repaint_ctx::RepaintContext;
 
 /// Pull cadence (version probe). TS gets SSE pushes; one tick of latency.
 const POLL_INTERVAL_MS: i32 = 200;
 /// Push cadence — TS `PUSH_DEBOUNCE_MS` (use-mcp-sync.ts:6).
 const PUSH_INTERVAL_MS: i32 = 2000;
-/// TS `SYNC_MAX_BODY_BYTES` (use-mcp-sync.ts:10): documents larger than this
-/// are not pushed (warned once), mirroring the renderer's oversize guard.
-const SYNC_MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
-
-enum SyncDocumentJson {
-    Ready(String),
-    Oversize,
-    Failed,
-}
-
-struct CappedJsonWriter {
-    bytes: Vec<u8>,
-    exceeded: bool,
-}
-
-impl CappedJsonWriter {
-    fn new() -> Self {
-        Self {
-            bytes: Vec::new(),
-            exceeded: false,
-        }
-    }
-}
-
-impl Write for CappedJsonWriter {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if self.bytes.len().saturating_add(bytes.len()) > SYNC_MAX_BODY_BYTES {
-            self.exceeded = true;
-            return Err(io::Error::new(
-                io::ErrorKind::FileTooLarge,
-                "sync document exceeds limit",
-            ));
-        }
-        self.bytes.extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-/// Serialize directly into a capped buffer. A giant Figma document therefore
-/// never creates a giant temporary `String` merely to discover that live sync
-/// cannot send it.
-fn serialize_sync_document(doc: &op_editor_core::PenDocument) -> SyncDocumentJson {
-    let mut writer = CappedJsonWriter::new();
-    if serde_json::to_writer(&mut writer, doc).is_err() {
-        return if writer.exceeded {
-            SyncDocumentJson::Oversize
-        } else {
-            SyncDocumentJson::Failed
-        };
-    }
-    match String::from_utf8(writer.bytes) {
-        Ok(json) => SyncDocumentJson::Ready(json),
-        Err(_) => SyncDocumentJson::Failed,
-    }
-}
+#[cfg(test)]
+#[path = "ui_scale_handshake_tests.rs"]
+mod ui_scale_handshake_tests;
 
 /// Shared sync state: the gate deciding pull/push eligibility, the wire-level
 /// client (version/hash bookkeeping), and the push single-flight latch. Built
 /// once in `mount_ck` and handed to both this module's ticks and the
 /// postMessage bridge, so both sides observe and mutate the exact same
 /// `SyncGate` instance (a v1 defect — the bridge couldn't reach a local
-/// Content changes advance the gate's `(generation, revision)` pair, while
-/// active-page switches intentionally do not. Treat an editor-metadata delta
-/// as an additional push reason without weakening the conflict latch.
+/// Editor metadata can require a push without advancing the content revision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PushReasons {
     content: bool,
@@ -140,13 +49,15 @@ fn push_reasons(
     pair: (u64, u64),
     active_page_index: usize,
     preserve_authored_geometry: bool,
+    viewport: op_editor_core::Viewport,
 ) -> PushReasons {
     PushReasons {
         content: sync.gate.needs_push(pair),
-        editor_meta: sync.gate.conflict().is_none()
-            && sync
+        editor_meta: sync.gate.is_synced(pair)
+            && (sync
                 .client
-                .editor_meta_needs_push(active_page_index, preserve_authored_geometry),
+                .editor_meta_needs_push(active_page_index, preserve_authored_geometry)
+                || sync.client.viewport_needs_push(viewport)),
     }
 }
 
@@ -159,7 +70,7 @@ pub(crate) fn start<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>, sync: S
     let base = crate::daemon_base::daemon_base();
     // One-shot: learn whether this daemon is the document's sole sequencer,
     // which decides whether a sync conflict may auto-resolve.
-    probe_serve_mode(&base);
+    probe_serve_mode(&base, inner);
     // One document fetch / one push at a time; ticks observing an in-flight
     // request skip (the TS hook queues at most one — same effective shape).
     // `fetch_busy` stays a plain Cell (pull-side, local to this module);
@@ -171,7 +82,7 @@ pub(crate) fn start<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>, sync: S
     // apply, which resets daemon-side selection). Seeded with the current key
     // so mount does not push an initial no-op selection (TS pushes selection
     // only on change).
-    let last_selection_key = Rc::new(RefCell::new(Some(web_sync::selection_sync_key(
+    let last_selection_key = Rc::new(RefCell::new(Some(crate::ui_scale_sync::selection_key(
         inner.borrow().host().editor_state(),
     ))));
     ACTIVE_SELECTION_KEY.with(|slot| *slot.borrow_mut() = Some(last_selection_key.clone()));
@@ -201,12 +112,12 @@ pub(crate) fn start<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>, sync: S
         });
         let _ = live_sync::start_interval(PUSH_INTERVAL_MS, tick);
     }
+    crate::managed_assets_sync::start(inner, &crate::daemon_base::daemon_base(), sync);
 }
 
 /// Probe the daemon version; on a newer version fetch + apply the document.
-/// Gated on the sync-gate FIRST (before any network round-trip): an accept
-/// window broken by an intervening local edit re-enters the conflict flow,
-/// and otherwise `pull_allowed` must hold for the current pair.
+/// Poll preference hints even while content is dirty/conflicted. Content
+/// eligibility is checked independently when the document response arrives.
 fn poll_version<C: RepaintContext + 'static>(
     inner: &Rc<RefCell<C>>,
     base: &str,
@@ -225,12 +136,8 @@ fn poll_version<C: RepaintContext + 'static>(
     let broken = sync.borrow().gate.accept_window_broken(pair); // borrow ends HERE
     if let Some(v) = broken {
         sync.borrow_mut().gate.note_conflict(v); // observer latch reports; user decides again
-        return;
     }
     maybe_auto_resolve_conflict_in_session(inner, sync, pair);
-    if !sync.borrow().gate.pull_allowed(pair) {
-        return;
-    }
 
     let inner = inner.clone();
     let sync = sync.clone();
@@ -246,36 +153,102 @@ fn poll_version<C: RepaintContext + 'static>(
             note_auth_invalid();
             return;
         }
+        if !(200..300).contains(&status) {
+            return;
+        }
         // The daemon answers both counters here. Hand the collaboration one to
         // its own loop rather than opening a second probe; a `collabSeq` bump
         // must never reach the document fetch below.
         crate::collab_sync::note_version_probe(&body);
+        crate::managed_assets_sync::note_version_probe(&inner, &base_owned, &body);
         let Some(version) = WebSyncClient::parse_version_probe(&body) else {
             return; // daemon down / non-JSON error body — retry next tick
         };
-        let wants_version = sync
+        let current_or_newer = sync
             .try_borrow()
-            .map(|s| s.client.wants_version(version))
+            .map(|s| !s.client.initialized() || version >= s.client.last_version())
             .unwrap_or(false);
-        if !wants_version {
+        if !current_or_newer {
             return;
         }
-        // Fetch the full document; the latch is released when the response
-        // lands (or never taken if the request can't start).
-        fetch_busy.set(true);
-        let inner = inner.clone();
-        let sync = sync.clone();
-        let fetch_busy_done = fetch_busy.clone();
-        let last_selection_key = last_selection_key.clone();
-        let on_doc: Rc<dyn Fn(String)> = Rc::new(move |doc_body: String| {
-            apply_document_response(&inner, &doc_body, &sync, &last_selection_key);
-            fetch_busy_done.set(false);
-        });
-        if !live_sync::get(&format!("{base_owned}/api/mcp/document"), on_doc) {
-            fetch_busy.set(false);
+        // An unchanged version, camera and UI-scale hint would make the full
+        // reply a no-op; skip downloading and parsing the (possibly huge)
+        // document. A pending local edit forces the pull like the apply path.
+        let force_view = inner
+            .try_borrow()
+            .ok()
+            .zip(sync.try_borrow().ok())
+            .map(|(host, s)| !s.gate.is_synced(current_pair(&*host)))
+            .unwrap_or(true);
+        let unchanged = sync
+            .try_borrow()
+            .map(|s| s.client.probe_skips_document(&body, force_view))
+            .unwrap_or(false);
+        if unchanged {
+            return;
         }
+        // Once a paged document is mirrored, ask for the changed pages only;
+        // the latch is released when a response lands (or never taken).
+        fetch_busy.set(true);
+        let patch_since = sync.try_borrow().ok().and_then(|s| {
+            let paged = inner
+                .try_borrow()
+                .is_ok_and(|host| host.host().editor_state().doc.pages.is_some());
+            (s.client.initialized() && paged).then(|| s.client.last_version())
+        });
+        fetch_document(
+            &inner,
+            &base_owned,
+            &sync,
+            &fetch_busy,
+            &last_selection_key,
+            patch_since,
+        );
     });
     let _ = live_sync::get_with_status(&format!("{base}/api/mcp/version"), on_version);
+}
+
+/// Fetches and applies the daemon document: the pages changed since
+/// `patch_since` when given (falling back to a full fetch if the patch
+/// cannot be applied), otherwise the whole document. Releases `fetch_busy`.
+fn fetch_document<C: RepaintContext + 'static>(
+    inner: &Rc<RefCell<C>>,
+    base: &str,
+    sync: &SharedSync,
+    fetch_busy: &Rc<Cell<bool>>,
+    last_selection_key: &Rc<RefCell<Option<String>>>,
+    patch_since: Option<u64>,
+) {
+    let request_epoch = sync.borrow().client.viewport_epoch();
+    let url = match patch_since {
+        Some(since) => format!("{base}/api/mcp/document/changes?since={since}"),
+        None => format!("{base}/api/mcp/document"),
+    };
+    let on_doc: Rc<dyn Fn(String)> = {
+        let inner = inner.clone();
+        let base = base.to_string();
+        let sync = sync.clone();
+        let fetch_busy = fetch_busy.clone();
+        let last_selection_key = last_selection_key.clone();
+        Rc::new(move |doc_body: String| {
+            let needs_full = apply_document_response(
+                &inner,
+                &doc_body,
+                &sync,
+                &last_selection_key,
+                request_epoch,
+                patch_since.is_some(),
+            );
+            if needs_full {
+                fetch_document(&inner, &base, &sync, &fetch_busy, &last_selection_key, None);
+            } else {
+                fetch_busy.set(false);
+            }
+        })
+    };
+    if !live_sync::get(&url, on_doc) {
+        fetch_busy.set(false);
+    }
 }
 
 /// Auto-resolve a latched push conflict, but only inside a live session.
@@ -330,34 +303,54 @@ fn maybe_auto_resolve_conflict_in_session<C: RepaintContext + 'static>(
     }
 }
 
-/// Apply a `GET /api/mcp/document` response to the live shell.
-/// `WebSyncClient::sync_with_editor_meta` runs the apply closure only for a
-/// newer document and commits that exact version only when the closure returns
-/// `true` (swap + repaint both succeeded) — so the committed version is never
-/// stale and a failed repaint is retried on the next poll. On success the local
-/// serialization becomes the push baseline (echo suppression), the selection
-/// key is invalidated (the doc swap reset daemon + local selection, so the
-/// daemon must be told the browser's current one again), and the sync-gate
-/// baseline is committed to the PAIR AFTER the apply (a `replace_document`
-/// bumps generation, so the pre-apply pair would be stale).
+/// Apply a document response. UI hints always force acknowledgement, including
+/// unchanged scales and dirty content; only visual changes require repaint.
+/// Applies a pulled document (or page patch). Returns `true` when a page
+/// patch could not be applied and the caller must fetch the full document.
 fn apply_document_response<C: RepaintContext + 'static>(
     inner: &Rc<RefCell<C>>,
     body: &str,
     sync: &SharedSync,
     last_selection_key: &Rc<RefCell<Option<String>>>,
-) {
+    request_epoch: u64,
+    patch: bool,
+) -> bool {
+    if patch && !body.contains("\"full\":false") {
+        return true;
+    }
     let Ok(mut inner_mut) = inner.try_borrow_mut() else {
-        return;
+        return false;
     };
     let inner_ref = &mut *inner_mut;
+    let scale_update = sync
+        .try_borrow_mut()
+        .map(|mut controller| {
+            let version = controller.client.last_version();
+            controller
+                .ui_scale_pull
+                .apply(inner_ref.host_mut().editor_state_mut(), body, version)
+        })
+        .unwrap_or_default();
+    if scale_update.needs_ack {
+        *last_selection_key.borrow_mut() = None;
+    }
+    if scale_update.visual_changed {
+        inner_ref.host_mut().mark_editor_state_dirty();
+        let _ = inner_ref.repaint();
+    }
     // Apply-time re-check: a local edit may have landed while the fetch was
     // in flight; re-read the CURRENT pair and re-run `pull_allowed` before
     // taking any mutable borrow of the controller. Borrow ends at the end of
     // this statement (plain `if`, not `if let` — the condition's temporary
     // does not extend into the body).
-    if !sync.borrow().gate.pull_allowed(current_pair(inner_ref)) {
-        return; // a local edit landed while the fetch was in flight — abort apply
+    if !sync.borrow().document_pull_ready(
+        current_pair(inner_ref),
+        inner_ref.host().editor_state().viewport,
+        request_epoch,
+    ) {
+        return false; // a local edit landed while the fetch was in flight — abort apply
     }
+    let force_view = !sync.borrow().gate.is_synced(current_pair(inner_ref));
     // Captured BEFORE sync() flips it on the first apply: the
     // mount-time pull (starter doc → daemon doc) must NOT become an
     // undo step; every later external apply (AI turn, MCP client) must.
@@ -365,60 +358,86 @@ fn apply_document_response<C: RepaintContext + 'static>(
         .try_borrow()
         .map(|s| s.client.initialized())
         .unwrap_or(false);
-    // The `WebSyncClient::sync_with_editor_meta` closure runs while `sync` is held
+    // The `WebSyncClient::sync_with_view_state` closure runs while `sync` is held
     // mutably borrowed (via `s` below) — it must never itself touch `sync`;
     // it only touches `inner_ref`, which is a separate RefCell.
+    let local = patch.then(|| inner_ref.host().editor_state().doc.clone());
+    let mut needs_full = false;
     let applied = sync
         .try_borrow_mut()
         .ok()
         .and_then(|mut s| {
-            s.client
-                .sync_with_editor_meta(
-                    body,
-                    |doc,
-                     _version,
-                     active_page_index,
-                     preserve_authored_geometry,
-                     wire_scenario| {
-                        let host = inner_ref.host_mut();
-                        let prev_selected = host.editor_state().selection.set.clone();
-                        host.replace_document_from_sync(doc, undoable);
-                        // A daemon new enough to send `scenario` is the
-                        // authority (the browser boots with `None`, and a deck
-                        // must present as a deck). An older daemon omits the
-                        // field — keep whatever the open document already had
-                        // rather than letting every sync erase its tag.
-                        let scenario = wire_scenario.or(host.editor_state().editor_ui.scenario);
-                        let pinned_style_guide =
-                            host.editor_state().editor_ui.pinned_style_guide.clone();
-                        op_pen_loader::apply_editor_meta(
-                            host.editor_state_mut(),
-                            op_pen_loader::EditorMeta {
-                                active_page_index,
-                                preserve_authored_geometry,
-                                scenario,
-                                pinned_style_guide,
-                            },
-                        );
-                        if undoable && !prev_selected.is_empty() {
-                            let surviving: Vec<op_editor_core::NodeId> = prev_selected
-                                .into_iter()
-                                .filter(|id| {
-                                    op_editor_core::walkers::find_node(
-                                        host.editor_state().active_children(),
-                                        id,
-                                    )
-                                    .is_some()
-                                })
-                                .collect();
-                            for id in surviving {
-                                host.editor_state_mut().toggle_selection(id);
-                            }
-                        }
-                        inner_ref.repaint().is_ok()
+            let apply_next = |next: op_editor_core::web_sync::WebSyncDocument| {
+                let host = inner_ref.host_mut();
+                let prev_selected = host.editor_state().selection.set.clone();
+                let content_changed = host.editor_state().doc != next.document;
+                // A daemon-authored camera (saved or set_viewport) wins;
+                // otherwise unseen new content is framed below.
+                let explicit_view = next.viewport_changed && next.viewport.is_some();
+                if content_changed {
+                    host.replace_document_from_sync(next.document, undoable);
+                }
+                // A daemon new enough to send `scenario` is the
+                // authority (the browser boots with `None`, and a deck
+                // must present as a deck). An older daemon omits the
+                // field — keep whatever the open document already had
+                // rather than letting every sync erase its tag.
+                let scenario = next.scenario.or(host.editor_state().editor_ui.scenario);
+                let pinned_style_guide = host.editor_state().editor_ui.pinned_style_guide.clone();
+                op_pen_loader::apply_editor_meta(
+                    host.editor_state_mut(),
+                    op_pen_loader::EditorMeta {
+                        active_page_index: next.active_page_index,
+                        preserve_authored_geometry: next.preserve_authored_geometry,
+                        scenario,
+                        pinned_style_guide,
+                        viewport: (next.viewport_changed || force_view)
+                            .then(|| next.viewport.unwrap_or(op_editor_core::Viewport::IDENTITY)),
                     },
-                )
-                .ok()
+                );
+                host.mark_editor_state_dirty();
+                // The mount-time pull also re-checks a saved camera: one
+                // left between boards would otherwise open on nothing.
+                if content_changed && (!explicit_view || !undoable) {
+                    host.fit_if_content_offscreen();
+                }
+                if content_changed && undoable && !prev_selected.is_empty() {
+                    let surviving: Vec<op_editor_core::NodeId> = prev_selected
+                        .into_iter()
+                        .filter(|id| {
+                            op_editor_core::walkers::find_node(
+                                host.editor_state().active_children(),
+                                id,
+                            )
+                            .is_some()
+                        })
+                        .collect();
+                    for id in surviving {
+                        host.editor_state_mut().toggle_selection(id);
+                    }
+                }
+                inner_ref.repaint().is_ok()
+            };
+            match local.as_ref() {
+                Some(local) => {
+                    match s
+                        .client
+                        .sync_page_patch_force(body, local, force_view, apply_next)
+                    {
+                        Ok(op_editor_core::web_sync::PagePatchOutcome::Applied(applied)) => {
+                            Some(applied)
+                        }
+                        _ => {
+                            needs_full = true;
+                            None
+                        }
+                    }
+                }
+                None => s
+                    .client
+                    .sync_with_view_state_force(body, force_view, apply_next)
+                    .ok(),
+            }
         })
         .unwrap_or(false);
     if applied {
@@ -470,6 +489,7 @@ fn apply_document_response<C: RepaintContext + 'static>(
             .gate
             .note_synced(post_apply.0, post_apply.1);
     }
+    needs_full
 }
 
 /// Serialize + conditionally push the local document. Content changes are
@@ -483,11 +503,14 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
     sync: &SharedSync,
     oversize_warned: &Rc<Cell<bool>>,
 ) {
+    if crate::render_mode::render_only() {
+        return;
+    }
     let busy = sync.borrow().push_busy;
     if busy {
         return;
     }
-    let (pair, doc_json, active_page_index, preserve_authored_geometry, reasons) = {
+    let (pair, doc_json, active_page_index, preserve_authored_geometry, viewport, reasons) = {
         let Ok(mut b) = inner.try_borrow_mut() else {
             return;
         };
@@ -499,41 +522,50 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
         let state = b.host().editor_state();
         let active_page_index = state.ui.active_page_index;
         let preserve_authored_geometry = state.editor_ui.preserve_authored_geometry;
+        let viewport = state.viewport;
         let reasons = push_reasons(
             &sync.borrow(),
             pair,
             active_page_index,
             preserve_authored_geometry,
+            viewport,
         );
         if !reasons.any() {
             return;
         }
         let oversize_identity = current_oversize_identity(&*b);
-        if sync.borrow().oversize_identity == Some(oversize_identity) {
+        let compact_metadata =
+            !reasons.content && sync.borrow().client.metadata_only_push_supported();
+        if !compact_metadata && sync.borrow().oversize_identity == Some(oversize_identity) {
             return;
         }
-        let json = match serialize_sync_document(&b.host().editor_state().doc) {
-            SyncDocumentJson::Ready(json) => json,
-            SyncDocumentJson::Oversize => {
-                sync.borrow_mut().oversize_identity = Some(oversize_identity);
-                if !oversize_warned.replace(true) {
-                    web_sys::console::warn_1(
-                        &format!(
-                            "[mcp-sync] Skip oversized document push: > {:.2}MiB",
-                            SYNC_MAX_BODY_BYTES as f64 / (1024.0 * 1024.0)
-                        )
-                        .into(),
-                    );
+        let json = if compact_metadata {
+            r#"{"children":[]}"#.to_owned()
+        } else {
+            match serialize_sync_document(&b.host().editor_state().doc) {
+                SyncDocumentJson::Ready(json) => json,
+                SyncDocumentJson::Oversize => {
+                    sync.borrow_mut().oversize_identity = Some(oversize_identity);
+                    if !oversize_warned.replace(true) {
+                        web_sys::console::warn_1(
+                            &format!(
+                                "[mcp-sync] Skip oversized document push: > {:.2}MiB",
+                                SYNC_MAX_BODY_BYTES as f64 / (1024.0 * 1024.0)
+                            )
+                            .into(),
+                        );
+                    }
+                    return;
                 }
-                return;
+                SyncDocumentJson::Failed => return,
             }
-            SyncDocumentJson::Failed => return,
         };
         (
             pair,
             json,
             active_page_index,
             preserve_authored_geometry,
+            viewport,
             reasons,
         )
     };
@@ -543,7 +575,7 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
             &doc_json,
             active_page_index,
             preserve_authored_geometry,
-        )
+        ) || sync.borrow().client.viewport_needs_push(viewport)
     } else {
         // A daemon Save acknowledgement intentionally leaves the large typed
         // document hash unknown. A metadata-only page switch must be decided
@@ -594,13 +626,12 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
     }
     sync.borrow_mut().oversize_identity = None;
     oversize_warned.set(false);
-    let base_version = sync.borrow().client.last_version();
-    let body = WebSyncClient::wrap_push_body_with_base_editor_meta_and_mode(
+    let body = sync.borrow().client.wrap_view_state_push(
         &doc_json,
-        base_version,
         active_page_index,
         preserve_authored_geometry,
         !reasons.content,
+        viewport,
     );
     sync.borrow_mut().push_busy = true;
     let sync_done = sync.clone();
@@ -621,17 +652,24 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
         let accepted_version = WebSyncClient::parse_push_response(&resp);
         if let Some(version) = accepted_version {
             let mut s = sync_done.borrow_mut();
-            s.client.mark_pushed_with_editor_meta(
-                &doc_json,
-                active_page_index,
-                preserve_authored_geometry,
-                version,
-            );
+            if reasons.content {
+                s.client.mark_pushed_with_editor_meta(
+                    &doc_json,
+                    active_page_index,
+                    preserve_authored_geometry,
+                    version,
+                );
+            } else {
+                s.client.mark_applied(version);
+                s.client
+                    .note_applied_editor_meta(active_page_index, preserve_authored_geometry);
+            }
+            s.client.note_applied_viewport(viewport);
             s.gate.note_synced(pushed_pair.0, pushed_pair.1);
         }
-        // Neither shape recognized (network/parse failure): dropped
-        // best-effort (TS catch{} parity) — the next local edit re-flags
-        // needs_push and retries.
+        if accepted_version.is_none() {
+            web_sys::console::warn_1(&"[mcp-sync] Document or viewport push was not acknowledged; changes remain pending".into());
+        }
     });
     if !live_sync::post_json(
         &format!("{base}/api/mcp/document"),
@@ -652,14 +690,17 @@ fn push_selection_if_changed<C: RepaintContext + 'static>(
     base: &str,
     last_selection_key: &Rc<RefCell<Option<String>>>,
 ) {
+    if crate::render_mode::render_only() {
+        return;
+    }
     let (key, body) = {
         let Ok(b) = inner.try_borrow() else {
             return;
         };
         let state = b.host().editor_state();
         (
-            web_sync::selection_sync_key(state),
-            web_sync::selection_push_body(state),
+            crate::ui_scale_sync::selection_key(state),
+            crate::ui_scale_sync::selection_body(state),
         )
     };
     if last_selection_key
@@ -677,72 +718,8 @@ fn push_selection_if_changed<C: RepaintContext + 'static>(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn minimal_document() -> op_editor_core::PenDocument {
-        serde_json::from_str(r#"{"version":"1.0","children":[]}"#)
-            .expect("minimal document should deserialize")
-    }
-
-    #[test]
-    fn capped_serializer_matches_regular_json_for_small_documents() {
-        let doc = minimal_document();
-        let expected = serde_json::to_string(&doc).expect("regular serialization should succeed");
-
-        match serialize_sync_document(&doc) {
-            SyncDocumentJson::Ready(actual) => assert_eq!(actual, expected),
-            SyncDocumentJson::Oversize => panic!("small document should fit under the cap"),
-            SyncDocumentJson::Failed => panic!("small document should serialize"),
-        }
-    }
-
-    #[test]
-    fn capped_serializer_stops_oversized_documents_at_the_limit() {
-        let mut doc = minimal_document();
-        doc.name = Some("x".repeat(SYNC_MAX_BODY_BYTES));
-
-        assert!(matches!(
-            serialize_sync_document(&doc),
-            SyncDocumentJson::Oversize
-        ));
-    }
-
-    #[test]
-    fn capped_writer_accepts_exact_limit_then_rejects_another_byte() {
-        let mut writer = CappedJsonWriter::new();
-        let exact_limit = vec![b'x'; SYNC_MAX_BODY_BYTES];
-        writer
-            .write_all(&exact_limit)
-            .expect("the exact cap should be accepted");
-        assert_eq!(writer.bytes.len(), SYNC_MAX_BODY_BYTES);
-
-        assert!(writer.write_all(b"x").is_err());
-        assert!(writer.exceeded);
-        assert_eq!(writer.bytes.len(), SYNC_MAX_BODY_BYTES);
-    }
-
-    #[test]
-    fn active_page_only_change_is_push_due_without_a_revision_change() {
-        let mut sync = SyncController::new();
-        let pair = (7, 11);
-        sync.gate.note_synced(pair.0, pair.1);
-        sync.client.mark_applied(3);
-        sync.client.note_applied_snapshot_without_hash(0, true);
-
-        assert!(!push_reasons(&sync, pair, 0, true).any());
-        assert!(
-            push_reasons(&sync, pair, 1, true).editor_meta,
-            "page metadata must bypass the unchanged revision pair"
-        );
-
-        sync.gate.note_conflict(4);
-        assert!(
-            !push_reasons(&sync, pair, 1, true).any(),
-            "metadata pushes must still honor the conflict latch"
-        );
-    }
-}
+#[path = "live_sync_glue_tests.rs"]
+mod tests;
 
 thread_local! {
     /// Raised when the daemon answered a sync request 401/403.
@@ -805,7 +782,7 @@ pub(crate) fn mark_selection_dirty() {
 #[path = "live_sync_controller.rs"]
 mod live_sync_controller;
 pub(crate) use live_sync_controller::{
-    acknowledge_daemon_save, daemon_save_version, SharedSync, SyncController,
+    acknowledge_daemon_save, daemon_save_version, daemon_synced_version, SharedSync, SyncController,
 };
 // Spine-local: the two identity pairs every gating decision here is keyed on.
 use live_sync_controller::{current_oversize_identity, current_pair};

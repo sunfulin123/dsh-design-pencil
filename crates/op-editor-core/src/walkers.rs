@@ -339,15 +339,11 @@ pub fn deep_clone_with_allocator(
     taken: &mut HashSet<NodeId>,
 ) -> Result<PenNode, IdAllocError> {
     let mut clone = node.clone();
-    let new_id = allocator.allocate(taken)?;
-    clone.base_mut().id = new_id.into();
-    if let Some(children) = clone.children_mut() {
-        let fresh: Result<Vec<PenNode>, IdAllocError> = children
-            .iter()
-            .map(|child| deep_clone_with_allocator(child, allocator, taken))
-            .collect();
-        *children = fresh?;
-    }
+    crate::command_node::remap_subtree_ids_mapping_with_allocator(
+        std::slice::from_mut(&mut clone),
+        allocator,
+        taken,
+    )?;
     Ok(clone)
 }
 

@@ -178,6 +178,7 @@ pub fn take_remote_image_requests(max: usize) -> Vec<(u64, String)> {
 /// re-queues (and refetches) the source instead of sticking on the
 /// placeholder forever.
 pub fn store_remote_image_bytes(id: u64, bytes: Vec<u8>) {
+    crate::raster_epoch::bump();
     if bytes.is_empty() {
         mark_remote_image_failed(id);
         return;

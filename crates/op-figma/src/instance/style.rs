@@ -18,6 +18,7 @@ const LAYOUT_KEYS: &[&str] = &[
     "stackCounterSizing",
     "stackChildPrimaryGrow",
     "stackChildAlignSelf",
+    "stackReverseZIndex",
     "frameMaskDisabled",
 ];
 

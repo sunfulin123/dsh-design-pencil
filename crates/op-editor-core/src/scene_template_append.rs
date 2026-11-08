@@ -46,6 +46,8 @@ pub const TEMPLATE_APPEND_GAP: f64 = 400.0;
 pub struct TemplateBoards {
     pub nodes: Vec<PenNode>,
     pub variables: BTreeMap<String, VariableDefinition>,
+    pub themes: BTreeMap<String, Vec<String>>,
+    pub theme: BTreeMap<String, String>,
     image_thumbnails: Vec<(u64, Arc<[u8]>)>,
 }
 
@@ -67,6 +69,22 @@ pub fn template_boards(source: &str, template_id: &str) -> Option<TemplateBoards
         active_page_index = template_active_page_index(document);
         image_thumbnails = take_raw_template_thumbnails(document);
         renames = variable_renames(document, template_id);
+        let axes = document
+            .get("themes")
+            .and_then(serde_json::Value::as_object)
+            .map(|axes| {
+                axes.keys()
+                    .map(|axis| (axis.clone(), format!("{template_id}--{axis}")))
+                    .collect()
+            })
+            .unwrap_or_default();
+        rewrite_theme_refs(document, &axes);
+        if let Some(themes) = document.get_mut("themes") {
+            rename_object_keys(themes, &axes);
+        }
+        if let Some(variables) = document.get_mut("variables") {
+            rewrite_variable_refs(variables, &renames);
+        }
         if let Some(children) = active_raw_children_mut(document, active_page_index) {
             rewrite_variable_refs(children, &renames);
         }
@@ -88,6 +106,8 @@ pub fn template_boards(source: &str, template_id: &str) -> Option<TemplateBoards
     Some(TemplateBoards {
         nodes,
         variables,
+        themes: document.themes.take().unwrap_or_default(),
+        theme: document.theme.take().unwrap_or_default(),
         image_thumbnails: image_thumbnails.into_iter().collect(),
     })
 }
@@ -253,6 +273,9 @@ fn rewrite_variable_refs(value: &mut serde_json::Value, renames: &BTreeMap<Strin
 /// followed by a stray `-soft`. A `$` that is not followed by a known name —
 /// a price in body copy, say — is left exactly as written.
 fn rewrite_refs_in_text(text: &str, renames: &BTreeMap<String, String>) -> Option<String> {
+    if let Some(name) = text.strip_prefix('$').and_then(|name| renames.get(name)) {
+        return Some(format!("${name}"));
+    }
     if !text.contains('$') {
         return None;
     }
@@ -263,7 +286,9 @@ fn rewrite_refs_in_text(text: &str, renames: &BTreeMap<String, String>) -> Optio
         out.push_str(&rest[..offset]);
         let after = &rest[offset + 1..];
         let end = after
-            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'))
+            .find(|c: char| {
+                !c.is_ascii() || !crate::variables_resolve::is_formula_identifier_byte(c as u8)
+            })
             .unwrap_or(after.len());
         match renames.get(&after[..end]) {
             Some(renamed) => {
@@ -280,6 +305,34 @@ fn rewrite_refs_in_text(text: &str, renames: &BTreeMap<String, String>) -> Optio
     }
     out.push_str(rest);
     changed.then_some(out)
+}
+
+fn rename_object_keys(value: &mut serde_json::Value, names: &BTreeMap<String, String>) {
+    if let Some(fields) = value.as_object_mut() {
+        *fields = std::mem::take(fields)
+            .into_iter()
+            .map(|(name, value)| (names.get(&name).cloned().unwrap_or(name), value))
+            .collect();
+    }
+}
+
+fn rewrite_theme_refs(value: &mut serde_json::Value, names: &BTreeMap<String, String>) {
+    match value {
+        serde_json::Value::Object(fields) => {
+            if let Some(theme) = fields.get_mut("theme") {
+                rename_object_keys(theme, names);
+            }
+            for value in fields.values_mut() {
+                rewrite_theme_refs(value, names);
+            }
+        }
+        serde_json::Value::Array(values) => {
+            for value in values {
+                rewrite_theme_refs(value, names);
+            }
+        }
+        _ => {}
+    }
 }
 
 impl EditorState {
@@ -319,6 +372,8 @@ impl EditorState {
         let TemplateBoards {
             mut nodes,
             variables,
+            themes,
+            theme,
             image_thumbnails,
         } = boards;
         if nodes.is_empty() {
@@ -355,12 +410,27 @@ impl EditorState {
         for (name, definition) in variables {
             table.entry(name).or_insert(definition);
         }
+        if !themes.is_empty() {
+            let axes = self.doc.themes.get_or_insert_with(BTreeMap::new);
+            for (axis, values) in themes {
+                axes.entry(axis).or_insert(values);
+            }
+        }
+        if !theme.is_empty() {
+            let selections = self.doc.theme.get_or_insert_with(BTreeMap::new);
+            for (axis, value) in theme {
+                selections.entry(axis).or_insert(value);
+            }
+        }
         for (paint_id, jpeg_bytes) in image_thumbnails {
             if jian_ops_schema::image_thumbs::thumb_for(paint_id).is_none() {
                 jian_ops_schema::image_thumbs::store_thumb(paint_id, jpeg_bytes);
             }
         }
 
+        if clear_page {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
         self.history_push_past(snapshot);
         true
     }

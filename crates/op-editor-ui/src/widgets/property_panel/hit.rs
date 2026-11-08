@@ -73,6 +73,10 @@ impl PropertyPanel {
             self.logical_rect(panel_rect),
             self.logical_point(panel_rect, point),
         )
+        .filter(|action| {
+            self.text_inspector_enabled
+                || !crate::widgets::property_panel_text_design::is_action(action)
+        })
     }
 
     fn hit_test_action_logical(
@@ -226,20 +230,7 @@ impl PropertyPanel {
                 return Some(PropertyPanelAction::SetInstanceComponent(option.id.clone()));
             }
         }
-        let rects = sections::action_button_rects_with_fill_picker(
-            scrolled,
-            self.visible_sections(),
-            &self.snapshot.effects,
-            &self.snapshot.fills,
-            &self.snapshot.interactions,
-            self.fill_type_picker.open,
-            self.fill_type_picker_index,
-            self.font_picker.open,
-            self.font_weight_picker_open,
-            self.export_scale_picker_open,
-            self.export_format_picker_open,
-            self.padding_mode_popover_open,
-        );
+        let rects = self.body_action_rects(panel_rect);
         // Picker rows live in `rects` AFTER the dropdown rect, so
         // a row hit takes priority — `rev()` makes the picker rows
         // tested first and short-circuits before the dropdown
@@ -438,13 +429,39 @@ impl PropertyPanel {
         if !self.point_in_section_viewport(panel_rect, point) {
             return None;
         }
+        if let (Some(model), Some(bounds)) = (
+            &self.component_inspector,
+            self.component_inspector_rect(panel_rect),
+        ) {
+            if let Some((focus, _)) =
+                crate::widgets::property_panel_components::inputs(model, self.locale, bounds)
+                    .into_iter()
+                    .find(|(_, rect)| rect.contains(point))
+            {
+                return Some(focus);
+            }
+        }
+        if let Some(bounds) = self.design_system_inspector_rect(panel_rect) {
+            let mut inputs = Vec::new();
+            crate::widgets::property_panel_design_system::push_input_rects(
+                &mut inputs,
+                bounds.origin.x,
+                bounds.origin.y,
+                bounds.size.x - crate::widgets::property_panel_inputs::PAD_X * 2.0,
+            );
+            if let Some((focus, _)) = inputs.into_iter().find(|(_, rect)| rect.contains(point)) {
+                return Some(focus);
+            }
+        }
         for (focus, rect) in sections::editable_input_rects(
             self.scrolled_rect(panel_rect),
             self.visible_sections(),
             &self.snapshot.fills,
             &self.snapshot.effects,
         ) {
-            if (rect).contains(point) {
+            if (rect).contains(point)
+                && (self.text_inspector_enabled || !matches!(focus, PropertyFocus::TextDesign(_)))
+            {
                 return Some(focus);
             }
         }
@@ -483,34 +500,21 @@ impl PropertyPanel {
         if !self.point_in_section_viewport(panel_rect, point) {
             return None;
         }
-        sections::action_button_rects_with_fill_picker(
-            self.scrolled_rect(panel_rect),
-            self.visible_sections(),
-            &self.snapshot.effects,
-            &self.snapshot.fills,
-            &self.snapshot.interactions,
-            self.fill_type_picker.open,
-            self.fill_type_picker_index,
-            self.font_picker.open,
-            self.font_weight_picker_open,
-            self.export_scale_picker_open,
-            self.export_format_picker_open,
-            self.padding_mode_popover_open,
-        )
-        .iter()
-        .position(|(action, r)| {
-            (*r).contains(point)
-                && (!self.is_multi || matches!(action, PropertyPanelAction::AlignSelection(_)))
-                && match action {
-                    PropertyPanelAction::AlignSelection(align) => {
-                        crate::widgets::align_toolbar::AlignToolbar::action_enabled(
-                            &self.alignment_enabled,
-                            *align,
-                        )
+        self.body_action_rects(panel_rect)
+            .iter()
+            .position(|(action, r)| {
+                (*r).contains(point)
+                    && (!self.is_multi || matches!(action, PropertyPanelAction::AlignSelection(_)))
+                    && match action {
+                        PropertyPanelAction::AlignSelection(align) => {
+                            crate::widgets::align_toolbar::AlignToolbar::action_enabled(
+                                &self.alignment_enabled,
+                                *align,
+                            )
+                        }
+                        _ => true,
                     }
-                    _ => true,
-                }
-        })
+            })
     }
 
     /// Pinned Design / Code tab under the cursor.

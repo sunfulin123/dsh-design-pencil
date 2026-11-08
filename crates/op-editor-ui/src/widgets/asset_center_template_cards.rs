@@ -89,8 +89,15 @@ fn user_preview_image_id(template: &Arc<UserSceneTemplate>) -> u64 {
 /// Search matches the name only: a saved template has no tags or scene to
 /// search, and the name is what its author chose to call it.
 pub fn user_template_cards(query: &str) -> Vec<UserTemplateCard> {
+    cards_from_templates(user_scene_templates(), query)
+}
+
+pub(super) fn cards_from_templates(
+    templates: Vec<Arc<UserSceneTemplate>>,
+    query: &str,
+) -> Vec<UserTemplateCard> {
     let query = query.trim().to_lowercase();
-    user_scene_templates()
+    templates
         .into_iter()
         // Filter before building the view model. A narrow search should not
         // even allocate renderer ids for the cards it does not show.

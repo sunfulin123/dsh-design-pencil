@@ -378,6 +378,9 @@ impl EditorState {
             // committed via the host commit path's string arm, not this
             // numeric one.
             PropertyFocus::PageBackgroundHex
+            | PropertyFocus::TextDesign(_)
+            | PropertyFocus::ComponentDesign(_)
+            | PropertyFocus::DesignSystem(_)
             | PropertyFocus::FillHex(_)
             | PropertyFocus::StrokeHex
             | PropertyFocus::NodeName

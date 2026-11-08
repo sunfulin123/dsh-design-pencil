@@ -6,7 +6,9 @@
 use crate::color::figma_color_to_hex;
 use crate::figma_types::FigColor;
 use crate::kiwi::FigValue;
-use jian_ops_schema::node::text::{TextAlign, TextAlignVertical, TextContent, TextGrowth};
+use jian_ops_schema::node::text::{
+    TextAlign, TextAlignVertical, TextContent, TextGrowth, TextTruncation,
+};
 use jian_ops_schema::style::{FontStyleKind, StyledTextSegment};
 
 /// Mapped text props — spread onto a `TextNode` by the converter.
@@ -22,6 +24,8 @@ pub struct TextProps {
     pub text_align: Option<TextAlign>,
     pub text_align_vertical: Option<TextAlignVertical>,
     pub text_growth: Option<TextGrowth>,
+    pub text_truncation: Option<TextTruncation>,
+    pub max_lines: Option<u32>,
     pub underline: Option<bool>,
     pub strikethrough: Option<bool>,
 }
@@ -51,6 +55,11 @@ pub fn map_figma_text_props(node: &FigValue) -> TextProps {
         text_align: map_text_align(node.get_str("textAlignHorizontal")),
         text_align_vertical: map_text_align_vertical(node.get_str("textAlignVertical")),
         text_growth: map_text_growth(node.get_str("textAutoResize")),
+        text_truncation: map_text_truncation(node),
+        max_lines: node
+            .get_f64("maxLines")
+            .filter(|v| v.is_finite() && *v >= 1.0)
+            .map(|v| v as u32),
         underline: None,
         strikethrough: None,
     };
@@ -239,8 +248,14 @@ fn title_case(s: &str) -> String {
 
 /// Figma font-style string → numeric weight. First substring match
 /// wins; order matters (`extrabold` before `bold`, `extralight`
-/// before `light`).
+/// before `light`). Figma names styles with spaces or hyphens
+/// ("Semi Bold", "Extra-Light"), so separators are dropped first.
 fn parse_font_weight(style: &str) -> Option<u32> {
+    let compact: String = style
+        .chars()
+        .filter(|c| !matches!(c, ' ' | '-' | '_'))
+        .collect();
+    let style = compact.as_str();
     if style.contains("thin") || style.contains("hairline") {
         Some(100)
     } else if style.contains("extralight") || style.contains("ultralight") {
@@ -264,7 +279,7 @@ fn parse_font_weight(style: &str) -> Option<u32> {
     }
 }
 
-/// Line height → unitless multiplier (3-decimal rounded).
+/// Line height → unitless multiplier.
 fn map_line_height(node: &FigValue) -> Option<f64> {
     let lh = node.get("lineHeight")?;
     let value = lh.get_f64("value")?;
@@ -278,7 +293,7 @@ fn map_line_height(node: &FigValue) -> Option<f64> {
         "RAW" => value,
         _ => return None,
     };
-    Some((mul * 1000.0).round() / 1000.0)
+    Some(mul)
 }
 
 /// Letter spacing → pixels (percent units resolved against font size).
@@ -321,7 +336,20 @@ fn map_text_growth(v: Option<&str>) -> Option<TextGrowth> {
     match v {
         Some("WIDTH_AND_HEIGHT") => Some(TextGrowth::Auto),
         Some("HEIGHT") => Some(TextGrowth::FixedWidth),
-        Some("NONE") => Some(TextGrowth::FixedWidthHeight),
+        // Legacy `TRUNCATE` resize mode is a fixed box with an ellipsis.
+        Some("NONE") | Some("TRUNCATE") => Some(TextGrowth::FixedWidthHeight),
+        _ => None,
+    }
+}
+
+/// `textTruncation: ENDING` (or the legacy `textAutoResize: TRUNCATE`)
+/// cuts overflowing text with an ellipsis, as Figma renders it.
+fn map_text_truncation(node: &FigValue) -> Option<TextTruncation> {
+    match (
+        node.get_str("textTruncation"),
+        node.get_str("textAutoResize"),
+    ) {
+        (Some("ENDING"), _) | (_, Some("TRUNCATE")) => Some(TextTruncation::Ending),
         _ => None,
     }
 }

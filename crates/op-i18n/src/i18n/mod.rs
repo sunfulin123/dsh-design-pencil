@@ -12,6 +12,7 @@
 
 use crate::Locale;
 
+mod component_inspector;
 #[cfg(any(
     not(all(target_arch = "wasm32", feature = "runtime-locale-catalog")),
     test
@@ -32,6 +33,8 @@ mod de_git;
     test
 ))]
 mod de_panel;
+mod design_system_inspector;
+mod diagram_import;
 mod en;
 mod en_collab;
 mod en_git;

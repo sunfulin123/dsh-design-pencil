@@ -139,7 +139,7 @@ fn scene_text_runs_map_segments_onto_byte_ranges() {
       "pages":[{"id":"p","name":"P","children":[
         {"type":"text","id":"t","opacity":0.5,
          "content":[
-           {"text":"汉字","fontWeight":700},
+           {"text":"汉字","fontFamily":"Noto Serif SC","fontWeight":700},
            {"text":"ab","fill":"#00ff00","fontStyle":"italic"}
          ]}
       ]}],
@@ -153,6 +153,8 @@ fn scene_text_runs_map_segments_onto_byte_ranges() {
     assert_eq!((t.text_runs[0].start, t.text_runs[0].end), (0, 6));
     assert_eq!((t.text_runs[1].start, t.text_runs[1].end), (6, 8));
     assert_eq!(t.text_runs[0].font_weight, 700);
+    assert_eq!(t.text_runs[0].font_family.as_deref(), Some("Noto Serif SC"));
+    assert_eq!(t.text_runs[1].font_family, None);
     assert!(t.text_runs[1].italic);
     // Node opacity 0.5 folds into the run fill's alpha like the
     // node-level fill.
@@ -290,4 +292,69 @@ fn shader_fill_threads_into_scene_node() {
     // shader support (web) show the same colour.
     let flat = n.fill.expect("fallback fill");
     assert!((flat.b - 0x99 as f32 / 255.0).abs() < 0.01);
+}
+
+#[test]
+fn reverse_z_index_flips_paint_order_but_not_layout_order() {
+    let src = r##"{
+      "version":"1.0.0",
+      "pages":[{"id":"p","name":"P","children":[
+        {"type":"frame","id":"root","width":300,"height":400,"layout":"vertical",
+         "itemReverseZIndex":true,
+         "children":[
+           {"type":"frame","id":"a","width":100,"height":100},
+           {"type":"frame","id":"b","width":100,"height":100}
+         ]},
+        {"type":"frame","id":"plain","x":400,"width":300,"height":400,"layout":"vertical",
+         "children":[
+           {"type":"frame","id":"c","width":100,"height":100},
+           {"type":"frame","id":"d","width":100,"height":100}
+         ]}
+      ]}],
+      "children":[]
+    }"##;
+    let scene = editor_state_to_layout_scene(&state_from(src));
+    let reversed = scene.pages[0]
+        .children
+        .iter()
+        .find(|n| n.id == "root")
+        .unwrap();
+    let ids: Vec<&str> = reversed.children.iter().map(|c| c.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        ["b", "a"],
+        "first-on-top reverses scene (paint/hit) order"
+    );
+    let y = |id: &str| {
+        reversed
+            .children
+            .iter()
+            .find(|c| c.id == id)
+            .unwrap()
+            .bounds
+            .origin
+            .y
+    };
+    let plain = scene.pages[0]
+        .children
+        .iter()
+        .find(|n| n.id == "plain")
+        .unwrap();
+    let plain_ids: Vec<&str> = plain.children.iter().map(|c| c.id.as_str()).collect();
+    assert_eq!(plain_ids, ["c", "d"], "default order unchanged");
+    let py = |id: &str| {
+        plain
+            .children
+            .iter()
+            .find(|c| c.id == id)
+            .unwrap()
+            .bounds
+            .origin
+            .y
+    };
+    assert_eq!(
+        y("b") - y("a"),
+        py("d") - py("c"),
+        "flow layout order is identical with and without the flag"
+    );
 }

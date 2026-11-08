@@ -71,6 +71,7 @@ fn update_node_can_patch_requested_page_without_switching_active_page() {
     let mut s = state_with(vec![]);
     s.doc.pages = Some(vec![
         PenPage {
+            theme: None,
             id: "page-1".into(),
             name: "Page 1".into(),
             children: vec![rect("n1", "Current", 0.0, 0.0, 10.0, 10.0)],
@@ -79,6 +80,7 @@ fn update_node_can_patch_requested_page_without_switching_active_page() {
             lifecycle: None,
         },
         PenPage {
+            theme: None,
             id: "page-2".into(),
             name: "Page 2".into(),
             children: vec![rect("n2", "Other", 0.0, 0.0, 10.0, 10.0)],

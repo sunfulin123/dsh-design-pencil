@@ -206,12 +206,7 @@ impl EditorState {
         // normally carry transparency in the separate body-opacity field,
         // but the canonical schema and older `.op` files also allow an
         // alpha byte in `color`; the renderer multiplies both channels.
-        let alpha = match target {
-            ColorTarget::Fill | ColorTarget::GradientStop(_) | ColorTarget::EffectColor(_) => {
-                parse_hex_alpha(&current_hex)
-            }
-            ColorTarget::Stroke => 1.0,
-        };
+        let alpha = parse_hex_alpha(&current_hex);
         self.ui.pending_color_history = Some(self.snapshot_for_history());
         self.ui.color_picker = Some(ColorPickerState {
             target,
@@ -327,7 +322,7 @@ impl EditorState {
             anchor_x,
             variable: Some(name),
             variable_theme,
-            alpha: 1.0,
+            alpha: parse_hex_alpha(&scalar),
             fill_index: 0,
             hex_focused: false,
             hex_input: jian_core::text_input::TextInputState::default(),
@@ -358,6 +353,7 @@ impl EditorState {
         let (r, g, b) = hsv_to_rgb(state.hue, state.sat, state.val);
         let hex = rgb_to_hex(r, g, b);
         if let Some(name) = variable {
+            let hex = splice_alpha(&hex, self.picker_alpha());
             // Variable-mode commit — write through the variable so
             // every node referencing it repaints. A variant-targeted
             // open (#19) writes exactly the clicked theme column;
@@ -390,7 +386,8 @@ impl EditorState {
                 }
             }
             ColorTarget::Stroke => {
-                self.set_selected_color(false, &hex);
+                let hex_with_alpha = splice_alpha(&hex, self.picker_alpha());
+                self.set_selected_color(false, &hex_with_alpha);
             }
             ColorTarget::GradientStop(i) => {
                 let hex_with_alpha = splice_alpha(&hex, self.picker_alpha());

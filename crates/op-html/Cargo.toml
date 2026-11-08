@@ -2,7 +2,7 @@
 name = "op-html"
 version.workspace = true
 edition = "2021"
-description = "HTML/CSS importer: converts web documents into editable PenNode trees"
+description = "HTML/CSS and diagram importers: convert sources into editable PenNode trees"
 license = "MIT"
 
 [dependencies]
@@ -12,6 +12,7 @@ base64 = "0.22"
 encoding_rs = "0.8"
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 serde_json = "1"
+roxmltree = "0.21"
 url = "2"
 zip = { version = "2", default-features = false, features = ["deflate-flate2", "flate2"] }
 jian-ops-schema = { path = "../../vendor/jian/crates/jian-ops-schema" }

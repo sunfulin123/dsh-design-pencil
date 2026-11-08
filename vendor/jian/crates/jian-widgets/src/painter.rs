@@ -732,6 +732,38 @@ pub trait Painter {
     fn resize(&mut self, width: u32, height: u32);
     fn dpi_scale(&self) -> f32;
 
+    /// Starts rasterizing a `width`×`height` device-pixel canvas tile into an
+    /// offscreen GPU surface; drawing goes there until [`Painter::end_tile`].
+    /// Returns false when the backend has no tile support.
+    fn begin_tile(&mut self, _width: u32, _height: u32) -> bool {
+        false
+    }
+
+    /// Finishes the tile started by [`Painter::begin_tile`] and retains it
+    /// as a GPU image. Returns its id, or 0 on failure.
+    fn end_tile(&mut self) -> u32 {
+        0
+    }
+
+    /// Draws the `src` pixel region of retained tile `id` into the local
+    /// rectangle `dst`. Returns false when `id` is not retained.
+    fn draw_tile(&mut self, _id: u32, _src: Rect, _dst: Rect) -> bool {
+        false
+    }
+
+    /// Draws many tiles as `(id, src, dst)`; returns the ids that were not
+    /// retained. Backends may override this to batch the calls.
+    fn draw_tiles(&mut self, draws: &[(u32, Rect, Rect)]) -> Vec<u32> {
+        draws
+            .iter()
+            .filter(|(id, src, dst)| !self.draw_tile(*id, *src, *dst))
+            .map(|(id, _, _)| *id)
+            .collect()
+    }
+
+    /// Releases retained tile `id`.
+    fn drop_tile(&mut self, _id: u32) {}
+
     fn measure_text(&mut self, text: &str, font_size: f32) -> f32 {
         self.measure_text_weighted(text, font_size, 400)
     }

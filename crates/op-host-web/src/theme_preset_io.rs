@@ -90,6 +90,23 @@ fn apply_imported_theme_preset<C: RepaintContext + 'static>(inner: &InnerRc<C>, 
         return;
     };
     let mut b = inner.borrow_mut();
+    if let Some(assets) = b
+        .host_mut()
+        .editor_state_mut()
+        .editor_ui
+        .managed_assets
+        .as_mut()
+    {
+        match serde_json::from_str::<serde_json::Value>(raw) {
+            Ok(preset) => {
+                assets.queue("import_theme_preset", serde_json::json!({"preset":preset}));
+            }
+            Err(error) => web_sys::console::error_1(&error.to_string().into()),
+        }
+        b.host_mut().mark_editor_state_dirty();
+        let _ = b.repaint();
+        return;
+    }
     {
         let state = b.host_mut().editor_state_mut();
         let snap = state.snapshot_for_history();

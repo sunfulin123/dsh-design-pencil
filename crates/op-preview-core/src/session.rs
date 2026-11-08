@@ -33,6 +33,9 @@ use crate::error::PreviewEnterError;
 use crate::scene_helpers::format_warning;
 use crate::transition::ScreenTransition;
 
+#[path = "component_behaviour.rs"]
+mod component_behaviour;
+
 /// One page-root's mapping between the design scene's coordinate space
 /// (root offset baked in) and the jian runtime's root-relative
 /// hit-test space. Used to translate a scene-space tap back into the
@@ -346,20 +349,8 @@ impl PreviewSession {
         // document pays no clone. Keeping this identical to the design
         // canvas means the runtime tree (ids, seeded widget values) and
         // the painted scene agree node-for-node.
-        let mut prepared = std::borrow::Cow::Borrowed(doc);
-        if op_editor_core::ref_resolve::document_has_refs(&prepared) {
-            prepared = std::borrow::Cow::Owned(
-                op_editor_core::ref_resolve::resolve_refs_for_canvas(&prepared),
-            );
-        }
-        if op_editor_core::variables_resolve::document_has_tokens(&prepared) {
-            prepared = std::borrow::Cow::Owned(
-                op_editor_core::variables_resolve::resolve_document_for_canvas(
-                    &prepared,
-                    active_theme,
-                ),
-            );
-        }
+        let mut prepared: std::borrow::Cow<'_, jian_ops_schema::PenDocument> =
+            std::borrow::Cow::Owned(component_behaviour::prepare(doc, active_theme)?);
 
         // Screen projection: marked multi-screen docs enter APP MODE
         // (entry screen mounted, ScreenRouter installed); unmarked docs

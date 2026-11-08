@@ -1,5 +1,11 @@
 # Rust Shell
 
+> Current DSH workspace/host ownership and commands are defined in
+> [../ARCHITECTURE.md](../ARCHITECTURE.md) and [../COMMANDS.md](../COMMANDS.md).
+> This detailed upstream reference includes retained non-workspace modules.
+> Follow [../CODING_STANDARDS.md](../CODING_STANDARDS.md) for the 500 effective
+> business-code-line limit and shrinking legacy baseline; tests are exempt.
+
 Native + web editor chrome implemented in Rust against jian-skia. This is the **canonical** OpenPencil implementation — the original TypeScript editor (`apps/web`, `apps/desktop`, `apps/cli`, `pen-*`) has been **retired**, so the Rust shell is the product, not a parity port. `// ported from pen-*` comments below name the retired TS as historical origin; that code lives only in git history now.
 
 ## Crate layout
@@ -24,8 +30,9 @@ Native + web editor chrome implemented in Rust against jian-skia. This is the **
 > names a file that no longer exists — the behaviour they describe is still
 > accurate, the paths are not. (2) The native↔web `widget_host` fork is
 > **single-sourced** — see "Shared host logic" below for where the real logic
-> lives. (3) The 800-line cap now holds **workspace-wide with zero violations**,
-> so nearly every module named below is a spine plus sibling files; a path that
+> lives. (3) The historical split campaign used an 800-physical-line target.
+> The current policy is 500 effective business-code lines with a legacy ratchet.
+> Many modules named below are a spine plus sibling files; a path that
 > resolves to a directory instead of a single file is the split, not a rename.
 
 ```
@@ -66,7 +73,7 @@ a local `parse_hex` / `escape_json` again.
 
 - **op-editor-ui (widgets) stays wasm32-clean** (spec v19 §1.2). No skia-safe / winit / accesskit_winit. The `RenderBackend` trait is the only seam between widget code and platform.
 - **Widget code lives in op-editor-ui only.** Hosts (op-host-native `widget_host.rs`, op-host-web `widget_host.rs`) are the ONLY files allowed to call `op_editor_ui::widgets::*`. Boundary script: `tools/check-widget-boundary.sh`.
-- **Max 800 lines per file — zero violations workspace-wide.** As of `d2d8104c` no `.rs` file in `crates/` exceeds the cap, and the sibling-module split is the universal shape: a spine keeps the public surface and `mod` declarations, cohesive clusters move into siblings, and re-exports keep every import path and test name stable. Splits are pure code motion — when you split, do not also change behaviour. Test modules follow the same rule (`foo_tests.rs`, or a `foo/tests/` directory when the tests themselves outgrow the cap). Check with `find crates -name '*.rs' -exec wc -l {} + | awk '$1>800'`.
+- **Max 500 effective business-code lines for new files.** Existing oversize files cannot grow beyond their exact baseline; reduced/deleted entries must be ratcheted. Tests and Rust `#[cfg(test)]` modules are exempt. Keep a public spine, cohesive sibling modules and stable re-exports; mechanical splits must not change behavior. Check with `bash tools/check-file-line-cap.sh` from the repository root, not `wc -l`.
 - **Blocking on a future from sync host code goes through `op_host_services::chat_runtime::block_on_anywhere`.** A bare `Runtime::block_on` (or a privately-built current-thread runtime) aborts with "runtime within runtime" when the caller happens to sit on a tokio worker. `block_on_anywhere` picks the safe strategy for whichever context it is called from; it is the only sanctioned entry point and is exercised by tests for the no-runtime, multi-thread-worker, and borrowing-non-`Send`-future cases.
 - **Fallible paths carry typed error enums, not `String`.** The whole workspace is converted (80+ enums; `Result<_, String>` survives at exactly two documented boundary sites). Find the domain's enum in its `*_error.rs` / `error.rs` sibling module (e.g. `CliError`, `ProgramError`, `WebCanvasError`, `McpServeError`, `ExportError`, `McpLiveError`, `DocIoError`, `ImageGenerateError`). The pattern to copy: one enum per failure domain in its own sibling module, structured fields instead of pre-formatted text, a `Display` impl that reproduces the previous message **byte-identically** (so user-visible strings and their tests don't move), and `From` impls that collapse the `map_err` adapters at the call sites. New fallible code should introduce or reuse an enum rather than add another `Result<_, String>`.
 - **Web bundle ceiling: 6 MiB gzip + 0 env.\* imports.** Enforced by `tools/check-wasm-bundle.sh`. The CanvasKit bundle carries the full app logic (codegen AI pipeline, Figma parser, AI/live-sync, collaboration) plus the still-embedded AI skill corpus (~1.1 MiB of markdown via `include_dir!`), so the ceiling sits well above the retired skia raster path's 1 MiB (**4.93 MiB today**; the ceiling is a runaway-regression tripwire, not a budget). Re-baselined from 8 MiB once the ~2.4 MiB of preview JPEGs moved out — see below. The 0 env.\* guard still holds — CanvasKit needs no libc shim.
@@ -158,7 +165,7 @@ Mutators on `Document`:
 - Multi-script chrome strings (한국어 / हिन्दी / ไทย / Tiếng Việt) render against per-codepoint typeface lookups (`FontMgr::match_family_style_character` cached per `i32` in `NativeBackend`), with each string broken into contiguous-typeface segments before draw.
 - Locale tables are hand-maintained in Rust, and each locale is **four files, chained by fall-through**: the main table `<locale>.rs` ends its `match` with `_ => return super::<locale>_git::lookup(key)`, the Git shard ends with `_ => return super::<locale>_panel::lookup(key)`, the `_panel` shard ends with `_ => return super::<locale>_collab::lookup(key)`, and the `_collab` overflow shard ends with `_ => return None`. The catalog is 1,679 direct keys per locale (`catalog_integrity_tests.rs` asserts the exact number). Native builds compile all 15 tables. On wasm32, `op-host-web` enables `op-editor-ui`'s forwarding `runtime-locale-catalog` feature; `op-i18n`'s source-side feature + target double gate then keeps only en-US + zh-CN embedded. `tools/export-i18n-catalogs.py` validates the same 1,679-key equality and generates the other 13 BCP-47 JSON files for `tools/stage-web-assets.sh` to place under `/pkg/assets/i18n/`.
 
-  **Adding a new key: put it in `<locale>_collab.rs` (the terminal overflow shard), in all 15 locales.** The main tables sit at or just under the repo's 800-line ceiling (`zh_cn.rs` is exactly 800, `en.rs` 798), so a new entry there does not fit — the `_panel` shards exist precisely to absorb overflow and have room. Only edit a main or `_git` table when you are changing the wording of a key that already lives there. Then bump the expected count in `catalog_integrity_tests.rs` and run:
+  **Adding a new key: use a cohesive locale shard with room under the 500-effective-line cap, in all 15 locales.** Main tables are legacy oversize files and must not grow; preserve the catalog's public lookup surface and ordering when splitting. Only edit a main or `_git` table when changing existing wording without growing its baseline. Then bump the expected count in `catalog_integrity_tests.rs` and run:
 
   ```sh
   cargo test -p op-i18n
@@ -223,7 +230,7 @@ The hit-test walker `action_button_rects_with_fill_picker(panel_rect, visible, f
 
 ### File split
 
-The panel is a `property_panel_*.rs` family in `op-editor-ui/src/widgets/` (plus the `property_panel/`, `property_panel_snapshot/`, and `property_panel_tests/` directories) — one file per section or concern, all under the 800-line ceiling. The load-bearing entries:
+The panel is a `property_panel_*.rs` family in `op-editor-ui/src/widgets/` (plus the `property_panel/`, `property_panel_snapshot/`, and `property_panel_tests/` directories) — one file per section or concern, subject to the current 500-effective-line policy and legacy baseline. The load-bearing entries:
 
 - `property_panel.rs` — `PropertyPanel`, snapshot, `SectionCapabilities`, hit-test entry points.
 - `property_panel_sections.rs` — section paint routines + `PropertyLabels` + `EditContext`.
@@ -307,6 +314,16 @@ Native font path bypasses jian-skia's `textlayout` (which builds a fresh `FontCo
 Run: `cargo run -p openpencil-desktop --release`.
 
 ## Web runner (`shell-web/`)
+
+The active CanvasKit host exposes **Import Mermaid / draw.io…** in the status-bar
+View menu (zoom percentage, or Cmd/Ctrl+Alt+0), including VS Code embeds where
+the full File menu is hidden. The explicit picker accepts `.mmd`, `.mermaid`,
+`.drawio`, and `.xml`, capped at 8 MiB before browser reading. It inserts editable
+nodes onto the current page with one undo step; errors appear in an editor toast.
+Shared parsers live in `op-html::diagram` and are reused by MCP. Mermaid supports
+the documented flowchart subset; draw.io accepts one flat page, including bounded
+compressed payloads. Unsupported constructs fail atomically. Connectors are
+static imported geometry, not live bindings. Ordinary text paste is unchanged.
 
 Single `mount(canvas_id)` entry point exposed to JS. Wires DOM listeners on the canvas + window:
 
@@ -612,7 +629,7 @@ json_serializer.rs           JSON-RPC wire serializer (response_to_json + helper
 parser.rs                    Wire parse — tri-state arguments_field, top-level walker
 tools.rs                     Core read tools
 read_tools.rs / read_nodes.rs / extra_read_tools.rs / read_tools_extra.rs
-                             Read-tool families carved off tools.rs at the 800-cap
+                             Read-tool families split into cohesive sibling modules
 write_tools.rs               Core node write tools (insert/update/delete/move/copy/replace)
 write_tools_import_svg.rs    SVG import arm of write_tools
 write_tools_variables.rs     Variable-write arm of write_tools
@@ -630,7 +647,7 @@ batch_layered_guidelines.rs  Its guideline text (split off at the cap)
 scalar_vars.rs               Scalar + Color variables + create/delete/rename_variable
 script_runner.rs             Sandboxed JS runner behind `batch_design { script }`
 element_tools.rs             insert_<component> kit-component tools
-*_tests.rs                   Per-module sibling test files (800-line cap convention)
+*_tests.rs                   Per-module sibling test files (exempt from business line cap)
 mcp_tests.rs                 Cross-cutting: stdio dispatch, parser invariants
 ```
 

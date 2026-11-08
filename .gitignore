@@ -29,6 +29,10 @@ docs/
 !/docs/testing/
 /docs/testing/*
 !/docs/testing/p2p-collaboration-platform-acceptance.md
+!/docs/notes/
+!/docs/notes/**
+!/docs/kb/
+!/docs/kb/**
 
 # The bare `docs/` pattern above also shadows this test-fixture dir, which
 # MUST be tracked (the CI diagnostics-golden drift guard reads it).
@@ -68,6 +72,7 @@ Cargo.lock.merge-conflict
 tools/__pycache__/
 __pycache__/
 *.pyc
+/.venv-lint/
 openpencil-docs
 output
 

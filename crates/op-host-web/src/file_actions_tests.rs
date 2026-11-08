@@ -9,6 +9,42 @@ use super::*;
 use op_editor_core::PenNodeExt;
 
 #[test]
+fn browser_save_open_restores_view_and_disables_automatic_fit() {
+    let mut state = EditorState::new();
+    state.viewport = op_editor_core::Viewport {
+        pan_x: 123.25,
+        pan_y: -45.5,
+        zoom: 1.25,
+    };
+    let saved = serialize_document(&state).expect("browser download");
+    let ingested = ingest_op_source(&saved, &EditorState::new()).expect("browser open");
+    assert_eq!(ingested.state.viewport, state.viewport);
+    assert!(
+        ingested.restored_viewport,
+        "DOM open must not auto-fit the saved view"
+    );
+    assert!(!ingested.state.is_dirty());
+    assert!(!ingested.state.history.can_undo());
+
+    state.viewport = op_editor_core::Viewport::IDENTITY;
+    let reset = serialize_document(&state).unwrap();
+    let reopened = ingest_op_source(&reset, &EditorState::new()).unwrap();
+    assert_eq!(reopened.state.viewport, op_editor_core::Viewport::IDENTITY);
+    assert!(
+        !reopened.restored_viewport,
+        "legacy auto-fit remains available"
+    );
+}
+
+#[test]
+fn invalid_saved_view_keeps_browser_legacy_fit_policy() {
+    let source = r#"{"version":"0.8.0","children":[],"editorMeta":{"viewport":{"panX":1e39,"panY":1,"zoom":1}}}"#;
+    let ingested = ingest_op_source(source, &EditorState::new()).unwrap();
+    assert!(!ingested.restored_viewport);
+    assert_eq!(ingested.state.viewport, op_editor_core::Viewport::IDENTITY);
+}
+
+#[test]
 fn metadata_free_open_uses_first_nonempty_page_and_legacy_layout_mode() {
     let previous = EditorState::new();
     let source = r#"{

@@ -21,6 +21,7 @@ pub(crate) struct SyncController {
     pub gate: SyncGate,
     pub client: WebSyncClient,
     pub push_busy: bool,
+    pub ui_scale_pull: crate::ui_scale_sync::UiScalePull,
     /// A document identity already measured above the periodic push limit.
     /// WASM linear memory does not shrink after a giant temporary JSON string,
     /// so do not rebuild the same oversized snapshot every two seconds.
@@ -33,6 +34,7 @@ impl SyncController {
             gate: SyncGate::default(),
             client: WebSyncClient::new(),
             push_busy: false,
+            ui_scale_pull: Default::default(),
             oversize_identity: None,
         }
     }
@@ -40,6 +42,40 @@ impl SyncController {
     fn save_version(&self) -> Option<u64> {
         (self.client.initialized() && !self.gate.open_pending() && self.gate.conflict().is_none())
             .then(|| self.client.last_version())
+    }
+
+    pub(crate) fn sampling_ready(
+        &self,
+        version: u64,
+        pair: (u64, u64),
+        active_page_index: usize,
+        preserve_authored_geometry: bool,
+    ) -> bool {
+        // A render-only mirror never pushes, so local camera / page metadata
+        // that differs from the daemon must not hold captures back.
+        let meta_settled = crate::render_mode::render_only()
+            || !self
+                .client
+                .editor_meta_needs_push(active_page_index, preserve_authored_geometry);
+        self.client.initialized()
+            && self.client.last_version() == version
+            && !self.push_busy
+            && self.gate.is_synced(pair)
+            && meta_settled
+    }
+
+    pub(crate) fn document_pull_ready(
+        &self,
+        pair: (u64, u64),
+        viewport: op_editor_core::Viewport,
+        request_epoch: u64,
+    ) -> bool {
+        !self.push_busy
+            && self.client.viewport_epoch() == request_epoch
+            && self.gate.pull_allowed(pair)
+            && (crate::render_mode::render_only()
+                || !self.gate.is_synced(pair)
+                || !self.client.viewport_needs_push(viewport))
     }
 }
 
@@ -50,6 +86,21 @@ pub(crate) fn daemon_save_version() -> Option<u64> {
         let sync = slot.borrow().as_ref().and_then(Weak::upgrade)?;
         let version = sync.try_borrow().ok()?.save_version();
         version
+    })
+}
+
+pub(crate) fn daemon_synced_version(state: &op_editor_core::EditorState) -> Option<u64> {
+    ACTIVE_SYNC.with(|slot| {
+        let sync = slot.borrow().as_ref().and_then(Weak::upgrade)?;
+        let sync = sync.try_borrow().ok()?;
+        let version = sync.client.last_version();
+        (sync.sampling_ready(
+            version,
+            (state.document_generation(), state.document_revision()),
+            state.ui.active_page_index,
+            state.editor_ui.preserve_authored_geometry,
+        ) && !sync.client.viewport_needs_push(state.viewport))
+        .then_some(version)
     })
 }
 
@@ -66,6 +117,7 @@ pub(crate) fn acknowledge_daemon_save(
     revision: u64,
     active_page_index: usize,
     preserve_authored_geometry: bool,
+    viewport: op_editor_core::Viewport,
 ) {
     ACTIVE_SYNC.with(|slot| {
         let Some(sync) = slot.borrow().as_ref().and_then(Weak::upgrade) else {
@@ -75,6 +127,7 @@ pub(crate) fn acknowledge_daemon_save(
         sync.client.mark_applied(version);
         sync.client
             .note_applied_snapshot_without_hash(active_page_index, preserve_authored_geometry);
+        sync.client.note_applied_viewport(viewport);
         sync.gate.note_synced(generation, revision);
     });
 }
@@ -102,6 +155,42 @@ pub(super) fn current_oversize_identity<C: RepaintContext>(b: &C) -> (u64, u64, 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sampling_rejects_stale_content_unacknowledged_page_changes_and_inflight_pushes() {
+        let mut sync = SyncController::new();
+        assert!(!sync.sampling_ready(42, (3, 5), 0, false));
+        sync.client.mark_applied(42);
+        sync.client.note_applied_editor_meta(0, false);
+        sync.gate.note_synced(3, 5);
+        assert!(sync.sampling_ready(42, (3, 5), 0, false));
+        assert!(!sync.sampling_ready(41, (3, 5), 0, false));
+        assert!(!sync.sampling_ready(42, (3, 6), 0, false));
+        assert!(!sync.sampling_ready(42, (3, 5), 1, false));
+        assert!(!sync.sampling_ready(42, (3, 5), 0, true));
+        sync.push_busy = true;
+        assert!(!sync.sampling_ready(42, (3, 5), 0, false));
+        sync.push_busy = false;
+        sync.gate.note_conflict(43);
+        assert!(!sync.sampling_ready(42, (3, 5), 0, false));
+    }
+
+    #[test]
+    fn render_only_mirrors_sample_despite_unpushed_local_metadata() {
+        let mut sync = SyncController::new();
+        sync.client.mark_applied(42);
+        sync.client.note_applied_editor_meta(0, false);
+        sync.gate.note_synced(3, 5);
+        // The headless mirror framed another page locally and cannot push it.
+        assert!(!sync.sampling_ready(42, (3, 5), 1, false));
+        crate::render_mode::set_render_only(true);
+        assert!(sync.sampling_ready(42, (3, 5), 1, false));
+        assert!(
+            !sync.sampling_ready(41, (3, 5), 1, false),
+            "content must still match"
+        );
+        crate::render_mode::set_render_only(false);
+    }
 
     #[test]
     fn daemon_save_version_requires_an_initialized_unconflicted_document() {

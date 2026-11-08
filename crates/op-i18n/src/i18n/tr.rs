@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "Yeniden Adlandır",
+        "layerMenu.copyProperties" => "Özellikleri kopyala",
+        "layerMenu.pasteProperties" => "Özellikleri yapıştır",
+        "layerMenu.tidyUp" => "Düzenle",
+        "layerMenu.packHorizontal" => "Yatay sıkıştır",
+        "layerMenu.packVertical" => "Dikey sıkıştır",
+        "layerMenu.designError" => "Düzenlenemedi: {{reason}}",
         "common.duplicate" => "Çoğalt",
         "common.delete" => "Sil",
         "common.cancel" => "İptal",
@@ -780,6 +786,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Figma dosyası ayrıştırılıyor…",
         "importProgress.htmlTitle" => "HTML ve sayfa kaynakları ayrıştırılıyor…",
         "importProgress.htmlSubtitle" => "Stiller ve görseller yükleniyor. Lütfen bekleyin.",
+        "canvas.pageLoading" => "Sayfa yükleniyor…",
         "importProgress.largeFileSubtitle" => "Büyük dosyalar birkaç saniye sürer. Lütfen bekleyin.",
         "account.signedOutHint" => "Ayarlarınızı ve tercihlerinizi eşitlemek için oturum açın",
         "code.noUsableCode" => "Yapay zekâ kullanılabilir kod döndürmedi. Yeniden deneyin veya yapay zekâ modelini değiştirin.",

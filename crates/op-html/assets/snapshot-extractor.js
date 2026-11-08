@@ -452,7 +452,7 @@
         .getContext("2d")
         .drawImage(image, 0, 0, canvas.width, canvas.height);
       return keepDataUrl(canvas.toDataURL("image/png"), fallback);
-    } catch (_error) {
+    } catch {
       remoteImageCount += 1;
       return { src: fallback, tainted: true };
     }
@@ -588,7 +588,7 @@
       if (!box || !isFinite(box.x) || !isFinite(box.y)) return null;
       if (!isFinite(box.width) || !isFinite(box.height)) return null;
       return box;
-    } catch (_error) {
+    } catch {
       return null;
     }
   }
@@ -764,7 +764,7 @@
       var xml = new XMLSerializer().serializeToString(clone);
       var encoded = btoa(unescape(encodeURIComponent(xml)));
       return keepDataUrl("data:image/svg+xml;base64," + encoded, GRAY_PLACEHOLDER);
-    } catch (_error) {
+    } catch {
       remoteImageCount += 1;
       return { src: GRAY_PLACEHOLDER, tainted: true };
     }
@@ -773,7 +773,7 @@
   function captureCanvas(canvas) {
     try {
       return keepDataUrl(canvas.toDataURL("image/png"), GRAY_PLACEHOLDER);
-    } catch (_error) {
+    } catch {
       remoteImageCount += 1;
       return { src: GRAY_PLACEHOLDER, tainted: true };
     }
@@ -797,7 +797,7 @@
         .getContext("2d")
         .drawImage(video, 0, 0, canvas.width, canvas.height);
       return keepDataUrl(canvas.toDataURL("image/png"), poster);
-    } catch (_error) {
+    } catch {
       remoteImageCount += 1;
       return { src: poster, tainted: true };
     }

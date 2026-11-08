@@ -381,7 +381,7 @@ pub fn editable_input_rects(
     }
     if visible.interactions {
         let dummy = crate::widgets::property_panel_interactions::InteractionSummary {
-            screen: visible.has_screen.then(|| String::new()),
+            screen: visible.has_screen.then(String::new),
             on_tap: Vec::new(),
         };
         crate::widgets::property_panel_interactions::push_interaction_input_rects(

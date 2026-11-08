@@ -4,8 +4,8 @@
 
 use op_editor_ui::util::scroll_by_max;
 use op_editor_ui::widgets::scroll_flow;
-use op_editor_ui::widgets::{PropertyPanel, TOP_BAR_HEIGHT};
-use op_editor_ui::{Point2D, Rect};
+use op_editor_ui::widgets::PropertyPanel;
+use op_editor_ui::Point2D;
 
 use super::WidgetHost;
 
@@ -214,11 +214,11 @@ impl WidgetHost {
         let Some(panel) = PropertyPanel::for_selection(&self.editor_state) else {
             return false;
         };
-        let pw = self.editor_state.editor_ui.property_panel_width;
-        let property_rect = Rect {
-            origin: Point2D::new(viewport_width - pw, TOP_BAR_HEIGHT),
-            size: Point2D::new(pw, (viewport_height - TOP_BAR_HEIGHT).max(0.0)),
-        };
+        let property_rect = op_editor_ui::widgets::press_flow::property_panel_rect(
+            &self.editor_state,
+            viewport_width,
+            viewport_height,
+        );
         if self.editor_state.editor_ui.compositing_picker.open
             && panel.compositing_picker_contains(property_rect, Point2D::new(x, y))
         {

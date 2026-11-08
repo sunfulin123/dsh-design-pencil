@@ -42,13 +42,57 @@ pub(crate) fn instance_child_virtual_id(ref_id: &str, child_id: &str) -> String 
 /// Building it once changes component target lookup from O(refs × nodes) to
 /// O(nodes + refs), while the index disappears as soon as the active page has
 /// been prepared.
+mod typed_expand;
+#[cfg(test)]
+mod typed_expand_tests;
+
+#[cfg(test)]
+thread_local! {
+    /// Test switch: expand through the JSON route to compare both routes.
+    static FORCE_JSON_EXPANSION: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+fn force_json_expansion() -> bool {
+    FORCE_JSON_EXPANSION.with(std::cell::Cell::get)
+}
+
+#[cfg(not(test))]
+fn force_json_expansion() -> bool {
+    false
+}
+
+#[cfg(test)]
+fn with_json_expansion<T>(run: impl FnOnce() -> T) -> T {
+    FORCE_JSON_EXPANSION.with(|flag| flag.set(true));
+    let out = run();
+    FORCE_JSON_EXPANSION.with(|flag| flag.set(false));
+    out
+}
+
 struct NodeLookup<'a> {
     by_id: HashMap<&'a str, &'a PenNode>,
     fallback_document: Option<&'a PenDocument>,
     fallback_by_id: OnceCell<HashMap<&'a str, &'a PenNode>>,
+    /// JSON form of each component already expanded in this pass, keyed by
+    /// node address: pages instance the same components many times.
+    component_values: std::cell::RefCell<HashMap<usize, Value>>,
 }
 
 impl<'a> NodeLookup<'a> {
+    /// The component's JSON form, serialized once per resolution pass.
+    fn component_value(&self, component: &PenNode) -> Option<Value> {
+        let key = component as *const PenNode as usize;
+        if let Some(value) = self.component_values.borrow().get(&key) {
+            return Some(value.clone());
+        }
+        let value = serde_json::to_value(component).ok()?;
+        self.component_values
+            .borrow_mut()
+            .insert(key, value.clone());
+        Some(value)
+    }
+
     fn index_document(doc: &'a PenDocument) -> HashMap<&'a str, &'a PenNode> {
         fn walk<'a>(nodes: &'a [PenNode], by_id: &mut HashMap<&'a str, &'a PenNode>) {
             for node in nodes {
@@ -77,6 +121,7 @@ impl<'a> NodeLookup<'a> {
             by_id: Self::index_document(doc),
             fallback_document: None,
             fallback_by_id: OnceCell::new(),
+            component_values: Default::default(),
         }
     }
 
@@ -99,6 +144,7 @@ impl<'a> NodeLookup<'a> {
             by_id,
             fallback_document: Some(document),
             fallback_by_id: OnceCell::new(),
+            component_values: Default::default(),
         }
     }
 
@@ -215,6 +261,45 @@ fn resolve_nodes(
     out
 }
 
+/// [`resolve_nodes`] over an owned list: the same result without cloning
+/// non-ref nodes.
+fn resolve_nodes_in_place(
+    nodes: &mut Vec<PenNode>,
+    lookup: &NodeLookup<'_>,
+    visited: &mut BTreeSet<String>,
+) {
+    let mut index = 0;
+    while index < nodes.len() {
+        if let PenNode::Ref(reference) = &nodes[index] {
+            let target = reference.target.clone();
+            let replacement = if visited.contains(&target) {
+                None
+            } else if let Some(component) = lookup.find(&target) {
+                visited.insert(target.clone());
+                let expanded = expand_ref(&nodes[index], component, lookup, visited);
+                visited.remove(&target);
+                expanded
+            } else {
+                None
+            };
+            match replacement {
+                Some(expanded) => {
+                    nodes[index] = expanded;
+                    index += 1;
+                }
+                None => {
+                    nodes.remove(index);
+                }
+            }
+            continue;
+        }
+        if let Some(children) = crate::pen_node_ext::PenNodeExt::children_mut(&mut nodes[index]) {
+            resolve_nodes_in_place(children, lookup, visited);
+        }
+        index += 1;
+    }
+}
+
 /// Merge `component` under the instance's defined props and remap the
 /// component's children into the instance's virtual id space.
 fn expand_ref(
@@ -223,8 +308,19 @@ fn expand_ref(
     lookup: &NodeLookup<'_>,
     visited: &mut BTreeSet<String>,
 ) -> Option<PenNode> {
-    let component_value = serde_json::to_value(component).ok()?;
-    let ref_value = serde_json::to_value(ref_node).ok()?;
+    if !force_json_expansion() {
+        if let Some(mut expanded) = typed_expand::expand_ref_typed(ref_node, component) {
+            // The expansion is already owned: resolve nested refs in place
+            // instead of cloning the whole subtree a second time.
+            if let Some(children) = crate::pen_node_ext::PenNodeExt::children_mut(&mut expanded) {
+                resolve_nodes_in_place(children, lookup, visited);
+            }
+            return Some(expanded);
+        }
+    }
+    let component_value = lookup.component_value(component)?;
+    let mut ref_value = serde_json::to_value(ref_node).ok()?;
+    crate::component_properties::apply_values(ref_node, component, &mut ref_value);
     let (Value::Object(component_map), Value::Object(ref_map)) = (component_value, ref_value)
     else {
         return None;
@@ -261,6 +357,8 @@ fn expand_ref(
     }
     // An expanded instance is not itself a component definition.
     merged.remove("reusable");
+    merged.remove("componentDesign");
+    merged.remove("componentValues");
 
     // Children: clone the component's subtree into the instance's
     // virtual id space with `descendants` overrides applied.
@@ -378,7 +476,8 @@ fn remap_ids(child: &Value, ref_id: &str, overrides: Option<&Map<String, Value>>
 /// not virtual `refId__childId` ones).
 pub(crate) fn materialize_instance(ref_node: &PenNode, component: &PenNode) -> Option<PenNode> {
     let component_value = serde_json::to_value(component).ok()?;
-    let ref_value = serde_json::to_value(ref_node).ok()?;
+    let mut ref_value = serde_json::to_value(ref_node).ok()?;
+    crate::component_properties::apply_values(ref_node, component, &mut ref_value);
     let (Value::Object(component_map), Value::Object(ref_map)) = (component_value, ref_value)
     else {
         return None;
@@ -408,6 +507,8 @@ pub(crate) fn materialize_instance(ref_node: &PenNode, component: &PenNode) -> O
         }
     }
     merged.remove("reusable");
+    merged.remove("componentDesign");
+    merged.remove("componentValues");
     let overrides = ref_map.get("descendants").and_then(Value::as_object);
     if let Some(Value::Array(children)) = component_map.get("children") {
         let with_overrides: Vec<Value> = children

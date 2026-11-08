@@ -38,7 +38,6 @@ use jian_ops_schema::variable::{VariableKind, VariableScalar};
 
 mod app_state;
 mod helpers;
-
 pub(crate) use helpers::command_marks_document_dirty;
 use helpers::{
     apply_authored_subtree_on_page, apply_import_svg_on_active_page,
@@ -60,6 +59,7 @@ impl EditorState {
         let marks_document_dirty = command_marks_document_dirty(&cmd);
         let revision_before = self.revision;
         let changed = match cmd {
+            EditorCommand::SetUiScale { percent } => self.editor_ui.set_ui_scale_percent(percent),
             // --- Raw node CRUD -------------------------------------
             EditorCommand::InsertNode {
                 kind,
@@ -790,6 +790,7 @@ impl EditorState {
             } => self.video_policy(&node_id, field, value),
             EditorCommand::AddImageVideo { node_id } => self.apply_add_video(&node_id),
             EditorCommand::RemoveImageVideo { node_id } => self.apply_remove_video(&node_id),
+            EditorCommand::Design(cmd) => self.apply_design_command(cmd),
         };
         if changed && marks_document_dirty && self.revision == revision_before {
             self.mark_document_changed();

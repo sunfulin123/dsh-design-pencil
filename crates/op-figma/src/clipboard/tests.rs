@@ -341,6 +341,8 @@ fn enrich_nodes_from_html_hints_fills_missing_text_props() {
         text_align: None,
         text_align_vertical: None,
         text_growth: None,
+        text_truncation: None,
+        max_lines: None,
         underline: None,
         strikethrough: None,
         fill: None,
@@ -393,6 +395,8 @@ fn enrich_does_not_overwrite_explicit_values() {
         text_align: None,
         text_align_vertical: None,
         text_growth: None,
+        text_truncation: None,
+        max_lines: None,
         underline: None,
         strikethrough: None,
         fill: Some(vec![PenFill::Solid(SolidFillBody {

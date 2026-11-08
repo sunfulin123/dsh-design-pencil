@@ -3,6 +3,95 @@
 use super::*;
 
 #[test]
+fn viewport_survives_save_reopen_without_content_or_history_changes() {
+    let mut state = op_editor_core::EditorState::new();
+    state.viewport.pan_x = 123.25;
+    state.viewport.pan_y = -45.5;
+    state.viewport.zoom = 1.25;
+    let document_before = serde_json::to_string(&state.doc).unwrap();
+    let mut output = Vec::new();
+    write_source_with_editor_meta(
+        &mut output,
+        &document_before,
+        EditorMeta::from_state(&state),
+    )
+    .unwrap();
+    let saved = String::from_utf8(output).unwrap();
+    let mut reopened = op_editor_core::EditorState::new();
+    let reopened_before = serde_json::to_string(&reopened.doc).unwrap();
+    apply_editor_meta_or_legacy_fallback(&mut reopened, extract_editor_meta(&saved));
+    assert_eq!(reopened.viewport, state.viewport);
+    assert_eq!(
+        serde_json::to_string(&reopened.doc).unwrap(),
+        reopened_before
+    );
+    assert_eq!(serde_json::to_string(&state.doc).unwrap(), document_before);
+    assert!(!reopened.is_dirty());
+    assert!(!reopened.undo());
+}
+
+#[test]
+fn identity_or_nonfinite_viewport_is_not_saved() {
+    let mut state = op_editor_core::EditorState::new();
+    assert!(EditorMeta::from_state(&state).viewport.is_none());
+    state.viewport.pan_x = f32::NAN;
+    assert!(EditorMeta::from_state(&state).viewport.is_none());
+    state.viewport.pan_x = 1.0;
+    state.viewport.zoom = f32::INFINITY;
+    assert!(EditorMeta::from_state(&state).viewport.is_none());
+}
+
+#[test]
+fn absent_or_invalid_viewport_leaves_existing_legacy_view_untouched() {
+    let mut state = op_editor_core::EditorState::new();
+    state.viewport.pan_x = 42.5;
+    let before = state.viewport;
+    for src in [
+        r#"{"children":[]}"#,
+        r#"{"editorMeta":{"activePageIndex":0}}"#,
+        r#"{"editorMeta":{"viewport":{"panX":1,"panY":2,"zoom":-1}}}"#,
+    ] {
+        apply_editor_meta_or_legacy_fallback(&mut state, extract_editor_meta(src));
+        assert_eq!(state.viewport, before);
+    }
+}
+
+#[test]
+fn invalid_saved_viewport_does_not_discard_other_editor_metadata() {
+    for viewport in [
+        r#"{"panX":"bad","panY":2,"zoom":1}"#,
+        r#"{"panX":1,"panY":2,"zoom":0}"#,
+        r#"{"panX":1e39,"panY":2,"zoom":1}"#,
+        r#"{"panX":1,"zoom":1}"#,
+        r#"[1,2,3]"#,
+        r#"null"#,
+    ] {
+        let src = format!(
+            r#"{{"editorMeta":{{"activePageIndex":2,"preserveAuthoredGeometry":true,"viewport":{viewport}}}}}"#
+        );
+        let meta = extract_editor_meta(&src).expect("invalid view is only a UI hint");
+        assert_eq!(meta.active_page_index, 2);
+        assert!(meta.preserve_authored_geometry);
+        let mut state = op_editor_core::EditorState::new();
+        apply_editor_meta(&mut state, meta);
+        assert_eq!(state.viewport, op_editor_core::Viewport::IDENTITY);
+    }
+}
+
+#[test]
+fn saved_viewport_clamps_zoom_to_renderer_bounds() {
+    for (zoom, expected) in [(0.01, 0.1), (100.0, 8.0)] {
+        let src =
+            format!(r#"{{"editorMeta":{{"viewport":{{"panX":1.5,"panY":-2.25,"zoom":{zoom}}}}}}}"#);
+        let mut state = op_editor_core::EditorState::new();
+        apply_editor_meta(&mut state, extract_editor_meta(&src).unwrap());
+        assert_eq!(state.viewport.pan_x, 1.5);
+        assert_eq!(state.viewport.pan_y, -2.25);
+        assert_eq!(state.viewport.zoom, expected);
+    }
+}
+
+#[test]
 fn extracts_camel_and_legacy_snake_case_fields() {
     assert_eq!(
         extract_editor_meta(
@@ -13,6 +102,7 @@ fn extracts_camel_and_legacy_snake_case_fields() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
     assert_eq!(
@@ -24,6 +114,7 @@ fn extracts_camel_and_legacy_snake_case_fields() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
 }
@@ -37,6 +128,7 @@ fn absent_preserve_field_keeps_legacy_false_semantics() {
             preserve_authored_geometry: false,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
 }
@@ -52,6 +144,7 @@ fn missing_preserve_field_recovers_figma_geometry_from_canonical_page_id() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
     assert_eq!(
@@ -63,6 +156,7 @@ fn missing_preserve_field_recovers_figma_geometry_from_canonical_page_id() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
 }
@@ -83,6 +177,7 @@ fn explicit_false_overrides_figma_page_migration_for_both_spellings() {
                 preserve_authored_geometry: false,
                 scenario: None,
                 pinned_style_guide: None,
+                viewport: None,
             })
         );
     }
@@ -113,6 +208,7 @@ fn figma_like_but_noncanonical_page_id_does_not_trigger_migration() {
             preserve_authored_geometry: false,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
 }
@@ -133,6 +229,7 @@ fn applying_metadata_clamps_page_and_restores_geometry_mode() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         },
     );
 
@@ -177,6 +274,7 @@ fn escaped_strings_nested_values_and_duplicate_keys_are_bounded_correctly() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
 }
@@ -214,6 +312,7 @@ fn streaming_rewrite_preserves_legacy_document_bytes_outside_editor_meta() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         },
     )
     .expect("streaming metadata rewrite");
@@ -231,6 +330,7 @@ fn streaming_rewrite_preserves_legacy_document_bytes_outside_editor_meta() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         })
     );
 }
@@ -256,6 +356,7 @@ fn streaming_rewrite_appends_metadata_to_empty_and_nonempty_roots() {
                 preserve_authored_geometry: false,
                 scenario: None,
                 pinned_style_guide: None,
+                viewport: None,
             },
         )
         .expect("append metadata");
@@ -284,6 +385,7 @@ fn current_schema_rewrite_preserves_nested_unknown_fields() {
             preserve_authored_geometry: true,
             scenario: None,
             pinned_style_guide: None,
+            viewport: None,
         },
     )
     .expect("current-schema rewrite");

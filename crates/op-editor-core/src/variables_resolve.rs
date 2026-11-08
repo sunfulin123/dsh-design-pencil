@@ -13,6 +13,10 @@
 //! spec §5.3).
 //!
 //! Stays wasm-clean: plain data walks over `jian_ops_schema` types.
+//! Numeric fields also accept bounded `calc(...)` arithmetic. Aliases and
+//! formulas resolve through this same variable resolver, and persisted node
+//! `theme` overrides inherit through the tree. Authored expressions never
+//! become destructively materialized during a render.
 //!
 //! ### Module layout
 //!
@@ -24,8 +28,13 @@
 //! - `palette` — the generated [`DEFAULT_PALETTE_FALLBACK`] table
 //! - `replace` — [`replace_variable_refs_in_tree`] and its walk
 
+mod evaluation;
 mod palette;
+mod reference_rewrite;
 mod replace;
+pub(crate) use evaluation::is_formula_identifier_byte;
+pub use evaluation::{evaluate_formula, is_formula, VariableResolveError};
+pub use reference_rewrite::rewrite_variable_scalar;
 #[cfg(test)]
 mod tests;
 
@@ -75,6 +84,9 @@ pub fn default_theme(themes: Option<&BTreeMap<String, Vec<String>>>) -> Theme {
 /// the user picks an axis" gap.
 pub fn effective_theme(doc: &PenDocument, active: &Theme) -> Theme {
     let mut theme = default_theme(doc.themes.as_ref());
+    if let Some(overrides) = &doc.theme {
+        theme.extend(overrides.clone());
+    }
     for (axis, value) in active {
         theme.insert(axis.clone(), value.clone());
     }
@@ -82,25 +94,33 @@ pub fn effective_theme(doc: &PenDocument, active: &Theme) -> Theme {
 }
 
 /// Pick the concrete scalar from a themed list for the given theme
-/// (TS `resolveThemedValue`): the first entry whose theme map carries
-/// every active axis at the active value, else the FIRST entry.
-fn resolve_themed_value<'a>(
+/// Prefer the most specific matching selector, then an unthemed default,
+/// then the first entry. Unrelated axes do not suppress a selector match.
+pub fn resolve_themed_value<'a>(
     values: &'a [jian_ops_schema::variable::ThemedValue],
     theme: &Theme,
 ) -> Option<&'a VariableScalar> {
-    if !theme.is_empty() {
-        let hit = values.iter().find(|v| {
-            v.theme.as_ref().is_some_and(|t| {
-                theme
-                    .iter()
-                    .all(|(axis, expected)| t.get(axis) == Some(expected))
-            })
-        });
-        if let Some(hit) = hit {
-            return Some(&hit.value);
+    let mut best = None;
+    let mut specificity = 0;
+    for value in values {
+        if let Some(t) = &value.theme {
+            if !t.is_empty()
+                && t.iter()
+                    .all(|(axis, expected)| theme.get(axis) == Some(expected))
+                && (best.is_none() || t.len() > specificity)
+            {
+                best = Some(&value.value);
+                specificity = t.len();
+            }
         }
     }
-    values.first().map(|v| &v.value)
+    best.or_else(|| {
+        values
+            .iter()
+            .find(|v| v.theme.is_none())
+            .or_else(|| values.first())
+            .map(|v| &v.value)
+    })
 }
 
 /// Whether the built-in semantic palette (shadcn dictionary, or the
@@ -140,30 +160,96 @@ fn fallback_scalar(fallback: &FallbackValue, theme: &Theme) -> VariableScalar {
 
 /// Resolve a single `$name` reference to its concrete scalar
 /// (TS `resolveVariableRef`). Unknown tokens consult the built-in
-/// semantic palette; a resolved value that is itself a `$ref` is a
-/// circular guard miss.
+/// semantic palette. Alias chains and numeric formulas share a bounded
+/// recursion guard; malformed, cyclic and incompatible values resolve to None.
 pub fn resolve_variable_ref(
     reference: &str,
     vars: Option<&Vars>,
     theme: &Theme,
 ) -> Option<VariableScalar> {
-    let name = reference.strip_prefix('$')?;
+    resolve_variable_ref_checked(reference, vars, theme).ok()
+}
+
+/// Typed resolver used by token import and formula/binding validation.
+pub fn resolve_variable_ref_checked(
+    reference: &str,
+    vars: Option<&Vars>,
+    theme: &Theme,
+) -> Result<VariableScalar, VariableResolveError> {
+    resolve_reference(reference, vars, theme, &mut Vec::new())
+}
+
+fn resolve_reference(
+    reference: &str,
+    vars: Option<&Vars>,
+    theme: &Theme,
+    stack: &mut Vec<String>,
+) -> Result<VariableScalar, VariableResolveError> {
+    let name = reference
+        .strip_prefix('$')
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| VariableResolveError::Missing(reference.into()))?;
+    if stack.len() >= 64 {
+        return Err(VariableResolveError::DepthLimit);
+    }
+    if stack.iter().any(|s| s == name) {
+        return Err(VariableResolveError::Cycle(name.into()));
+    }
     let def = vars.and_then(|v| v.get(name));
     let Some(def) = def else {
-        let fallback = palette_fallback(name)?;
-        return Some(fallback_scalar(fallback, theme));
+        let fallback =
+            palette_fallback(name).ok_or_else(|| VariableResolveError::Missing(name.into()))?;
+        return Ok(fallback_scalar(fallback, theme));
     };
     let scalar = match &def.value {
         VariableValue::Scalar(s) => s,
-        VariableValue::Themed(entries) => resolve_themed_value(entries, theme)?,
+        VariableValue::Themed(entries) => resolve_themed_value(entries, theme)
+            .ok_or_else(|| VariableResolveError::Missing(name.into()))?,
     };
-    // Circular guard: a variable resolving to another `$ref` stops.
-    if let VariableScalar::Str(s) = scalar {
-        if is_variable_ref(s) {
-            return None;
+    stack.push(name.into());
+    let result = match scalar {
+        VariableScalar::Str(s) if is_variable_ref(s) => resolve_reference(s, vars, theme, stack),
+        VariableScalar::Str(s)
+            if is_formula(s) && def.kind == jian_ops_schema::variable::VariableKind::Number =>
+        {
+            evaluate_formula(s, &mut |reference| match resolve_reference(
+                reference, vars, theme, stack,
+            )? {
+                VariableScalar::Num(value) => Ok(value),
+                _ => Err(VariableResolveError::TypeMismatch(reference.into())),
+            })
+            .map(VariableScalar::Num)
         }
+        VariableScalar::Num(n) if !n.is_finite() => Err(VariableResolveError::NonFinite),
+        other => Ok(other.clone()),
+    };
+    stack.pop();
+    let value = result?;
+    use jian_ops_schema::variable::VariableKind as K;
+    if !matches!(
+        (&def.kind, &value),
+        (K::Number, VariableScalar::Num(_))
+            | (K::Boolean, VariableScalar::Bool(_))
+            | (K::String | K::Color, VariableScalar::Str(_))
+    ) {
+        return Err(VariableResolveError::TypeMismatch(name.into()));
     }
-    Some(scalar.clone())
+    Ok(value)
+}
+
+fn resolve_numeric_expression(expression: &str, vars: Option<&Vars>, theme: &Theme) -> Option<f64> {
+    if is_formula(expression) {
+        evaluate_formula(
+            expression,
+            &mut |reference| match resolve_variable_ref_checked(reference, vars, theme)? {
+                VariableScalar::Num(value) => Ok(value),
+                _ => Err(VariableResolveError::TypeMismatch(reference.into())),
+            },
+        )
+        .ok()
+    } else {
+        resolve_numeric_ref(expression, vars, theme)
+    }
 }
 
 /// Resolve a colour string that may be a `$ref`; non-refs pass
@@ -221,8 +307,8 @@ fn resolve_number_or_expression(
     fallback: f64,
 ) -> bool {
     if let NumberOrExpression::Expression(expr) = value {
-        if is_variable_ref(expr) {
-            let resolved = resolve_numeric_ref(expr, vars, theme).unwrap_or(fallback);
+        if is_variable_ref(expr) || is_formula(expr) {
+            let resolved = resolve_numeric_expression(expr, vars, theme).unwrap_or(fallback);
             *value = NumberOrExpression::Number(resolved);
             return true;
         }
@@ -234,7 +320,15 @@ fn resolve_number_or_expression(
 /// in place — the TS `resolveNodeForCanvas` walk. Returns whether
 /// anything changed.
 pub fn resolve_node_for_canvas(node: &mut PenNode, vars: Option<&Vars>, theme: &Theme) -> bool {
-    let mut changed = false;
+    let mut local_theme;
+    let theme = if let Some(overrides) = &node.base().theme {
+        local_theme = theme.clone();
+        local_theme.extend(overrides.clone());
+        &local_theme
+    } else {
+        theme
+    };
+    let mut changed = crate::design_bindings::resolve_concrete_bindings(node, vars, theme);
 
     // Opacity — `NumberOrExpression` on the shared base.
     if let Some(opacity) = node.base_mut().opacity.as_mut() {
@@ -247,8 +341,8 @@ pub fn resolve_node_for_canvas(node: &mut PenNode, vars: Option<&Vars>, theme: &
             changed |= resolve_number_or_expression(gap, vars, theme, 0.0);
         }
         if let Some(Padding::Expression(expr)) = container.padding.as_ref() {
-            if is_variable_ref(expr) {
-                let resolved = resolve_numeric_ref(expr, vars, theme).unwrap_or(0.0);
+            if is_variable_ref(expr) || is_formula(expr) {
+                let resolved = resolve_numeric_expression(expr, vars, theme).unwrap_or(0.0);
                 container.padding = Some(Padding::Uniform(resolved));
                 changed = true;
             }
@@ -349,14 +443,21 @@ pub fn roots_have_tokens(nodes: &[PenNode]) -> bool {
         }
     }
     fn expr_has_token(value: &NumberOrExpression) -> bool {
-        matches!(value, NumberOrExpression::Expression(e) if is_variable_ref(e))
+        matches!(value, NumberOrExpression::Expression(e) if is_variable_ref(e) || is_formula(e))
     }
     fn container_has_token(container: &jian_ops_schema::node::container::ContainerProps) -> bool {
         container.gap.as_ref().is_some_and(expr_has_token)
-            || matches!(&container.padding, Some(Padding::Expression(e)) if is_variable_ref(e))
+            || matches!(&container.padding, Some(Padding::Expression(e)) if is_variable_ref(e) || is_formula(e))
     }
     fn node_has_token(node: &PenNode) -> bool {
         let base = crate::pen_node_ext::PenNodeExt::base(node);
+        if base
+            .variable_bindings
+            .as_ref()
+            .is_some_and(|bindings| !bindings.is_empty())
+        {
+            return true;
+        }
         if base.opacity.as_ref().is_some_and(expr_has_token) {
             return true;
         }
@@ -437,8 +538,12 @@ pub fn resolve_document_for_canvas(doc: &PenDocument, active: &Theme) -> PenDocu
     let vars = doc.variables.as_ref();
     if let Some(pages) = resolved.pages.as_mut() {
         for page in pages {
+            let mut page_theme = theme.clone();
+            if let Some(overrides) = &page.theme {
+                page_theme.extend(overrides.clone());
+            }
             for node in &mut page.children {
-                resolve_node_for_canvas(node, vars, &theme);
+                resolve_node_for_canvas(node, vars, &page_theme);
             }
         }
     }

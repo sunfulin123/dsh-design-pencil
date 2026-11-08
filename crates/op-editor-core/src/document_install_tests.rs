@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 
 fn page(id: &str, children: Vec<PenNode>) -> PenPage {
     PenPage {
+        theme: None,
         id: id.into(),
         name: id.into(),
         children,

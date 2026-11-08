@@ -354,6 +354,7 @@ pub const TOOL_PROFILES: &[ToolProfile] = &[
     ToolProfile::new("add_node_effect", ToolAccess::Write, ToolSurface::InMemory),
     ToolProfile::new("add_page", ToolAccess::Write, ToolSurface::InMemory),
     ToolProfile::new("align_selected", ToolAccess::Write, ToolSurface::InMemory),
+    ToolProfile::new("arrange_nodes", ToolAccess::Write, ToolSurface::InMemory),
     ToolProfile::new(
         "apply_design_system",
         ToolAccess::Write,

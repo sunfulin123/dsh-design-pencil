@@ -75,7 +75,7 @@ fn any_document_with_boards_gets_the_slides_tab() {
 }
 
 #[test]
-fn empty_page_keeps_chat_and_layers_tabs_without_a_slides_tab() {
+fn empty_page_keeps_layers_tab_without_chat_or_slides_tabs() {
     let mut empty = WidgetHost::new();
     empty.editor_state.editor_ui.slides_panel.tab = LeftPanelTab::Slides;
     // The starter document opens with one empty Frame, which IS a board;
@@ -89,7 +89,9 @@ fn empty_page_keeps_chat_and_layers_tabs_without_a_slides_tab() {
         .slides_tab_row(VH)
         .expect("desktop rail always has tabs");
     assert_eq!(row.slides.size.x, 0.0);
-    assert!(row.chat.size.x > 0.0 && row.layers.size.x > 0.0);
+    // fb91df6f retired the in-editor chat tab; DSH owns AI chat.
+    assert_eq!(row.chat.size.x, 0.0);
+    assert!(row.layers.size.x > 0.0);
     assert!(empty.slides_panel_frame(VW, VH).is_none());
     assert_eq!(
         empty.layers_content_rect(VH).origin.y,

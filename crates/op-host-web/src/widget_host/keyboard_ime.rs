@@ -9,6 +9,9 @@ impl WidgetHost {
     /// A generate popup without a configured provider has no visible editor,
     /// even though the popup still swallows canvas shortcuts.
     pub(crate) fn text_input_focus_active(&self) -> bool {
+        if self.eyedropper_active() {
+            return false;
+        }
         let panel = &self.editor_state.editor_ui.image_panel;
         if panel.search_open || panel.generate_open {
             let configured = self
@@ -91,15 +94,17 @@ impl WidgetHost {
 
     /// Route a multi-character text payload (IME commit, clipboard paste)
     /// into whichever input owns the keyboard. The built-in provider Model
-    /// list preserves normalized newlines; all other fields retain their
-    /// existing single-line and per-character filters.
+    /// list and Markdown inspector preserve newlines; other fields retain
+    /// their existing single-line and per-character filters.
     pub fn apply_paste_text(&mut self, text: &str) -> bool {
         if self.editor_state.editor_ui.agent_settings.focus.is_some() {
             return self.apply_settings_text_payload(text);
         }
+        let markdown = self.editor_state.ui.property_focus
+            == Some(op_editor_core::PropertyFocus::TextDesign(0));
         let mut consumed = false;
         for c in text.chars() {
-            if !c.is_control() && self.apply_text(c) {
+            if (!c.is_control() || (markdown && matches!(c, '\n' | '\t'))) && self.apply_text(c) {
                 consumed = true;
             }
         }

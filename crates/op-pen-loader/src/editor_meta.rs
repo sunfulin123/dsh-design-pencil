@@ -4,6 +4,11 @@
 //! hosts must read it before constructing an [`op_editor_core::EditorState`].
 //! This scanner finds only the top-level value and deserializes that small
 //! slice; it never materializes or rewrites the document-sized JSON tree.
+//!
+//! `editorMeta.viewport` carries `{panX, panY, zoom}` (canvas-local pixels and
+//! a zoom multiplier). Identity views are omitted; absent or invalid hints
+//! retain the legacy open policy. Applying a valid view changes no canonical
+//! content, dirty revision, or undo history.
 
 use crate::editor_meta_error::EditorMetaWriteError;
 use op_editor_core::scene_template_catalog::TemplateScene;
@@ -13,7 +18,7 @@ use op_editor_core::scene_template_catalog::TemplateScene;
 /// Every field defaults to its legacy behavior, so files written before a
 /// field existed remain compatible. Snake-case aliases accept the former
 /// sidecar spelling as well as the canonical camel-case wire spelling.
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EditorMeta {
     /// Zero-based active page index at save time.
@@ -42,6 +47,13 @@ pub struct EditorMeta {
         skip_serializing_if = "Option::is_none"
     )]
     pub pinned_style_guide: Option<String>,
+    /// Saved canvas-local pan (pixels) and zoom multiplier. Absent in legacy files.
+    #[serde(
+        default,
+        deserialize_with = "op_editor_core::Viewport::deserialize_optional",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub viewport: Option<op_editor_core::Viewport>,
 }
 
 impl EditorMeta {
@@ -56,6 +68,10 @@ impl EditorMeta {
             preserve_authored_geometry: state.editor_ui.preserve_authored_geometry,
             scenario: state.editor_ui.scenario,
             pinned_style_guide: state.editor_ui.pinned_style_guide.clone(),
+            viewport: state
+                .viewport
+                .validated()
+                .filter(|v| *v != op_editor_core::Viewport::IDENTITY),
         }
     }
 }
@@ -135,10 +151,15 @@ struct WireEditorMeta {
     scenario: Option<TemplateScene>,
     #[serde(default, with = "pinned_style_guide_serde")]
     pinned_style_guide: Option<String>,
+    #[serde(
+        default,
+        deserialize_with = "op_editor_core::Viewport::deserialize_optional"
+    )]
+    viewport: Option<op_editor_core::Viewport>,
 }
 
 /// Parsed metadata plus compatibility inference used for migration decisions.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct EditorMetaExtraction {
     pub meta: EditorMeta,
     /// The short-lived Figma writer omitted the geometry bit and it was
@@ -174,6 +195,7 @@ pub fn extract_editor_meta_with_report(src: &str) -> Option<EditorMetaExtraction
                 .unwrap_or(scan.first_page_has_figma_id),
             scenario: wire.scenario,
             pinned_style_guide: wire.pinned_style_guide,
+            viewport: wire.viewport,
         },
         inferred_preserve_authored_geometry,
     })
@@ -184,7 +206,7 @@ pub fn extract_editor_meta_with_report(src: &str) -> Option<EditorMetaExtraction
 ///
 /// This is the clean-document Save-As path: the canonical document bytes stay
 /// untouched (including legacy/future schema fields and image tables), while
-/// the current active page and authored-geometry mode are persisted. The
+/// the current editor metadata (including a saved canvas view) is persisted. The
 /// scanner retains only byte offsets, so a large source document is never
 /// materialized as a `String`, `Value`, or `PenDocument` clone.
 pub fn write_source_with_editor_meta<W: std::io::Write>(
@@ -315,6 +337,9 @@ pub fn apply_editor_meta(state: &mut op_editor_core::EditorState, meta: EditorMe
     state.editor_ui.preserve_authored_geometry = meta.preserve_authored_geometry;
     state.editor_ui.scenario = meta.scenario;
     state.editor_ui.pinned_style_guide = meta.pinned_style_guide;
+    if let Some(viewport) = meta.viewport.and_then(op_editor_core::Viewport::validated) {
+        state.viewport = viewport;
+    }
 }
 
 /// Apply saved metadata, or use the legacy reopen policy when it is absent.

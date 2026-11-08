@@ -92,6 +92,7 @@ impl EditorState {
             self.selection.anchor = new_ids.last().cloned().unwrap();
             self.selection.set = new_ids;
         }
+        crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
         true
     }
 }

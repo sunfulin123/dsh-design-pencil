@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "Đổi tên",
+        "layerMenu.copyProperties" => "Sao chép thuộc tính",
+        "layerMenu.pasteProperties" => "Dán thuộc tính",
+        "layerMenu.tidyUp" => "Sắp xếp gọn",
+        "layerMenu.packHorizontal" => "Xếp sát ngang",
+        "layerMenu.packVertical" => "Xếp sát dọc",
+        "layerMenu.designError" => "Không thể sửa: {{reason}}",
         "common.duplicate" => "Nhân bản",
         "common.delete" => "Xoá",
         "common.cancel" => "Huỷ",
@@ -780,6 +786,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Đang phân tích tệp Figma…",
         "importProgress.htmlTitle" => "Đang phân tích HTML và tài nguyên trang…",
         "importProgress.htmlSubtitle" => "Đang tải kiểu và hình ảnh. Vui lòng chờ.",
+        "canvas.pageLoading" => "Đang tải trang…",
         "importProgress.largeFileSubtitle" => "Tệp lớn mất vài giây. Vui lòng chờ.",
         "account.signedOutHint" => "Đăng nhập để đồng bộ cài đặt và tùy chọn của bạn",
         "code.noUsableCode" => "AI không trả về mã dùng được. Thử lại hoặc đổi mô hình AI.",

@@ -12,18 +12,28 @@ use op_mcp::ToolOutcome;
 use serde_json::{json, Value};
 use wasm_bindgen::prelude::*;
 
+mod asset_catalog;
+mod asset_semantics;
+mod change_tracker;
+mod figma_rest_import;
+mod replies;
 mod tool_catalog;
+mod tool_search;
+use replies::{error_reply, js_error, ok_reply};
+#[cfg(test)]
+mod asset_tests;
 
 #[wasm_bindgen]
 pub struct DesignEngine {
     state: EditorState,
+    changes: change_tracker::ChangeTracker,
 }
 
 impl Default for DesignEngine {
     fn default() -> Self {
-        Self {
-            state: EditorState::new(),
-        }
+        let state = EditorState::new();
+        let changes = change_tracker::ChangeTracker::new(&state);
+        Self { state, changes }
     }
 }
 
@@ -58,6 +68,58 @@ impl DesignEngine {
         String::from_utf8(bytes).map_err(js_error)
     }
 
+    pub fn restore_document(&mut self, source: &str) -> Result<(), JsValue> {
+        let value: Value = serde_json::from_str(source).map_err(js_error)?;
+        if !value.get("children").is_some_and(Value::is_array) {
+            return Err(JsValue::from_str("Document must contain a children array"));
+        }
+        let loaded = op_pen_loader::load_canonical(source).map_err(js_error)?;
+        let meta = op_pen_loader::extract_editor_meta(source);
+        self.state.replace_document_with_undo(loaded.value);
+        op_pen_loader::apply_editor_meta_or_legacy_fallback(&mut self.state, meta);
+        Ok(())
+    }
+
+    /// Cheap change detector for hosts that mirror the document: it moves
+    /// whenever `document_json()` would change (content revision, document
+    /// replacement, or the embedded editor meta) without serializing the tree.
+    pub fn document_fingerprint(&self) -> String {
+        use std::hash::{Hash, Hasher};
+        let meta = serde_json::to_string(&op_pen_loader::EditorMeta::from_state(&self.state))
+            .unwrap_or_default();
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        meta.hash(&mut hasher);
+        format!(
+            "{}:{}:{:x}",
+            self.state.document_generation(),
+            self.state.document_revision(),
+            hasher.finish()
+        )
+    }
+
+    /// Pages changed since the previous call, for incremental mirrors:
+    /// `{"full": bool, "pages": [ids]}`. `full` means a page-level patch
+    /// cannot describe the change (non-page fields, page order, or a change
+    /// that bypassed command tracking).
+    pub fn take_document_changes(&mut self) -> String {
+        self.changes.take(&self.state).to_string()
+    }
+
+    pub fn document_history_json(&self) -> String {
+        json!({
+            "revision": self.state.document_revision(),
+            "past": self.state.history.past.iter().map(|s| s.revision).collect::<Vec<_>>(),
+            "future": self.state.history.future.iter().map(|s| s.revision).collect::<Vec<_>>(),
+        })
+        .to_string()
+    }
+
+    /// The `editorMeta` object `document_json()` would embed, without the tree.
+    pub fn editor_meta_json(&self) -> String {
+        serde_json::to_string(&op_pen_loader::EditorMeta::from_state(&self.state))
+            .unwrap_or_default()
+    }
+
     pub fn update_editor_meta(&mut self, source: &str) -> Result<(), JsValue> {
         let meta = serde_json::from_str(source).map_err(js_error)?;
         op_pen_loader::apply_editor_meta(&mut self.state, meta);
@@ -83,11 +145,14 @@ impl DesignEngine {
         if name == "import_figma" {
             return Ok(self.call_import_figma(&args));
         }
+        if name == "import_figma_rest" {
+            return Ok(self.call_import_figma_rest(&args));
+        }
         if name == "finalize_design" {
             return Ok(self.call_finalize_design());
         }
         if name == "get_design_quality" {
-            return Ok(self.call_get_design_quality());
+            return Ok(self.call_get_design_quality(&args));
         }
         if name == "enrich_images" {
             return Ok(ok_reply(json!({
@@ -105,6 +170,9 @@ impl DesignEngine {
                 return Ok(self.call_import_html_with_resources(&args));
             }
             return Ok(error_reply("url is required"));
+        }
+        if asset_catalog::is_host_tool(name) {
+            return Ok(error_reply("This asset tool requires a managed Node host"));
         }
         let Some(tool) = tool_catalog::build_tool(name, &self.state) else {
             return Ok(error_reply(&format!("Unknown tool: {name}")));
@@ -177,9 +245,10 @@ impl DesignEngine {
     }
 
     pub fn convert_figma_document(bytes: &[u8], file_name: &str) -> Result<String, JsValue> {
-        let import =
+        let mut import =
             op_figma::parse_fig_binary(bytes, file_name, op_figma::FigLayoutMode::Preserve)
                 .map_err(|error| JsValue::from_str(&format!("import {file_name:?}: {error}")))?;
+        figma_rest_import::normalize_document_roots(&mut import.document);
         let page_count = import.document.pages.as_ref().map_or(1, Vec::len);
         let node_count: usize = import
             .document
@@ -297,6 +366,11 @@ impl DesignEngine {
             .or_else(|| args.get("bytesB64"))
             .filter(|v| !v.trim().is_empty())
         else {
+            if args.get("url").is_some_and(|url| !url.trim().is_empty()) {
+                return error_reply(
+                    "import_figma url links are fetched by the Node host (network access); the standalone engine accepts figPath (via the host) or bytesBase64",
+                );
+            }
             return error_reply("figPath, url, or bytesBase64 is required");
         };
         let bytes = match base64::engine::general_purpose::STANDARD.decode(b64.trim()) {
@@ -319,13 +393,21 @@ impl DesignEngine {
                 .pages
                 .as_ref()
                 .is_none_or(|pages| pages.iter().all(|p| p.children.is_empty()));
-        let layout_mode =
-            if doc_is_empty && placement.parent_id == NodeId::NONE && placement.page_id.is_none() {
-                op_figma::FigLayoutMode::Preserve
-            } else {
-                op_figma::FigLayoutMode::OpenPencil
-            };
-        let import = match op_figma::parse_fig_binary(&bytes, file_name, layout_mode) {
+        let replaces_document =
+            doc_is_empty && placement.parent_id == NodeId::NONE && placement.page_id.is_none();
+        let layout_mode = if replaces_document {
+            op_figma::FigLayoutMode::Preserve
+        } else {
+            op_figma::FigLayoutMode::OpenPencil
+        };
+        // Linkage adds a Components page that `ref`s point at; an insert keeps
+        // only the first page, so it must import exact expansions instead.
+        let parsed = if replaces_document {
+            op_figma::parse_fig_binary_linked(&bytes, file_name, layout_mode)
+        } else {
+            op_figma::parse_fig_binary(&bytes, file_name, layout_mode)
+        };
+        let mut import = match parsed {
             Ok(import) => import,
             Err(error) => return error_reply(&format!("failed to parse Figma file: {error}")),
         };
@@ -336,7 +418,8 @@ impl DesignEngine {
             .as_ref()
             .map(|pages| pages.iter().map(|p| count_subtree_nodes(&p.children)).sum())
             .unwrap_or_else(|| count_subtree_nodes(&import.document.children));
-        if doc_is_empty && placement.parent_id == NodeId::NONE && placement.page_id.is_none() {
+        if replaces_document {
+            figma_rest_import::normalize_document_roots(&mut import.document);
             let previous = self.state.snapshot_for_history();
             self.state.replace_document(import.document);
             op_pen_loader::apply_editor_meta(
@@ -346,6 +429,7 @@ impl DesignEngine {
                     preserve_authored_geometry: true,
                     scenario: None,
                     pinned_style_guide: None,
+                    viewport: None,
                 },
             );
             self.state.history_push_past(previous);
@@ -365,26 +449,25 @@ impl DesignEngine {
         if nodes.is_empty() {
             return error_reply("Figma file contains no importable nodes");
         }
-        if placement.x != 0 || placement.y != 0 {
-            if let Some(PenNode::Frame(frame)) = nodes.first_mut() {
-                frame.base.x = Some(placement.x as f64);
-                frame.base.y = Some(placement.y as f64);
-            }
-        }
+        figma_rest_import::translate_roots(&mut nodes, self.drop_origin(args, &placement));
         let value = json!({
             "wrote": "true",
             "pageCount": page_count,
             "nodeCount": count_subtree_nodes(&nodes),
             "warnings": import.warnings,
         });
-        self.commit_command(
-            value,
-            EditorCommand::InsertSubtree {
-                nodes,
-                parent_id: placement.parent_id,
-                page_id: placement.page_id,
-            },
-        )
+        match self.insert_preserving_roots(
+            nodes,
+            &placement.parent_id,
+            placement.page_id.as_deref(),
+            false,
+            layout_mode == op_figma::FigLayoutMode::OpenPencil,
+        ) {
+            Some(_) => ok_reply(value),
+            None => error_reply(
+                "Figma import could not be inserted: the parent is missing or not a container",
+            ),
+        }
     }
 
     fn call_finalize_design(&mut self) -> String {
@@ -430,8 +513,39 @@ impl DesignEngine {
         ok_reply(value)
     }
 
-    fn call_get_design_quality(&self) -> String {
+    fn call_get_design_quality(&self, args: &std::collections::BTreeMap<String, String>) -> String {
         use op_design_lint::IssueCategory;
+
+        let limit = match args.get("limit").map(|raw| raw.trim().trim_matches('"')) {
+            None | Some("") => 30,
+            Some(raw) => match raw.parse::<usize>() {
+                Ok(limit) if (1..=500).contains(&limit) => limit,
+                _ => return error_reply("limit must be an integer between 1 and 500"),
+            },
+        };
+        let scope = args
+            .get("rootId")
+            .map(|raw| raw.trim().trim_matches('"'))
+            .filter(|raw| !raw.is_empty());
+        let mut scoped_ids = std::collections::BTreeSet::new();
+        let mut roots: Vec<&jian_ops_schema::node::PenNode> = Vec::new();
+        for root in self.state.active_children() {
+            match scope {
+                None => roots.push(root),
+                Some(id) => {
+                    if let Some(node) = op_editor_core::walkers::find_node(
+                        std::slice::from_ref(root),
+                        &op_editor_core::NodeId::new(id),
+                    ) {
+                        collect_quality_scope(node, &mut scoped_ids);
+                        roots.push(root);
+                    }
+                }
+            }
+        }
+        if let (Some(id), true) = (scope, roots.is_empty()) {
+            return error_reply(&format!("rootId not found on the active page: {id}"));
+        }
 
         let mut geometry_issues = Vec::new();
         let mut layout_issues = Vec::new();
@@ -441,8 +555,11 @@ impl DesignEngine {
         let mut empty_shells = Vec::new();
         let mut intent_questions = Vec::new();
 
-        for root in self.state.active_children() {
+        for root in roots {
             for issue in op_design_lint::detect_all(root, &self.state.doc) {
+                if scope.is_some() && !scoped_ids.contains(&issue.node_id) {
+                    continue;
+                }
                 let detail = format!("{}: {}", issue.node_id, issue.reason);
                 match issue.category {
                     IssueCategory::MixedSiblingCornerRadius
@@ -482,7 +599,36 @@ impl DesignEngine {
             }
         }
 
+        let counts = json!({
+            "geometryIssues": geometry_issues.len(),
+            "layoutIssues": layout_issues.len(),
+            "contrastIssues": contrast_issues.len(),
+            "iconIssues": icon_issues.len(),
+            "structureIssues": structure_issues.len(),
+            "emptyShells": empty_shells.len(),
+            "intentQuestions": intent_questions.len(),
+        });
+        let truncated = [
+            geometry_issues.len(),
+            layout_issues.len(),
+            contrast_issues.len(),
+            icon_issues.len(),
+            structure_issues.len(),
+            empty_shells.len(),
+            intent_questions.len(),
+        ]
+        .iter()
+        .any(|len| *len > limit);
+        geometry_issues.truncate(limit);
+        layout_issues.truncate(limit);
+        contrast_issues.truncate(limit);
+        icon_issues.truncate(limit);
+        structure_issues.truncate(limit);
+        empty_shells.truncate(limit);
+        intent_questions.truncate(limit);
         ok_reply(json!({
+            "counts": counts,
+            "truncated": truncated,
             "geometryIssues": geometry_issues,
             "layoutIssues": layout_issues,
             "contrastIssues": contrast_issues,
@@ -507,7 +653,8 @@ impl DesignEngine {
         let is_import = matches!(command, EditorCommand::InsertSubtree { .. });
         let mut next = self.state.clone();
         if !apply_command(&mut next, command) {
-            return error_reply("Design command was rejected");
+            let reason = next.ui.design_reject.take();
+            return error_reply(reason.as_deref().unwrap_or("Design command was rejected"));
         }
         if was_empty && is_import {
             op_pen_loader::apply_editor_meta(
@@ -517,13 +664,15 @@ impl DesignEngine {
                     preserve_authored_geometry: true,
                     scenario: None,
                     pinned_style_guide: None,
+                    viewport: None,
                 },
             );
         }
         if next.doc != self.state.doc && next.history.past == self.state.history.past {
             next.history_push_past(self.state.snapshot_for_history());
         }
-        self.state = next;
+        let prev = std::mem::replace(&mut self.state, next);
+        self.changes.record_commit(prev, &mut self.state);
         ok_reply(value)
     }
 }
@@ -557,23 +706,39 @@ fn lookup_resource(resources: &BTreeMap<String, Vec<u8>>, url: &str) -> Option<V
     resources.get(stripped).cloned()
 }
 
-fn ok_reply(value: Value) -> String {
-    json!({
-        "isError": false,
-        "content": [{ "type": "text", "text": value.to_string() }],
-        "structuredContent": value,
-    })
-    .to_string()
-}
-
 fn apply_command(state: &mut EditorState, command: EditorCommand) -> bool {
     state.apply(command)
 }
 
-fn error_reply(message: &str) -> String {
-    json!({ "isError": true, "content": [{ "type": "text", "text": message }] }).to_string()
-}
+#[cfg(test)]
+#[path = "lib_tests.rs"]
+mod tests;
 
-fn js_error(error: impl std::fmt::Display) -> JsValue {
-    JsValue::from_str(&error.to_string())
+#[cfg(test)]
+#[path = "canvas_tools_tests.rs"]
+mod canvas_tools_tests;
+#[cfg(test)]
+mod component_behaviour_tests;
+#[cfg(test)]
+mod component_design_tests;
+#[cfg(test)]
+mod design_state_tests;
+#[cfg(test)]
+mod design_workflow_tests;
+#[cfg(test)]
+mod figma_rest_import_tests;
+#[cfg(test)]
+mod prompt_example_tests;
+
+fn collect_quality_scope(
+    node: &jian_ops_schema::node::PenNode,
+    out: &mut std::collections::BTreeSet<String>,
+) {
+    use op_editor_core::PenNodeExt;
+    out.insert(node.id_str().to_string());
+    if let Some(children) = node.children() {
+        for child in children {
+            collect_quality_scope(child, out);
+        }
+    }
 }

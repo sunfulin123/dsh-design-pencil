@@ -11,6 +11,7 @@ fn run(start: usize, end: usize) -> SceneTextRun {
     SceneTextRun {
         start,
         end,
+        font_family: None,
         font_size: 0.0,
         font_weight: 0,
         fill: None,
@@ -81,11 +82,14 @@ struct CaptureBackend {
     origins: Vec<Point2D>,
     contents: Vec<String>,
     weights: Vec<u16>,
+    families: Vec<String>,
+    sizes: Vec<f32>,
     italics: Vec<bool>,
     lines: Vec<(Point2D, Point2D, Color, f32)>,
     fill_rects: Vec<Rect>,
     round_rects: Vec<Rect>,
     requested_baseline: Option<f32>,
+    responsive_metrics: bool,
 }
 
 impl RenderBackend for CaptureBackend {
@@ -101,6 +105,8 @@ impl RenderBackend for CaptureBackend {
         if let Some(run) = layout.runs().first() {
             self.contents.push(run.content.clone());
             self.weights.push(run.font_weight);
+            self.families.push(run.font_family.clone());
+            self.sizes.push(run.font_size);
         }
     }
     fn clip_rect(&mut self, _: Rect) {}
@@ -119,8 +125,28 @@ impl RenderBackend for CaptureBackend {
     fn dpi_scale(&self) -> f32 {
         1.0
     }
-    fn measure_text_weighted(&mut self, text: &str, _: f32, _: u16) -> f32 {
-        text.chars().count() as f32 * 10.0
+    fn measure_text_weighted(&mut self, text: &str, font_size: f32, _: u16) -> f32 {
+        text.chars().count() as f32
+            * if self.responsive_metrics {
+                font_size * 0.5
+            } else {
+                10.0
+            }
+    }
+    fn measure_text_family_styled(
+        &mut self,
+        text: &str,
+        size: f32,
+        family: &str,
+        weight: u16,
+        _: bool,
+    ) -> f32 {
+        let factor = if self.responsive_metrics && family == "Georgia" {
+            2.0
+        } else {
+            1.0
+        };
+        self.measure_text_weighted(text, size, weight) * factor
     }
     fn text_first_baseline(&mut self, request: &TextBaselineRequest<'_>) -> f32 {
         if let Some(baseline) = self.requested_baseline {
@@ -232,9 +258,11 @@ fn composition_paints_inline_preedit_underline_and_caret() {
 #[test]
 fn styled_runs_paint_separate_slices_with_run_weight() {
     let mut node = text_node("boldplain");
+    node.font_family = "Inter".into();
     node.text_runs = vec![
         SceneTextRun {
             font_weight: 700,
+            font_family: Some("Georgia".into()),
             ..run(0, 4)
         },
         run(4, 9),
@@ -251,8 +279,89 @@ fn styled_runs_paint_separate_slices_with_run_weight() {
         vec!["bold".to_string(), "plain".to_string()]
     );
     assert_eq!(backend.weights, vec![700, 400]);
+    assert_eq!(backend.families, vec!["Georgia", "Inter"]);
     // Second slice starts after the first's 4-glyph advance.
     assert_eq!(backend.origins[1].x, 40.0);
+}
+
+#[test]
+fn styled_wrap_uses_run_family_and_size_without_overlapping_line_boxes() {
+    let mut node = text_node("X yy");
+    node.font_family = "Inter".into();
+    node.font_size = 10.0;
+    node.bounds = Rect::xywh(0.0, 0.0, 48.0, 100.0);
+    node.text_wrap = true;
+    node.text_vertical_align = SceneTextVerticalAlign::Top;
+    node.text_runs = vec![SceneTextRun {
+        font_size: 40.0,
+        font_family: Some("Georgia".into()),
+        ..run(0, 1)
+    }];
+    let mut backend = CaptureBackend {
+        responsive_metrics: true,
+        ..Default::default()
+    };
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        1.0,
+        &None,
+    );
+    assert_eq!(backend.contents, vec!["X", " ", "yy"]);
+    assert_eq!(backend.origins[0].y, backend.origins[1].y);
+    assert!(backend.origins[2].y > backend.origins[0].y + 10.0);
+    assert_eq!(backend.families, vec!["Georgia", "Inter", "Inter"]);
+}
+
+#[test]
+fn styled_large_run_remains_visible_when_base_font_is_below_greeking_threshold() {
+    let mut node = text_node("ab");
+    node.font_size = 1.0;
+    node.text_runs = vec![SceneTextRun {
+        font_size: 40.0,
+        ..run(0, 2)
+    }];
+    let mut backend = CaptureBackend::default();
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        0.1,
+        &None,
+    );
+    assert_eq!(backend.contents, vec!["ab"]);
+}
+
+#[test]
+fn styled_auto_width_shrink_scales_run_fonts_as_well_as_inherited_fonts() {
+    let mut node = text_node("ab");
+    node.font_size = 10.0;
+    node.bounds.size.x = 20.0;
+    node.text_wrap = false;
+    node.text_runs = vec![SceneTextRun {
+        font_size: 40.0,
+        ..run(0, 2)
+    }];
+    let mut backend = CaptureBackend {
+        responsive_metrics: true,
+        ..Default::default()
+    };
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        1.0,
+        &None,
+    );
+    assert_eq!(backend.sizes, vec![20.0]);
+    assert_eq!(node.text_runs[0].font_size, 40.0);
 }
 
 #[test]

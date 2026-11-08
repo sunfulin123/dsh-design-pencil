@@ -47,7 +47,15 @@ mod tooltip_pump;
 mod video_overlay;
 // Daemon device-login relay (action drain + login-status poll + popup).
 #[cfg(feature = "canvaskit")]
+mod draft_recovery;
+#[cfg(feature = "canvaskit")]
 mod live_sync_glue;
+#[cfg(feature = "canvaskit")]
+mod live_sync_json;
+#[cfg(feature = "canvaskit")]
+mod managed_assets_sync;
+#[cfg(all(test, feature = "canvaskit"))]
+mod managed_assets_tests;
 // The recovery stash behind an online auto-accept.
 #[cfg(feature = "canvaskit")]
 mod live_sync_recovery;
@@ -90,6 +98,8 @@ mod figma_temp_bridge;
 #[cfg(feature = "canvaskit")]
 mod raf_pump;
 #[cfg(feature = "canvaskit")]
+mod render_mode;
+#[cfg(feature = "canvaskit")]
 mod repaint_coalescer;
 #[cfg(feature = "canvaskit")]
 mod theme_preset_io;
@@ -103,6 +113,8 @@ mod web_asset_fetch;
 // Runtime fetch for collaboration-peer avatars via the daemon proxy.
 #[cfg(feature = "canvaskit")]
 mod collab_avatar_fetch;
+#[cfg(feature = "canvaskit")]
+mod ui_scale_sync;
 #[cfg(feature = "canvaskit")]
 mod web_credential_sync;
 #[cfg(feature = "canvaskit")]

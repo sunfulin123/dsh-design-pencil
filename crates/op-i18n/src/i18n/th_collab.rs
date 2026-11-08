@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "สำเนาสำหรับกู้คืน",
+        "drafts.notice" => "การกู้คืนจะแทนที่เอกสารปัจจุบันและเลิกทำได้ในขั้นตอนเดียว โดยสร้างสำเนาสำรองป้องกันก่อน ไฟล์ที่เชื่อมโยงจะไม่ถูกบันทึก",
+        "drafts.create" => "สร้างจุดตรวจสอบ",
+        "drafts.label" => "ชื่อจุดตรวจสอบ",
+        "drafts.empty" => "ยังไม่มีสำเนาสำหรับกู้คืน",
+        "drafts.restoreConfirm" => "กู้คืนสำเนานี้หรือไม่?",
+        "drafts.deleteConfirm" => "ลบสำเนานี้อย่างถาวรหรือไม่?",
+        "drafts.syncError" => "รอให้การแก้ไขในเครื่องซิงค์เสร็จแล้วลองอีกครั้ง",
+        "drafts.refresh" => "รีเฟรช",
+        "drafts.failed" => "คำขอกู้คืนล้มเหลว: {{message}}",
+        "drafts.loading" => "กำลังอัปเดตสำเนาสำหรับกู้คืน…",
+        "drafts.autosave" => "บันทึกอัตโนมัติ",
+        "drafts.checkpoint" => "จุดตรวจสอบ",
+        "drafts.backup" => "สำเนาสำรองป้องกัน",
+        "colorPicker.sampleError" => "เก็บตัวอย่างสีไม่สำเร็จ: {{message}}",
+        "statusbar.interfaceScale" => "ขนาดส่วนติดต่อ",
+        "statusbar.viewOptions" => "ตัวเลือกมุมมอง",
     "preview.emptyPage" => "หน้านี้ไม่มีเฟรมที่มองเห็นสำหรับแสดงตัวอย่าง",
     "preview.noFrame" => "ไม่มีกรอบ",
     "preview.fit" => "พอดีหน้าต่าง",

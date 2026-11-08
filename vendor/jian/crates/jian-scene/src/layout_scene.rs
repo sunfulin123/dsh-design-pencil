@@ -462,18 +462,16 @@ pub enum SceneTextVerticalAlign {
 /// (unset) attributes use the sentinel conventions of the node-level
 /// fields (`0.0` font size / `0` weight / `None` fill = inherit).
 ///
-/// Runs exist ALONGSIDE the flat string: line wrapping, the text
-/// editor, and hit-testing all stay on the flat text; the painter maps
-/// each wrapped line back onto run byte ranges so painted slices carry
-/// their segment's style. A wrapped line that splits mid-segment keeps
-/// per-slice styling exact; only the WRAP POSITION itself is computed
-/// with node-level metrics (documented v1 approximation).
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// Runs exist alongside the flat string. The canvas painter wraps with
+/// resolved per-run metrics; inline editing uses single-style flat text.
+#[derive(Debug, Clone, PartialEq)]
 pub struct SceneTextRun {
     /// Inclusive start byte offset into the node's flat `text`.
     pub start: usize,
     /// Exclusive end byte offset into the node's flat `text`.
     pub end: usize,
+    /// `None` inherits the node's font family.
+    pub font_family: Option<Arc<str>>,
     /// Per-run font size in doc-px. `0.0` = inherit the node's.
     pub font_size: f32,
     /// Per-run CSS-style weight (100-900). `0` = inherit the node's.
@@ -611,6 +609,8 @@ pub struct SceneNode {
     pub text_vertical_align: SceneTextVerticalAlign,
     /// Whether the painter wraps the text to `bounds.size.x`.
     pub text_wrap: bool,
+    pub text_truncation: bool,
+    pub max_lines: Option<u32>,
     /// Polyline / path geometry in absolute doc-space coords —
     /// populated for `Path` (and any kind the painter walks as
     /// points). Empty otherwise.
@@ -898,6 +898,8 @@ impl SceneNode {
             text_align: SceneTextAlign::Left,
             text_vertical_align: SceneTextVerticalAlign::Top,
             text_wrap: false,
+            text_truncation: false,
+            max_lines: None,
             points: Vec::new(),
             path_anchors: Vec::new(),
             path_closed: false,

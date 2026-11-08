@@ -193,6 +193,7 @@ fn styled_runs_become_spans_without_breaking_the_flat_text() {
     node.text_runs = vec![op_editor_ui::layout_scene::SceneTextRun {
         start: 6,
         end: 10,
+        font_family: Some("Georgia".into()),
         font_size: 0.0,
         font_weight: 900,
         fill: Some(Color::RED),
@@ -200,11 +201,10 @@ fn styled_runs_become_spans_without_breaking_the_flat_text() {
         underline: false,
         strikethrough: false,
     }];
-
     let body = body_of(board(vec![node]));
-
     assert!(body.contains("plain <span"), "{body}");
     assert!(body.contains("font-weight:900"), "{body}");
+    assert!(body.contains("font-family:Georgia,"), "{body}");
     assert!(body.contains("color:rgb(255,0,0)"), "{body}");
     assert!(body.contains(">BOLD</span> plain"), "{body}");
 }

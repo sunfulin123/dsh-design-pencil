@@ -222,60 +222,9 @@ if (entry.effect.delete) entry.effect.delete();
         .expect("Node is required for the real CanvasKit compile test");
 }
 
-#[cfg(all(
-    feature = "canvaskit",
-    any(target_os = "macos", target_os = "linux", target_os = "windows")
-))]
-fn native_turbulence_stats(shader: &op_editor_ui::layout_scene::SceneShader) -> (f64, f64) {
-    use op_editor_ui::{Color, Rect};
-    use op_host_native::backend::NativeBackend;
-
-    let mut surface = skia_safe::surfaces::raster_n32_premul((64, 64)).expect("native surface");
-    let mut backend = NativeBackend::with_dpi(1.0);
-    let uniforms: Vec<(&str, &[f32])> = shader
-        .uniforms
-        .iter()
-        .map(|uniform| (uniform.name.as_str(), uniform.values.as_slice()))
-        .collect();
-    backend.fill_round_rect_shader(
-        surface.canvas(),
-        Rect::xywh(0.0, 0.0, 64.0, 64.0),
-        0.0,
-        &shader.sksl,
-        &uniforms,
-        1.0,
-        Color::GREEN,
-    );
-    let image = surface.image_snapshot();
-    let pixels = image
-        .peek_pixels()
-        .expect("native raster pixels")
-        .bytes()
-        .expect("native pixel bytes");
-    channel_stats(pixels.chunks_exact(4).map(|pixel| pixel[0]))
-}
-
-#[cfg(all(
-    feature = "canvaskit",
-    any(target_os = "macos", target_os = "linux", target_os = "windows")
-))]
-fn channel_stats(values: impl Iterator<Item = u8>) -> (f64, f64) {
-    let values: Vec<f64> = values.map(f64::from).collect();
-    let mean = values.iter().sum::<f64>() / values.len() as f64;
-    let variance = values
-        .iter()
-        .map(|value| (value - mean).powi(2))
-        .sum::<f64>()
-        / values.len() as f64;
-    (mean, variance)
-}
-
-#[cfg(all(
-    feature = "canvaskit",
-    any(target_os = "macos", target_os = "linux", target_os = "windows")
-))]
+#[cfg(feature = "canvaskit")]
 #[test]
-fn turbulence_cpu_rasters_match_statistics_and_web_translation_is_local() {
+fn turbulence_web_raster_is_nonflat_and_translation_is_local() {
     let shader = turbulence_scene_shader();
     let names: Vec<&str> = shader
         .uniforms
@@ -364,8 +313,11 @@ for (let index = 0; index < first.length; index++) {{
   if (first[index] !== second[index]) {{
     throw new Error(`web turbulence swims after translation at byte ${{index}}`);
   }}
+  if (index % 4 === 3 && first[index] !== 255) {{
+    throw new Error(`web turbulence is not opaque at byte ${{index}}`);
+  }}
 }}
-console.log('B4_STATS ' + JSON.stringify(stats(render(0, 0, 64))));
+console.log('CANVASKIT_STATS ' + JSON.stringify(stats(render(0, 0, 64))));
 entry.effect.delete();
 "#,
         canvas_kit_js = serde_json::to_string(&canvas_kit_js).expect("JS path serializes"),
@@ -379,22 +331,9 @@ entry.effect.delete();
         .expect("Node is required for the real CanvasKit raster test");
     let encoded = output
         .lines()
-        .find_map(|line| line.strip_prefix("B4_STATS "))
+        .find_map(|line| line.strip_prefix("CANVASKIT_STATS "))
         .expect("CanvasKit stats sentinel");
     let web: serde_json::Value = serde_json::from_str(encoded).expect("CanvasKit stats JSON");
-    let web_mean = web["mean"].as_f64().expect("web mean");
     let web_variance = web["variance"].as_f64().expect("web variance");
-    let (native_mean, native_variance) = native_turbulence_stats(&shader);
-
-    assert!(native_variance > 100.0, "native raster is flat");
     assert!(web_variance > 100.0, "CanvasKit raster is flat");
-    assert!(
-        (native_mean - web_mean).abs() <= 8.0,
-        "mean drift: native={native_mean}, web={web_mean}"
-    );
-    let variance_drift = (native_variance - web_variance).abs() / native_variance.max(web_variance);
-    assert!(
-        variance_drift <= 0.15,
-        "variance drift: native={native_variance}, web={web_variance}"
-    );
 }

@@ -163,6 +163,15 @@ pub enum CodegenAction {
 /// than relying on an implicit bitwise copy.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PropertyPanelAction {
+    ComponentInspector(crate::widgets::property_panel_components::ComponentInspectorAction),
+    DesignSystem(op_editor_core::design_system_inspector_draft::DesignSystemAction),
+    ApplyTextMarkdown,
+    ApplyTextRange,
+    ApplyTextParagraph,
+    SetTextTruncation(usize),
+    CycleTextRangeFlag(usize),
+    ToggleTextRangeClearLink,
+    SetTextParagraphList(usize),
     /// User clicked a tab in the pinned Design / Code strip — the host
     /// switches `editor_ui.property_tab`.
     SetPropertyTab(op_editor_core::PropertyTab),

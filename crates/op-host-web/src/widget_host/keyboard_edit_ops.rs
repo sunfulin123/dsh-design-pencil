@@ -8,6 +8,22 @@ use op_editor_core::host_keyboard_transitions as shared;
 use op_editor_core::host_preset_name_draft as preset_name;
 
 impl WidgetHost {
+    pub fn apply_appearance_shortcut(&mut self, paste: bool) -> bool {
+        if self.input_active() {
+            return false;
+        }
+        let action = if paste {
+            op_editor_ui::widgets::layer_context_menu::LayerContextAction::PasteProperties
+        } else {
+            op_editor_ui::widgets::layer_context_menu::LayerContextAction::CopyProperties
+        };
+        let target = op_editor_core::ui_draft::LayerContextTarget::Layer(
+            self.editor_state.selection.anchor.clone(),
+        );
+        self.dispatch_layer_context_action(action, target);
+        true
+    }
+
     /// Copy `text` for the current surface. The VS Code embed relays the
     /// payload to the extension host (`op-shell/copy` → `vscode.env.
     /// clipboard`) because the nested-iframe permissions chain rejects
@@ -554,7 +570,11 @@ impl WidgetHost {
         if self.editor_state.editor_ui.collab_join_input_active() {
             return true;
         }
-        if key.eq_ignore_ascii_case("k") {
+        if key.eq_ignore_ascii_case("f") {
+            self.apply_open_import(ImportSource::Figma)
+        } else if key.eq_ignore_ascii_case("h") {
+            self.apply_open_import(ImportSource::Html)
+        } else if key.eq_ignore_ascii_case("k") {
             // K may close its own component browser even though that search
             // surface counts as an active input. Every other focused input
             // keeps ownership, matching the native settings/Git guards.

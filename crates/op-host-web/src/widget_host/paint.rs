@@ -12,23 +12,12 @@ use super::WidgetHost;
 use op_editor_ui::widgets::host_canvas_geometry as canvas_geometry;
 use op_editor_ui::widgets::variables_panel::VariablesPanel;
 use op_editor_ui::widgets::{
-    AIChatPlaceholder, CanvasViewport, LayerPanel, LayoutCx, LocalePicker, PaintCx, PropertyPanel,
-    ShapePicker, StatusBar, Toolbar, Widget, TOOLBAR_WIDTH, TOP_BAR_HEIGHT,
+    AIChatPlaceholder, LayerPanel, LayoutCx, LocalePicker, PaintCx, ShapePicker, StatusBar,
+    Toolbar, Widget, TOOLBAR_WIDTH, TOP_BAR_HEIGHT,
 };
 use op_editor_ui::{Point2D, Rect, RenderBackend};
 
 impl WidgetHost {
-    /// Backend-generic public paint entry (used by the CanvasKit host).
-    /// Delegates to the same composition pass.
-    pub fn paint_dyn(
-        &mut self,
-        backend: &mut dyn RenderBackend,
-        viewport_width: f32,
-        viewport_height: f32,
-    ) {
-        self.paint_editor(backend, viewport_width, viewport_height);
-    }
-
     /// Backend-generic composition pass. Layer order matches the
     /// native shell so paint output is cross-platform identical:
     ///   1. background fill (+ document-import progress early-return)
@@ -52,6 +41,7 @@ impl WidgetHost {
         viewport_width: f32,
         viewport_height: f32,
     ) {
+        self.reconcile_view_options();
         self.image_input_geometry = None;
         self.sync_responsive_viewport(viewport_width, viewport_height);
         // Rotate the transcript-cache owner if the active chat session changed,
@@ -212,8 +202,14 @@ impl WidgetHost {
 
         // Rebuild the layout-resolved render scene ONCE for the whole
         // paint pass. Every widget builder below reads `editor_state`
-        // directly; the canvas reads `self.layout_scene`.
-        self.refresh_layout_scene();
+        // directly; the canvas reads `self.layout_scene`. A switch to a heavy
+        // page first paints a loading cover and rebuilds next frame.
+        let page_loading_cover = self.cover_page_switch_this_frame();
+        if !page_loading_cover {
+            self.refresh_layout_scene();
+            self.apply_pending_page_fit();
+        }
+        self.frame_perf.mark("scene");
         // The rail's slides tab, resolved ahead of the long immutable
         // borrow below because deriving it needs `&mut self` (mirrors
         // native paint.rs), and it OWNS the rail when it is on show.
@@ -332,6 +328,7 @@ impl WidgetHost {
             }
         }
 
+        self.frame_perf.mark("chrome");
         let (canvas_left, _canvas_y, canvas_w, canvas_h) =
             self.canvas_region(viewport_width, viewport_height);
         let canvas_rect = Rect {
@@ -377,57 +374,16 @@ impl WidgetHost {
                 self.paint_preview_switcher(backend, canvas_rect);
                 self.paint_screen_switcher(backend, canvas_rect);
             } else {
-                // NORMAL PAINT path — the canvas reads editor state + the
-                // layout-resolved render scene (`refresh_layout_scene`).
-                let mut transition_scene = None;
-                if let Some(transition) = self.layout_transition.as_ref() {
-                    if transition.is_active(self.now_ms) {
-                        let mut scene = self.layout_scene.clone();
-                        transition.apply_to_scene(&mut scene, self.now_ms);
-                        transition_scene = Some(scene);
-                    }
-                }
-                let canvas_scene = transition_scene.as_ref().unwrap_or(&self.layout_scene);
-                let mut canvas = CanvasViewport::from_editor(&self.editor_state, canvas_scene);
-                canvas.now_ms = self.now_ms;
-                canvas.fast_interaction = self.canvas_fast_interaction_active();
-                canvas.set_node_drag_active(self.node_drag.as_ref().is_some_and(|drag| drag.moved));
-                canvas.set_node_drag_overlay(self.node_drag_overlay_for_paint());
-                let mut cx = PaintCx {
-                    backend: &mut *backend,
-                };
-                canvas.paint(&mut cx, canvas_rect);
+                // NORMAL PAINT path — retained tiles or a live scene walk.
+                self.paint_canvas_region(&mut *backend, canvas_rect, page_loading_cover);
             }
 
             #[cfg(not(feature = "canvaskit"))]
-            {
-                // NORMAL PAINT path (non-canvaskit build)
-                let mut transition_scene = None;
-                if let Some(transition) = self.layout_transition.as_ref() {
-                    if transition.is_active(self.now_ms) {
-                        let mut scene = self.layout_scene.clone();
-                        transition.apply_to_scene(&mut scene, self.now_ms);
-                        transition_scene = Some(scene);
-                    }
-                }
-                let canvas_scene = transition_scene.as_ref().unwrap_or(&self.layout_scene);
-                let mut canvas = CanvasViewport::from_editor(&self.editor_state, canvas_scene);
-                canvas.now_ms = self.now_ms;
-                canvas.fast_interaction = self.canvas_fast_interaction_active();
-                canvas.set_node_drag_active(self.node_drag.as_ref().is_some_and(|drag| drag.moved));
-                canvas.set_node_drag_overlay(self.node_drag_overlay_for_paint());
-                let mut cx = PaintCx {
-                    backend: &mut *backend,
-                };
-                canvas.paint(&mut cx, canvas_rect);
-            }
+            self.paint_canvas_region(&mut *backend, canvas_rect, page_loading_cover);
         }
 
-        let property_panel = PropertyPanel::for_selection_at_with_scene(
-            &self.editor_state,
-            &self.layout_scene,
-            self.now_ms,
-        );
+        self.frame_perf.mark("canvas");
+        let property_panel = self.property_panel_for_frame();
         if let Some(panel) = property_panel.as_ref() {
             let property_rect = canvas_geometry::property_panel_rect(
                 &self.editor_state,
@@ -440,6 +396,7 @@ impl WidgetHost {
             panel.paint(&mut cx, property_rect);
         }
 
+        self.frame_perf.mark("property");
         if op_editor_ui::widgets::canvas_rulers::enabled(&self.editor_state) {
             let overlay = self.node_drag_overlay_for_paint();
             let ids = self
@@ -562,7 +519,11 @@ impl WidgetHost {
         if let Some(status_rect) =
             canvas_geometry::status_bar_rect(&self.editor_state, viewport_width, viewport_height)
         {
-            let status = StatusBar::for_editor(&self.editor_state);
+            let mut status = StatusBar::for_editor(&self.editor_state);
+            status.zoom_percent =
+                (self.editor_state.viewport.zoom * self.ui_scale_active.max(1.0) * 100.0)
+                    .round()
+                    .max(1.0) as u32;
             let mut cx = PaintCx {
                 backend: &mut *backend,
             };

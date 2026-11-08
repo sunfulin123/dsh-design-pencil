@@ -120,6 +120,7 @@ pub struct ScreenVariantTable(pub BTreeMap<String, ScreenVariants>);
 
 /// One collected screen: the marked frame (cloned, x/y zeroed) + path.
 struct Screen {
+    theme: Option<BTreeMap<String, String>>,
     path: String,
     frame: PenNode,
     id: String,
@@ -140,6 +141,7 @@ fn collect_screens(
     screens: &mut Vec<Screen>,
     seen_paths: &mut BTreeMap<String, String>,
     responsive: bool,
+    theme: Option<&BTreeMap<String, String>>,
 ) {
     for node in children {
         let PenNode::Frame(frame) = node else {
@@ -190,6 +192,7 @@ fn collect_screens(
         mounted.base.x = None;
         mounted.base.y = None;
         screens.push(Screen {
+            theme: theme.cloned(),
             path: path.to_owned(),
             id: frame.base.id.clone(),
             name: frame
@@ -230,6 +233,7 @@ pub fn project_screens(
                     &mut screens,
                     &mut seen_paths,
                     doc.is_responsive(),
+                    page.theme.as_ref(),
                 );
             }
         }
@@ -239,6 +243,7 @@ pub fn project_screens(
             &mut screens,
             &mut seen_paths,
             doc.is_responsive(),
+            None,
         ),
     }
 
@@ -285,6 +290,7 @@ pub fn project_screens(
             params: None,
         });
         pages.push(PenPage {
+            theme: s.theme,
             id: page_id,
             name: s.name,
             children: vec![s.frame],
@@ -334,6 +340,7 @@ fn normalize_screen_ids(screens: &mut [Screen], warnings: &mut Vec<ProjectionWar
     let mut pages: Vec<PenPage> = screens
         .iter()
         .map(|screen| PenPage {
+            theme: screen.theme.clone(),
             id: variant_page_id(screen),
             name: screen.name.clone(),
             children: Vec::new(),

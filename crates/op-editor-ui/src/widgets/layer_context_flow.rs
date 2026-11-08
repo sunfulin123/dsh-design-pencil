@@ -8,6 +8,60 @@ use op_editor_core::{BooleanOp, EditorState, IdAllocError, IdAllocator};
 
 use crate::widgets::layer_context_menu::LayerContextAction;
 
+fn show_design_error(state: &mut EditorState, now_ms: u64) {
+    let reason = state
+        .ui
+        .design_reject
+        .take()
+        .unwrap_or_else(|| "operation made no changes; check selected layers".into());
+    state.editor_ui.show_toast(
+        "layerMenu.designError",
+        vec![("reason".into(), reason)],
+        op_editor_core::editor_toast::EditorToastLevel::Warn,
+        now_ms,
+    );
+}
+
+#[cfg(test)]
+mod design_tests {
+    use super::*;
+    use op_editor_core::{EditorCommand, NodeId};
+
+    #[test]
+    fn appearance_menu_is_shared_undoable_and_does_not_change_geometry() {
+        let mut state = EditorState::new();
+        state.doc = serde_json::from_str(r##"{"version":"0.8.5","children":[
+            {"type":"rectangle","id":"source","width":100,"height":50,"fill":[{"type":"solid","color":"#123456"}]},
+            {"type":"rectangle","id":"target","x":200,"width":20,"height":20}
+        ]}"##).unwrap();
+        let before = state.doc.clone();
+        let mut next = 10;
+        apply_layer_context_action(
+            &mut state,
+            &mut next,
+            LayerContextAction::CopyProperties,
+            LayerContextTarget::Layer(NodeId::new("source")),
+            0,
+        );
+        assert_eq!(state.doc, before);
+        apply_layer_context_action(
+            &mut state,
+            &mut next,
+            LayerContextAction::PasteProperties,
+            LayerContextTarget::Layer(NodeId::new("target")),
+            0,
+        );
+        let after = serde_json::to_value(&state.doc).unwrap();
+        assert_eq!(
+            after["children"][1]["fill"],
+            serde_json::to_value(&before).unwrap()["children"][0]["fill"]
+        );
+        assert_eq!(after["children"][1]["x"].as_f64(), Some(200.0));
+        assert!(state.apply(EditorCommand::Undo));
+        assert_eq!(state.doc, before);
+    }
+}
+
 /// Residual host work after [`apply_layer_context_action`]. Both hosts
 /// mark dirty afterwards regardless of the variant.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -81,13 +135,61 @@ fn apply_layer_context_ids(
 ) -> Result<LayerContextStep, IdAllocError> {
     use LayerContextAction as A;
     use LayerContextTarget as T;
+    if matches!(
+        action,
+        A::PasteProperties | A::TidyUp | A::PackHorizontal | A::PackVertical
+    ) {
+        let policy = op_editor_core::CollabGatePolicy::from(&state.editor_ui.collab);
+        let mutation = op_editor_core::CollabGateAction::Document(
+            op_editor_core::CollabDocumentMutation::Unsupported(
+                op_editor_core::CollabUnsupportedFeature::BulkWrite,
+            ),
+        );
+        if let Err(reason) = policy.check(mutation, op_editor_core::CollabEditSource::User) {
+            state.editor_ui.show_toast(
+                reason.i18n_key(),
+                Vec::new(),
+                op_editor_core::editor_toast::EditorToastLevel::Warn,
+                now_ms,
+            );
+            return Ok(LayerContextStep::Done);
+        }
+    }
     let step = match (action, target) {
+        (A::CopyProperties, T::Layer(id)) => {
+            if !state.copy_node_appearance(&id) {
+                show_design_error(state, now_ms);
+            }
+            LayerContextStep::Done
+        }
+        (A::PasteProperties, T::Layer(id)) => {
+            if !state.is_selected(&id) {
+                state.set_single_selection(id);
+            }
+            let targets = state.selection.set.clone();
+            if !state.paste_node_appearance(&targets) {
+                show_design_error(state, now_ms);
+            }
+            LayerContextStep::Done
+        }
+        (A::TidyUp | A::PackHorizontal | A::PackVertical, T::Layer(_)) => {
+            let mode = match action {
+                A::PackHorizontal => op_editor_core::ArrangeMode::PackHorizontal,
+                A::PackVertical => op_editor_core::ArrangeMode::PackVertical,
+                _ => op_editor_core::ArrangeMode::Tidy,
+            };
+            if !state.arrange_nodes(&[], mode) {
+                show_design_error(state, now_ms);
+            }
+            LayerContextStep::Done
+        }
         (A::Duplicate, T::Layer(id)) => {
             // Act on the whole multi-selection when the right-clicked
             // row is part of it; otherwise retarget to just this row.
             if !state.is_selected(&id) {
                 state.set_single_selection(id);
             }
+
             match ids {
                 LayerContextIds::Sequential(next_node_id) => {
                     state.commit_history();

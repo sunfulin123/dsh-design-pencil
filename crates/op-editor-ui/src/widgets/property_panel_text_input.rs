@@ -91,7 +91,6 @@ pub fn paint_textarea_with_label(
     now_ms: u64,
 ) {
     use crate::widgets::property_panel_inputs::INPUT_RADIUS;
-    use crate::widgets::text_metrics;
     use crate::{Point2D, TextLayout};
 
     cx.backend.fill_round_rect(rect, INPUT_RADIUS, theme.muted);

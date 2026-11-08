@@ -33,6 +33,10 @@ op-pen-loader = { path = "../op-pen-loader", default-features = false }
 # Canonical JSON string escaping (dependency-free, wasm-clean).
 op-util = { path = "../op-util" }
 regex = "1"
+svgtypes = "0.16.1"
+roxmltree = "0.21"
+base64 = "0.22"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 rquickjs = { version = "0.12", optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

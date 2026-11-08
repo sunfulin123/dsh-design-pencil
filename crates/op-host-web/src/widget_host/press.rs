@@ -24,7 +24,13 @@ use super::WidgetHost;
 impl WidgetHost {
     /// Right-click handler — opens the LayerPanel context menu on
     /// a layer or page row.
-    pub fn apply_right_press(&mut self, x: f32, y: f32, viewport_w: f32, viewport_h: f32) -> bool {
+    pub(in crate::widget_host) fn right_press_layout(
+        &mut self,
+        x: f32,
+        y: f32,
+        viewport_w: f32,
+        viewport_h: f32,
+    ) -> bool {
         if self.editor_state.editor_ui.preview.mode {
             return true;
         }
@@ -130,7 +136,7 @@ impl WidgetHost {
     /// the `press_*_tiers.rs` siblings only to respect the per-file line
     /// cap. This ladder is deliberately NOT shared with the native host:
     /// the two differ in tier order and gating in several places.
-    pub fn apply_press(
+    pub(in crate::widget_host) fn press_layout(
         &mut self,
         x: f32,
         y: f32,
@@ -145,6 +151,10 @@ impl WidgetHost {
         self.last_viewport_h = viewport_height;
         self.last_cursor_x = x;
         self.last_cursor_y = y;
+        self.reconcile_view_options();
+        if self.eyedropper_pointer(x, y, true) {
+            return true;
+        }
         #[cfg(feature = "canvaskit")]
         if self.editor_state.editor_ui.preview.mode {
             if self.managed_preview_active() {
@@ -173,6 +183,11 @@ impl WidgetHost {
             }
             self.capture_device_preview_surface(x, y);
             return self.preview_dispatch_press(x, y, viewport_width, viewport_height);
+        }
+        if self.editor_state.editor_ui.view_options_open {
+            return self
+                .press_view_options(x, y, viewport_width, viewport_height)
+                .unwrap_or(false);
         }
         // Refresh the derived paint doc once up front — every hit-test
         // below reads `&self.layout_scene`, so it must be current.

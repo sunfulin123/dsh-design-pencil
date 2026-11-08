@@ -1,6 +1,7 @@
 use super::WidgetHost;
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn maximizing_pinned_chat_keeps_its_column_geometry() {
     let mut host = WidgetHost::new();
     host.editor_state.editor_ui.enter_chat_tab();
@@ -61,6 +62,7 @@ fn managed_new_and_open_keep_host_theme_and_hide_native_agent() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn ai_chat_collapse_click_stays_expanded_while_streaming_like_ts() {
     let mut host = WidgetHost::new();
     host.editor_state

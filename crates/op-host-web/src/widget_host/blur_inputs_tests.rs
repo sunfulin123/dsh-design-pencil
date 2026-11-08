@@ -10,6 +10,7 @@ const VW: f32 = 1200.0;
 const VH: f32 = 800.0;
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn top_bar_gap_press_blurs_chat_and_model_picker() {
     let mut host = WidgetHost::new();
     host.editor_state.chat.focused = true;

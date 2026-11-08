@@ -53,6 +53,11 @@ pub(super) fn fresh_ctx<'tree>() -> ConversionContext<'tree> {
         layout_mode: FigLayoutMode::OpenPencil,
         instance_assignments: HashMap::new(),
         instance_expansions: Default::default(),
+        linkage: None,
+        expansion_depth: 0,
+        keep_hidden: false,
+        variables: Default::default(),
+        mode_scope: Vec::new(),
     }
 }
 

@@ -400,6 +400,7 @@ fn canonical_saved_active_page_and_image_round_trip_through_parse_and_adopt() {
     let mut document = EditorState::new().doc;
     document.pages = Some(vec![
         PenPage {
+            theme: None,
             id: "inactive-page".into(),
             name: "Inactive".into(),
             children: vec![rect("inactive-board", "Inactive", 0.0, 0.0, 100.0, 100.0)],
@@ -408,6 +409,7 @@ fn canonical_saved_active_page_and_image_round_trip_through_parse_and_adopt() {
             lifecycle: None,
         },
         PenPage {
+            theme: None,
             id: "active-page".into(),
             name: "Active".into(),
             children: vec![image],

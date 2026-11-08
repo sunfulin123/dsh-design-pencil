@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "पुनर्प्राप्ति प्रतियाँ",
+        "drafts.notice" => "पुनर्स्थापना वर्तमान दस्तावेज़ को बदलती है और एक चरण में पूर्ववत की जा सकती है। पहले सुरक्षा बैकअप बनाया जाता है। लिंक की गई फ़ाइल सहेजी नहीं जाती।",
+        "drafts.create" => "चेकपॉइंट बनाएँ",
+        "drafts.label" => "चेकपॉइंट का नाम",
+        "drafts.empty" => "अभी कोई पुनर्प्राप्ति प्रति नहीं है।",
+        "drafts.restoreConfirm" => "इस प्रति को पुनर्स्थापित करें?",
+        "drafts.deleteConfirm" => "इस पुनर्प्राप्ति प्रति को स्थायी रूप से हटाएँ?",
+        "drafts.syncError" => "स्थानीय संपादनों का सिंक पूरा होने पर फिर प्रयास करें।",
+        "drafts.refresh" => "रीफ़्रेश करें",
+        "drafts.failed" => "पुनर्प्राप्ति अनुरोध विफल: {{message}}",
+        "drafts.loading" => "पुनर्प्राप्ति प्रतियाँ अपडेट हो रही हैं…",
+        "drafts.autosave" => "स्वतः सहेजा गया",
+        "drafts.checkpoint" => "चेकपॉइंट",
+        "drafts.backup" => "सुरक्षा बैकअप",
+        "colorPicker.sampleError" => "रंग का नमूना लेने में विफल: {{message}}",
+        "statusbar.interfaceScale" => "इंटरफ़ेस स्केल",
+        "statusbar.viewOptions" => "दृश्य विकल्प",
     "preview.emptyPage" => "इस पृष्ठ पर पूर्वावलोकन के लिए कोई दृश्यमान फ़्रेम नहीं है।",
     "preview.noFrame" => "बिना फ़्रेम",
     "preview.fit" => "फ़िट करें",

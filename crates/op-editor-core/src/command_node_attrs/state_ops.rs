@@ -27,16 +27,19 @@ use jian_ops_schema::style::{BlurBody, PenEffect, PenStroke, ShadowBody, StrokeT
 
 /// Mutably borrow `node` as a `TextNode`, or — when `node` is a wrapper
 /// `Frame`/`Group` holding a single `Text` child chain — borrow that single
-/// inner `TextNode`. Returns `None` if `node` is neither a `Text` nor a
-/// single-text wrapper.
+/// inner `TextNode`. Canonical paragraph/list wrappers expose the body, not
+/// their marker. Other multi-child frames are not treated as text.
 pub(crate) fn resolve_text_node_mut(
     node: &mut PenNode,
 ) -> Option<&mut jian_ops_schema::node::text::TextNode> {
+    let paragraph_body = crate::text_design_command::paragraph_body_index(node);
     match node {
         PenNode::Text(t) => Some(t),
         PenNode::Frame(f) => {
             let children = f.children.as_mut()?;
-            if children.len() == 1 {
+            if let Some(index) = paragraph_body {
+                resolve_text_node_mut(&mut children[index])
+            } else if children.len() == 1 {
                 resolve_text_node_mut(&mut children[0])
             } else {
                 None
@@ -55,13 +58,16 @@ pub(crate) fn resolve_text_node_mut(
 }
 
 /// Immutably borrow `node` as a `TextNode`, or unwrap a single-text wrapper
-/// `Frame`/`Group` chain.
+/// `Frame`/`Group` chain or the body of a canonical paragraph/list wrapper.
 pub fn resolve_text_node(node: &PenNode) -> Option<&jian_ops_schema::node::text::TextNode> {
+    let paragraph_body = crate::text_design_command::paragraph_body_index(node);
     match node {
         PenNode::Text(t) => Some(t),
         PenNode::Frame(f) => {
             let children = f.children.as_ref()?;
-            if children.len() == 1 {
+            if let Some(index) = paragraph_body {
+                resolve_text_node(&children[index])
+            } else if children.len() == 1 {
                 resolve_text_node(&children[0])
             } else {
                 None

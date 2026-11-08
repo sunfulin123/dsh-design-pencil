@@ -15,6 +15,10 @@ use std::collections::HashSet;
 impl Default for EditorUiState {
     fn default() -> Self {
         Self {
+            ui_scale: super::ui_scale::UiScale::default(),
+            view_options_open: false,
+            view_options_focus: 0,
+            statusbar_view_hover: false,
             sidebar_open: true,
             layer_panel_width: 240.0,
             property_panel_width: 280.0,
@@ -25,6 +29,8 @@ impl Default for EditorUiState {
             external_cli_available: true,
             mobile_sheet: None,
             theme_mode: ThemeMode::Dark,
+            temporary_theme_override: None,
+            managed_assets: None,
             host_theme_override: None,
             entry_surface: EntrySurface::default(),
             home: HomeState::default(),
@@ -157,6 +163,8 @@ impl Default for EditorUiState {
             imported_font_families: std::sync::Arc::new(Vec::new()),
             font_import_supported: false,
             batch_frame_export_supported: false,
+            draft_recovery_supported: false,
+            diagram_import_supported: false,
             deck_html_export_supported: false,
             slide_thumbnails_supported: false,
             scene_template_generate_supported: false,

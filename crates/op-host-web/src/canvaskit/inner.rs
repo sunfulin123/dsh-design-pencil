@@ -28,6 +28,7 @@ pub(super) struct CkInner {
     /// DOM-side video playback layer used only while CanvasKit preview is
     /// active. The painted canvas remains the poster source of truth.
     pub(super) video_overlay: crate::video_overlay::VideoOverlayLayer,
+    pub(super) cursor_before_eyedropper: Option<String>,
 }
 
 impl CkInner {
@@ -59,12 +60,34 @@ impl CkInner {
         // native, where the document was already in the binary.
         self.host.retry_pending_scene_template();
         let (w, h) = self.backend.logical_size();
+        self.refresh_eyedropper();
+        if let Err(error) = self.sync_eyedropper_cursor() {
+            web_sys::console::warn_1(
+                &format!("Could not update color sampling cursor: {error:?}").into(),
+            );
+        }
+        self.host.frame_perf.begin_frame();
+        // Rasterize the tiles the last frame queued before drawing this one:
+        // they show this frame, and the presented buffer always ends with
+        // the main canvas draw (offscreen work after a flushed frame can
+        // leave the WebGL canvas blank when the browser composites it).
+        let more_tiles = self.host.raster_canvas_tiles(&mut self.backend);
+        self.host.frame_perf.mark("raster");
         self.backend.begin_frame();
         self.host.paint_dyn(&mut self.backend, w, h);
+        self.host.frame_perf.mark("overlays");
         self.backend.end_frame();
+        self.host.frame_perf.mark("flush");
+        if more_tiles || self.host.canvas_tiles_pending() {
+            crate::repaint_coalescer::request();
+        }
         let placements = self.host.preview_video_overlay_placements(w, h);
         self.video_overlay.sync(&self.canvas, w, h, &placements);
         self.sync_a11y();
+        self.host.frame_perf.mark("a11y");
+        if let Some(report) = self.host.frame_perf.end_frame() {
+            web_sys::console::log_1(&report.into());
+        }
         // #54: focus the hidden IME input only while a text field owns the
         // keyboard, so CJK composition works when editing and no soft keyboard
         // appears otherwise. Cheap — toggles only on a focus transition.
@@ -81,9 +104,14 @@ impl CkInner {
             } else {
                 bounds.height() / f64::from(h)
             };
+            let ui_scale = if self.host.editor_state().editor_ui.preview.mode {
+                1.0
+            } else {
+                self.host.editor_state().editor_ui.ui_scale.factor()
+            };
             (
-                bounds.left() + f64::from(anchor.origin.x) * scale_x,
-                bounds.top() + f64::from(anchor.origin.y + anchor.size.y) * scale_y,
+                bounds.left() + f64::from(anchor.origin.x * ui_scale) * scale_x,
+                bounds.top() + f64::from((anchor.origin.y + anchor.size.y) * ui_scale) * scale_y,
             )
         });
         if let Some(ime) = self.ime.as_mut() {
@@ -97,6 +125,7 @@ impl CkInner {
         // a device preference must not be collateral damage of an account blob
         // this tab refuses to touch. Cheap: a comparison, not a write.
         let _ = crate::web_settings::theme::save_if_changed(self.host.editor_state());
+        super::ui_scale::save(self.host.editor_state());
         if !crate::web_settings::credential_migration_pending(&self.credential_fingerprint) {
             if let Some(settings_fingerprint) = self.settings_fingerprint.as_mut() {
                 let _ = crate::web_settings::save_if_changed(
@@ -118,6 +147,11 @@ impl CkInner {
     /// (cheap: ~8 always-present region nodes). A diff-or-rebuild refinement
     /// can replace the full rebuild later; v1 rebuilds.
     fn sync_a11y(&mut self) {
+        // The mirror does not track the camera; refresh it once the
+        // pan / zoom gesture settles instead of every gesture frame.
+        if self.host.viewport_gesture.active() {
+            return;
+        }
         if let Some(mirror) = self.a11y.as_mut() {
             let (w, h) = self.backend.logical_size();
             let tree = self.host.accessibility_tree_update(w, h);

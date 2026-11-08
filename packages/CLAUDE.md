@@ -1,5 +1,21 @@
 # Packages
 
+## Current DSH runtime
+
+For current ownership and supported commands, use [../ARCHITECTURE.md](../ARCHITECTURE.md)
+and [../COMMANDS.md](../COMMANDS.md). The active product host is
+`dsh-node-runtime/`: Node lifecycle/document synchronization, Rust WASM MCP
+engine, and the CanvasKit web editor. It is not a Bun workspace member;
+its tests run with Node. `dsh-runtime-build/` packages the runtime.
+
+Business Rust/JS/TS files use the **500 effective code-line cap**, with an
+exact non-growing legacy baseline and test exemptions. From this directory:
+`bun run lint:maintenance`; for task evidence use the root wrapper with
+`--base <task-base-ref>`. Follow [../CODING_STANDARDS.md](../CODING_STANDARDS.md),
+[../DEVELOPMENT.md](../DEVELOPMENT.md) and [../REVIEW.md](../REVIEW.md).
+The SDK/upstream package details below are reference material, not the
+current product's full architecture.
+
 The web SDK packages that remain after the TypeScript retirement. This directory is the **npm/Bun workspace root** (`packages/package.json`); the repository root is a **pure Cargo workspace** with no `package.json`.
 
 > The `pen-*` packages (pen-types, pen-core, pen-engine, pen-renderer, pen-figma, pen-mcp, pen-ai-skills, pen-sdk, pen-react, pen-acp) and pen-codegen were **retired** along with `apps/*`. Their functionality now lives in the Rust `crates/` (see `crates/CLAUDE.md`). Nothing here depends on them. The `agent-native` Zig runtime was also **removed** — the built-in agent runtime is now the Rust `agent` crate (`vendor/agent`, shared with Zode).

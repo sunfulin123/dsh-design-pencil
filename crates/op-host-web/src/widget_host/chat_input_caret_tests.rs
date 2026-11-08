@@ -69,6 +69,7 @@ fn horizontal_arrows_move_the_chat_caret_and_never_nudge_the_selection() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn vertical_arrows_walk_visual_rows_of_the_chat_input() {
     let mut host = host_with_focused_chat("abcdefgh\nijklmnop\nqrstuvwx");
     let text = host.editor_state.chat.input.text().to_owned();
@@ -98,6 +99,7 @@ fn arrows_leave_the_caret_alone_while_composing() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn wheel_over_the_chat_input_scrolls_it_and_leaves_the_canvas_alone() {
     let mut host = host_with_focused_chat(LONG_PROMPT);
     let point = input_point(&host);

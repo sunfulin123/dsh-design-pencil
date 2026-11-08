@@ -340,6 +340,7 @@ fn equivalence_multi_page_document_only_touches_the_active_page() {
     state.doc.children.clear();
     state.doc.pages = Some(vec![
         PenPage {
+            theme: None,
             id: "p0".to_string(),
             name: "Page 0".to_string(),
             children: vec![rect("x1", "Other page leaf", 0.0, 0.0, 10.0, 10.0)],
@@ -348,6 +349,7 @@ fn equivalence_multi_page_document_only_touches_the_active_page() {
             lifecycle: None,
         },
         PenPage {
+            theme: None,
             id: "p1".to_string(),
             name: "Page 1".to_string(),
             children: vec![frame(

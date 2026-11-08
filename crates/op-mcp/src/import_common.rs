@@ -61,6 +61,7 @@ pub fn parse_import_placement(
         .unwrap_or(0);
     let parent_id = args
         .get("parent")
+        .or_else(|| args.get("parentId"))
         .or_else(|| args.get("parent_id"))
         .or_else(|| args.get("target_parent_id"))
         .map(|value| root_or_node_id(value))

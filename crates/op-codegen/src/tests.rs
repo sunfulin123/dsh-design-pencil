@@ -22,6 +22,7 @@ fn empty_doc() -> PenDocument {
         version: "1.0.0".into(),
         name: None,
         themes: None,
+        theme: None,
         variables: None,
         pages: None,
         children: Vec::new(),
@@ -35,6 +36,7 @@ fn empty_doc() -> PenDocument {
         design_md: None,
         conversion: None,
         motion: None,
+        shared_styles: None,
         responsive: None,
     }
 }
@@ -44,6 +46,7 @@ fn empty_doc() -> PenDocument {
 fn doc_with_nodes(nodes: Vec<PenNode>) -> PenDocument {
     let mut doc = empty_doc();
     doc.pages = Some(vec![PenPage {
+        theme: None,
         id: "p1".into(),
         name: "Page 1".into(),
         children: nodes,
@@ -144,6 +147,8 @@ fn text(id: &str, x: f64, y: f64, w: f64, h: f64, body: &str) -> PenNode {
         text_align: None,
         text_align_vertical: None,
         text_growth: None,
+        text_truncation: None,
+        max_lines: None,
         underline: None,
         strikethrough: None,
         fill: None,

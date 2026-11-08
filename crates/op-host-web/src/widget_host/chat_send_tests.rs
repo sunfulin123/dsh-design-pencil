@@ -27,6 +27,7 @@ fn send_allows_attachment_only_chat_turn() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn attachment_button_queues_web_file_picker_like_native() {
     let mut host = WidgetHost::new();
     let viewport_w = 1440.0;

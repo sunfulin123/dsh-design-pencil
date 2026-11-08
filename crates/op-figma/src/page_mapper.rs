@@ -13,6 +13,7 @@ pub(crate) fn pen_page(
     children: Vec<PenNode>,
 ) -> PenPage {
     PenPage {
+        theme: None,
         id,
         name,
         children,

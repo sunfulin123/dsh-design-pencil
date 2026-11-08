@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { convertHtmlToDocument, EngineSession } from './engine-session.mjs'
+import { convertHtmlToDocument, EngineSession, expandScriptWithVariables } from './engine-session.mjs'
 
 test('EngineSession supports batch_design script expansion, finalize_design, and HTML file import', async context => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-engine-import-'))
@@ -47,6 +47,30 @@ test('EngineSession supports batch_design script expansion, finalize_design, and
   } finally {
     session.close()
   }
+})
+
+test('active range font-family tools preserve Unicode ranges across reopen and undo', () => {
+  const session = new EngineSession({ version: '0.8.5', children: [
+    { type: 'text', id: 'text', content: 'A中🙂Z', fontFamily: 'Inter', fontSize: 18 },
+  ] })
+  try {
+    const written = session.callTool('set_text_style', {
+      nodeId: 'text', start: 1, end: 3,
+      style: { fontFamily: 'Instrument Serif', fontSize: 40 },
+    })
+    assert.equal(written.isError, false, JSON.stringify(written))
+    const read = engine => engine.callTool('get_text_style', { nodeId: 'text', start: 1, end: 3 }).structuredContent
+    const styled = read(session)
+    assert.equal(styled.text, '中🙂')
+    assert.equal(styled.runs[0].fontFamily, 'Instrument Serif')
+    assert.equal(styled.runs[0].fontSize, 40)
+    const reopened = new EngineSession(session.snapshot().document)
+    try { assert.deepEqual(read(reopened), styled) } finally { reopened.close() }
+    assert.equal(session.callTool('undo', {}).isError, false)
+    assert.equal(session.snapshot().document.children[0].content, 'A中🙂Z')
+    assert.equal(session.callTool('redo', {}).isError, false)
+    assert.deepEqual(read(session), styled)
+  } finally { session.close() }
 })
 
 test('AI design advances the version and rejects an older browser snapshot', () => {
@@ -169,6 +193,18 @@ test('EngineSession script mode supports M/D/U and finalize_design infers auto-l
   }
 })
 
+test('script variable helpers normalize a leading dollar without duplicating references', () => {
+  const expanded = expandScriptWithVariables(`
+    const accent = V("$--accent", "#2563EB");
+    V("cost$usd", 12);
+    I(null, { type: "frame", fill: [{ type: "solid", color: accent }] });
+  `)
+  assert.deepEqual(Object.keys(expanded.variables), ['--accent', 'cost$usd'])
+  assert.equal(expanded.variables['--accent'].value, '#2563EB')
+  assert.match(expanded.operations, /"\$--accent"/)
+  assert.doesNotMatch(expanded.operations, /\$\$--accent/)
+})
+
 test('EngineSession supports V()/T() variable script helpers and syncs Design.md colors into variables', () => {
   const session = new EngineSession({
     version: '0.8.5',
@@ -206,101 +242,6 @@ test('EngineSession supports V()/T() variable script helpers and syncs Design.md
   } finally {
     session.close()
   }
-})
-
-test('mapFigmaNode converts vectors, gradients, effects, rich text, and auto-layout with 100% fidelity', async () => {
-  const { mapFigmaNode } = await import('./engine-session.mjs')
-  const imageRefs = new Set()
-  const idCounter = { count: 0 }
-  const figmaFrame = {
-    type: 'FRAME',
-    name: 'Hero Section',
-    absoluteBoundingBox: { x: 100, y: 50, width: 800, height: 400 },
-    layoutMode: 'HORIZONTAL',
-    primaryAxisAlignItems: 'SPACE_BETWEEN',
-    counterAxisAlignItems: 'CENTER',
-    itemSpacing: 24,
-    paddingTop: 32,
-    paddingRight: 40,
-    paddingBottom: 32,
-    paddingLeft: 40,
-    rectangleCornerRadii: [12, 12, 0, 0],
-    clipsContent: true,
-    fills: [
-      {
-        type: 'GRADIENT_LINEAR',
-        gradientHandlePositions: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
-        gradientStops: [
-          { position: 0, color: { r: 0.1, g: 0.2, b: 0.9, a: 1 } },
-          { position: 1, color: { r: 0.5, g: 0.1, b: 0.8, a: 1 } },
-        ],
-      },
-      {
-        type: 'IMAGE',
-        imageRef: 'img_hero_bg',
-        scaleMode: 'FIT',
-      },
-    ],
-    strokes: [{ type: 'SOLID', color: { r: 1, g: 1, b: 1, a: 0.5 } }],
-    individualStrokeWeights: { top: 1, right: 0, bottom: 2, left: 0 },
-    effects: [
-      {
-        type: 'DROP_SHADOW',
-        radius: 16,
-        spread: 2,
-        offset: { x: 0, y: 8 },
-        color: { r: 0, g: 0, b: 0, a: 0.25 },
-      },
-    ],
-    children: [
-      {
-        type: 'VECTOR',
-        name: 'Brand Icon',
-        absoluteBoundingBox: { x: 140, y: 180, width: 24, height: 24 },
-        fillGeometry: [{ path: 'M0 0L24 12L0 24Z', windingRule: 'EVENODD' }],
-        fills: [{ type: 'SOLID', color: { r: 1, g: 0.5, b: 0, a: 1 } }],
-      },
-      {
-        type: 'TEXT',
-        name: 'Headline',
-        absoluteBoundingBox: { x: 200, y: 160, width: 360, height: 48 },
-        characters: 'Hello World',
-        style: {
-          fontFamily: 'Plus Jakarta Sans',
-          fontSize: 36,
-          fontWeight: 700,
-          textAutoResize: 'WIDTH_AND_HEIGHT',
-        },
-        characterStyleOverrides: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-        styleOverrideTable: {
-          1: {
-            fontWeight: 800,
-            italic: true,
-            fills: [{ type: 'SOLID', color: { r: 0.2, g: 0.8, b: 0.4, a: 1 } }],
-          },
-        },
-      },
-    ],
-  }
-  const mapped = mapFigmaNode(figmaFrame, null, idCounter, imageRefs)
-  assert.equal(mapped.type, 'frame')
-  assert.equal(mapped.layout, 'horizontal')
-  assert.equal(mapped.justifyContent, 'space_between')
-  assert.equal(mapped.alignItems, 'center')
-  assert.deepEqual(mapped.padding, [32, 40, 32, 40])
-  assert.deepEqual(mapped.cornerRadius, [12, 12, 0, 0])
-  assert.equal(mapped.fill[0].type, 'linear')
-  assert.equal(mapped.fill[1].type, 'image')
-  assert.ok(imageRefs.has('img_hero_bg'))
-  assert.deepEqual(mapped.stroke.thickness, [1, 0, 2, 0])
-  assert.equal(mapped.effects[0].type, 'shadow')
-  assert.equal(mapped.children[0].type, 'path')
-  assert.equal(mapped.children[0].d, 'M0 0L24 12L0 24Z')
-  assert.equal(mapped.children[0].fillRule, 'evenodd')
-  assert.equal(mapped.children[1].type, 'text')
-  assert.ok(Array.isArray(mapped.children[1].content))
-  assert.equal(mapped.children[1].content[1].text, 'World')
-  assert.equal(mapped.children[1].content[1].fontStyle, 'italic')
 })
 
 test('convertHtmlToDocument renders complex flex/grid/icon HTML with auto-layout, semantics, and variables', async context => {

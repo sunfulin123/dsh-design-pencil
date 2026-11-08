@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "Renomear",
+        "layerMenu.copyProperties" => "Copiar propriedades",
+        "layerMenu.pasteProperties" => "Colar propriedades",
+        "layerMenu.tidyUp" => "Organizar",
+        "layerMenu.packHorizontal" => "Compactar horizontal",
+        "layerMenu.packVertical" => "Compactar vertical",
+        "layerMenu.designError" => "Não foi possível editar: {{reason}}",
         "common.duplicate" => "Duplicar",
         "common.delete" => "Excluir",
         "common.cancel" => "Cancelar",
@@ -780,6 +786,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Analisando o arquivo do Figma…",
         "importProgress.htmlTitle" => "Analisando o HTML e os recursos da página…",
         "importProgress.htmlSubtitle" => "Carregando estilos e imagens. Aguarde.",
+        "canvas.pageLoading" => "Carregando página…",
         "importProgress.largeFileSubtitle" => "Arquivos grandes levam alguns segundos. Aguarde.",
         "account.signedOutHint" => "Entre para sincronizar suas configurações e preferências",
         "code.noUsableCode" => "A IA não retornou código utilizável. Tente novamente ou troque o modelo de IA.",

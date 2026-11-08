@@ -118,6 +118,14 @@ impl WidgetHost {
             PresetMenuHit::Load(idx) => {
                 // handleLoadPreset — merge + close. One history snapshot per gesture.
                 self.commit_property_focus_if_any();
+                if let Some(assets) = self.editor_state.editor_ui.managed_assets.as_mut() {
+                    if let Some(preset) = self.editor_state.theme_presets.get(idx) {
+                        assets.queue("load_theme_preset", serde_json::json!({"id":preset.id}));
+                    }
+                    self.close_preset_menu();
+                    self.mark_dirty();
+                    return true;
+                }
                 let snap = self.editor_state.snapshot_for_history();
                 if self.editor_state.load_theme_preset(idx) {
                     self.editor_state.history_push_past(snap);

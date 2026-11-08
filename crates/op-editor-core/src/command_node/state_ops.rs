@@ -23,6 +23,10 @@ use crate::walkers;
 use jian_ops_schema::node::PenNode;
 use std::collections::HashSet;
 
+#[cfg(test)]
+#[path = "text_patch_tests.rs"]
+mod text_patch_tests;
+
 impl EditorState {
     /// Compute the numeric seed for the next editor-minted `n{N}` id —
     /// `max_node_id() + 1`. `None` on `u64` exhaustion. Pub so the
@@ -122,6 +126,11 @@ impl EditorState {
         let Some(node) = walkers::find_node_mut(self.active_children_mut(), node_id) else {
             return false;
         };
+        let (width, height) = crate::aspect_lock::constrained_dimensions(
+            node,
+            width.map(f64::from),
+            height.map(f64::from),
+        );
         // All validation passed — every field applies atomically.
         if let Some(nx) = x {
             node.base_mut().x = Some(nx as f64);
@@ -130,10 +139,10 @@ impl EditorState {
             node.base_mut().y = Some(ny as f64);
         }
         if let Some(nw) = width {
-            node.set_width_px(nw as f64);
+            node.set_width_px(nw);
         }
         if let Some(nh) = height {
-            node.set_height_px(nh as f64);
+            node.set_height_px(nh);
         }
         if let Some(new_name) = name {
             node.base_mut().name = Some(new_name.clone());
@@ -159,6 +168,9 @@ impl EditorState {
         else {
             return false;
         };
+        let replaces_structure = ["children", "id", "type"]
+            .iter()
+            .any(|key| patch.contains_key(*key));
         let Some(current) = walkers::find_node(self.active_children(), node_id) else {
             return false;
         };
@@ -189,7 +201,27 @@ impl EditorState {
                 outer_patch.insert(key, val);
             }
         }
-        let mut applied = false;
+        if outer_patch.get("lockAspectRatio") != Some(&serde_json::Value::Bool(false)) {
+            let (width, height) = crate::aspect_lock::constrained_dimensions(
+                current,
+                outer_patch.get("width").and_then(serde_json::Value::as_f64),
+                outer_patch
+                    .get("height")
+                    .and_then(serde_json::Value::as_f64),
+            );
+            for (key, dimension) in [("width", width), ("height", height)] {
+                if let Some(dimension) = dimension {
+                    if !dimension.is_finite() || dimension < 0.0 {
+                        return false;
+                    }
+                    outer_patch.insert(key.into(), serde_json::json!(dimension));
+                }
+            }
+        }
+        if outer_patch.is_empty() && text_patch.is_empty() {
+            return false;
+        }
+        let mut replacement = current.clone();
         if !outer_patch.is_empty() {
             let Ok(mut value) = serde_json::to_value(current) else {
                 return false;
@@ -200,45 +232,51 @@ impl EditorState {
             for (key, val) in outer_patch {
                 obj.insert(key, val);
             }
-            let Ok(replacement) = serde_json::from_value::<PenNode>(value) else {
+            let Ok(candidate) = serde_json::from_value::<PenNode>(value) else {
                 return false;
             };
-            if replacement.id_str().is_empty() {
+            if candidate.id_str().is_empty() {
                 return false;
             }
-            let mut slot = Some(replacement);
-            if !replace_node_in_children(self.active_children_mut(), node_id, &mut slot) {
-                return false;
-            }
-            applied = true;
+            replacement = candidate;
         }
         if !text_patch.is_empty() {
-            let text_id = walkers::find_node(self.active_children(), node_id)
-                .and_then(crate::command_node_attrs::resolve_text_node)
-                .map(|t| NodeId::new(t.base.id.clone()));
-            if let Some(tid) = text_id {
-                if let Some(inner) = walkers::find_node(self.active_children(), &tid) {
-                    if let Ok(mut inner_val) = serde_json::to_value(inner) {
-                        if let Some(inner_obj) = inner_val.as_object_mut() {
-                            for (key, val) in text_patch {
-                                inner_obj.insert(key, val);
-                            }
-                            if let Ok(inner_rep) = serde_json::from_value::<PenNode>(inner_val) {
-                                let mut slot = Some(inner_rep);
-                                if replace_node_in_children(
-                                    self.active_children_mut(),
-                                    &tid,
-                                    &mut slot,
-                                ) {
-                                    applied = true;
-                                }
-                            }
-                        }
-                    }
-                }
+            let Some(inner) = crate::command_node_attrs::resolve_text_node_mut(&mut replacement)
+            else {
+                return false;
+            };
+            let Ok(mut value) = serde_json::to_value(&*inner) else {
+                return false;
+            };
+            let Some(obj) = value.as_object_mut() else {
+                return false;
+            };
+            for (key, val) in text_patch {
+                obj.insert(key, val);
             }
+            let Ok(candidate) = serde_json::from_value(value) else {
+                return false;
+            };
+            *inner = candidate;
         }
-        applied
+        let mut taken = self.collect_node_ids();
+        let mut old_ids = HashSet::new();
+        walkers::collect_ids(std::slice::from_ref(current), &mut old_ids);
+        for old in old_ids {
+            taken.remove(&old);
+        }
+        let mut seen: HashSet<String> =
+            taken.into_iter().map(|id| id.as_str().to_owned()).collect();
+        if walkers::find_duplicate(std::slice::from_ref(&replacement), &mut seen).is_some() {
+            return false;
+        }
+        // Both replacements are validated before the single document write.
+        let mut slot = Some(replacement);
+        let changed = replace_node_in_children(self.active_children_mut(), node_id, &mut slot);
+        if changed && replaces_structure {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
+        changed
     }
 
     /// `DeleteNode` — remove a node + descendants from the active page.
@@ -246,7 +284,11 @@ impl EditorState {
         if !node_id.is_real() {
             return false;
         }
-        walkers::remove_from_children(self.active_children_mut(), node_id)
+        let changed = walkers::remove_from_children(self.active_children_mut(), node_id);
+        if changed {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
+        changed
     }
 
     /// `MoveNode` — reparent a node. A `NONE` target reparents to the
@@ -383,11 +425,11 @@ impl EditorState {
             set_primary_fill_hex(&mut replacement, hex);
         }
         let mut slot = Some(replacement);
-        Ok(replace_node_in_children(
-            self.active_children_mut(),
-            node_id,
-            &mut slot,
-        ))
+        let changed = replace_node_in_children(self.active_children_mut(), node_id, &mut slot);
+        if changed {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
+        Ok(changed)
     }
 
     /// `ReplaceSubtree` — swap an existing node for a fully-authored
@@ -418,11 +460,11 @@ impl EditorState {
         let mut nodes = vec![node];
         remap_subtree_ids_with_allocator(&mut nodes, allocator, &mut taken)?;
         let mut slot = nodes.pop();
-        Ok(replace_node_in_children(
-            self.active_children_mut(),
-            node_id,
-            &mut slot,
-        ))
+        let changed = replace_node_in_children(self.active_children_mut(), node_id, &mut slot);
+        if changed {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
+        Ok(changed)
     }
 
     /// `BatchInsert` — insert N leaf nodes on the active page in one
@@ -531,6 +573,9 @@ impl EditorState {
             }
             roots.extend(nodes);
         }
+        if replacement.is_some() {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
+        }
         Ok(true)
     }
 
@@ -636,6 +681,9 @@ impl EditorState {
                 }
             }
             roots.extend(nodes);
+        }
+        if replacement.is_some() {
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
         }
         Ok(Some(root_ids))
     }

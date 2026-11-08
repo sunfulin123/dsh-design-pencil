@@ -155,6 +155,7 @@ pub fn build_kit_document(
         version: "1.0.0".to_string(),
         name: Some(kit_name.to_string()),
         themes: None,
+        theme: None,
         variables: None,
         pages: None,
         children: selected.iter().map(|n| (*n).clone()).collect(),
@@ -168,6 +169,7 @@ pub fn build_kit_document(
         design_md: None,
         conversion: None,
         motion: None,
+        shared_styles: None,
         // A component-kit export bundle never opts into the responsive schema.
         responsive: None,
     };
@@ -469,6 +471,7 @@ mod tests {
             version: "1.0.0".to_string(),
             name: Some("Source".to_string()),
             themes: None,
+            theme: None,
             variables: None,
             pages: None,
             children,
@@ -482,6 +485,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            shared_styles: None,
             responsive: None,
         }
     }
@@ -572,6 +576,7 @@ mod tests {
     fn import_uses_pages_when_present() {
         let mut doc = doc_with(vec![]);
         doc.pages = Some(vec![jian_ops_schema::page::PenPage {
+            theme: None,
             id: "p1".to_string(),
             name: "Page 1".to_string(),
             children: vec![reusable_frame("c1", "Nav Bar", None)],

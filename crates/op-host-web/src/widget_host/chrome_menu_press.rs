@@ -9,6 +9,10 @@
 use super::WidgetHost;
 
 impl WidgetHost {
+    pub(crate) fn take_draft_recovery_request(&mut self) -> bool {
+        std::mem::take(&mut self.draft_recovery_requested)
+    }
+
     /// File-menu press dispatcher.
     pub(in crate::widget_host) fn dispatch_file_menu_press(
         &mut self,
@@ -29,6 +33,13 @@ impl WidgetHost {
                 let Some(choice) = menu.choice_for_row(row) else {
                     return;
                 };
+                if choice == FileMenuChoice::RecoverDrafts {
+                    self.draft_recovery_requested = true;
+                    self.editor_state.editor_ui.file_menu_open = false;
+                    self.editor_state.editor_ui.file_menu.hover = None;
+                    self.mark_dirty();
+                    return;
+                }
                 // Opening the centre is not a file action: it shows a panel,
                 // and the document is replaced later by whichever card the
                 // user picks.
@@ -42,6 +53,10 @@ impl WidgetHost {
                     return;
                 }
                 if choice == FileMenuChoice::SaveAsTemplate {
+                    self.editor_state
+                        .editor_ui
+                        .scene_template_center
+                        .request_save_current();
                     self.editor_state.editor_ui.file_menu_open = false;
                     self.editor_state.editor_ui.file_menu.hover = None;
                     self.mark_dirty();
@@ -60,7 +75,9 @@ impl WidgetHost {
                     FileMenuChoice::OpenRecent(i) => FileAction::OpenRecent(i),
                     FileMenuChoice::ClearRecent => FileAction::ClearRecent,
                     // Handled above — it opens a panel, not a file action.
-                    FileMenuChoice::NewFromTemplate | FileMenuChoice::SaveAsTemplate => return,
+                    FileMenuChoice::NewFromTemplate
+                    | FileMenuChoice::SaveAsTemplate
+                    | FileMenuChoice::RecoverDrafts => return,
                 });
                 self.editor_state.editor_ui.file_menu_open = false;
                 self.editor_state.editor_ui.file_menu.hover = None;

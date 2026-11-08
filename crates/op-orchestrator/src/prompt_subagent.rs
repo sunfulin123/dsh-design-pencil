@@ -330,8 +330,11 @@ pub(super) fn build_subagent_prompt_core_with_outcomes(
     .any(|keyword| req.prompt.to_ascii_lowercase().contains(keyword));
     let deck_budget = Phase::Generation.default_budget();
     let budget_override = match tier {
+        // +150 (2026-10-16): the always-loaded text-rules skill gained the
+        // ink-centred vertical-centering rule (~144 tokens), which otherwise
+        // tail-cut mobile-app's bottom-nav and top-rhythm rules.
         ModelTier::Basic if is_mobile_layout || is_mobile_screen => {
-            Some(if is_interactivity { 10600 } else { 10400 })
+            Some(if is_interactivity { 10750 } else { 10550 })
         }
         ModelTier::Basic if is_deck || is_card || is_scroll => Some(deck_budget),
         ModelTier::Basic if is_interactivity => Some(5400),

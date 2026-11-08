@@ -66,13 +66,17 @@ pub fn convert_children(parent: &TreeNode, ctx: &mut ConversionContext<'_>) -> V
     let parent_stack_mode = parent.figma.get_str("stackMode").map(str::to_string);
     let mut result = Vec::new();
     for child in &parent.children {
-        if child.figma.get_bool("visible") == Some(false) {
+        let hidden = child.figma.get_bool("visible") == Some(false);
+        if hidden && !ctx.keep_hidden {
             continue;
         }
         if child.figma.get_f64("opacity").map(|o| o <= 0.0) == Some(true) {
             continue;
         }
-        if let Some(node) = convert_node(child, parent_stack_mode.as_deref(), ctx) {
+        if let Some(mut node) = convert_node(child, parent_stack_mode.as_deref(), ctx) {
+            if hidden {
+                crate::layout_positioning::base_mut(&mut node).visible = Some(false);
+            }
             result.push(node);
         }
     }
@@ -90,6 +94,8 @@ pub fn convert_node(
         return None;
     }
     let sizing_parent = sizing_parent_stack_mode(&tree.figma, parent_stack_mode, ctx.layout_mode);
+    let variables = ctx.variables.clone();
+    let pushed_modes = variables.push_modes(&tree.figma, &mut ctx.mode_scope);
     let mut node = match ty {
         "FRAME" | "SECTION" => convert_frame(tree, sizing_parent, ctx),
         "GROUP" => convert_group(tree, sizing_parent, ctx),
@@ -114,6 +120,8 @@ pub fn convert_node(
             }
         }
     };
+    let kept = ctx.mode_scope.len() - pushed_modes;
+    ctx.mode_scope.truncate(kept);
     apply_layout_positioning(&mut node, &tree.figma, parent_stack_mode, ctx.layout_mode);
     Some(node)
 }
@@ -149,6 +157,14 @@ fn build_container(
     };
     if let Some(l) = layout {
         apply_layout(l, &mut container);
+    }
+    // DSH paints children[0] in front. Topmost-first storage (Preserve, or no
+    // auto layout) needs reversed painting only for Figma "Canvas stacking:
+    // first on top" (`stackReverseZIndex`); flow-ordered storage (OpenPencil
+    // auto layout, see `order_children`) needs it only for Figma's default.
+    let flow_ordered = ctx.layout_mode == FigLayoutMode::OpenPencil && has_auto_layout;
+    if (figma.get_bool("stackReverseZIndex") == Some(true)) != flow_ordered {
+        container.item_reverse_z_index = Some(true);
     }
     container.limits.min_width = figma
         .get_f64("minWidth")
@@ -197,6 +213,14 @@ fn convert_frame(
     )
 }
 
+/// Convert a SYMBOL as a reusable component frame (for linkage).
+pub(crate) fn convert_component_node(
+    tree: &TreeNode,
+    ctx: &mut ConversionContext<'_>,
+) -> Option<PenNode> {
+    Some(convert_component(tree, None, ctx))
+}
+
 fn convert_component(
     tree: &TreeNode,
     parent_stack_mode: Option<&str>,
@@ -212,7 +236,10 @@ fn convert_component(
         .get(&figma_id)
         .cloned()
         .unwrap_or_else(|| ctx.generate_id());
+    // Instances inside a component definition stay expanded.
+    ctx.expansion_depth += 1;
     let children = convert_children(tree, ctx);
+    ctx.expansion_depth -= 1;
     let figma = &tree.figma;
     let has_auto_layout = figma
         .get_str("stackMode")
@@ -260,23 +287,24 @@ fn convert_group(
 
 /// Whether a symbol instance carries visual (non-layout) overrides.
 fn has_visual_overrides(figma: &FigValue) -> bool {
-    figma
-        .get("symbolData")
-        .and_then(|s| s.get_array("symbolOverrides"))
-        .map(|ovs| {
-            ovs.iter().any(|ov| {
-                ov.get_array("fillPaints").map(|p| !p.is_empty()) == Some(true)
-                    || ov.get_array("strokePaints").map(|p| !p.is_empty()) == Some(true)
-                    || ov.get("arcData").is_some()
-                    || ov.get("textData").is_some()
-                    || ov.get("fontSize").is_some()
-                    || ov.get("overriddenSymbolID").is_some()
-                    || ov
-                        .get_array("componentPropAssignments")
-                        .is_some_and(|assignments| !assignments.is_empty())
+    !crate::instance::own_assignments(figma).is_empty()
+        || figma
+            .get("symbolData")
+            .and_then(|s| s.get_array("symbolOverrides"))
+            .map(|ovs| {
+                ovs.iter().any(|ov| {
+                    ov.get_array("fillPaints").map(|p| !p.is_empty()) == Some(true)
+                        || ov.get_array("strokePaints").map(|p| !p.is_empty()) == Some(true)
+                        || ov.get("arcData").is_some()
+                        || ov.get("textData").is_some()
+                        || ov.get("fontSize").is_some()
+                        || ov.get("overriddenSymbolID").is_some()
+                        || ov
+                            .get_array("componentPropAssignments")
+                            .is_some_and(|assignments| !assignments.is_empty())
+                })
             })
-        })
-        .unwrap_or(false)
+            .unwrap_or(false)
 }
 
 fn convert_instance(
@@ -305,10 +333,14 @@ fn convert_instance(
         // the rest of the conversion context during recursive expansion.
         if let Some(symbol_node) = ctx.symbol_tree.get(&key).copied() {
             if !symbol_node.children.is_empty() {
-                let overrides = figma
-                    .get("symbolData")
-                    .and_then(|s| s.get_array("symbolOverrides"))
-                    .map(|a| a.to_vec());
+                let overrides = crate::instance::with_property_bindings(
+                    figma,
+                    symbol_node,
+                    figma
+                        .get("symbolData")
+                        .and_then(|s| s.get_array("symbolOverrides"))
+                        .map(|a| a.to_vec()),
+                );
                 let base_symbol_node = base_guid
                     .as_ref()
                     .and_then(|guid| ctx.symbol_tree.get(guid))
@@ -339,12 +371,32 @@ fn convert_instance(
                     instance_size,
                     &mut ctx.instance_assignments,
                 );
-                let merged = merge_symbol_props(&tree.figma, &symbol_node.figma);
+                let mut children = children;
+                crate::instance::tag_instance_source_ids(&tree.figma, &mut children);
+                let mut merged = merge_symbol_props(&tree.figma, &symbol_node.figma);
+                if !ctx.variables.is_empty() {
+                    // Component layers render in the instance's mode scope:
+                    // the component's own modes, then the instance's.
+                    let mut scope = ctx.mode_scope.clone();
+                    ctx.variables.push_modes(&symbol_node.figma, &mut scope);
+                    ctx.variables.push_modes(&tree.figma, &mut scope);
+                    ctx.variables.resolve_value(&mut merged, &scope);
+                    for child in &mut children {
+                        ctx.variables.resolve_tree(child, &mut scope);
+                    }
+                }
                 let synthetic = TreeNode {
                     figma: merged,
                     children,
                 };
-                return convert_frame(&synthetic, parent_stack_mode, ctx);
+                let page_level = ctx.expansion_depth == 0;
+                ctx.expansion_depth += 1;
+                let expanded = convert_frame(&synthetic, parent_stack_mode, ctx);
+                ctx.expansion_depth -= 1;
+                if page_level && ctx.linkage.is_some() {
+                    return crate::linkage::link_instance(ctx, &key, symbol_node, expanded);
+                }
+                return expanded;
             }
         }
     }
@@ -804,6 +856,8 @@ fn build_icon_path_node(
 mod tests;
 #[cfg(test)]
 mod tests_boolean_fallback;
+#[cfg(test)]
+mod tests_instance_keyed;
 #[cfg(test)]
 mod tests_instance_scale;
 #[cfg(test)]

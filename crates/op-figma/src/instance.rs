@@ -9,6 +9,10 @@
 //!      two parallel walks, one started at children + one started at the
 //!      root, so root-level overrides can be filtered out.
 //!   3. Index-mapping fallback over all derived entries.
+//!
+//! Files whose component records carry `overrideKey` skip all four and use
+//! exact addressing ([`keyed`]); the strategies above remain only for older
+//! files without override keys.
 
 use crate::figma_types::FigVec2;
 use crate::kiwi::FigValue;
@@ -19,6 +23,7 @@ mod apply;
 mod assignment;
 #[cfg(test)]
 mod assignment_tests;
+mod bindings;
 mod cache;
 mod fingerprint;
 #[cfg(test)]
@@ -26,6 +31,7 @@ mod fingerprint_tests;
 mod foreign_session;
 #[cfg(test)]
 mod foreign_tests;
+mod keyed;
 mod style;
 mod swap_filter;
 #[cfg(test)]
@@ -40,7 +46,11 @@ pub use assignment::seed_assignments_from_instances;
 use assignment::{
     guessed_mapping_is_implausible, instance_scale, rescale_only, reserve_direct_identities,
 };
+pub(crate) use bindings::{own_assignments, with_property_bindings};
 pub(crate) use cache::{apply_instance_overrides_memoized, InstanceExpansionCache};
+pub(crate) use keyed::{
+    tag_instance_source_ids, take_override_diagnostics, take_stale_cache_count,
+};
 pub(crate) use style::merge_symbol_props;
 pub(crate) use swap_filter::filter_swap_stale_derived;
 
@@ -112,6 +122,13 @@ pub fn apply_instance_overrides_cached(
     // Fast path — nothing to apply: just rescale to the instance size.
     if derived.is_empty() && overrides.is_empty() {
         return rescale_only(symbol_node, instance_size);
+    }
+
+    // Modern files address overrides by `overrideKey`: resolve them exactly
+    // and never fall back to positional guesses (see `keyed`).
+    let keyed_index = keyed::KeyedIndex::build(symbol_node);
+    if keyed_index.uses_override_keys {
+        return keyed::apply_keyed(symbol_node, overrides, derived, instance_size, &keyed_index);
     }
 
     // ── Index inputs ─────────────────────────────────────────────────

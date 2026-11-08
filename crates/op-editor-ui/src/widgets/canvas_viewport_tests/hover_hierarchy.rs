@@ -1,4 +1,4 @@
-//! Hierarchy-hover tests — solid focus outline plus dashed hints on direct visible children only.
+//! Hierarchy-hover tests — dashed focus outline plus dashed hints on direct visible children only.
 //!
 //! Split out of `canvas_viewport_tests.rs` to keep every file under
 //! the repository's 800-line cap. Shared fixtures (`RecordingBackend`,
@@ -7,7 +7,7 @@
 use super::*;
 
 #[test]
-fn hover_focus_is_solid_and_only_direct_visible_children_are_dashed() {
+fn hover_focus_and_only_direct_visible_children_are_dashed() {
     let _guard = crate::agent_indicator_test_support::lock();
     op_editor_core::agent_indicators::clear();
     let scene = hover_hierarchy_scene();
@@ -22,37 +22,39 @@ fn hover_focus_is_solid_and_only_direct_visible_children_are_dashed() {
         viewport.paint(&mut cx, Rect::xywh(0.0, 0.0, 300.0, 240.0));
     }
 
-    let focus_solids: Vec<Rect> = backend
-        .stroke_rects
-        .iter()
-        .filter_map(|(rect, color)| (*color == HOVER_OUTLINE_COLOR).then_some(*rect))
-        .collect();
-    assert_eq!(
-        focus_solids,
-        vec![Rect::xywh(10.0, 10.0, 220.0, 180.0)],
-        "an unselected hierarchy focus should paint one solid outline"
+    // The focus outline is dashed (d5df5872), so no solid hover rect paints.
+    assert!(
+        backend
+            .stroke_rects
+            .iter()
+            .all(|(_, color)| *color != HOVER_OUTLINE_COLOR),
+        "the hierarchy focus outline should be dashed, not solid"
     );
 
+    let focus = Rect::xywh(10.0, 10.0, 220.0, 180.0);
     let direct_a = Rect::xywh(30.0, 40.0, 48.0, 32.0);
     let direct_b = Rect::xywh(100.0, 40.0, 80.0, 100.0);
-    let child_lines: Vec<(Point2D, Point2D)> = backend
+    let hover_lines: Vec<(Point2D, Point2D)> = backend
         .stroke_lines
         .iter()
         .filter_map(|(from, to, color)| (*color == HOVER_OUTLINE_COLOR).then_some((*from, *to)))
         .collect();
+    for (rect, what) in [
+        (focus, "focus"),
+        (direct_a, "direct-a"),
+        (direct_b, "direct-b"),
+    ] {
+        assert!(
+            hover_lines
+                .iter()
+                .any(|(from, to)| line_lies_on_rect_edge(*from, *to, rect)),
+            "{what} should paint a dashed hover outline"
+        );
+    }
     assert!(
-        !child_lines.is_empty(),
-        "direct children should paint dashed hints"
-    );
-    assert!(child_lines
-        .iter()
-        .any(|(from, to)| line_lies_on_rect_edge(*from, *to, direct_a)));
-    assert!(child_lines
-        .iter()
-        .any(|(from, to)| line_lies_on_rect_edge(*from, *to, direct_b)));
-    assert!(
-        child_lines.iter().all(|(from, to)| {
-            line_lies_on_rect_edge(*from, *to, direct_a)
+        hover_lines.iter().all(|(from, to)| {
+            line_lies_on_rect_edge(*from, *to, focus)
+                || line_lies_on_rect_edge(*from, *to, direct_a)
                 || line_lies_on_rect_edge(*from, *to, direct_b)
         }),
         "hidden direct children and visible grandchildren must not receive hierarchy hints"

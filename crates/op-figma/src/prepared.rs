@@ -10,7 +10,7 @@ use crate::node_mapper::{
     convert_tree_all_pages, convert_tree_page, empty_import_result, resolve_style_references,
     FigmaImportResult, FigmaPageInfo,
 };
-use crate::tree::{build_tree_owned, guid_to_string, is_user_page, TreeNode};
+use crate::tree::{guid_to_string, is_user_page, TreeNode};
 use crate::{detect_kind, FigFileKind, FigImport, FigParseError};
 use std::collections::HashMap;
 
@@ -27,6 +27,8 @@ pub struct PreparedFig {
     pages: Vec<FigmaPageInfo>,
     blobs: Vec<BlobOrString>,
     image_files: HashMap<String, Vec<u8>>,
+    link_components: bool,
+    variables: std::rc::Rc<crate::paint_vars::VariableIndex>,
 }
 
 /// Decode and prepare a binary `.fig` for page discovery and deferred
@@ -50,7 +52,8 @@ impl PreparedFig {
         layout_mode: FigLayoutMode,
     ) -> Self {
         resolve_style_references(&mut decoded.node_changes);
-        let tree = build_tree_owned(std::mem::take(&mut decoded.node_changes));
+        let (tree, variables) =
+            crate::paint_vars::build_resolved_tree(std::mem::take(&mut decoded.node_changes));
         let pages = tree
             .as_ref()
             .map(|tree| {
@@ -68,7 +71,17 @@ impl PreparedFig {
             pages,
             blobs: decoded.blobs,
             image_files: decoded.image_files,
+            link_components: false,
+            variables,
         }
+    }
+
+    /// Keep component/instance linkage in [`Self::into_all_pages`]: adds a
+    /// "Components" page and emits verified `ref`s. Only for callers that
+    /// keep every page of the result.
+    pub fn with_component_linkage(mut self, link: bool) -> Self {
+        self.link_components = link;
+        self
     }
 
     /// User-visible pages in Figma page-panel order.
@@ -101,10 +114,12 @@ impl PreparedFig {
             tree,
             blobs,
             image_files,
+            variables,
             ..
         } = self;
         let tree = tree.expect("prepared file with pages must have a document tree");
-        let result = convert_tree_page(&tree, blobs, &file_name, page_index, layout_mode);
+        let result =
+            convert_tree_page(&tree, blobs, &file_name, page_index, layout_mode, variables);
         // Conversion owns its output; release the decoded source tree
         // before image transforms/base64 can allocate another large
         // document-sized payload.
@@ -129,11 +144,20 @@ impl PreparedFig {
             tree,
             blobs,
             image_files,
+            link_components,
+            variables,
             ..
         } = self;
         let result = match tree {
             Some(tree) => {
-                let result = convert_tree_all_pages(&tree, blobs, &file_name, layout_mode);
+                let result = convert_tree_all_pages(
+                    &tree,
+                    blobs,
+                    &file_name,
+                    layout_mode,
+                    link_components,
+                    variables,
+                );
                 drop(tree);
                 result
             }

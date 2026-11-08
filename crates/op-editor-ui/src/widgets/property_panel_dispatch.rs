@@ -27,9 +27,9 @@ use crate::widgets::PropertyPanelAction;
 // cap); re-exported so both hosts keep one `property_panel_dispatch::`
 // entry point.
 pub use crate::widgets::property_panel_dispatch_support::{
-    apply_codegen_action, apply_instance_lifecycle_action, color_target, color_variable_name_at,
-    compositing_picker_target, focus_effect_param, updates_document, CodegenFollowUp,
-    InstanceLifecycleOutcome,
+    apply_codegen_action, apply_instance_lifecycle_action, apply_instance_lifecycle_action_at,
+    color_target, color_variable_name_at, compositing_picker_target, focus_effect_param,
+    updates_document, CodegenFollowUp, InstanceLifecycleOutcome,
 };
 use crate::widgets::property_panel_dispatch_support::{
     apply_node_text_and_interaction_action, font_picker_family_at,
@@ -86,6 +86,27 @@ pub fn apply_property_action(
     use PropertyActionOutcome::{FollowUp, Handled, HostOwned};
     use PropertyPanelAction as A;
     match action {
+        A::DesignSystem(_) => {
+            debug_assert!(crate::widgets::property_panel_design_system::is_action(
+                action
+            ));
+            crate::widgets::property_panel_design_system::dispatch(state, action, ctx.now_ms);
+            Handled
+        }
+        A::ComponentInspector(action) => {
+            crate::widgets::property_panel_components::dispatch(state, action, ctx.now_ms);
+            Handled
+        }
+        A::ApplyTextMarkdown
+        | A::ApplyTextRange
+        | A::ApplyTextParagraph
+        | A::SetTextTruncation(_)
+        | A::CycleTextRangeFlag(_)
+        | A::ToggleTextRangeClearLink
+        | A::SetTextParagraphList(_) => {
+            crate::widgets::property_panel_text_design::dispatch(state, action, ctx.now_ms);
+            Handled
+        }
         // Dispatched by `apply_instance_lifecycle_action` before the
         // instance-write scope opened; unreachable here.
         A::GoToComponent

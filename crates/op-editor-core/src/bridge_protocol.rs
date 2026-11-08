@@ -7,16 +7,21 @@
 //!
 //! Message `type` values — inbound: `op-bridge/init`, `op-bridge/theme`,
 //! `op-bridge/locale`, `op-bridge/open-document`, `op-bridge/snapshot`,
+//! `op-bridge/get-ui-scale`, `op-bridge/set-ui-scale`,
 //! `op-bridge/save-committed`, `op-bridge/resolve-conflict`;
 //! outbound: `op-bridge/ready`, `op-bridge/dirty-changed`, `op-bridge/opened`,
 //! `op-bridge/snapshot-result`, `op-bridge/snapshot-conflict`,
 //! `op-bridge/sync-conflict`, `op-bridge/conflict-resolved`,
 //! `op-bridge/listening`. Field names are camelCase (`requestId`,
+//! `op-bridge/ui-scale-result` returns `scale` and `supportedScales`.
 //! `serverVersion`, `docJson`).
 
 use serde_json::Value;
 
 use crate::{Locale, ThemeMode};
+#[cfg(test)]
+#[path = "ui_scale_bridge_tests.rs"]
+mod ui_scale_tests;
 
 #[derive(Debug, PartialEq)]
 pub enum BridgeInbound {
@@ -34,6 +39,13 @@ pub enum BridgeInbound {
     },
     Locale {
         locale: Locale,
+    },
+    GetUiScale {
+        request_id: String,
+    },
+    SetUiScale {
+        request_id: String,
+        scale: crate::editor_ui_state::ui_scale::UiScale,
     },
     OpenDocument {
         json: String,
@@ -65,6 +77,17 @@ impl BridgeInbound {
         let value: Value = serde_json::from_str(raw).ok()?;
         let ty = value.get("type")?.as_str()?;
         match ty {
+            "op-bridge/get-ui-scale" if value.as_object()?.len() == 2 => Some(Self::GetUiScale {
+                request_id: value.get("requestId")?.as_str()?.into(),
+            }),
+            "op-bridge/set-ui-scale" if value.as_object()?.len() == 3 => {
+                let percent = u16::try_from(value.get("scale")?.as_u64()?).ok()?;
+                let scale = crate::editor_ui_state::ui_scale::UiScale::from_percent(percent)?;
+                Some(Self::SetUiScale {
+                    request_id: value.get("requestId")?.as_str()?.into(),
+                    scale,
+                })
+            }
             "op-bridge/init" => {
                 let token = value.get("token")?.as_str()?.to_string();
                 let mcp_url = value
@@ -120,6 +143,19 @@ impl BridgeInbound {
             _ => None,
         }
     }
+}
+
+pub fn event_ui_scale(
+    request_id: &str,
+    scale: crate::editor_ui_state::ui_scale::UiScale,
+) -> String {
+    serde_json::json!({
+        "type": "op-bridge/ui-scale-result",
+        "requestId": request_id,
+        "scale": scale.percent(),
+        "supportedScales": crate::editor_ui_state::ui_scale::UiScale::SUPPORTED,
+    })
+    .to_string()
 }
 
 /// Strictly parse the two color-scheme values accepted from an embedding

@@ -33,8 +33,16 @@ impl BridgeDocumentSnapshot {
     }
 
     pub(super) fn push_body(&self, base_version: u64) -> String {
-        WebSyncClient::wrap_push_body_with_base_and_editor_meta(
+        let mut document = Vec::new();
+        op_pen_loader::write_source_with_editor_meta(
+            &mut document,
             self.document_json.as_ref(),
+            self.editor_meta.clone(),
+        )
+        .expect("snapshot document and editor metadata are valid JSON");
+        let document = std::str::from_utf8(&document).expect("JSON serialization is UTF-8");
+        WebSyncClient::wrap_push_body_with_base_and_editor_meta(
+            document,
             base_version,
             self.editor_meta.active_page_index,
             self.editor_meta.preserve_authored_geometry,
@@ -90,7 +98,28 @@ mod tests {
                 preserve_authored_geometry: true,
                 scenario: None,
                 pinned_style_guide: None,
+                viewport: None,
             })
         );
+    }
+
+    #[test]
+    fn saved_view_survives_bridge_disk_and_daemon_snapshot_paths() {
+        let mut state = EditorState::new();
+        state.viewport.pan_x = 123.25;
+        state.viewport.pan_y = -45.5;
+        state.viewport.zoom = 1.25;
+        let snapshot = BridgeDocumentSnapshot::capture(&state).unwrap();
+        let pushed: serde_json::Value = serde_json::from_str(&snapshot.push_body(1)).unwrap();
+        for source in [snapshot.externalized_json(), pushed["document"].to_string()] {
+            let meta = op_pen_loader::extract_editor_meta(&source).unwrap();
+            assert_eq!(meta.viewport, Some(state.viewport));
+        }
+        assert_eq!(
+            snapshot.pair(),
+            (state.document_generation(), state.document_revision())
+        );
+        assert!(!state.is_dirty());
+        assert!(!state.history.can_undo());
     }
 }

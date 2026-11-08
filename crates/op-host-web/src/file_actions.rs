@@ -283,20 +283,25 @@ pub fn import_kit_source(src: &str, kit_id: String) -> Result<Option<UIKit>, Doc
 /// state being replaced). Mirrors the desktop's
 /// `persistence::load_editor_state` + `preserve_app_preferences`
 /// pair, minus the legacy `.opmeta` sidecar. Embedded `editorMeta`
-/// restores the active page and Figma Preserve geometry mode; older files
+/// restores the active page, saved canvas view, and Figma Preserve geometry mode; older files
 /// without it open on their first non-empty page, matching desktop.
 pub fn ingest_op_source(
     src: &str,
     previous: &EditorState,
 ) -> Result<IngestedDoc, DocumentIngestError> {
     let editor_meta = op_pen_loader::extract_editor_meta(src);
+    let restored_viewport = editor_meta
+        .as_ref()
+        .is_some_and(|meta| meta.viewport.is_some());
     let loaded = op_pen_loader::load_canonical(src)
         .map_err(|e| DocumentIngestError::LoadCanonical(e.to_string()))?;
     let warnings = loaded.warnings.iter().map(|w| format!("{w:?}")).collect();
     let mut state = EditorState::from_document(loaded.value);
     op_pen_loader::apply_editor_meta_or_legacy_fallback(&mut state, editor_meta);
     preserve_app_preferences(previous, &mut state);
-    Ok(IngestedDoc::new(state, warnings))
+    let mut ingested = IngestedDoc::new(state, warnings);
+    ingested.restored_viewport = restored_viewport;
+    Ok(ingested)
 }
 
 /// Parse a binary Figma `.fig` export into a fresh `EditorState`.
@@ -369,6 +374,7 @@ pub fn preserve_app_preferences(previous: &EditorState, next: &mut EditorState) 
     next.editor_ui.host_locale_override = previous.editor_ui.host_locale_override;
     next.editor_ui.recent_files = previous.editor_ui.recent_files.clone();
     next.editor_ui.font_import_supported = previous.editor_ui.font_import_supported;
+    next.editor_ui.diagram_import_supported = previous.editor_ui.diagram_import_supported;
     next.editor_ui.scene_template_center.save_current_supported = previous
         .editor_ui
         .scene_template_center

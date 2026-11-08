@@ -129,7 +129,7 @@ fn canvaskit_mount_overlaps_the_stored_locale_with_backend_init_and_awaits_befor
 }
 
 #[test]
-fn canvaskit_repaint_persists_local_settings_and_syncs_only_credential_changes() {
+fn canvaskit_repaint_persists_local_settings_without_server_credential_sync() {
     let source = canvaskit_source();
     let repaint_start = source.find("impl CkInner").expect("CkInner implementation");
     let repaint_end = source[repaint_start..]
@@ -139,20 +139,10 @@ fn canvaskit_repaint_persists_local_settings_and_syncs_only_credential_changes()
     let repaint = &source[repaint_start..repaint_end];
 
     assert!(repaint.contains("web_settings::save_if_changed"));
-    assert!(repaint.contains("web_settings::save_credentials_if_changed"));
     assert!(repaint.contains("web_settings::credential_migration_pending"));
-    assert!(repaint.contains("web_credential_sync::credential_changed"));
-
-    let credential_save = repaint
-        .find("web_settings::save_credentials_if_changed")
-        .expect("credential save");
-    let general_save = repaint
-        .find("web_settings::save_if_changed")
-        .expect("general settings save");
-    assert!(
-        credential_save < general_save,
-        "migration must secure credentials before ordinary settings can overwrite the legacy key"
-    );
+    // The passive runtime (acb3cec8) delegates AI ownership to DSH, so local
+    // edits must never be pushed to a credential server.
+    assert!(!repaint.contains("web_credential_sync::credential_changed("));
 
     let install = source
         .find("repaint_coalescer::install")
@@ -162,30 +152,27 @@ fn canvaskit_repaint_persists_local_settings_and_syncs_only_credential_changes()
         .expect("credential sync state reset");
     assert!(
         sync_reset < install,
-        "credential sync state is reset before repaint callbacks can queue changes"
+        "credential sync state is reset before repaint callbacks can run"
     );
 }
 
 #[test]
-fn canvaskit_mount_queues_an_initial_snapshot_only_when_local_credentials_exist() {
+fn canvaskit_mount_never_starts_server_credential_or_auth_sync() {
     let source = canvaskit_source();
-    let load = source
-        .find("let credential_load = crate::web_settings::load_into")
-        .expect("mount records whether an independent credential snapshot loaded");
-    let conditional = source[load..]
-        .find("let initial_credential_json = credential_load")
-        .map(|index| load + index)
-        .expect("credential snapshot presence gates the initial server sync");
-    let policy = source[conditional..]
-        .find("web_credential_sync::start")
-        .map(|index| conditional + index)
-        .expect("policy discovery resets state before the initial snapshot is queued");
-    let changed = source[policy..]
-        .find("web_credential_sync::credential_changed")
-        .map(|index| policy + index)
-        .expect("an existing credential snapshot queues after policy discovery starts");
-
-    assert!(load < conditional && conditional < policy && policy < changed);
+    assert!(
+        source.contains("let credential_load = crate::web_settings::load_into"),
+        "mount still loads locally stored settings"
+    );
+    for call in [
+        "web_credential_sync::start(",
+        "web_credential_sync::credential_changed(",
+        "web_auth_sync::start(",
+    ] {
+        assert!(
+            !source.contains(call),
+            "the passive runtime must not call `{call}`; DSH owns AI credentials"
+        );
+    }
 }
 
 #[test]

@@ -34,7 +34,16 @@ impl WidgetHost {
             // Hex / RGB boxes: keyboard editing isn't wired on the web host yet,
             // so a press just swallows (keeps the picker open).
             Some(ColorPickerHit::HexInput) | Some(ColorPickerHit::RgbInput(_)) => true,
-            Some(ColorPickerHit::Eyedropper) | Some(ColorPickerHit::Inside) => true,
+            Some(ColorPickerHit::Eyedropper) => {
+                #[cfg(feature = "canvaskit")]
+                if !self.start_eyedropper() {
+                    self.fail_eyedropper("The color target is not editable".into());
+                }
+                #[cfg(not(feature = "canvaskit"))]
+                self.fail_eyedropper("Rendered color sampling requires CanvasKit".into());
+                true
+            }
+            Some(ColorPickerHit::Inside) => true,
             Some(hit @ (ColorPickerHit::SvBox | ColorPickerHit::HueSlider)) => {
                 if let Some(kind) = drag_for_hit(hit) {
                     // Live-apply once for the press point.

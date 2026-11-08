@@ -215,6 +215,10 @@ fn route_message<C: RepaintContext + 'static>(
             palette,
         } => handle_theme(inner, color_scheme, palette),
         BridgeInbound::Locale { locale } => handle_locale(inner, locale),
+        BridgeInbound::GetUiScale { request_id } => handle_ui_scale(inner, request_id, None),
+        BridgeInbound::SetUiScale { request_id, scale } => {
+            handle_ui_scale(inner, request_id, Some(scale))
+        }
         BridgeInbound::OpenDocument { json } => handle_open_document(inner, sync, json),
         BridgeInbound::Snapshot { request_id, .. } => handle_snapshot(inner, sync, request_id),
         BridgeInbound::SaveCommitted {
@@ -227,48 +231,8 @@ fn route_message<C: RepaintContext + 'static>(
     }
 }
 
-/// `locale`: apply the embedding host's locale as a page-lifetime override
-/// without replacing the user's OpenPencil locale preference.
-fn handle_locale<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    locale: op_editor_core::Locale,
-) {
-    let Ok(mut context) = inner.try_borrow_mut() else {
-        return;
-    };
-    context
-        .host_mut()
-        .editor_state_mut()
-        .editor_ui
-        .set_host_locale_override(Some(locale));
-    context.host_mut().mark_editor_state_dirty();
-    let _ = context.repaint();
-}
-
-/// `theme`: apply the embedding host's color scheme as a page-lifetime
-/// override and repaint immediately. `web_settings::theme` retains the user's
-/// prior OpenPencil preference underneath this override, so neither the device
-/// key nor the compatibility settings payload adopts the host scheme.
-fn handle_theme<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    color_scheme: op_editor_core::ThemeMode,
-    palette: std::collections::BTreeMap<String, String>,
-) {
-    let Ok(mut context) = inner.try_borrow_mut() else {
-        return;
-    };
-    crate::web_settings::theme::set_host_override(
-        context.host_mut().editor_state_mut(),
-        color_scheme,
-    );
-    context
-        .host_mut()
-        .editor_state_mut()
-        .editor_ui
-        .host_theme_palette = palette;
-    context.host_mut().mark_editor_state_dirty();
-    let _ = context.repaint();
-}
+mod chrome_preferences;
+use chrome_preferences::{handle_locale, handle_theme, handle_ui_scale};
 
 /// `init`: store the managed token and unblock `mount_ck`'s `await_init`.
 /// Idempotent by construction: the token write below is unconditional, so the
@@ -369,14 +333,16 @@ fn handle_open_document<C: RepaintContext + 'static>(
 
     // Prologue borrow: replace + repaint + capture the opened pair/bytes.
     let Some(snapshot) = with_borrowed_parsed_document(inner, parsed, |b, doc, meta| {
+        let has_saved_viewport = meta.as_ref().is_some_and(|meta| meta.viewport.is_some());
         let was_non_empty = !b.host().editor_state().active_children().is_empty();
+        let content_changed = b.host().editor_state().doc != doc;
         let prev_viewport = b.host().editor_state().viewport.clone();
         let prev_selected = b.host().editor_state().selection.set.clone();
-        if was_non_empty {
+        if content_changed && was_non_empty {
             b.host_mut()
                 .editor_state_mut()
                 .replace_document_with_undo(doc);
-        } else {
+        } else if content_changed {
             b.host_mut().editor_state_mut().replace_document(doc);
         }
         op_pen_loader::apply_editor_meta_or_legacy_fallback(b.host_mut().editor_state_mut(), meta);
@@ -385,8 +351,10 @@ fn handle_open_document<C: RepaintContext + 'static>(
         b.host_mut().mark_editor_state_dirty();
         b.host_mut().arm_missing_fonts_detection();
         if was_non_empty {
-            b.host_mut().editor_state_mut().viewport = prev_viewport;
-            if !prev_selected.is_empty() {
+            if !has_saved_viewport {
+                b.host_mut().editor_state_mut().viewport = prev_viewport;
+            }
+            if content_changed && !prev_selected.is_empty() {
                 let surviving: Vec<op_editor_core::NodeId> = prev_selected
                     .into_iter()
                     .filter(|id| {
@@ -401,7 +369,7 @@ fn handle_open_document<C: RepaintContext + 'static>(
                     b.host_mut().editor_state_mut().toggle_selection(id);
                 }
             }
-        } else {
+        } else if !has_saved_viewport {
             let (w, h) = b.viewport_size();
             b.host_mut().fit_content_to_viewport(w, h);
         }

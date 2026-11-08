@@ -27,6 +27,10 @@ use std::collections::{BTreeMap, HashMap};
 /// shell-core's `PropertyFocus`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PropertyFocus {
+    /// Rich-text inspector form field, committed locally until Apply is pressed.
+    TextDesign(usize),
+    ComponentDesign(usize),
+    DesignSystem(usize),
     /// Active page's `#RRGGBB` / `#RRGGBBAA` canvas background. This is
     /// available with no node selection.
     PageBackgroundHex,
@@ -166,6 +170,9 @@ impl PropertyFocus {
         matches!(
             self,
             PropertyFocus::NodeName
+                | PropertyFocus::TextDesign(_)
+                | PropertyFocus::ComponentDesign(_)
+                | PropertyFocus::DesignSystem(_)
                 | PropertyFocus::ComponentDescription
                 | PropertyFocus::TextContent
                 | PropertyFocus::NodeRole
@@ -367,6 +374,13 @@ pub struct VariableUiState {
 /// Transient editor UI state — draft buffers, focus, overlay toggles.
 #[derive(Debug, Clone, Default)]
 pub struct UiDraftState {
+    pub component_inspector: crate::component_inspector_draft::ComponentInspectorDraft,
+    pub design_system_inspector: crate::design_system_inspector_draft::DesignSystemInspectorDraft,
+    pub text_inspector: crate::text_inspector_draft::TextInspectorDraft,
+    pub appearance_clipboard: Option<std::collections::BTreeMap<String, serde_json::Value>>,
+    /// Why the last [`crate::DesignCommand`] was rejected, so hosts can
+    /// give an agent an actionable error. Cleared on each design apply.
+    pub design_reject: Option<String>,
     /// Index into the document's pages for the page currently shown.
     /// Page-scoped editing keys off this (see `SelectionState`).
     pub active_page_index: usize,

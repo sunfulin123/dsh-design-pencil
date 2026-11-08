@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "복구 사본",
+        "drafts.notice" => "복원은 현재 문서를 교체하며 한 번에 실행 취소할 수 있습니다. 먼저 보호용 백업을 만듭니다. 연결된 파일은 저장하지 않습니다.",
+        "drafts.create" => "체크포인트 만들기",
+        "drafts.label" => "체크포인트 이름",
+        "drafts.empty" => "복구 사본이 없습니다.",
+        "drafts.restoreConfirm" => "이 사본을 복원할까요?",
+        "drafts.deleteConfirm" => "이 복구 사본을 영구 삭제할까요?",
+        "drafts.syncError" => "로컬 편집의 동기화가 완료된 후 다시 시도하세요.",
+        "drafts.refresh" => "새로고침",
+        "drafts.failed" => "복구 요청 실패: {{message}}",
+        "drafts.loading" => "복구 사본 업데이트 중…",
+        "drafts.autosave" => "자동 저장",
+        "drafts.checkpoint" => "체크포인트",
+        "drafts.backup" => "보호용 백업",
+        "colorPicker.sampleError" => "색상 샘플링 실패: {{message}}",
+        "statusbar.interfaceScale" => "인터페이스 배율",
+        "statusbar.viewOptions" => "보기 옵션",
     "preview.emptyPage" => "이 페이지에는 미리 볼 수 있는 표시된 프레임이 없습니다.",
     "preview.noFrame" => "프레임 없음",
     "preview.fit" => "창에 맞춤",

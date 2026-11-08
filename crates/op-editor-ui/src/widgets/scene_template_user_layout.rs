@@ -12,7 +12,7 @@
 
 use super::asset_center_style_layout::{style_grid_layout, StyleGridLayout, StyleGridMetrics};
 use super::asset_center_template_cards::{
-    user_template_card_count, user_template_cards, UserTemplateCard,
+    cards_from_templates, user_template_cards, UserTemplateCard,
 };
 use super::scene_template_panel::{SceneTemplatePanel, CARD_GAP};
 use crate::Rect;
@@ -20,7 +20,11 @@ use crate::Rect;
 impl SceneTemplatePanel<'_> {
     /// Saved templates surviving the search query, in registry order.
     pub(super) fn user_cards(&self) -> Vec<UserTemplateCard> {
-        user_template_cards(self.state.editor_ui.scene_template_center.search.text())
+        let query = self.state.editor_ui.scene_template_center.search.text();
+        match &self.state.editor_ui.managed_assets {
+            Some(assets) => cards_from_templates(assets.templates.clone(), query),
+            None => user_template_cards(query),
+        }
     }
 
     /// How many saved templates are showing. Kept separate from
@@ -28,7 +32,7 @@ impl SceneTemplatePanel<'_> {
     /// have different ids, filters, and hover behaviour — the only thing
     /// they share is the walker that places their cards.
     pub(super) fn user_card_count(&self) -> usize {
-        user_template_card_count(self.state.editor_ui.scene_template_center.search.text())
+        self.user_cards().len()
     }
 
     /// The Templates grid: saved-first, with a section heading when both

@@ -152,6 +152,37 @@ pub fn remap_subtree_ids_mapping_with_allocator(
     let mut staged = nodes.to_vec();
     let mut map = Vec::new();
     remap_collect(&mut staged, allocator, taken, &mut map)?;
+    let references: std::collections::HashMap<&str, &str> = map
+        .iter()
+        .map(|(old, new)| (old.as_str(), new.as_str()))
+        .collect();
+    fn swap_properties(
+        nodes: &[PenNode],
+        result: &mut std::collections::HashMap<String, Vec<String>>,
+    ) {
+        for node in nodes {
+            if let Some(design) = &node.base().component_design {
+                result.insert(
+                    node.id_str().into(),
+                    design
+                        .properties
+                        .iter()
+                        .filter(|(_, property)| {
+                            property.kind
+                                == jian_ops_schema::component::ComponentPropertyKind::InstanceSwap
+                        })
+                        .map(|(name, _)| name.clone())
+                        .collect(),
+                );
+            }
+            if let Some(children) = node.children() {
+                swap_properties(children, result);
+            }
+        }
+    }
+    let mut swaps = std::collections::HashMap::new();
+    swap_properties(&staged, &mut swaps);
+    rewrite_subtree_references(&mut staged, &references, &swaps);
     for (destination, remapped) in nodes.iter_mut().zip(staged) {
         *destination = remapped;
     }
@@ -175,4 +206,100 @@ fn remap_collect(
         }
     }
     Ok(())
+}
+
+fn rewrite_subtree_references(
+    nodes: &mut [PenNode],
+    mapping: &std::collections::HashMap<&str, &str>,
+    swaps: &std::collections::HashMap<String, Vec<String>>,
+) {
+    fn rewrite(id: &mut String, mapping: &std::collections::HashMap<&str, &str>) {
+        if let Some(replacement) = mapping.get(id.as_str()) {
+            *id = (*replacement).into();
+        }
+    }
+    for node in nodes {
+        if let Some(design) = &mut node.base_mut().component_design {
+            for property in design.properties.values_mut() {
+                rewrite(&mut property.target_id, mapping);
+                if property.kind == jian_ops_schema::component::ComponentPropertyKind::InstanceSwap
+                {
+                    if let Some(id) = property.default.as_str().and_then(|id| mapping.get(id)) {
+                        property.default = serde_json::Value::String((*id).into());
+                    }
+                }
+            }
+            for slot in design.slots.values_mut() {
+                rewrite(&mut slot.target_id, mapping);
+            }
+            if let Some(parent) = &mut design.variant_of {
+                rewrite(parent, mapping);
+            }
+        }
+        if let PenNode::Ref(reference) = node {
+            rewrite(&mut reference.target, mapping);
+            if let (Some(names), Some(values)) = (
+                swaps.get(&reference.target),
+                &mut reference.base.component_values,
+            ) {
+                for name in names {
+                    if let Some(value) = values.get_mut(name) {
+                        if let Some(id) = value.as_str().and_then(|id| mapping.get(id)) {
+                            *value = serde_json::Value::String((*id).into());
+                        }
+                    }
+                }
+            }
+            if let Some(overrides) = &mut reference.descendants {
+                *overrides = std::mem::take(overrides)
+                    .into_iter()
+                    .map(|(mut id, mut patch)| {
+                        rewrite(&mut id, mapping);
+                        if let Some(target) = patch
+                            .get("ref")
+                            .and_then(serde_json::Value::as_str)
+                            .and_then(|id| mapping.get(id))
+                        {
+                            patch["ref"] = serde_json::Value::String((*target).into());
+                        }
+                        (id, patch)
+                    })
+                    .collect();
+            }
+        }
+        if let Some(children) = node.children_mut() {
+            rewrite_subtree_references(children, mapping, swaps);
+        }
+    }
+}
+
+#[cfg(test)]
+mod component_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn imported_component_targets_follow_reminted_ids() {
+        let mut nodes: Vec<PenNode> = serde_json::from_str(r#"[
+            {"type":"frame","id":"master","reusable":true,
+             "componentDesign":{"properties":{"Label":{"kind":"text","targetId":"label","default":"Hello"},
+                                "Swap":{"kind":"instance-swap","targetId":"swap","default":"other"}},
+                                "slots":{"Icon":{"targetId":"slot","min":0}}},
+             "children":[{"type":"text","id":"label","content":"Hello"},{"type":"frame","id":"slot"},
+                         {"type":"ref","id":"swap","ref":"other"}]},
+            {"type":"ref","id":"instance","ref":"master","componentValues":{"Swap":"other","Label":"other"}},
+            {"type":"frame","id":"other","reusable":true}
+        ]"#).unwrap();
+        let mapping = remap_subtree_ids_mapping(&mut nodes, &mut 100, &mut HashSet::new()).unwrap();
+        let mapped = |id: &str| mapping.iter().find(|(old, _)| old == id).unwrap().1.clone();
+        let design = nodes[0].base().component_design.as_ref().unwrap();
+        assert_eq!(design.properties["Label"].target_id, mapped("label"));
+        assert_eq!(design.slots["Icon"].target_id, mapped("slot"));
+        let PenNode::Ref(instance) = &nodes[1] else {
+            panic!("expected instance");
+        };
+        assert_eq!(instance.target, mapped("master"));
+        let values = instance.base.component_values.as_ref().unwrap();
+        assert_eq!(values["Swap"], mapped("other"));
+        assert_eq!(values["Label"], "other");
+    }
 }

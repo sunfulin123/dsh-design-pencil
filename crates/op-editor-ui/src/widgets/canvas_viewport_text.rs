@@ -2,21 +2,9 @@
 //! `canvas_viewport_paint.rs` (800-line cap) when styled text runs
 //! landed.
 //!
-//! Line layout (wrap, line starts, caret/selection geometry) stays on
-//! the FLAT string via `canvas_text_edit::text_edit_layout`, exactly
-//! like the inline text editor — editing styled text falls back to
-//! flat (single-style) editing. Styled rendering maps each painted
-//! line back onto the node's `text_runs` byte ranges, so every painted
-//! slice carries its segment's font size / weight / fill / italic /
-//! underline / strikethrough.
-//!
-//! v1 approximations (documented, TS parity follow-ups):
-//! - WRAP positions and the caret/selection layout are computed with
-//!   the node-level font size + weight even when runs override them;
-//!   a wrapped line that splits mid-segment paints each slice with its
-//!   own style but breaks where the flat-string wrap decided.
-//! - All slices on a line share the node's baseline; a run with a
-//!   larger `font_size` sits on that same baseline.
+//! Styled rendering measures each slice's authored family/size/weight and
+//! uses per-line ascent/descent boxes. Inline editing intentionally uses
+//! the flat single-style caret/selection layout.
 //! - Justify distributes the residual width across ASCII-space gaps on
 //!   every line except the last (TS `ck.TextAlign.Justify` behaviour);
 //!   gap-free (e.g. CJK) lines are left-aligned.
@@ -27,6 +15,9 @@ use crate::widgets::canvas_viewport::EditCaret;
 use crate::widgets::PaintCx;
 use crate::{Color, Point2D, Rect, RenderBackend, TextBaselineRequest, TextLayout};
 use jian_core::text_input::prev_char_boundary;
+
+mod layout;
+mod truncation;
 
 /// Fully resolved paint style for one line slice.
 #[derive(Clone, Copy)]
@@ -127,7 +118,12 @@ fn resolved_slice_style(
         },
         Some(r) => SliceStyle {
             font_size: if r.font_size > 0.0 {
-                r.font_size
+                let authored = if node.font_size > 0.0 {
+                    node.font_size
+                } else {
+                    13.0
+                };
+                r.font_size * (base_font_size / authored)
             } else {
                 base_font_size
             },
@@ -142,6 +138,12 @@ fn resolved_slice_style(
             color: r.fill.unwrap_or(ink),
         },
     }
+}
+
+fn slice_family<'a>(family: &'a str, run: Option<&'a SceneTextRun>) -> &'a str {
+    run.and_then(|run| run.font_family.as_deref())
+        .filter(|family| !family.trim().is_empty())
+        .unwrap_or(family)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -171,7 +173,7 @@ fn measure_line_slices(
         w += backend.measure_text_family_styled(
             slice,
             style.font_size,
-            family,
+            slice_family(family, run.map(|i| &node.text_runs[i])),
             style.weight,
             style.italic,
         );
@@ -305,7 +307,12 @@ pub(crate) fn paint_text_node(
         clone.text_runs.clear();
         edit_node = Some(clone);
     }
-    let paint_node = edit_node.as_ref().unwrap_or(node);
+    let display = if editing.is_none() {
+        truncation::display_node(cx.backend, node)
+    } else {
+        None
+    };
+    let paint_node = edit_node.as_ref().or(display.as_ref()).unwrap_or(node);
     let text = paint_node.text.as_deref().unwrap_or("");
     // Ink colour follows the resolved fill (defaults to near black).
     let ink = node.fill.unwrap_or(Color {
@@ -327,7 +334,12 @@ pub(crate) fn paint_text_node(
         } else {
             13.0
         };
-        let device_px = font_size_doc * zoom * cx.backend.dpi_scale();
+        let largest_font = paint_node
+            .text_runs
+            .iter()
+            .map(|run| run.font_size)
+            .fold(font_size_doc, f32::max);
+        let device_px = largest_font * zoom * cx.backend.dpi_scale();
         if device_px < GREEK_TEXT_MAX_DEVICE_PX {
             if !text.is_empty() {
                 cx.backend
@@ -336,21 +348,22 @@ pub(crate) fn paint_text_node(
             return;
         }
     }
+    let clip_truncated = node.text_truncation && editing.is_none();
+    if clip_truncated {
+        cx.backend.save();
+        cx.backend.clip_rect(world_rect);
+    }
     let family = if paint_node.font_family.trim().is_empty() {
         "system-ui"
     } else {
         paint_node.font_family.as_str()
     };
-    // Shared line layout — the same resolution the inline text editor
-    // hit-tests against (`canvas_text_edit`), so caret / selection /
-    // click-to-caret geometry always matches the painted glyphs.
-    // Wrapping is authored DOCUMENT geometry, not viewport geometry:
-    // measuring at the zoomed font size could shift CJK line breaks,
-    // so the layout works in doc space and the caller applies the
-    // viewport scale as a canvas transform. The layout (and therefore
-    // the text editor) works on the FLAT string with node-level
-    // metrics; styled runs only restyle the painted slices.
-    let layout = text_edit_layout(cx.backend, paint_node);
+    let (layout, styled_baselines) = if paint_node.text_runs.is_empty() && !node.text_truncation {
+        (text_edit_layout(cx.backend, paint_node), None)
+    } else {
+        let (layout, baselines) = layout::styled_layout(cx.backend, paint_node);
+        (layout, Some(baselines))
+    };
     let font_size = layout.font_size;
     let weight = layout.weight;
     let letter_spacing = layout.letter_spacing;
@@ -377,7 +390,9 @@ pub(crate) fn paint_text_node(
         // leave blank space at the bottom. `top` / `bottom` keep the
         // font-metric baseline. Only authored line boxes opt into shaped
         // fallback metrics.
-        let baseline_offset = if layout.v_align == SceneTextVerticalAlign::Middle {
+        let baseline_offset = if styled_baselines.is_some() {
+            0.0
+        } else if layout.v_align == SceneTextVerticalAlign::Middle {
             layout.ink_centered_baseline(0)
         } else if paint_node.line_height > 0.0 {
             cx.backend.text_first_baseline(&TextBaselineRequest {
@@ -428,7 +443,9 @@ pub(crate) fn paint_text_node(
                 } else {
                     0.0
                 };
-            let baseline_y = if layout.v_align == SceneTextVerticalAlign::Middle {
+            let baseline_y = if let Some(baselines) = &styled_baselines {
+                world_rect.origin.y + layout.v_offset + baselines[idx]
+            } else if layout.v_align == SceneTextVerticalAlign::Middle {
                 world_rect.origin.y
                     + layout.v_offset
                     + idx as f32 * layout.line_h
@@ -455,7 +472,7 @@ pub(crate) fn paint_text_node(
                         cx.backend,
                         slice,
                         style,
-                        family,
+                        slice_family(family, run.map(|i| &paint_node.text_runs[i])),
                         x,
                         baseline_y,
                         letter_spacing,
@@ -493,6 +510,9 @@ pub(crate) fn paint_text_node(
             };
             cx.backend.fill_rect(caret, ink);
         }
+    }
+    if clip_truncated {
+        cx.backend.restore();
     }
 }
 

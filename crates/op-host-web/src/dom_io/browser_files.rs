@@ -106,6 +106,20 @@ pub(super) fn html_project_file_path(file: &web_sys::File) -> String {
 /// chosen file. Modern browsers dispatch `cancel`, which runs the same cleanup
 /// path even when no file was selected.
 pub(crate) fn open_file_picker(accept: &str, on_file: Box<dyn FnOnce(web_sys::File)>) {
+    open_file_picker_with_error(
+        accept,
+        on_file,
+        Box::new(|error| {
+            web_sys::console::error_1(&error);
+        }),
+    );
+}
+
+pub(super) fn open_file_picker_with_error(
+    accept: &str,
+    on_file: Box<dyn FnOnce(web_sys::File)>,
+    on_error: Box<dyn FnOnce(JsValue)>,
+) {
     let result = (|| -> Result<(), JsValue> {
         let window = web_sys::window()
             .ok_or_else(|| JsValue::from_str("file picker: window unavailable"))?;
@@ -158,7 +172,7 @@ pub(crate) fn open_file_picker(accept: &str, on_file: Box<dyn FnOnce(web_sys::Fi
         Ok(())
     })();
     if let Err(error) = result {
-        web_sys::console::error_1(&error);
+        on_error(error);
     }
 }
 

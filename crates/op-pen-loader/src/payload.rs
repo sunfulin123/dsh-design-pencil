@@ -117,6 +117,10 @@ pub struct NodePayload {
     /// frames, which clip like artboards (TS flattener parity).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub clip_content: bool,
+    /// Canonical `itemReverseZIndex`: the scene paints and hit-tests the last
+    /// child in front instead of the first. Layout order is kept.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reverse_child_z: bool,
     /// Ellipse arc start angle in degrees (`None` = full ellipse).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub arc_start_angle: Option<f32>,
@@ -212,6 +216,10 @@ pub struct NodePayload {
     pub text_vertical_align: String,
     #[serde(default)]
     pub text_wrap: bool,
+    #[serde(default)]
+    pub text_truncation: bool,
+    #[serde(default)]
+    pub max_lines: Option<u32>,
     /// Drop-shadow effects.
     #[serde(default)]
     pub effects: Vec<crate::effects::ShadowPayload>,

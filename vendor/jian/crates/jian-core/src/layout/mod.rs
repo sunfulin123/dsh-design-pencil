@@ -17,6 +17,8 @@ pub mod constraints;
 pub mod measure;
 pub mod resolve;
 mod responsive;
+mod text_style;
+use text_style::{resolve_style, resolve_weight};
 
 use crate::document::{NodeKey, NodeTree};
 use crate::error::{CoreError, CoreResult};
@@ -39,6 +41,7 @@ pub struct TextMeasure {
     pub runs: Vec<OwnedRun>,
     pub line_height: f32, // multiplier; 0.0 → 1.3 default
     pub growth: TextGrowth,
+    pub max_lines: Option<u32>,
     pub input_chrome: Option<InputChromeMeasure>,
     pub checkbox_chrome: Option<CheckboxChromeMeasure>,
 }
@@ -520,6 +523,7 @@ fn text_measure_for(n: &jian_ops_schema::node::PenNode) -> Option<TextMeasure> {
             }],
             line_height: 0.0,
             growth: TextGrowth::Auto,
+            max_lines: None,
             input_chrome: Some(InputChromeMeasure {
                 leading_icon,
                 trailing_icon,
@@ -542,6 +546,7 @@ fn text_measure_for(n: &jian_ops_schema::node::PenNode) -> Option<TextMeasure> {
             // than input/body text's 1.3x default leading.
             line_height: 1.0,
             growth: TextGrowth::Auto,
+            max_lines: None,
             input_chrome: None,
             checkbox_chrome: Some(CheckboxChromeMeasure),
         }
@@ -659,48 +664,10 @@ fn text_measure_for(n: &jian_ops_schema::node::PenNode) -> Option<TextMeasure> {
         runs,
         line_height,
         growth,
+        max_lines: t.truncates().then(|| t.max_lines.unwrap_or(1).max(1)),
         input_chrome: None,
         checkbox_chrome: None,
     })
-}
-
-fn resolve_weight(w: Option<&jian_ops_schema::node::FontWeight>) -> u16 {
-    use jian_ops_schema::node::text::FontWeight;
-    match w {
-        Some(FontWeight::Number(n)) => *n as u16,
-        Some(FontWeight::Keyword(s)) => {
-            // Real-world `.op` files emit `"fontWeight":"700"` etc. as
-            // STRINGS (the canonical schema's untagged enum picks
-            // `Keyword(String)` when the value is a JSON string,
-            // even when its contents are numeric). Try numeric
-            // parse first so 100..900 round-trip, then fall back
-            // to lucide-style keywords.
-            if let Ok(n) = s.parse::<u16>() {
-                return n;
-            }
-            match s.as_str() {
-                "bold" => 700,
-                "semibold" | "semi-bold" | "demibold" => 600,
-                "medium" => 500,
-                "normal" | "regular" => 400,
-                "light" => 300,
-                "extralight" | "extra-light" | "ultralight" | "ultra-light" => 200,
-                "thin" | "hairline" => 100,
-                "black" | "heavy" => 900,
-                "extrabold" | "extra-bold" | "ultrabold" | "ultra-bold" => 800,
-                _ => 400,
-            }
-        }
-        None => 400,
-    }
-}
-
-fn resolve_style(s: Option<&jian_ops_schema::node::TextFontStyle>) -> FontStyleKind {
-    use jian_ops_schema::node::TextFontStyle;
-    match s {
-        Some(TextFontStyle::Italic) => FontStyleKind::Italic,
-        _ => FontStyleKind::Normal,
-    }
 }
 
 /// Taffy callback: given the text node's context + container's known
@@ -787,7 +754,24 @@ fn measure_text_for_taffy(
         Some(w) => w,
         None => measured_width,
     };
-    let height = known.height.unwrap_or(measured_height);
+    let height = known.height.unwrap_or_else(|| {
+        tm.max_lines.map_or(measured_height, |lines| {
+            let size = tm
+                .runs
+                .iter()
+                .map(|run| run.font_size)
+                .fold(0.0_f32, f32::max);
+            measured_height.min(
+                lines as f32
+                    * size
+                    * if tm.line_height > 0.0 {
+                        tm.line_height
+                    } else {
+                        1.3
+                    },
+            )
+        })
+    });
     Size { width, height }
 }
 

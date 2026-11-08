@@ -57,8 +57,8 @@ impl WidgetHost {
     /// the file the user went and found.
     pub(crate) fn import_picked_style_guide(&mut self, markdown: &str, fallback_name: &str) {
         press_flow::import_style_guide_text(&mut self.editor_state, markdown, fallback_name);
-        // Nothing here can write the guide down; the request the shared flow
-        // raised is dropped for the same reason the paste route drops it.
+        // Managed imports use the scoped asset queue; discard only legacy
+        // native persistence requests on this browser host.
         self.editor_state
             .editor_ui
             .scene_template_center
@@ -74,20 +74,14 @@ impl WidgetHost {
 
     /// Drop the persist / delete requests the shared import flow raises.
     ///
-    /// An imported style guide is live the moment it is parsed — the runtime
-    /// catalogue is memory, and memory is all this host has. The requests
-    /// exist for a host with a disk; here they are drained rather than left to
-    /// accumulate, because nothing else will ever take them. The consequence
-    /// is the documented M1 boundary: an imported style lasts the session and
-    /// is gone after a reload.
+    /// Managed requests live in EditorUiState::managed_assets and are drained
+    /// by the Node sync bridge. Unmanaged imports retain the memory-only
+    /// registry behavior; their native disk requests cannot be handled here.
     fn discard_style_persistence_requests(&mut self) {
         let center = &mut self.editor_state.editor_ui.scene_template_center;
         center.take_pending_style_persist();
         center.take_pending_style_delete();
-        // Saved-template deletes are dropped for the same reason: this host
-        // shows no user templates (its registry is always empty — the M1
-        // boundary), so a delete request can never be raised, and the drain
-        // keeps the queue from accumulating if one ever were.
+        // Managed deletes use their own queue, not this native-disk request.
         center.take_pending_template_delete();
         // `pending_file_pick` is deliberately NOT drained here. It is the one
         // style-import request this host can honour, and the mount's post-press
@@ -131,6 +125,12 @@ impl WidgetHost {
         else {
             return false;
         };
+        if let Some(assets) = self.editor_state.editor_ui.managed_assets.as_mut() {
+            return assets.queue(
+                "instantiate_scene_template",
+                serde_json::json!({"id":template_id}),
+            );
+        }
         let Some(source) = scene_template_document(&template_id) else {
             // Web only: the ~1.1 MB of template documents are not in the wasm
             // bundle, so the first use of a template fetches it. Unknown ids

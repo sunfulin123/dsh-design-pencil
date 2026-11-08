@@ -20,6 +20,7 @@
 
 use std::collections::BTreeMap;
 
+pub mod appearance_tools;
 pub mod batch_design;
 mod batch_design_dsl;
 mod batch_design_dsl_error;
@@ -65,10 +66,15 @@ pub mod bulk_vars;
 #[cfg(test)]
 mod bulk_vars_tests;
 pub mod code_context_tool;
+pub mod code_export_tools;
 mod codegen_plan_store;
 pub mod codegen_tools;
 #[cfg(test)]
 mod codegen_tools_tests;
+pub mod component_behaviour_tools;
+pub mod component_design_tools;
+#[cfg(test)]
+mod component_design_tools_tests;
 pub mod component_tools;
 #[cfg(test)]
 mod component_tools_tests;
@@ -90,15 +96,22 @@ pub mod design_prompt;
 #[cfg(test)]
 mod design_prompt_tests;
 pub mod design_refine_result;
+pub mod design_token_tools;
+pub mod design_tools;
+pub mod design_variable_tools;
+pub mod diagram_tools;
 pub mod document_save;
 #[cfg(test)]
 mod document_save_tests;
+pub mod draft_tools;
 pub mod editor_state_tool;
 pub mod effect_normalize;
 pub mod element_tools;
+pub mod evaluate_variable_tool;
 pub mod extra_read_tools;
 #[cfg(test)]
 mod extra_read_tools_tests;
+pub mod figma_import_tools;
 pub mod guidelines_tools;
 pub mod import_common;
 pub mod import_html_tool;
@@ -110,6 +123,7 @@ mod import_snapshot_tool_tests;
 mod insert_node_args;
 mod insert_node_data;
 pub mod json_serializer;
+pub mod lint_fix_tools;
 pub mod lint_tools;
 #[cfg(test)]
 mod lint_tools_tests;
@@ -122,11 +136,18 @@ pub mod open_document;
 mod open_document_tests;
 pub mod page_tools;
 pub mod parser;
+pub mod paste_html_tool;
+pub(crate) mod path_geometry;
 pub mod read_nodes;
 #[cfg(test)]
 mod read_nodes_tests;
 pub mod read_tools;
 pub mod read_tools_extra;
+pub mod render_sampling_tool;
+pub mod render_screenshot_tool;
+
+/// Whether `batch_design.script` can run in this build (QuickJS is native-only).
+pub const SCRIPT_ENABLED: bool = cfg!(feature = "script");
 pub mod reparent_tools;
 #[cfg(test)]
 mod replace_node_tests;
@@ -140,6 +161,7 @@ pub mod selected_ops_tools;
 mod selected_ops_tools_tests;
 #[cfg(test)]
 mod selection_tools_tests;
+pub mod shared_style_tools;
 pub mod style_guide_tools;
 #[cfg(test)]
 mod style_guide_tools_tests;
@@ -148,6 +170,8 @@ pub mod style_ops_tools;
 mod style_ops_tools_tests;
 #[cfg(test)]
 pub mod test_fixtures;
+pub mod text_compat_tool;
+pub mod text_design_tools;
 pub mod theme_presets;
 #[cfg(test)]
 mod theme_presets_tests;
@@ -155,6 +179,7 @@ pub mod tools;
 #[cfg(test)]
 mod tools_tests;
 pub mod ui_kit_tool;
+pub mod ui_scale_tools;
 mod update_node_data;
 #[cfg(test)]
 mod update_node_data_tests;
@@ -226,6 +251,7 @@ pub use design_md_tools::{
 };
 pub use design_prompt::{get_design_prompt_snapshot, GetDesignPrompt};
 pub use design_refine_result::{design_refine_snapshot, DesignRefine};
+pub use design_tools::{arrange_nodes_snapshot, ArrangeNodes};
 pub use document_save::{save_document_snapshot, SaveDocument};
 pub use extra_read_tools::{get_node_children_snapshot, ChildRecord, GetNodeChildren};
 pub use guidelines_tools::{get_guidelines_snapshot, GetGuidelines};

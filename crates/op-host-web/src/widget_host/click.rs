@@ -48,7 +48,13 @@ impl WidgetHost {
         true
     }
 
-    pub fn apply_click(&mut self, x: f32, y: f32, viewport_w: f32, viewport_h: f32) -> bool {
+    pub(in crate::widget_host) fn click_layout(
+        &mut self,
+        x: f32,
+        y: f32,
+        viewport_w: f32,
+        viewport_h: f32,
+    ) -> bool {
         // glue:
         // Floating chat panel sits on top — check first so its
         // clicks don't fall through to the canvas.

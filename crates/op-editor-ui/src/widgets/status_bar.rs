@@ -43,6 +43,8 @@ pub struct StatusBar {
     pub pixel_grid_visible: bool,
     pub show_pixel_grid: bool,
     pub pixel_grid_label: String,
+    pub view_options_hover: bool,
+    pub view_options_label: String,
 }
 
 impl StatusBar {
@@ -56,6 +58,8 @@ impl StatusBar {
             pixel_grid_visible: false,
             show_pixel_grid: true,
             pixel_grid_label: "Rulers and pixel grid".into(),
+            view_options_hover: false,
+            view_options_label: "View options".into(),
         }
     }
 
@@ -85,6 +89,12 @@ impl StatusBar {
                 "canvas.pixelGrid",
             )
             .to_string(),
+            view_options_hover: state.editor_ui.statusbar_view_hover,
+            view_options_label: crate::widgets::editor_state_ext::translate(
+                &state.editor_ui,
+                "statusbar.viewOptions",
+            )
+            .to_string(),
         }
     }
 
@@ -97,6 +107,16 @@ impl StatusBar {
         let text_x = minus_x + ICON_SIZE + CLUSTER_GAP;
         let plus_x = text_x + 40.0 + CLUSTER_GAP;
         (search_x, minus_x, plus_x)
+    }
+
+    pub fn percentage_rect(&self, rect: Rect) -> Rect {
+        let (_, minus_x, _) = self.glyph_x(rect);
+        Rect::xywh(
+            minus_x + ICON_SIZE + CLUSTER_GAP,
+            rect.origin.y + 4.0,
+            40.0,
+            rect.size.y - 8.0,
+        )
     }
 
     /// Resolve a pointer at `point` to a control. The search section
@@ -196,6 +216,10 @@ impl Widget for StatusBar {
             1.4,
         );
         let text_x = minus_x + ICON_SIZE + CLUSTER_GAP;
+        if self.view_options_hover {
+            cx.backend
+                .fill_round_rect(self.percentage_rect(rect), 4.0, self.theme.button_hover);
+        }
         let zoom_text = format!("{}%", self.zoom_percent);
         let label = TextLayout::single_run(
             &zoom_text,
@@ -253,16 +277,26 @@ impl Widget for StatusBar {
             },
             1.4,
         );
-        if self.hover == Some(StatusBarButton::PixelGrid) {
+        let tooltip_text = if self.view_options_hover {
+            Some(self.view_options_label.as_str())
+        } else if self.hover == Some(StatusBarButton::PixelGrid) {
+            Some(self.pixel_grid_label.as_str())
+        } else {
+            None
+        };
+        if let Some(text) = tooltip_text {
+            let width = (super::text_metrics::measure_chrome(cx.backend, text, 12.0) + 24.0)
+                .min((rect.origin.x + rect.size.x - 8.0).max(24.0));
             let tooltip = Rect::xywh(
-                rect.origin.x + rect.size.x - 180.0,
+                rect.origin.x + rect.size.x - width,
                 rect.origin.y - 30.0,
-                180.0,
+                width,
                 24.0,
             );
             cx.backend.fill_round_rect(tooltip, 4.0, self.theme.popover);
+            let text = super::text_metrics::fit_chrome(cx.backend, text, width - 24.0, 12.0);
             let label = TextLayout::single_run(
-                &self.pixel_grid_label,
+                &text,
                 "system-ui",
                 12.0,
                 self.theme.foreground.to_jian(),

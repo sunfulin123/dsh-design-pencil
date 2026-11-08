@@ -679,6 +679,12 @@ fn paint_node_inner<'a>(
             // own text runs land at the right spot.
             if paint_widget_visual(cx, node, world_rect, zoom) {
                 // painted
+            } else if super::canvas_viewport_greek::should_greek(node.font_size, zoom, dpi_scale)
+                && edit_caret
+                    .as_ref()
+                    .is_none_or(|caret| caret.editing != node.id)
+            {
+                super::canvas_viewport_greek::paint_greeked_text(cx, node, world_rect, zoom);
             } else {
                 let zoom = zoom.max(0.0001);
                 cx.backend.save();

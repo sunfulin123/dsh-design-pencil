@@ -6,7 +6,7 @@
 //! host's `widget_host/input.rs` split).
 
 use op_editor_ui::widgets::cursor_hover_flow as hover_flow;
-use op_editor_ui::widgets::{PropertyPanel, TOP_BAR_HEIGHT};
+use op_editor_ui::widgets::PropertyPanel;
 use op_editor_ui::{Point2D, Rect};
 
 use super::WidgetHost;
@@ -14,7 +14,8 @@ use super::WidgetHost;
 impl WidgetHost {
     /// Cursor-move handler — drives canvas pan-drag, marquee /
     /// layer / chat / overlay drags, and the chrome hover washes.
-    pub fn apply_cursor_move(&mut self, x: f32, y: f32) -> bool {
+    pub(in crate::widget_host) fn cursor_move_layout(&mut self, x: f32, y: f32) -> bool {
+        let previous = Point2D::new(self.last_cursor_x, self.last_cursor_y);
         self.last_cursor_x = x;
         self.last_cursor_y = y;
         // Session-switch owner rotation before the cursor_probe resolve stores
@@ -38,6 +39,12 @@ impl WidgetHost {
             self.preview_switcher_hover(x, y, vw, vh);
             self.screen_switcher_hover(x, y, vw, vh);
             return self.preview_dispatch_move(x, y, vw, vh);
+        }
+        if self.eyedropper_pointer(x, y, false) {
+            return true;
+        }
+        if let Some(changed) = self.hover_view_options(previous, Point2D::new(x, y)) {
+            return changed;
         }
         self.refresh_layout_scene();
         // Pointer-capture drags + the modal surfaces, in `cursor_input_modals`.
@@ -155,16 +162,11 @@ impl WidgetHost {
                 property_panel_probe = Some(PropertyPanel::for_selection(&self.editor_state));
             }
             if let Some(panel) = property_panel_probe.as_ref().and_then(Option::as_ref) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        self.last_viewport_w - self.editor_state.editor_ui.property_panel_width,
-                        op_editor_ui::widgets::TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (self.last_viewport_h - op_editor_ui::widgets::TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = op_editor_ui::widgets::press_flow::property_panel_rect(
+                    &self.editor_state,
+                    self.last_viewport_w,
+                    self.last_viewport_h,
+                );
                 let point = Point2D::new(x, y);
                 let over_popup = panel.export_picker_contains(property_rect, point);
                 let new_hover = panel.export_picker_row_at(property_rect, point);
@@ -187,16 +189,11 @@ impl WidgetHost {
             }
         }
         if let Some(panel) = property_panel_probe.as_ref().and_then(Option::as_ref) {
-            let property_rect = Rect {
-                origin: Point2D::new(
-                    self.last_viewport_w - self.editor_state.editor_ui.property_panel_width,
-                    TOP_BAR_HEIGHT,
-                ),
-                size: Point2D::new(
-                    self.editor_state.editor_ui.property_panel_width,
-                    (self.last_viewport_h - TOP_BAR_HEIGHT).max(0.0),
-                ),
-            };
+            let property_rect = op_editor_ui::widgets::press_flow::property_panel_rect(
+                &self.editor_state,
+                self.last_viewport_w,
+                self.last_viewport_h,
+            );
             let point = Point2D::new(x, y);
             if self.editor_state.editor_ui.interaction_menu_open {
                 let new_hover = panel.interaction_menu_row_at(property_rect, point);
@@ -391,16 +388,11 @@ impl WidgetHost {
                 property_panel_probe = Some(PropertyPanel::for_selection(&self.editor_state));
             }
             if let Some(panel) = property_panel_probe.as_ref().and_then(Option::as_ref) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        self.last_viewport_w - self.editor_state.editor_ui.property_panel_width,
-                        op_editor_ui::widgets::TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (self.last_viewport_h - op_editor_ui::widgets::TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = op_editor_ui::widgets::press_flow::property_panel_rect(
+                    &self.editor_state,
+                    self.last_viewport_w,
+                    self.last_viewport_h,
+                );
                 if let Some(action) = panel.image_adjustment_drag_action(property_rect, field, x) {
                     self.apply_property_action(action);
                     return true;
@@ -412,16 +404,11 @@ impl WidgetHost {
                 property_panel_probe = Some(PropertyPanel::for_selection(&self.editor_state));
             }
             if let Some(panel) = property_panel_probe.as_ref().and_then(Option::as_ref) {
-                let property_rect = Rect {
-                    origin: Point2D::new(
-                        self.last_viewport_w - self.editor_state.editor_ui.property_panel_width,
-                        TOP_BAR_HEIGHT,
-                    ),
-                    size: Point2D::new(
-                        self.editor_state.editor_ui.property_panel_width,
-                        (self.last_viewport_h - TOP_BAR_HEIGHT).max(0.0),
-                    ),
-                };
+                let property_rect = op_editor_ui::widgets::press_flow::property_panel_rect(
+                    &self.editor_state,
+                    self.last_viewport_w,
+                    self.last_viewport_h,
+                );
                 if let Some(action) = panel.effect_radius_drag_action(property_rect, effect, x) {
                     self.apply_property_action(action);
                     return true;
@@ -457,14 +444,21 @@ impl WidgetHost {
         if let Some(status_rect) = self.status_bar_rect(self.last_viewport_w, self.last_viewport_h)
         {
             let over_status = !over_topmost && status_rect.contains(point);
+            let view_hover = over_status
+                && op_editor_ui::widgets::StatusBar::for_editor(&self.editor_state)
+                    .percentage_rect(status_rect)
+                    .contains(point);
             let new_hover = if over_topmost {
                 None
             } else {
                 op_editor_ui::widgets::StatusBar::for_editor(&self.editor_state)
                     .control_at(status_rect, point)
             };
-            if new_hover != self.editor_state.editor_ui.statusbar_hover {
+            if new_hover != self.editor_state.editor_ui.statusbar_hover
+                || view_hover != self.editor_state.editor_ui.statusbar_view_hover
+            {
                 self.editor_state.editor_ui.statusbar_hover = new_hover;
+                self.editor_state.editor_ui.statusbar_view_hover = view_hover;
                 self.mark_dirty();
                 if over_status {
                     self.clear_chat_and_lower_hover();
@@ -683,16 +677,11 @@ impl WidgetHost {
         }
         // PropertyPanel tab/action hover wash. Shown with a selection.
         let mut property_hover_changed = false;
-        let property_rect = Rect {
-            origin: Point2D::new(
-                self.last_viewport_w - self.editor_state.editor_ui.property_panel_width,
-                TOP_BAR_HEIGHT,
-            ),
-            size: Point2D::new(
-                self.editor_state.editor_ui.property_panel_width,
-                (self.last_viewport_h - TOP_BAR_HEIGHT).max(0.0),
-            ),
-        };
+        let property_rect = op_editor_ui::widgets::press_flow::property_panel_rect(
+            &self.editor_state,
+            self.last_viewport_w,
+            self.last_viewport_h,
+        );
         let point = Point2D::new(x, y);
         let over_property_panel = self.editor_state.property_panel_visible()
             && !over_topmost

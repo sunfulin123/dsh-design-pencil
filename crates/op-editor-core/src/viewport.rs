@@ -8,7 +8,8 @@
 use crate::render_backend::{Point2D, Rect};
 
 /// Pan + zoom state. Pan = canvas-local px; zoom = multiplier.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Viewport {
     pub pan_x: f32,
     pub pan_y: f32,
@@ -24,6 +25,126 @@ impl Viewport {
     };
     pub const MIN_ZOOM: f32 = 0.1;
     pub const MAX_ZOOM: f32 = 8.0;
+
+    /// Validate saved view hints before they reach renderer coordinate math.
+    pub fn validated(self) -> Option<Self> {
+        (self.pan_x.is_finite()
+            && self.pan_y.is_finite()
+            && self.zoom.is_finite()
+            && self.zoom > 0.0)
+            .then(|| Self {
+                zoom: self.zoom.clamp(Self::MIN_ZOOM, Self::MAX_ZOOM),
+                ..self
+            })
+    }
+
+    /// Read optional editor metadata without allocating a JSON subtree.
+    /// Invalid hints are ignored, not errors that prevent opening a document.
+    pub fn deserialize_optional<'de, D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<Self>, D::Error> {
+        use serde::de::{IgnoredAny, MapAccess, SeqAccess, Visitor};
+
+        struct Number(Option<f32>);
+        impl<'de> serde::Deserialize<'de> for Number {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                d.deserialize_any(NumberVisitor)
+            }
+        }
+        struct NumberVisitor;
+        impl<'de> Visitor<'de> for NumberVisitor {
+            type Value = Number;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("a finite coordinate")
+            }
+            fn visit_f64<E: serde::de::Error>(self, n: f64) -> Result<Number, E> {
+                Ok(Number(Some(n as f32)))
+            }
+            fn visit_i64<E: serde::de::Error>(self, n: i64) -> Result<Number, E> {
+                self.visit_f64(n as f64)
+            }
+            fn visit_u64<E: serde::de::Error>(self, n: u64) -> Result<Number, E> {
+                self.visit_f64(n as f64)
+            }
+            fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<Number, E> {
+                Ok(Number(None))
+            }
+            fn visit_str<E: serde::de::Error>(self, _: &str) -> Result<Number, E> {
+                Ok(Number(None))
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Number, E> {
+                Ok(Number(None))
+            }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> Result<Number, A::Error> {
+                while a.next_element::<IgnoredAny>()?.is_some() {}
+                Ok(Number(None))
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut a: A) -> Result<Number, A::Error> {
+                while a.next_entry::<IgnoredAny, IgnoredAny>()?.is_some() {}
+                Ok(Number(None))
+            }
+        }
+
+        #[derive(serde::Deserialize)]
+        #[serde(field_identifier)]
+        enum Field {
+            #[serde(rename = "panX", alias = "pan_x")]
+            PanX,
+            #[serde(rename = "panY", alias = "pan_y")]
+            PanY,
+            #[serde(rename = "zoom")]
+            Zoom,
+            #[serde(other)]
+            Other,
+        }
+        struct ViewVisitor;
+        impl<'de> Visitor<'de> for ViewVisitor {
+            type Value = Option<Viewport>;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("an optional saved viewport")
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
+                let (mut pan_x, mut pan_y, mut zoom) = (None, None, None);
+                while let Some(field) = a.next_key::<Field>()? {
+                    match field {
+                        Field::PanX => pan_x = a.next_value::<Number>()?.0,
+                        Field::PanY => pan_y = a.next_value::<Number>()?.0,
+                        Field::Zoom => zoom = a.next_value::<Number>()?.0,
+                        Field::Other => {
+                            a.next_value::<IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(pan_x
+                    .zip(pan_y)
+                    .zip(zoom)
+                    .and_then(|((pan_x, pan_y), zoom)| Viewport { pan_x, pan_y, zoom }.validated()))
+            }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
+                while a.next_element::<IgnoredAny>()?.is_some() {}
+                Ok(None)
+            }
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+            fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+            fn visit_str<E: serde::de::Error>(self, _: &str) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+            fn visit_f64<E: serde::de::Error>(self, _: f64) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+            fn visit_i64<E: serde::de::Error>(self, _: i64) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+            fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<Self::Value, E> {
+                Ok(None)
+            }
+        }
+        deserializer.deserialize_any(ViewVisitor)
+    }
 
     /// Wheel zoom anchored at `cursor` (canvas-local).
     pub fn zoom_at(&mut self, cursor: Point2D, delta: f32) {

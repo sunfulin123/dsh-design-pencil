@@ -9,7 +9,7 @@ macro_rules! tools {
         pub fn build_tool(name: &str, $state: &EditorState) -> Option<Box<dyn McpTool>> {
             match name {
                 $($name => Some(Box::new($factory)),)*
-                _ => None,
+                _ => build_text_tool(name, $state),
             }
         }
 
@@ -22,14 +22,22 @@ macro_rules! tools {
                     "required": $required, "additionalProperties": false,
                 },
             })),*];
-            list.extend(extra_schemas());
+            list.extend(extra_schemas().into_iter().chain(crate::asset_catalog::schemas()));
             list
         }
     };
 }
 
 fn extra_schemas() -> Vec<Value> {
-    vec![
+    let mut schemas = op_mcp::figma_import_tools::schemas();
+    schemas.extend(vec![
+        op_mcp::render_sampling_tool::schema(),
+        op_mcp::render_screenshot_tool::schema(),
+        json!({
+            "name":"tool_search",
+            "description":"Search available design tool names/descriptions and return their authoritative input schemas. Discover components, styles, text, imports and geometry before editing.",
+            "inputSchema":{"type":"object","additionalProperties":false,"properties":{"query":{"type":"string","minLength":1},"limit":{"type":"integer","minimum":1,"maximum":50}},"required":["query"]}
+        }),
         json!({
             "name": "import_html_url",
             "description": "Fetch an HTTP(S) HTML page and import its DOM/CSS into canonical design nodes.",
@@ -48,25 +56,6 @@ fn extra_schemas() -> Vec<Value> {
             }
         }),
         json!({
-            "name": "import_figma",
-            "description": "Import a Figma .fig file (via figPath, url, or bytesBase64) into the design document.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "figPath": {"type": "string"},
-                    "url": {"type": "string"},
-                    "bytesBase64": {"type": "string"},
-                    "fileName": {"type": "string"},
-                    "x": {"type": "string"},
-                    "y": {"type": "string"},
-                    "parent": {"type": "string"},
-                    "pageId": {"type": "string"}
-                },
-                "required": [],
-                "additionalProperties": false
-            }
-        }),
-        json!({
             "name": "finalize_design",
             "description": "Run deterministic post-generation layout and structure refinement passes on the active page.",
             "inputSchema": {
@@ -80,10 +69,13 @@ fn extra_schemas() -> Vec<Value> {
         }),
         json!({
             "name": "get_design_quality",
-            "description": "Run non-destructive quality diagnostics over the current document.",
+            "description": "Run non-destructive quality diagnostics over the active page. Pass rootId to check one board; each list holds at most `limit` entries (default 30) and `counts` reports the full totals.",
             "inputSchema": {
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "rootId": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500}
+                },
                 "required": [],
                 "additionalProperties": false
             }
@@ -101,7 +93,44 @@ fn extra_schemas() -> Vec<Value> {
                 "additionalProperties": false
             }
         }),
-    ]
+    ]);
+    schemas.extend(op_mcp::draft_tools::schemas());
+    for (name, description) in TEXT_TOOLS {
+        if let Some(schema) = op_mcp::text_design_tools::text_design_tool_schema(name) {
+            schemas.push(json!({"name":name,"description":description,"inputSchema":schema}));
+        }
+    }
+    schemas
+}
+
+const TEXT_TOOLS: &[(&str, &str)] = &[
+    ("set_text_content", "Replace a text node's plain content with one undoable edit."),
+    ("set_text_markdown", "Parse Markdown into rendered styled text, headings and lists. Supported Markdown subset; no HTML execution."),
+    ("set_text_style", "Apply a style to a contiguous Unicode-scalar text range (start inclusive, end exclusive), or the whole text if offsets are omitted."),
+    ("get_text_style", "Inspect a text node's content, range styles and length before applying range edits."),
+    ("set_paragraph_style", "Apply paragraph, indentation and list formatting to text using editable canonical styled segments."),
+];
+
+fn build_text_tool(name: &str, state: &EditorState) -> Option<Box<dyn McpTool>> {
+    use op_mcp::text_design_tools as text;
+    match name {
+        "tool_search" => Some(Box::new(crate::tool_search::ToolSearch::new(schemas()))),
+        "sample_color" => Some(Box::new(op_mcp::render_sampling_tool::SampleColor)),
+        "get_screenshot" => Some(Box::new(op_mcp::render_screenshot_tool::GetScreenshot)),
+        "list_drafts" => Some(Box::new(op_mcp::draft_tools::HostDraftTool("list_drafts"))),
+        "create_draft" => Some(Box::new(op_mcp::draft_tools::HostDraftTool("create_draft"))),
+        "restore_draft" => Some(Box::new(op_mcp::draft_tools::HostDraftTool(
+            "restore_draft",
+        ))),
+        "delete_draft" => Some(Box::new(op_mcp::draft_tools::HostDraftTool("delete_draft"))),
+        "set_text_content" => Some(Box::new(text::set_text_content_snapshot(state))),
+        "set_text_markdown" => Some(Box::new(text::set_text_markdown_snapshot(state))),
+        "set_text_style" => Some(Box::new(text::set_text_style_snapshot(state))),
+        "get_text_style" => Some(Box::new(text::get_text_style_snapshot(state))),
+        "set_paragraph_style" => Some(Box::new(text::set_paragraph_style_snapshot(state))),
+        name => op_mcp::figma_import_tools::host_only_tool(name)
+            .map(|tool| Box::new(tool) as Box<dyn McpTool>),
+    }
 }
 
 tools!(state;
@@ -158,7 +187,13 @@ tools!(state;
      "Read the editor camera viewport.", {}, []),
     ("set_viewport", op_mcp::set_viewport_snapshot(),
      "Set the editor camera pan and zoom.",
-     {"pan_x":{"type":"string"},"pan_y":{"type":"string"},"zoom":{"type":"string"}}, []),
+     {"pan_x":{"type":"string"},"pan_y":{"type":"string"},"zoom_percent":{"type":"string"}}, []),
+    ("get_ui_scale", op_mcp::ui_scale_tools::get_ui_scale_snapshot(state),
+     "Read actual editor chrome scaling and supported percentages. Independent of document geometry and camera zoom.",
+     {}, []),
+    ("set_ui_scale", op_mcp::ui_scale_tools::set_ui_scale_snapshot(state),
+     "Set editor chrome, layout and hit-testing scale to 100, 110, 125 or 150 percent. Does not change document geometry, dirty state or undo history.",
+     {"scale":{"type":"integer","enum":[100,110,125,150]}}, ["scale"]),
     ("set_active_tool", op_mcp::set_active_tool_snapshot(),
      "Switch the active editor tool.",
      {"tool":{"type":"string"}}, ["tool"]),
@@ -184,23 +219,30 @@ tools!(state;
      "Read available style guide tags.", {}, []),
     ("get_style_guide", op_mcp::get_style_guide_snapshot(),
      "Select a style guide by tags or name.",
-     {"tags":{"type":"string"},"name":{"type":"string"},"platform":{"type":"string"}}, []),
+     {"tags":{"type":"string"},"name":{"type":"string"},"platform":{"type":"string"},"id":{"type":"string"}}, []),
     ("list_style_guides", op_mcp::list_style_guides_snapshot(),
-     "List bundled style guides.", {"platform":{"type":"string"}}, []),
+     "List bundled and persistent style guides; managed hosts support paginated queries.", {"platform":{"type":"string"},"id":{"type":"string"},"tag":{"type":"string"},"query":{"type":"string"},"source":{"type":"string","enum":["builtin","user"]},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":100}}, []),
     ("get_design_md", op_mcp::get_design_md_snapshot(state),
      "Read the document's DESIGN.md specification.", {}, []),
     ("set_design_md", op_mcp::set_design_md_snapshot(state),
      "Update the document's DESIGN.md specification.",
-     {"markdown":{"type":"string"},"content":{"type":"string"}}, []),
+     {"markdown":{"type":"string"},"content":{"type":"string"},"autoExtract":{"type":"boolean"}}, []),
     ("export_design_md", op_mcp::export_design_md_snapshot(state),
      "Export the document's DESIGN.md specification.", {}, []),
+    ("export_code", op_mcp::code_export_tools::export_code_snapshot(state),
+     "Export deterministic HTML/CSS, React Tailwind JSX or Design JSX for explicit nodeIds on the active page (default: all page roots). Read-only; HTML/React include supported interactive component behaviour and ARIA. Returns code without running AI or writing files.",
+     {"format":{"type":"string","enum":["html-css","tailwind-jsx","design-jsx"]},
+      "nodeIds":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}}}, ["format"]),
     ("get_design_prompt", op_mcp::get_design_prompt_snapshot(state),
      "Read the design prompt guidance.", {"section":{"type":"string"}}, []),
     ("get_design_agent_prompt", op_mcp::get_design_agent_prompt_snapshot(),
      "Read the design agent system prompt.", {}, []),
     ("lint_document", op_mcp::lint_document_snapshot(state),
-     "Run structural and visual lint detectors on the document.",
-     {"rootId":{"type":"string"},"category":{"type":"string"}}, []),
+     "Run structural and visual lint detectors. Scope with rootId/nodeId/nodeIds (only the boards holding them are linted). Replies carry count, byCategory and bySeverity totals plus one page of issues (limit, default 50); pass nextCursor as cursor for the next page. Recommended: summaryOnly:true first, then page through the categories you will fix.",
+     {"rootId":{"type":"string"},"nodeId":{"type":"string"},"nodeIds":{"type":"array","items":{"type":"string"}},"rules":{"type":"array","items":{"type":"string"}},"severity":{"type":"string","enum":["error","warning","info"]},"limit":{"type":"integer","minimum":1,"maximum":500},"cursor":{"type":"string"},"summaryOnly":{"type":"boolean"}}, []),
+    ("fix_lint_issues", op_mcp::lint_fix_tools::fix_lint_issues_snapshot(state),
+     "Apply safe automatic fixes for issueIds from lint_document, or all:true, in one undoable transaction. Advisory findings remain for explicit design decisions.",
+     {"issueIds":{"type":"array","items":{"type":"string"}},"all":{"type":"boolean"}}, []),
     ("search_all_unique_properties", op_mcp::search_all_unique_properties_snapshot(state),
      "Search unique property values across a subtree.",
      {"parents":{"type":"string"},"properties":{"type":"string"}}, ["properties"]),
@@ -238,6 +280,18 @@ tools!(state;
     ("align_selected", op_mcp::align_selected_snapshot(),
      "Align editable independent nodes to their selection union, or a single child to its parent. Root-only single selection and auto-layout flow children cannot align. Distribution requires at least three independent movable nodes. Ineligible or unchanged operations return an error without mutation.",
      {"action":{"type":"string","enum":["left","center_h","right","top","center_v","bottom","distribute_h","distribute_v"]}}, ["action"]),
+    ("arrange_nodes", op_mcp::arrange_nodes_snapshot(),
+     "Figma's Tidy Up / Pack on 2+ free-moving siblings under one parent: tidy spaces a row/column evenly or lines a grid up; pack_h / pack_v place them edge to edge. Omit nodeIds to use the selection.",
+     {"mode":{"type":"string","enum":["tidy","pack_h","pack_v"]},"nodeIds":{"type":"array","items":{"type":"string"}}}, ["mode"]),
+    ("copy_properties", op_mcp::appearance_tools::copy_properties_snapshot(state),
+     "Copy a node's appearance into the session property clipboard; returns reusable properties without identity, content, position or size.",
+     {"sourceId":{"type":"string"},"props":{"type":"array","items":{"type":"string"}}}, ["sourceId"]),
+    ("paste_properties", op_mcp::appearance_tools::paste_properties_snapshot(state),
+     "Apply copied appearance to nodeIds atomically, preserving identity and geometry. Optionally supply properties directly instead of using the clipboard.",
+     {"nodeIds":{"type":"array","items":{"type":"string"}},"properties":{"type":"object"}}, ["nodeIds"]),
+    ("set_vector_path", op_mcp::appearance_tools::set_vector_path_snapshot(state),
+     "Replace a path's SVG geometry and fill rule. Clears stale editable anchors; supports arcs and compound paths.",
+     {"nodeId":{"type":"string"},"d":{"type":"string"},"fillRule":{"type":"string","enum":["nonzero","evenodd"]}}, ["nodeId","d"]),
     ("undo", op_mcp::undo_snapshot(), "Undo one engine history entry.", {}, []),
     ("redo", op_mcp::redo_snapshot(), "Redo one engine history entry.", {}, []),
     ("duplicate_selected", op_mcp::duplicate_selected_snapshot(),
@@ -281,6 +335,109 @@ tools!(state;
     ("import_html", op_mcp::import_html_tool::import_html_snapshot(),
      "Import HTML/CSS markup or a local HTML file into canonical design nodes.",
      {"html":{"type":"string"},"htmlPath":{"type":"string"},"viewportHeight":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("paste_html", op_mcp::paste_html_tool::PasteHtml,
+     "Paste HTML as editable DOM/CSS design layers or as plain visible text. Insert under parentId, with one undo step. No remote resources are fetched.",
+     {"html":{"type":"string"},"mode":{"type":"string","enum":["text","layers"]},"x":{"type":"string"},"y":{"type":"string"},"parentId":{"type":"string"},"pageId":{"type":"string"}}, ["html"]),
+    ("import_mermaid", op_mcp::diagram_tools::import_mermaid_snapshot(),
+     "Import Mermaid flowchart source as editable canonical shapes, text and static connector paths. Supports flowchart/graph syntax; rejects unsupported diagram types.",
+     {"mermaid":{"type":"string"},"source":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("import_drawio", op_mcp::diagram_tools::import_drawio_snapshot(),
+     "Import a single draw.io diagram (flat XML or bounded base64/raw-DEFLATE payload) as editable shapes, text and static connector paths. Rejects ambiguous multi-diagram files and malformed/oversized payloads.",
+     {"xml":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, ["xml"]),
+    ("create_connector", op_mcp::diagram_tools::create_connector_snapshot(state),
+     "Create an editable static connector path between active-page nodes. Geometry follows resolved nested layout; it does not follow later endpoint moves (liveFollow:false).",
+     {"fromId":{"type":"string"},"toId":{"type":"string"},"label":{"type":"string"},"style":{"oneOf":[{"type":"string","enum":["straight","orthogonal"]},{"type":"object","additionalProperties":false,"properties":{"routing":{"type":"string","enum":["straight","orthogonal"]},"strokeColor":{"type":"string"},"strokeWidth":{"type":"number","exclusiveMinimum":0,"maximum":128},"arrow":{"type":"boolean"}}}]}}, ["fromId","toId"]),
+    ("get_component_behaviour", op_mcp::component_behaviour_tools::component_behaviour_snapshot(state, "get_component_behaviour"),
+     "Read a reusable component's typed interactive button, switch, checkbox, tabs or slider behaviour and state bindings.",
+     {"componentId":{"type":"string"}}, ["componentId"]),
+    ("set_component_behaviour", op_mcp::component_behaviour_tools::component_behaviour_snapshot(state, "set_component_behaviour"),
+     "Set validated interactive behaviour on a reusable component in one undoable edit. Preview and HTML/React exports use real state and ARIA; nested behaviours and instance-swap bindings are rejected.",
+     {"componentId":{"type":"string"},"behaviour":op_mcp::component_behaviour_tools::behaviour_input_schema()}, ["componentId","behaviour"]),
+    ("get_component_properties", op_mcp::component_design_tools::component_design_snapshot(state, "get_component_properties"),
+     "Read a reusable component's typed text, visibility, and instance-swap property definitions.",
+     {"componentId":{"type":"string"}}, ["componentId"]),
+    ("list_styles", op_mcp::shared_style_tools::get_shared_styles_snapshot(state),
+     "Read persistent shared paint, text and effect styles and their applied node memberships.",
+     {}, []),
+    ("create_style", op_mcp::shared_style_tools::create_shared_style_snapshot(state),
+     "Create a persistent shared style. style requires name, kind (paint/text/effect), and a nonempty canonical properties object; new membership must be empty.",
+     {"id":{"type":"string"},"style":{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"},"kind":{"type":"string","enum":["paint","text","effect"]},"properties":{"type":"object","minProperties":1},"nodeIds":{"type":"array","items":{"type":"string"},"maxItems":0}},"required":["name","kind","properties"]}}, ["id","style"]),
+    ("update_style", op_mcp::shared_style_tools::update_shared_style_snapshot(state),
+     "Update a persistent shared style and atomically propagate it to attached nodes. Preserve existing membership; use apply_style/detach_style to change it.",
+     {"id":{"type":"string"},"style":{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string"},"kind":{"type":"string","enum":["paint","text","effect"]},"properties":{"type":"object","minProperties":1},"nodeIds":{"type":"array","items":{"type":"string"}}},"required":["name","kind","properties"]}}, ["id","style"]),
+    ("apply_style", op_mcp::shared_style_tools::apply_shared_style_snapshot(state),
+     "Attach a shared style to explicit active-page nodes and materialize its properties in one undo step.",
+     {"id":{"type":"string"},"nodeIds":{"type":"array","items":{"type":"string"}}}, ["id","nodeIds"]),
+    ("detach_style", op_mcp::shared_style_tools::detach_shared_style_snapshot(state),
+     "Detach explicit nodes from a shared style while retaining their current authored appearance.",
+     {"id":{"type":"string"},"nodeIds":{"type":"array","items":{"type":"string"}}}, ["id","nodeIds"]),
+    ("delete_style", op_mcp::shared_style_tools::delete_shared_style_snapshot(state),
+     "Delete a shared style definition without erasing the current appearance of its members.",
+     {"id":{"type":"string"}}, ["id"]),
+    ("import_design_tokens", op_mcp::design_token_tools::import_design_tokens_snapshot(state),
+     "Import DTCG tokens into persistent variables. Supports sRGB colors, finite numbers, px dimensions, fontWeight and aliases; rejects unsupported composites/units.",
+     {"tokens":{"type":"object"},"replace":{"type":"boolean"}}, ["tokens"]),
+    ("export_design_tokens", op_mcp::design_token_tools::export_design_tokens_snapshot(state),
+     "Export current variables as DTCG color/number tokens, optionally selecting theme axis modes.",
+     {"modes":{"type":"object","additionalProperties":{"type":"string"}}}, []),
+    ("bind_variable", op_mcp::design_variable_tools::bind_variable_snapshot(state),
+     "Bind an existing typed variable to explicit active-page nodes, including paint, opacity, gap/padding, text, visibility and supported shadow/blur paths. Unsupported fields, incompatible types and invalid effect indexes are rejected.",
+     {"nodeIds":{"type":"array","items":{"type":"string"}},"property":{"type":"string"},"variable":{"type":"string"}}, ["nodeIds","property","variable"]),
+    ("unbind_variable", op_mcp::design_variable_tools::detach_variable_snapshot(state),
+     "Remove a variable binding and retain its current resolved value on explicit nodes.",
+     {"nodeIds":{"type":"array","items":{"type":"string"}},"property":{"type":"string"}}, ["nodeIds","property"]),
+    ("set_variable_mode", op_mcp::design_variable_tools::set_variable_mode_snapshot(state),
+     "Set persistent collection/theme modes at node (default), page or global scope. Node scope requires nodeIds; page scope uses pageId or the active explicit page. Empty modes clears overrides and restores inheritance; auto removes the corresponding explicit override.",
+     {"scope":{"type":"string","enum":["node","page","global"]},"pageId":{"type":"string"},
+      "nodeIds":{"type":"array","items":{"type":"string"}},"modes":{"type":"object","additionalProperties":{"type":"string"}}}, ["modes"]),
+    ("get_variable_mode", op_mcp::design_variable_tools::get_variable_mode_snapshot(state),
+     "Read explicit and resolved variable collection/theme modes and available collections for node, page or global scope.",
+     {"scope":{"type":"string","enum":["node","page","global"]},"nodeId":{"type":"string"},"pageId":{"type":"string"}}, []),
+    ("evaluate_variable", op_mcp::evaluate_variable_tool::evaluate_variable_snapshot(state),
+     "Resolve a variable, including bounded calc arithmetic and aliases, using the same solver as canvas rendering. Optional modes select theme axis values.",
+     {"id":{"type":"string"},"modes":{"type":"object","additionalProperties":{"type":"string"}}}, ["id"]),
+    ("create_variant", op_mcp::component_design_tools::component_design_snapshot(state, "create_variant"),
+     "Promote an existing authored frame nodeId to a named reusable variant of componentId, with unique axis values. Design or duplicate the frame first with batch_design.",
+     {"componentId":{"type":"string"},"nodeId":{"type":"string"},"name":{"type":"string"},"values":{"type":"object","additionalProperties":{"type":"string"}}}, ["componentId","nodeId","name","values"]),
+    ("list_variants", op_mcp::component_design_tools::component_design_snapshot(state, "list_variants"),
+     "List a reusable component family's authored variants and axis values.",
+     {"componentId":{"type":"string"}}, ["componentId"]),
+    ("set_instance_variant", op_mcp::component_design_tools::component_design_snapshot(state, "set_instance_variant"),
+     "Select a variant from an instance's component family, preserving placement and clearing incompatible overrides.",
+     {"instanceId":{"type":"string"},"variantId":{"type":"string"}}, ["instanceId","variantId"]),
+    ("add_component_property", op_mcp::component_design_tools::component_design_snapshot(state, "add_component_property"),
+     "Expose a master's descendant as a typed component property. Instances inherit its default and can override it independently.",
+     {"componentId":{"type":"string"},"name":{"type":"string"},"kind":{"type":"string","enum":["text","boolean","instance-swap"]},"targetId":{"type":"string"},"default":{"type":["string","boolean"]}}, ["componentId","name","kind","targetId","default"]),
+    ("update_component_property", op_mcp::component_design_tools::component_design_snapshot(state, "update_component_property"),
+     "Update an existing typed component property and its default; inherited instance values resolve on rendering.",
+     {"componentId":{"type":"string"},"name":{"type":"string"},"kind":{"type":"string","enum":["text","boolean","instance-swap"]},"targetId":{"type":"string"},"default":{"type":["string","boolean"]}}, ["componentId","name","kind","targetId","default"]),
+    ("delete_component_property", op_mcp::component_design_tools::component_design_snapshot(state, "delete_component_property"),
+     "Remove a component property definition. Its authored target remains intact.",
+     {"componentId":{"type":"string"},"name":{"type":"string"}}, ["componentId","name"]),
+    ("set_instance_properties", op_mcp::component_design_tools::component_design_snapshot(state, "set_instance_properties"),
+     "Atomically set typed component properties on a Ref instance without mutating its master. Render and detach both apply these values.",
+     {"instanceId":{"type":"string"},"properties":{"type":"object","additionalProperties":{"type":["string","boolean"]}}}, ["instanceId","properties"]),
+    ("reset_instance_properties", op_mcp::component_design_tools::component_design_snapshot(state, "reset_instance_properties"),
+     "Remove named instance property values to restore component defaults; omit properties to reset all. Preserve descendant overrides and the master. No UI selection required.",
+     {"instanceId":{"type":"string","minLength":1},"properties":{"type":"array","items":{"type":"string","minLength":1}}}, ["instanceId"]),
+    ("swap_instance", op_mcp::component_design_tools::component_design_snapshot(state, "swap_instance"),
+     "Swap a Ref instance's reusable component while retaining placement. Clear incompatible descendant/property overrides.",
+     {"instanceId":{"type":"string"},"componentId":{"type":"string"}}, ["instanceId","componentId"]),
+    ("create_slot", op_mcp::component_design_tools::component_design_snapshot(state, "create_slot"),
+     "Declare a new named content slot on a component container, optionally restricting child count. Reject duplicate names and incompatible existing instance fills.",
+     {"componentId":{"type":"string"},"name":{"type":"string"},"targetId":{"type":"string"},"min":{"type":"integer","minimum":0},"max":{"type":"integer","minimum":0}}, ["componentId","name","targetId"]),
+    ("update_slot", op_mcp::component_design_tools::component_design_snapshot(state, "update_slot"),
+     "Replace an existing named slot definition after validating all referencing instance fills. targetId is required; omitted min defaults to zero and omitted max removes the upper limit. No UI selection required.",
+     {"componentId":{"type":"string","minLength":1},"name":{"type":"string","minLength":1},"targetId":{"type":"string","minLength":1},"min":{"type":"integer","minimum":0},"max":{"type":"integer","minimum":0}}, ["componentId","name","targetId"]),
+    ("delete_slot", op_mcp::component_design_tools::component_design_snapshot(state, "delete_slot"),
+     "Delete an existing named slot definition without deleting its authored container or instance descendant overrides. No UI selection required.",
+     {"componentId":{"type":"string","minLength":1},"name":{"type":"string","minLength":1}}, ["componentId","name"]),
+    ("list_slots", op_mcp::component_design_tools::component_design_snapshot(state, "list_slots"),
+     "Read a component's named slots, target containers, and child-count limits.",
+     {"componentId":{"type":"string"}}, ["componentId"]),
+    ("fill_slot", op_mcp::component_design_tools::component_design_snapshot(state, "fill_slot"),
+     "Replace a Ref instance's named slot with canonical editable nodes, preserving the master and respecting slot limits.",
+     {"instanceId":{"type":"string"},"slot":{"type":"string"},"nodes":{"type":"array","items":{"type":"object"}}}, ["instanceId","slot","nodes"]),
     ("import_web_snapshot", op_mcp::import_snapshot_tool::import_web_snapshot_tool(),
      "Import a browser DOM/style snapshot JSON into canonical design nodes.",
      {"snapshot":{"type":"string"},"snapshotPath":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
@@ -288,8 +445,8 @@ tools!(state;
      "Set layer collapsed state.", {"node_id":{"type":"string"},"collapsed":{"type":"string","enum":["true","false"]}}, ["node_id","collapsed"]),
     ("set_node_rotation", op_mcp::set_node_rotation_snapshot(),
      "Set rotation in degrees.", {"node_id":{"type":"string"},"degrees":{"type":"string"}}, ["node_id","degrees"]),
-    ("set_node_text", op_mcp::set_node_text_snapshot(),
-     "Set text content on a text node.", {"node_id":{"type":"string"},"text":{"type":"string"}}, ["node_id","text"]),
+    ("set_node_text", op_mcp::text_compat_tool::set_node_text_compat_snapshot(state),
+     "Set plain text, or render a Markdown subset with markdown:true, on a text node.", {"node_id":{"type":"string"},"text":{"type":"string"},"markdown":{"type":"boolean"},"options":{"type":"object"}}, ["node_id","text"]),
     ("set_node_corner_radius", op_mcp::set_node_corner_radius_snapshot(),
      "Set a nonnegative corner radius.", {"node_id":{"type":"string"},"radius":{"type":"string"}}, ["node_id","radius"]),
     ("set_node_font_size", op_mcp::set_node_font_size_snapshot(),

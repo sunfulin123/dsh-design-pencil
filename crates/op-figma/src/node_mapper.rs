@@ -8,8 +8,8 @@ use crate::figma_types::FigmaDecodedFile;
 use crate::image_resolver::retain_referenced_image_blobs;
 use crate::page_mapper::pen_page;
 use crate::tree::{
-    build_tree, build_tree_for_clipboard, build_tree_owned, collect_components,
-    collect_symbol_tree, guid_to_string, is_user_page, TreeNode,
+    build_tree, build_tree_for_clipboard, collect_components, collect_symbol_tree, guid_to_string,
+    is_user_page, TreeNode,
 };
 use jian_ops_schema::document::PenDocument;
 use jian_ops_schema::node::PenNode;
@@ -48,6 +48,7 @@ pub(crate) fn empty_document(name: &str) -> PenDocument {
         version: "1".to_string(),
         name: Some(name.to_string()),
         themes: None,
+        theme: None,
         variables: None,
         pages: Some(Vec::new()),
         children: Vec::new(),
@@ -61,6 +62,7 @@ pub(crate) fn empty_document(name: &str) -> PenDocument {
         design_md: None,
         conversion: None,
         motion: None,
+        shared_styles: None,
         // Figma import never authors the responsive schema opt-in.
         responsive: None,
     }
@@ -94,18 +96,31 @@ pub fn figma_all_pages_to_pen_document(
 ) -> FigmaImportResult {
     resolve_style_references(&mut decoded.node_changes);
 
-    let Some(tree) = build_tree_owned(std::mem::take(&mut decoded.node_changes)) else {
+    let (tree, variables) =
+        crate::paint_vars::build_resolved_tree(std::mem::take(&mut decoded.node_changes));
+    let Some(tree) = tree else {
         return empty_import_result(file_name, "No document root found", decoded.blobs);
     };
 
-    convert_tree_all_pages(&tree, decoded.blobs, file_name, layout_mode)
+    convert_tree_all_pages(
+        &tree,
+        decoded.blobs,
+        file_name,
+        layout_mode,
+        false,
+        variables,
+    )
 }
 
+/// `link_components` keeps component/instance linkage (a "Components" page
+/// plus verified `ref`s); only callers that keep the whole document may set it.
 pub(crate) fn convert_tree_all_pages(
     tree: &TreeNode,
     blobs: Vec<crate::figma_types::BlobOrString>,
     file_name: &str,
     layout_mode: FigLayoutMode,
+    link_components: bool,
+    variables: std::rc::Rc<crate::paint_vars::VariableIndex>,
 ) -> FigmaImportResult {
     let pages: Vec<&TreeNode> = tree.children.iter().filter(|c| is_user_page(c)).collect();
     if pages.is_empty() {
@@ -122,6 +137,8 @@ pub(crate) fn convert_tree_all_pages(
     let mut instance_assignments: HashMap<String, String> = HashMap::new();
     crate::instance::seed_assignments_from_instances(tree, &symbol_tree, &mut instance_assignments);
 
+    crate::instance::take_override_diagnostics();
+    crate::instance::take_stale_cache_count();
     let mut ctx = ConversionContext {
         component_map,
         symbol_tree,
@@ -131,6 +148,11 @@ pub(crate) fn convert_tree_all_pages(
         layout_mode,
         instance_assignments,
         instance_expansions: Default::default(),
+        linkage: link_components.then(crate::linkage::Linkage::default),
+        expansion_depth: 0,
+        keep_hidden: false,
+        variables: variables.clone(),
+        mode_scope: Vec::new(),
     };
 
     let mut pen_pages = Vec::new();
@@ -143,13 +165,21 @@ pub(crate) fn convert_tree_all_pages(
             .unwrap_or_else(|| format!("Page {}", i + 1));
         pen_pages.push(pen_page(page, format!("figma-page-{i}"), name, children));
     }
+    if let Some(linkage) = ctx.linkage.take() {
+        if let Some(summary) = linkage.summary() {
+            ctx.warnings.push(summary);
+        }
+        if let Some(page) = linkage.into_page() {
+            pen_pages.push(page);
+        }
+    }
 
     let document = document_with_pages(file_name, pen_pages);
     let mut image_blobs = collect_image_blobs(std::mem::take(&mut ctx.blobs));
     retain_referenced_image_blobs(&document, &mut image_blobs);
     FigmaImportResult {
         document,
-        warnings: ctx.warnings,
+        warnings: with_override_diagnostics(ctx.warnings),
         image_blobs,
     }
 }
@@ -163,11 +193,20 @@ pub fn figma_to_pen_document(
 ) -> FigmaImportResult {
     resolve_style_references(&mut decoded.node_changes);
 
-    let Some(tree) = build_tree_owned(std::mem::take(&mut decoded.node_changes)) else {
+    let (tree, variables) =
+        crate::paint_vars::build_resolved_tree(std::mem::take(&mut decoded.node_changes));
+    let Some(tree) = tree else {
         return empty_import_result(file_name, "No document root found", decoded.blobs);
     };
 
-    convert_tree_page(&tree, decoded.blobs, file_name, page_index, layout_mode)
+    convert_tree_page(
+        &tree,
+        decoded.blobs,
+        file_name,
+        page_index,
+        layout_mode,
+        variables,
+    )
 }
 
 pub(crate) fn convert_tree_page(
@@ -176,6 +215,7 @@ pub(crate) fn convert_tree_page(
     file_name: &str,
     page_index: usize,
     layout_mode: FigLayoutMode,
+    variables: std::rc::Rc<crate::paint_vars::VariableIndex>,
 ) -> FigmaImportResult {
     let pages: Vec<&TreeNode> = tree.children.iter().filter(|c| is_user_page(c)).collect();
     let Some(page) = pages.get(page_index).or_else(|| pages.first()) else {
@@ -190,6 +230,8 @@ pub(crate) fn convert_tree_page(
     let mut instance_assignments: HashMap<String, String> = HashMap::new();
     crate::instance::seed_assignments_from_instances(tree, &symbol_tree, &mut instance_assignments);
 
+    crate::instance::take_override_diagnostics();
+    crate::instance::take_stale_cache_count();
     let mut ctx = ConversionContext {
         component_map,
         symbol_tree,
@@ -199,6 +241,11 @@ pub(crate) fn convert_tree_page(
         layout_mode,
         instance_assignments,
         instance_expansions: Default::default(),
+        linkage: None,
+        expansion_depth: 0,
+        keep_hidden: false,
+        variables,
+        mode_scope: Vec::new(),
     };
     let children = convert_children(page, &mut ctx);
     let name = page
@@ -213,7 +260,7 @@ pub(crate) fn convert_tree_page(
     retain_referenced_image_blobs(&document, &mut image_blobs);
     FigmaImportResult {
         document,
-        warnings: ctx.warnings,
+        warnings: with_override_diagnostics(ctx.warnings),
         image_blobs,
     }
 }
@@ -306,6 +353,8 @@ pub fn figma_node_changes_to_pen_nodes(
         );
     }
 
+    crate::instance::take_override_diagnostics();
+    crate::instance::take_stale_cache_count();
     let mut ctx = ConversionContext {
         component_map,
         symbol_tree,
@@ -315,6 +364,11 @@ pub fn figma_node_changes_to_pen_nodes(
         layout_mode,
         instance_assignments,
         instance_expansions: Default::default(),
+        linkage: None,
+        expansion_depth: 0,
+        keep_hidden: false,
+        variables: Default::default(),
+        mode_scope: Vec::new(),
     };
     let mut nodes = Vec::new();
     for tree_node in &top_nodes {
@@ -329,9 +383,22 @@ pub fn figma_node_changes_to_pen_nodes(
     let image_blobs = collect_image_blobs(std::mem::take(&mut ctx.blobs));
     FigmaClipboardResult {
         nodes,
-        warnings: ctx.warnings,
+        warnings: with_override_diagnostics(ctx.warnings),
         image_blobs,
     }
+}
+
+/// Append one aggregate warning for override paths exact addressing could
+/// not place (missing or ambiguous segments), instead of one per entry.
+fn with_override_diagnostics(mut warnings: Vec<String>) -> Vec<String> {
+    let (missing, ambiguous) = crate::instance::take_override_diagnostics();
+    if missing + ambiguous > 0 {
+        warnings.push(format!(
+            "{} instance overrides target layers no longer in their component ({missing} stale, {ambiguous} ambiguous) and were not applied",
+            missing + ambiguous
+        ));
+    }
+    warnings
 }
 
 #[cfg(test)]

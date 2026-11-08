@@ -104,6 +104,12 @@ pub fn apply_codegen_action(
                 state.codegen.phase = CodegenPhase::Complete;
                 state.codegen.code_scroll.offset = 0.0;
                 state.codegen.code_h_scroll.offset = 0.0;
+                // A restored cache entry describes the previous output, not the
+                // freshly generated code: its selection range, degraded flag and
+                // error would otherwise point into different content.
+                state.codegen.code_selection = None;
+                state.codegen.degraded = false;
+                state.codegen.error = None;
                 return CodegenFollowUp::FrameworkChanged;
             }
             CodegenFollowUp::None
@@ -300,9 +306,43 @@ pub fn apply_instance_lifecycle_action(
     state: &mut EditorState,
     action: &crate::widgets::PropertyPanelAction,
 ) -> InstanceLifecycleOutcome {
+    apply_instance_lifecycle_action_at(state, action, 0)
+}
+
+pub fn apply_instance_lifecycle_action_at(
+    state: &mut EditorState,
+    action: &crate::widgets::PropertyPanelAction,
+    now_ms: u64,
+) -> InstanceLifecycleOutcome {
     use crate::widgets::PropertyPanelAction as A;
     use op_editor_core::NodeId;
     match action {
+        A::DesignSystem(_) => {
+            crate::widgets::property_panel_design_system::dispatch(state, action, now_ms);
+            InstanceLifecycleOutcome::Handled {
+                page_switched: false,
+                select: None,
+            }
+        }
+        A::ComponentInspector(action) => {
+            crate::widgets::property_panel_components::dispatch(state, action, now_ms);
+            InstanceLifecycleOutcome::Handled {
+                page_switched: false,
+                select: None,
+            }
+        }
+        A::ApplyTextMarkdown
+        | A::ApplyTextRange
+        | A::ApplyTextParagraph
+        | A::SetTextTruncation(_)
+        | A::CycleTextRangeFlag(_)
+        | A::ToggleTextRangeClearLink
+        | A::SetTextParagraphList(_) => {
+            // Validate the authored target before redirection; dispatch later has the host clock.
+            state.ui.text_inspector.authored_blocked =
+                !op_editor_core::text_inspector_draft::TextInspectorDraft::editable(state);
+            InstanceLifecycleOutcome::Ignored
+        }
         A::GoToComponent => {
             let mut page_switched = false;
             let mut select = None;

@@ -6,6 +6,7 @@ use super::*;
 pub(super) fn frame_to_payload(n: &FrameNode, _rects: &BTreeMap<String, [f32; 4]>) -> NodePayload {
     let mut p = base_payload(&n.base, "frame");
     p.clip_content = n.container.clip_content == Some(true);
+    p.reverse_child_z = n.container.item_reverse_z_index == Some(true);
     apply_container_style(
         &mut p,
         n.container.fill.as_deref(),
@@ -26,6 +27,7 @@ pub(super) fn frame_to_payload(n: &FrameNode, _rects: &BTreeMap<String, [f32; 4]
 pub(super) fn group_to_payload(n: &GroupNode, _rects: &BTreeMap<String, [f32; 4]>) -> NodePayload {
     let mut p = base_payload(&n.base, "group");
     p.clip_content = n.container.clip_content == Some(true);
+    p.reverse_child_z = n.container.item_reverse_z_index == Some(true);
     apply_container_style(
         &mut p,
         n.container.fill.as_deref(),
@@ -49,6 +51,7 @@ pub(super) fn rect_to_payload(
 ) -> NodePayload {
     let mut p = base_payload(&n.base, "rect");
     p.clip_content = n.container.clip_content == Some(true);
+    p.reverse_child_z = n.container.item_reverse_z_index == Some(true);
     apply_container_style(
         &mut p,
         n.container.fill.as_deref(),
@@ -243,6 +246,8 @@ pub(super) fn text_to_payload(n: &TextNode) -> NodePayload {
         n.text_growth,
         Some(TextGrowth::FixedWidth) | Some(TextGrowth::FixedWidthHeight)
     );
+    p.text_truncation = n.truncates();
+    p.max_lines = n.max_lines.filter(|n| *n > 0);
     p
 }
 

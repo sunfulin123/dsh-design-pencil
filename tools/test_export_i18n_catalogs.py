@@ -32,6 +32,47 @@ class ExportI18nCatalogsTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.exporter = load_exporter()
 
+    def test_component_inspector_strings_reach_runtime_catalogs(self) -> None:
+        catalogs = self.exporter.load_catalogs()
+        self.assertEqual(catalogs["en"]["componentInspector.title"], "Component authoring")
+        self.assertEqual(catalogs["zh_cn"]["componentInspector.title"], "组件创作")
+        self.assertEqual(catalogs["ja"]["componentInspector.resetValue"], "Reset to default")
+
+    def test_component_literal_pairs_preserve_escaped_strings_and_reject_duplicates(self) -> None:
+        source = '"componentInspector.example" => ("a \\"quote\\"", "中文"),\n'
+        self.assertEqual(self.exporter.parse_component_source(source, "pair.rs", False),
+            {"componentInspector.example": 'a "quote"'})
+        self.assertEqual(self.exporter.parse_component_source(source, "pair.rs", True),
+            {"componentInspector.example": "中文"})
+        with self.assertRaisesRegex(self.exporter.CatalogError, "duplicate component key"):
+            self.exporter.parse_component_source(source + source, "pair.rs", False)
+
+    def test_component_literal_pairs_accept_rustfmt_trailing_comma(self) -> None:
+        source = '"diagram.importFailed" => (\n"Failed: {{message}}",\n"失败：{{message}}",\n),\n'
+        self.assertEqual(
+            self.exporter.parse_component_source(source, "pair.rs", True),
+            {"diagram.importFailed": "失败：{{message}}"},
+        )
+
+    def test_design_system_inspector_strings_reach_runtime_catalogs(self) -> None:
+        catalogs = self.exporter.load_catalogs()
+        self.assertTrue("designSystem.capture" in catalogs["en"])
+        self.assertEqual(catalogs["en"]["designSystem.capture"], "Capture / update style")
+        self.assertEqual(catalogs["zh_cn"]["designSystem.capture"], "捕获 / 更新样式")
+        self.assertEqual(catalogs["ja"]["designSystem.capture"], catalogs["en"]["designSystem.capture"])
+
+    def test_diagram_import_strings_reach_every_runtime_catalog(self) -> None:
+        for stem, catalog in self.exporter.load_catalogs().items():
+            chinese = stem == "zh_cn"
+            self.assertEqual(
+                catalog["diagram.import"],
+                "导入 Mermaid / draw.io…" if chinese else "Import Mermaid / draw.io…",
+            )
+            self.assertEqual(
+                catalog["diagram.importFailed"],
+                "图表导入失败：{{message}}" if chinese else "Diagram import failed: {{message}}",
+            )
+
     def test_parser_supports_every_current_rhs_form(self) -> None:
         source = r'''
 const MULTILINE: &str =

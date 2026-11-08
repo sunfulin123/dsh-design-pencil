@@ -44,6 +44,12 @@ pub(crate) fn text_layout_block_height(touch_controls: bool) -> f32 {
 }
 
 pub fn text_section_height(touch_controls: bool) -> f32 {
+    base_text_section_height(touch_controls)
+        + SECTION_GAP
+        + crate::widgets::property_panel_text_design::HEIGHT
+}
+
+fn base_text_section_height(touch_controls: bool) -> f32 {
     let button_h = text_button_height(touch_controls);
     text_layout_block_height(touch_controls)
         + SECTION_HEADER_HEIGHT
@@ -110,6 +116,14 @@ pub fn push_text_input_rects(
             size: Point2D::new(half_w, INPUT_HEIGHT),
         },
     ));
+    crate::widgets::property_panel_text_design::push_input_rects(
+        rects,
+        x0,
+        content_y - text_layout_block_height(touch_controls) - SECTION_HEADER_HEIGHT
+            + base_text_section_height(touch_controls)
+            + SECTION_GAP,
+        usable_w,
+    );
 }
 
 pub fn text_action_rects(
@@ -236,6 +250,11 @@ pub fn text_action_rects(
             },
         ));
     }
+    out.extend(crate::widgets::property_panel_text_design::action_rects(
+        x0,
+        growth_y - SECTION_HEADER_HEIGHT + base_text_section_height(touch_controls) + SECTION_GAP,
+        usable_w,
+    ));
     out
 }
 
@@ -285,6 +304,8 @@ pub fn paint_text_section(
     x: f32,
     y: f32,
     width: f32,
+    inspector: &op_editor_core::text_inspector_draft::TextInspectorDraft,
+    inspector_enabled: bool,
 ) -> f32 {
     let Some(text) = snapshot.text.as_ref() else {
         return y;
@@ -561,7 +582,17 @@ pub fn paint_text_section(
     );
     y += 12.0;
     paint_section_divider(cx, theme, x, y, width);
-    y + SECTION_GAP
+    crate::widgets::property_panel_text_design::paint(
+        cx,
+        theme,
+        edit,
+        locale,
+        inspector,
+        inspector_enabled,
+        x,
+        y + SECTION_GAP,
+        width,
+    )
 }
 
 pub use crate::widgets::property_panel_typography::paint_font_weight_picker;

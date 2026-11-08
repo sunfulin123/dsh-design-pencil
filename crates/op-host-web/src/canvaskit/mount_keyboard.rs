@@ -74,6 +74,19 @@ pub(super) fn register_keyboard_listeners(
                 evt.prevent_default();
                 return;
             }
+            let view_shortcut = evt.code() == "Digit0" && is_mod && evt.alt_key() && !shift;
+            if b.host.eyedropper_key(&key, is_mod) {
+                crate::repaint_coalescer::request();
+                evt.prevent_default();
+                return;
+            }
+            if b.host.view_options_key(&key, view_shortcut, shift, is_mod) {
+                crate::repaint_coalescer::request();
+                evt.prevent_default();
+                drop(b);
+                crate::dom_io::drain_pending_file_action(&inner);
+                return;
+            }
             let mut consumed = false;
             if starts_space_pan && !b.host.input_active() {
                 b.host.set_space_pan(true);
@@ -192,6 +205,13 @@ pub(super) fn register_keyboard_listeners(
                     consumed = b.host.apply_new_chat_tab()
                 }
                 "a" | "A" if is_mod && !shift => consumed = b.host.apply_select_all(),
+                _ if is_mod
+                    && evt.alt_key()
+                    && !shift
+                    && matches!(evt.code().as_str(), "KeyC" | "KeyV") =>
+                {
+                    consumed = b.host.apply_appearance_shortcut(evt.code() == "KeyV");
+                }
                 "c" | "C" if is_mod && !shift => consumed = b.host.apply_copy(),
                 "x" | "X" if is_mod && !shift => consumed = b.host.apply_cut(),
                 // Cmd/Ctrl+V is owned by the DOM `paste` listener

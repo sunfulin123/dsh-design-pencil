@@ -188,7 +188,7 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
 /// Auto-width text never shrinks below this fraction of its authored
 /// font size — a badly-mismatched fallback font would otherwise render
 /// unreadably small.
-const MIN_SHRINK_SCALE: f32 = 0.35;
+pub(super) const MIN_SHRINK_SCALE: f32 = 0.35;
 
 /// Measure a painted line's full width — substring advance plus
 /// letter-spacing BETWEEN glyphs (mirrors the painter).

@@ -72,6 +72,12 @@ pub struct PenNodeBase {
     pub flip_x: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flip_y: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lock_aspect_ratio: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_design: Option<crate::component::ComponentDesign>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_values: Option<BTreeMap<String, serde_json::Value>>,
     /// Sibling-mask semantics. Absence means this node is painted normally.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "export-ts", ts(optional = nullable))]
@@ -83,10 +89,18 @@ pub struct PenNodeBase {
     pub blend_mode: Option<crate::style::BlendMode>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub theme: Option<BTreeMap<String, String>>,
+    /// Design-variable references for fields whose renderer schema is concrete.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variable_bindings: Option<BTreeMap<String, String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transition: Option<crate::motion::Transition>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub animations: Option<Vec<crate::motion::NodeAnimation>>,
+    /// Figma layer id this node was imported from, in the Figma REST form
+    /// (`1:2`, or `I1:2;3:4` for a layer inside an instance). Lets tools match
+    /// an imported node back to its source for verification.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub figma_node_id: Option<String>,
 }
 
 #[cfg(test)]

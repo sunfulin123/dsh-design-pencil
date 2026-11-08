@@ -205,11 +205,16 @@ pub(crate) fn node_payload_to_scene(
         origin: Point2D::new(node.x, node.y),
         size: Point2D::new(node.w, node.h),
     };
-    let children: Vec<SceneNode> = node
+    let mut children: Vec<SceneNode> = node
         .children
         .iter()
         .map(|c| node_payload_to_scene(c, var_table, paint_opacity))
         .collect();
+    // Scene children are topmost-first; a reversed-stacking container keeps
+    // its laid-out positions and only flips paint/hit-test order.
+    if node.reverse_child_z {
+        children.reverse();
+    }
     let aggregate_bounds_cache = SceneNode::compute_aggregate_bounds(bounds, &children);
     let variable_fill = var_table.fill_for(&node_id);
     SceneNode {
@@ -282,6 +287,8 @@ pub(crate) fn node_payload_to_scene(
         text_align: text_align_to_scene(&node.text_align),
         text_vertical_align: text_vertical_align_to_scene(&node.text_vertical_align),
         text_wrap: node.text_wrap,
+        text_truncation: node.text_truncation,
+        max_lines: node.max_lines,
         points: node
             .points
             .iter()
@@ -380,6 +387,7 @@ fn text_runs_to_scene(
             let scene = SceneTextRun {
                 start,
                 end,
+                font_family: run.font_family.as_deref().map(Arc::from),
                 font_size: run.font_size,
                 font_weight: run.font_weight,
                 fill: run

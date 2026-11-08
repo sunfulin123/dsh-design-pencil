@@ -84,6 +84,10 @@ impl SyncGate {
         self.open_pending.is_some()
     }
 
+    pub fn is_synced(&self, current: (u64, u64)) -> bool {
+        self.last_synced == Some(current) && !self.open_pending() && self.conflict.is_none()
+    }
+
     /// Accept-remote resolution: forget the baseline, clear the conflict
     /// AND any undrained conflict latch (retaining the server version
     /// inside accept_expected), lift open_pull_block, and record `current`
@@ -185,6 +189,23 @@ impl SyncGate {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sampling_requires_an_exact_acknowledged_unconflicted_baseline() {
+        let mut gate = SyncGate::default();
+        assert!(!gate.is_synced((1, 0)));
+        gate.note_synced(1, 0);
+        assert!(gate.is_synced((1, 0)));
+        assert!(!gate.is_synced((1, 1)));
+        assert!(!gate.is_synced((2, 0)));
+        gate.note_conflict(9);
+        assert!(!gate.is_synced((1, 0)));
+        gate.resolve_accept_remote((1, 0));
+        assert!(!gate.is_synced((1, 0)));
+        gate.note_synced(1, 0);
+        gate.note_open_pending(2);
+        assert!(!gate.is_synced((1, 0)));
+    }
 
     #[test]
     fn edit_during_inflight_push_stays_gated() {

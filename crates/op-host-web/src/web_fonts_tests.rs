@@ -224,3 +224,33 @@ fn active_ref_override_replaces_the_master_family_before_requesting() {
 
     assert_eq!(used_font_families_from_state(&state), vec!["Override Sans"]);
 }
+
+#[test]
+fn scene_font_scan_reads_expanded_instances_without_re_resolving_refs() {
+    let doc = serde_json::from_value(serde_json::json!({
+        "version": "0.8.0",
+        "pages": [
+            {"id": "components", "name": "Components", "children": [{
+                "type": "frame", "id": "card", "reusable": true,
+                "children": [{"type": "text", "id": "label", "content": "Hello", "fontFamily": "Master Sans"}]
+            }]},
+            {"id": "canvas", "name": "Canvas", "children": [{
+                "type": "ref", "id": "instance", "ref": "card",
+                "descendants": {"label": {"fontFamily": "Override Sans"}}
+            }]}
+        ]
+    }))
+    .expect("document");
+    let mut host = crate::widget_host::WidgetHost::new();
+    *host.editor_state_mut() = op_editor_core::EditorState::from_document(doc);
+    host.editor_state_mut().ui.active_page_index = 1;
+    host.mark_editor_state_dirty();
+    let before = host.scene_generation();
+    host.refresh_scene_for_tests();
+    assert_ne!(
+        host.scene_generation(),
+        before,
+        "a rebuilt scene gets a new generation"
+    );
+    assert_eq!(host.scene_text_font_families(), vec!["Override Sans"]);
+}

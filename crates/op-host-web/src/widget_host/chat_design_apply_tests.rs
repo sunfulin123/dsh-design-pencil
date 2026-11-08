@@ -22,6 +22,7 @@ fn apply_button_point(chat_rect: op_editor_ui::Rect) -> (f32, f32) {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn clicking_apply_design_block_inserts_nodes_once_like_ts() {
     let mut host = WidgetHost::new();
     host.editor_state.editor_ui.enter_chat_tab();

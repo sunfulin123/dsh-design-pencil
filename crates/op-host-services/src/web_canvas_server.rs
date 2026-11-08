@@ -483,7 +483,7 @@ pub fn handle_web_canvas_request(
             Ok(doc_json) => WebReply {
                 status: "200 OK",
                 body: format!(
-                    r#"{{"document":{doc_json},"version":{},"activePageIndex":{},"preserveAuthoredGeometry":{},"scenario":{}}}"#,
+                    r#"{{"document":{doc_json},"version":{},"activePageIndex":{},"preserveAuthoredGeometry":{},"scenario":{},"viewport":{}}}"#,
                     state.version,
                     state.editor.ui.active_page_index,
                     state.editor.editor_ui.preserve_authored_geometry,
@@ -493,7 +493,8 @@ pub fn handle_web_canvas_request(
                     match state.editor.editor_ui.scenario {
                         Some(scene) => format!("\"{}\"", scene.as_str()),
                         None => "null".to_string(),
-                    }
+                    },
+                    serde_json::json!(op_pen_loader::EditorMeta::from_state(&state.editor).viewport)
                 ),
             },
             Err(e) => WebReply {

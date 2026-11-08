@@ -228,6 +228,7 @@ pub fn apply_agent_settings_hit(
             SettingsPressOutcome::handled()
         }
         AgentSettingsHit::SelectThemeMode(mode) => {
+            state.editor_ui.temporary_theme_override = None;
             state.editor_ui.theme_mode = mode;
             SettingsPressOutcome::handled()
         }

@@ -23,10 +23,53 @@ extern "C" {
     /// a handle rather than borrow the host's.
     #[derive(Clone)]
     pub type OpCk;
+    #[wasm_bindgen(method, js_name = registerFontFace)]
+    pub(super) fn register_font_face(
+        this: &OpCk,
+        family: &str,
+        weight: u32,
+        italic: bool,
+        bytes: &[u8],
+    ) -> bool;
     #[wasm_bindgen(method, js_name = beginFrame)]
     pub(super) fn begin_frame(this: &OpCk);
     #[wasm_bindgen(method, js_name = endFrame)]
     pub(super) fn end_frame(this: &OpCk);
+    #[wasm_bindgen(method, js_name = sampleRegion, catch)]
+    pub(super) fn sample_region(
+        this: &OpCk,
+        x: u32,
+        y: u32,
+        radius: u32,
+    ) -> Result<js_sys::Uint8Array, JsValue>;
+    #[wasm_bindgen(method, js_name = beginOffscreen, catch)]
+    pub(super) fn begin_offscreen(this: &OpCk, width: u32, height: u32) -> Result<(), JsValue>;
+    #[wasm_bindgen(method, js_name = endOffscreenPng, catch)]
+    pub(super) fn end_offscreen_png(this: &OpCk) -> Result<js_sys::Uint8Array, JsValue>;
+    #[wasm_bindgen(method, js_name = abortOffscreen)]
+    pub(super) fn abort_offscreen(this: &OpCk);
+    #[wasm_bindgen(method, js_name = beginTile)]
+    pub(super) fn begin_tile(this: &OpCk, width: u32, height: u32) -> bool;
+    #[wasm_bindgen(method, js_name = endTile)]
+    pub(super) fn end_tile(this: &OpCk) -> u32;
+    #[allow(clippy::too_many_arguments)]
+    #[wasm_bindgen(method, js_name = drawTile)]
+    pub(super) fn draw_tile(
+        this: &OpCk,
+        id: u32,
+        sx: f32,
+        sy: f32,
+        sw: f32,
+        sh: f32,
+        dx: f32,
+        dy: f32,
+        dw: f32,
+        dh: f32,
+    ) -> bool;
+    #[wasm_bindgen(method, js_name = drawTiles)]
+    pub(super) fn draw_tiles(this: &OpCk, ids: &[u32], geo: &[f32]) -> Vec<u32>;
+    #[wasm_bindgen(method, js_name = dropTile)]
+    pub(super) fn drop_tile(this: &OpCk, id: u32);
     #[wasm_bindgen(method)]
     pub(super) fn clear(this: &OpCk, r: f32, g: f32, b: f32, a: f32);
     #[wasm_bindgen(method, js_name = fillRect)]

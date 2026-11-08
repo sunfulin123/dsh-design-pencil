@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Копии для восстановления",
+        "drafts.notice" => "Восстановление заменяет текущий документ и отменяется одним действием. Сначала создаётся резервная копия. Связанный файл не сохраняется.",
+        "drafts.create" => "Создать контрольную точку",
+        "drafts.label" => "Имя контрольной точки",
+        "drafts.empty" => "Копий для восстановления пока нет.",
+        "drafts.restoreConfirm" => "Восстановить эту копию?",
+        "drafts.deleteConfirm" => "Удалить эту копию навсегда?",
+        "drafts.syncError" => "Дождитесь синхронизации локальных изменений и повторите попытку.",
+        "drafts.refresh" => "Обновить",
+        "drafts.failed" => "Ошибка восстановления: {{message}}",
+        "drafts.loading" => "Обновление копий для восстановления…",
+        "drafts.autosave" => "Автосохранение",
+        "drafts.checkpoint" => "Контрольная точка",
+        "drafts.backup" => "Резервная копия",
+        "colorPicker.sampleError" => "Не удалось получить цвет: {{message}}",
+        "statusbar.interfaceScale" => "Масштаб интерфейса",
+        "statusbar.viewOptions" => "Параметры вида",
     "preview.emptyPage" => "На этой странице нет видимых фреймов для предпросмотра.",
     "preview.noFrame" => "Без рамки",
     "preview.fit" => "Вписать",

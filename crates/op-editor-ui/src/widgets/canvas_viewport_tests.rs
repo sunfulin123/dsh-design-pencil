@@ -451,11 +451,15 @@ struct ActiveTransforms {
     scales: Vec<(Point2D, Point2D)>,
 }
 
-fn active_transforms_at_first_line_stroke(
+/// Transforms active at the first `color` line stroke whose local endpoints
+/// satisfy `on_line`.
+fn active_transforms_at_line_stroke(
     backend: &RecordingBackend,
     color: Color,
+    on_line: impl Fn(Point2D, Point2D) -> bool,
 ) -> Option<ActiveTransforms> {
     let mut stroke_i = 0usize;
+    let mut line_i = 0usize;
     let mut rot_i = 0usize;
     let mut scale_i = 0usize;
     let mut stack = vec![ActiveTransforms::default()];
@@ -485,10 +489,12 @@ fn active_transforms_at_first_line_stroke(
                 rot_i += 1;
             }
             Op::Stroke | Op::StrokeOval => {
-                let is_match =
-                    backend.stroke_is_line[stroke_i] && backend.stroke_colors[stroke_i] == color;
-                if is_match {
-                    return stack.last().cloned();
+                if backend.stroke_is_line[stroke_i] {
+                    let (from, to, _) = backend.stroke_lines[line_i];
+                    if backend.stroke_colors[stroke_i] == color && on_line(from, to) {
+                        return stack.last().cloned();
+                    }
+                    line_i += 1;
                 }
                 stroke_i += 1;
             }

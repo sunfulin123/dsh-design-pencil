@@ -276,6 +276,11 @@ impl WidgetHostNative {
             return true;
         }
         if self.editor_state.ui.property_focus.is_some() {
+            if self.editor_state.ui.property_focus
+                == Some(op_editor_core::PropertyFocus::TextDesign(0))
+            {
+                return self.apply_text('\n');
+            }
             self.commit_property_focus_if_any();
             return true;
         }

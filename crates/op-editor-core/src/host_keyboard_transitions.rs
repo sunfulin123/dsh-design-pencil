@@ -278,7 +278,12 @@ pub fn property_focus_accepts(focus: PropertyFocus, input: &TextInputState, c: c
     } else {
         input.caret().min(draft.len())
     };
-    if focus.is_free_text() {
+    if matches!(
+        focus,
+        PropertyFocus::TextDesign(0) | PropertyFocus::DesignSystem(7)
+    ) {
+        !c.is_control() || matches!(c, '\n' | '\t')
+    } else if focus.is_free_text() {
         // Widget text rows (placeholder / value / label / icon names /
         // bind key) take any non-control character.
         !c.is_control()
@@ -340,9 +345,6 @@ pub fn property_input_text(state: &mut EditorState, c: char, now_ms: u64) -> Opt
     let focus = state.ui.property_focus;
     if focus.is_none() && state.editor_ui.effect_param_focus.is_none() {
         return None;
-    }
-    if c.is_control() {
-        return Some(false);
     }
     let allowed = match focus {
         Some(focus) => property_focus_accepts(focus, &state.ui.property_input, c),

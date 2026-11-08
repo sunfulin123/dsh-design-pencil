@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Bản sao khôi phục",
+        "drafts.notice" => "Khôi phục thay thế tài liệu hiện tại và có thể hoàn tác trong một bước. Bản sao lưu bảo vệ được tạo trước. Tệp liên kết không được lưu.",
+        "drafts.create" => "Tạo điểm kiểm tra",
+        "drafts.label" => "Tên điểm kiểm tra",
+        "drafts.empty" => "Chưa có bản sao khôi phục.",
+        "drafts.restoreConfirm" => "Khôi phục bản sao này?",
+        "drafts.deleteConfirm" => "Xóa vĩnh viễn bản sao khôi phục này?",
+        "drafts.syncError" => "Chờ các chỉnh sửa cục bộ đồng bộ xong rồi thử lại.",
+        "drafts.refresh" => "Làm mới",
+        "drafts.failed" => "Yêu cầu khôi phục thất bại: {{message}}",
+        "drafts.loading" => "Đang cập nhật bản sao khôi phục…",
+        "drafts.autosave" => "Lưu tự động",
+        "drafts.checkpoint" => "Điểm kiểm tra",
+        "drafts.backup" => "Bản sao lưu bảo vệ",
+        "colorPicker.sampleError" => "Không thể lấy mẫu màu: {{message}}",
+        "statusbar.interfaceScale" => "Tỷ lệ giao diện",
+        "statusbar.viewOptions" => "Tùy chọn chế độ xem",
     "preview.emptyPage" => "Trang này không có khung hiển thị để xem trước.",
     "preview.noFrame" => "Không viền",
     "preview.fit" => "Vừa cửa sổ",

@@ -78,8 +78,14 @@ pub mod property_panel_action;
 pub mod property_panel_code;
 pub mod property_panel_collab;
 pub mod property_panel_commit;
+pub mod property_panel_components;
+#[cfg(test)]
+mod property_panel_components_tests;
 pub mod property_panel_compositing;
 pub mod property_panel_corner;
+pub(crate) mod property_panel_design_system;
+#[cfg(test)]
+mod property_panel_design_system_tests;
 pub mod property_panel_dispatch;
 pub mod property_panel_dispatch_support;
 pub mod property_panel_effects;
@@ -136,6 +142,9 @@ mod property_panel_test_support;
 #[cfg(test)]
 mod property_panel_tests;
 pub mod property_panel_text;
+pub(crate) mod property_panel_text_design;
+#[cfg(test)]
+mod property_panel_text_design_tests;
 pub(crate) mod property_panel_text_input;
 #[cfg(test)]
 mod property_panel_text_tests;
@@ -200,6 +209,9 @@ mod canvas_viewport_grid;
 // `pub` for the remote-image miss-queue API (`take_remote_image_requests`
 // / `store_remote_image_bytes` / …) the desktop host drains per frame;
 // the paint entry point itself stays `pub(super)`.
+pub mod canvas_tile_paint;
+pub mod canvas_tiles;
+mod canvas_viewport_greek;
 pub mod canvas_viewport_image;
 pub mod canvas_viewport_overlay;
 pub mod canvas_viewport_paint;
@@ -401,6 +413,7 @@ pub mod mobile_chrome;
 #[cfg(test)]
 mod mobile_layout_tests;
 pub mod mobile_more_panel;
+pub mod page_loading_overlay;
 pub mod property_panel_color_variables;
 #[cfg(test)]
 mod property_panel_color_variables_tests;
@@ -431,6 +444,7 @@ mod top_bar_window_control;
 pub mod variables_panel;
 pub mod variables_panel_geometry_flow;
 mod variables_preset_menu;
+pub mod view_options;
 
 // Test-support: shared RenderBackend stubs (never ships in non-test builds).
 #[cfg(test)]

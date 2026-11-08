@@ -11,6 +11,9 @@ pub struct PenPage {
     pub id: String,
     pub name: String,
     pub children: Vec<PenNode>,
+    /// Persisted collection/axis overrides inherited by this page's nodes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<std::collections::BTreeMap<String, String>>,
 
     /// Optional infinite-canvas background for this page. When absent,
     /// editors use their normal canvas surface and grid treatment.

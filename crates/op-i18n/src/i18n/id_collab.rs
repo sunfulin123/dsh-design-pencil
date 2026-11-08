@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Salinan pemulihan",
+        "drafts.notice" => "Pemulihan mengganti dokumen saat ini dan dapat dibatalkan dalam satu langkah. Cadangan pelindung dibuat terlebih dahulu. Berkas tertaut tidak disimpan.",
+        "drafts.create" => "Buat titik pemeriksaan",
+        "drafts.label" => "Nama titik pemeriksaan",
+        "drafts.empty" => "Belum ada salinan pemulihan.",
+        "drafts.restoreConfirm" => "Pulihkan salinan ini?",
+        "drafts.deleteConfirm" => "Hapus salinan pemulihan ini secara permanen?",
+        "drafts.syncError" => "Tunggu perubahan lokal selesai disinkronkan, lalu coba lagi.",
+        "drafts.refresh" => "Segarkan",
+        "drafts.failed" => "Permintaan pemulihan gagal: {{message}}",
+        "drafts.loading" => "Memperbarui salinan pemulihan…",
+        "drafts.autosave" => "Simpan otomatis",
+        "drafts.checkpoint" => "Titik pemeriksaan",
+        "drafts.backup" => "Cadangan pelindung",
+        "colorPicker.sampleError" => "Gagal mengambil sampel warna: {{message}}",
+        "statusbar.interfaceScale" => "Skala antarmuka",
+        "statusbar.viewOptions" => "Opsi tampilan",
     "preview.emptyPage" => "Halaman ini tidak memiliki bingkai terlihat untuk dipratinjau.",
     "preview.noFrame" => "Tanpa bingkai",
     "preview.fit" => "Sesuaikan",

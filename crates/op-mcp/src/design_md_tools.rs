@@ -60,14 +60,29 @@ impl McpTool for SetDesignMd {
             Ok(v) => v,
             Err(e) => return ToolOutcome::Err(ToolErrorCode::InvalidArgument, e.to_string()),
         };
+        if args
+            .get("markdown")
+            .zip(args.get("content"))
+            .is_some_and(|(a, b)| a != b)
+        {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                "markdown and content aliases conflict".into(),
+            );
+        }
         let spec = if auto_extract {
             self.extracted.clone()
-        } else if let Some(markdown) = args.get("markdown").filter(|s| !s.is_empty()) {
+        } else if let Some(markdown) = args
+            .get("markdown")
+            .or_else(|| args.get("content"))
+            .filter(|s| !s.trim().is_empty())
+        {
             parse_design_md(markdown)
         } else {
-            let mut out = BTreeMap::new();
-            out.insert("success".into(), "false".into());
-            return ToolOutcome::Ok(out);
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                "non-empty markdown or content is required".into(),
+            );
         };
         let spec_json = match spec_json(&spec) {
             Ok(json) => json,

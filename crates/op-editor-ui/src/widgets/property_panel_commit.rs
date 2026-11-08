@@ -33,6 +33,24 @@ use crate::Color;
 pub fn property_focus_initial(focus: PropertyFocus, panel: &PropertyPanel) -> String {
     use PropertyFocus as F;
     match focus {
+        F::ComponentDesign(index) => panel
+            .component_inspector
+            .as_ref()
+            .and_then(|model| model.draft.values.get(index))
+            .cloned()
+            .unwrap_or_default(),
+        F::DesignSystem(index) => panel
+            .design_system_inspector
+            .values
+            .get(index)
+            .cloned()
+            .unwrap_or_default(),
+        F::TextDesign(index) => panel
+            .text_inspector
+            .values
+            .get(index)
+            .cloned()
+            .unwrap_or_default(),
         F::PageBackgroundHex => panel.page_background.clone().unwrap_or_default(),
         F::NodeName => panel.snapshot.name.clone(),
         F::TextContent => panel
@@ -305,6 +323,32 @@ pub fn commit_property_focus(state: &mut EditorState) -> bool {
     state.ui.property_input.set_text("");
     state.ui.property_input_draft.clear();
     state.ui.property_caret_pos = 0;
+    if let PropertyFocus::DesignSystem(index) = focus {
+        state.ui.design_system_inspector =
+            op_editor_core::design_system_inspector_draft::DesignSystemInspectorDraft::for_state(
+                state,
+            );
+        if let Some(value) = state.ui.design_system_inspector.values.get_mut(index) {
+            *value = draft;
+        }
+        return true;
+    }
+    if let PropertyFocus::ComponentDesign(index) = focus {
+        state.ui.component_inspector =
+            op_editor_core::component_inspector_draft::ComponentInspectorDraft::for_state(state);
+        if let Some(value) = state.ui.component_inspector.values.get_mut(index) {
+            *value = draft;
+        }
+        return true;
+    }
+    if let PropertyFocus::TextDesign(index) = focus {
+        state.ui.text_inspector =
+            op_editor_core::text_inspector_draft::TextInspectorDraft::for_state(state);
+        if let Some(value) = state.ui.text_inspector.values.get_mut(index) {
+            *value = draft;
+        }
+        return true;
+    }
     // Instance-write redirect (GAP #10) — see `apply_property_action`
     // for the choke-point note.
     let before = state.snapshot_for_history();

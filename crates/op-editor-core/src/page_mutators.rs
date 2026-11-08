@@ -27,6 +27,7 @@ pub const COMPONENTS_PAGE_NAME: &str = "Components";
 /// default to `None`.
 fn make_page(id: String, name: String, children: Vec<PenNode>) -> PenPage {
     PenPage {
+        theme: None,
         id,
         name,
         children,
@@ -367,6 +368,7 @@ impl EditorState {
                 .collect();
             let clone_name = custom_name.unwrap_or_else(|| format!("{} copy", source.name));
             let clone = PenPage {
+                theme: source.theme.clone(),
                 id: new_page_id.into(),
                 name: clone_name,
                 children: new_children?,
@@ -468,6 +470,7 @@ impl EditorState {
             self.ui.active_page_index -= 1;
         }
         self.clear_selection();
+        crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
         true
     }
 

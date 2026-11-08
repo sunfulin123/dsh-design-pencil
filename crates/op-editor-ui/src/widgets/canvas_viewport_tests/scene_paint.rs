@@ -12,6 +12,7 @@ fn pixel_grid_is_independent_of_background_dots_and_absent_in_viewers() {
     state.editor_ui.pixel_grid_visible = true;
     state.viewport.zoom = 8.0;
     state.doc.pages = Some(vec![PenPage {
+        theme: None,
         id: "page".into(),
         name: "Page".into(),
         children: Vec::new(),
@@ -39,7 +40,7 @@ fn pixel_grid_is_independent_of_background_dots_and_absent_in_viewers() {
     assert!(disabled.stroke_lines.is_empty());
     let viewer = paint(&CanvasViewport::from_scene(
         &scene,
-        state.viewport.clone(),
+        state.viewport,
         Theme::light(),
     ));
     assert!(viewer.stroke_lines.is_empty());
@@ -100,6 +101,7 @@ fn empty_scene_paints_canvas_background_and_grid_only() {
 fn authored_page_background_fills_canvas_and_suppresses_grid() {
     let mut state = sample_state();
     state.doc.pages = Some(vec![PenPage {
+        theme: None,
         id: "page-1".into(),
         name: "Page 1".into(),
         children: Vec::new(),

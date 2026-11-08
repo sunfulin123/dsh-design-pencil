@@ -15,6 +15,7 @@
   ],
   "type": "module",
   "scripts": {
+    "lint:maintenance": "bash ../tools/check-maintenance.sh",
     "lint": "oxlint . && bun run check-extractor-sync && bun run check-sw-imports && bun run check-locales && bun run check-design-evidence",
     "check-extractor-sync": "bash op-chrome-extension/scripts/check-extractor-sync.sh",
     "check-sw-imports": "node op-chrome-extension/scripts/check-sw-imports.mjs",

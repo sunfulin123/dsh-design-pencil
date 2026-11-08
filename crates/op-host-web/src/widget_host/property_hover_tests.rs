@@ -148,19 +148,29 @@ fn effect_add_menu_hover_clears_overlapped_property_action_hover() {
                 menu.origin.x + dx as f32 + 0.5,
                 menu.origin.y + dy as f32 + 0.5,
             );
-            if popup_panel.effect_add_menu_row_at(rect, point) == Some(1) {
-                if let Some(action_hover) = base_panel.action_hover_index(rect, point) {
-                    overlap = Some((point, action_hover));
-                    break 'popup;
-                }
+            if let Some(row) = popup_panel.effect_add_menu_row_at(rect, point) {
+                overlap = Some((point, row));
+                break 'popup;
             }
         }
     }
-    let (point, stale_action_hover) = overlap.expect("effect menu overlaps a property action");
+    let (point, row) = overlap.expect("effect menu has a hoverable row");
+    // The popup no longer always covers an inspector action, so seed the
+    // stale hover a previous cursor position could have left behind.
+    let stale_action_hover = (0..rect.size.y as i32)
+        .step_by(2)
+        .flat_map(|dy| (0..rect.size.x as i32).step_by(2).map(move |dx| (dx, dy)))
+        .find_map(|(dx, dy)| {
+            base_panel.action_hover_index(
+                rect,
+                Point2D::new(rect.origin.x + dx as f32, rect.origin.y + dy as f32),
+            )
+        })
+        .expect("inspector exposes at least one action");
     host.editor_state.editor_ui.property_action_hover = Some(stale_action_hover);
 
     assert!(host.apply_cursor_move(point.x, point.y));
-    assert_eq!(host.editor_state.editor_ui.effect_add_menu_hover, Some(1));
+    assert_eq!(host.editor_state.editor_ui.effect_add_menu_hover, Some(row));
     assert_eq!(
         host.editor_state.editor_ui.property_action_hover, None,
         "the popup must clear the inspector action hover beneath it"
@@ -168,32 +178,36 @@ fn effect_add_menu_hover_clears_overlapped_property_action_hover() {
 }
 
 #[test]
-fn codegen_hover_tracks_idle_generate_button() {
+fn codegen_hover_tracks_complete_copy_button() {
+    // fb91df6f generates deterministically, so the panel settles in Complete
+    // with Copy/Download instead of an idle AI Generate button.
     let mut host = WidgetHost::new();
     host.editor_state = EditorState::sample();
     host.mark_dirty();
     host.last_viewport_w = 1200.0;
     host.last_viewport_h = 800.0;
     host.editor_state.editor_ui.property_tab = PropertyTab::Code;
+    host.editor_state.codegen.phase = CodegenPhase::Complete;
+    host.editor_state.codegen.code = "<main>Hello</main>".into();
 
     let pw = host.editor_state.editor_ui.property_panel_width;
     let panel_x = host.last_viewport_w - pw;
-    let (_, generate_rect) = property_panel_code::code_action_rects(
+    let (_, copy_rect) = property_panel_code::code_action_rects(
         panel_x,
         TOP_BAR_HEIGHT + TAB_HEIGHT,
         pw,
         &host.editor_state.codegen,
     )
     .into_iter()
-    .find(|(action, _)| matches!(action, CodegenAction::Generate))
-    .expect("Generate rect present");
+    .find(|(action, _)| matches!(action, CodegenAction::Copy))
+    .expect("Copy rect present");
 
-    let point_x = generate_rect.origin.x + generate_rect.size.x / 2.0;
-    let point_y = generate_rect.origin.y + generate_rect.size.y / 2.0;
+    let point_x = copy_rect.origin.x + copy_rect.size.x / 2.0;
+    let point_y = copy_rect.origin.y + copy_rect.size.y / 2.0;
     assert!(host.apply_cursor_move(point_x, point_y));
     assert_eq!(
         host.editor_state.codegen.action_hover,
-        Some(CodegenHover::Generate)
+        Some(CodegenHover::Copy)
     );
 
     assert!(host.apply_cursor_move(panel_x - 12.0, TOP_BAR_HEIGHT + TAB_HEIGHT));
@@ -400,11 +414,30 @@ fn codegen_preview_wheel_scrolls_code_not_property_panel() {
         .map(|i| format!("line-{i:02}"))
         .collect::<Vec<_>>()
         .join("\n");
+    // Match the live target snapshot so the panel keeps this long preview
+    // instead of regenerating deterministic output for the sample document.
+    let state = &host.editor_state;
+    let targets: Vec<String> = if state.selection.set.is_empty() {
+        state
+            .active_children()
+            .iter()
+            .map(|node| op_editor_core::PenNodeExt::id_str(node).to_string())
+            .collect()
+    } else {
+        state
+            .selection
+            .set
+            .iter()
+            .map(|id| id.as_str().to_string())
+            .collect()
+    };
+    host.editor_state.codegen.selection_snapshot = targets;
 
     let panel_x = viewport_w - host.editor_state.editor_ui.property_panel_width;
+    // Below the format chip row added by fb91df6f, inside the code body.
     assert!(host.apply_wheel(
         panel_x + 80.0,
-        TOP_BAR_HEIGHT + 112.0,
+        TOP_BAR_HEIGHT + 240.0,
         -160.0,
         viewport_w,
         viewport_h

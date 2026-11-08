@@ -108,6 +108,9 @@ impl EditorState {
         if trimmed.is_empty() {
             return false;
         }
+        if let Some(assets) = self.editor_ui.managed_assets.as_mut() {
+            return assets.queue("save_theme_preset", json!({"name":trimmed}));
+        }
         let preset = ThemePreset {
             id: generate_preset_id(now_ms),
             name: trimmed.to_string(),
@@ -122,6 +125,9 @@ impl EditorState {
 
     /// TS `deletePreset` (`theme-preset-store.ts:41-44`).
     pub fn delete_theme_preset(&mut self, id: &str) -> bool {
+        if let Some(assets) = self.editor_ui.managed_assets.as_mut() {
+            return assets.delete("theme_preset", id);
+        }
         let before = self.theme_presets.len();
         self.theme_presets.retain(|p| p.id != id);
         let removed = self.theme_presets.len() != before;
@@ -134,6 +140,12 @@ impl EditorState {
     /// TS `renamePreset` (`theme-preset-store.ts:46-51`) — no trim /
     /// empty guard there either (no UI calls it; store API parity).
     pub fn rename_theme_preset(&mut self, id: &str, name: &str) -> bool {
+        if let Some(assets) = self.editor_ui.managed_assets.as_mut() {
+            return assets.queue(
+                "rename_theme_preset",
+                json!({"id":id,"name":name,"expectedRevision":assets.revision}),
+            );
+        }
         let Some(preset) = self.theme_presets.iter_mut().find(|p| p.id == id) else {
             return false;
         };

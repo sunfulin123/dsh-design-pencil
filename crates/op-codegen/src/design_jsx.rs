@@ -12,7 +12,7 @@ use crate::{fmt_num, html_escape, node_children, node_hidden, root_nodes, Codege
 use jian_ops_schema::node::text::FontStyleKind;
 use jian_ops_schema::node::{
     AlignItems, CornerRadius, FontWeight, JustifyContent, LayoutMode, NumberOrExpression, Padding,
-    PenNode, TextAlign, TextContent,
+    PenNode, TextAlign,
 };
 use jian_ops_schema::sizing::{SizingBehavior, SizingKeyword};
 use jian_ops_schema::style::{PenEffect, PenFill, StrokeThickness};
@@ -74,7 +74,7 @@ pub fn generate_design_jsx_for_node_refs(_doc: &PenDocument, nodes: &[&PenNode])
     let mut blocks = Vec::new();
     for node in nodes {
         let mut out = String::new();
-        emit_design_jsx_node(_doc, node, None, 0, &mut out);
+        emit_design_jsx_node(node, None, 0, &mut out);
         let trimmed = out.trim_end();
         if !trimmed.is_empty() {
             blocks.push(trimmed.to_string());
@@ -423,13 +423,7 @@ fn push_container_props(
     push_effect_props(props, container.effects.as_ref());
 }
 
-fn emit_design_jsx_node(
-    doc: &PenDocument,
-    node: &PenNode,
-    parent: Option<&PenNode>,
-    depth: usize,
-    out: &mut String,
-) {
+fn emit_design_jsx_node(node: &PenNode, parent: Option<&PenNode>, depth: usize, out: &mut String) {
     let indent = "  ".repeat(depth);
     let tag = tag_for_node(node);
     let base = node.base();
@@ -600,13 +594,7 @@ fn emit_design_jsx_node(
     };
 
     if let PenNode::Text(text_node) = node {
-        let content = match &text_node.content {
-            TextContent::Plain(s) => html_escape(s),
-            TextContent::Styled(segs) => segs
-                .iter()
-                .map(|seg| html_escape(&seg.text))
-                .collect::<String>(),
-        };
+        let content = crate::html_css::rich_text::body(text_node, true);
         if content.is_empty() {
             out.push_str(&format!("{indent}<{tag}{attr_str} />\n"));
         } else {
@@ -621,7 +609,7 @@ fn emit_design_jsx_node(
     } else {
         out.push_str(&format!("{indent}<{tag}{attr_str}>\n"));
         for child in children {
-            emit_design_jsx_node(doc, child, Some(node), depth + 1, out);
+            emit_design_jsx_node(child, Some(node), depth + 1, out);
         }
         out.push_str(&format!("{indent}</{tag}>\n"));
     }

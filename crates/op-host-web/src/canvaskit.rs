@@ -25,17 +25,23 @@ mod backend;
 mod backend_state;
 mod bindings;
 mod convert;
+mod import_fonts;
 mod inner;
 mod measure;
 mod mount;
 mod mount_keyboard;
 mod ops;
+mod render_queue;
+mod render_sampling;
+mod render_screenshot;
 #[cfg(test)]
 mod tests;
+mod ui_scale;
 
 pub use backend::{init_backend, CanvasKitBackend};
 pub use bindings::OpCk;
 pub use measure::BrowserMeasure;
+pub use ui_scale::{get_ui_scale, set_ui_scale};
 
 /// Mount the full editor chrome on `canvas_id`, rendered via CanvasKit on the
 /// GPU, with mouse / wheel / keyboard interactivity. Builds the shared

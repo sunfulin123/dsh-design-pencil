@@ -23,6 +23,7 @@ pub mod pickers;
 pub mod slides_panel_state;
 #[cfg(test)]
 mod tests;
+pub mod ui_scale;
 pub mod workspace;
 
 pub use exports::*;
@@ -42,6 +43,10 @@ use std::collections::HashSet;
 /// and is not duplicated here.
 #[derive(Debug, Clone)]
 pub struct EditorUiState {
+    pub ui_scale: ui_scale::UiScale,
+    pub view_options_open: bool,
+    pub view_options_focus: usize,
+    pub statusbar_view_hover: bool,
     // --- Sidebar + panel metrics -----------------------------------
     pub sidebar_open: bool,
     pub layer_panel_width: f32,
@@ -66,6 +71,8 @@ pub struct EditorUiState {
     // --- Theme + locale --------------------------------------------
     /// User's OpenPencil theme preference — TopBar Sun icon flips it.
     pub theme_mode: ThemeMode,
+    pub temporary_theme_override: Option<ThemeMode>,
+    pub managed_assets: Option<crate::managed_assets::ManagedAssets>,
     /// Page-lifetime color scheme imposed by an embedding host. Paint-only;
     /// separate from `theme_mode`, so host theme changes never persist.
     pub host_theme_override: Option<ThemeMode>,
@@ -523,6 +530,8 @@ pub struct EditorUiState {
     /// Desktop sets it; hosts that leave it `false` omit the File-menu
     /// row entirely rather than paint a dead one.
     pub batch_frame_export_supported: bool,
+    pub draft_recovery_supported: bool,
+    pub diagram_import_supported: bool,
     /// Whether this host can write a deck out as a self-contained
     /// slideshow `.html` — it needs a save picker plus the offscreen
     /// raster exporter. Desktop sets it; hosts that leave it `false`

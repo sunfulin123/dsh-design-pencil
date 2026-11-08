@@ -101,7 +101,7 @@ impl PreviewToolbar<'_> {
 
     fn zoom_bar(&self, theme: &Theme) -> crate::widgets::StatusBar {
         let mut bar = crate::widgets::StatusBar::with_zoom(self.zoom_percent);
-        bar.theme = theme.clone();
+        bar.theme = *theme;
         bar.show_pixel_grid = false;
         bar.hover = match self.hover {
             Some(PreviewControl::ZoomButton(button)) => Some(button),

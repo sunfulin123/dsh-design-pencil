@@ -21,6 +21,19 @@ impl ThemeMode {
     }
 }
 
+impl super::EditorUiState {
+    /// Effective theme without changing the stored preference.
+    pub fn effective_theme_mode(&self) -> ThemeMode {
+        self.host_theme_override
+            .or(self.temporary_theme_override)
+            .unwrap_or(self.theme_mode)
+    }
+
+    pub fn set_host_theme_override(&mut self, theme: Option<ThemeMode>) {
+        self.host_theme_override = theme;
+    }
+}
+
 /// Which embedding container the editor chrome renders inside. Each embed
 /// host hides the chrome its container already provides; `None` is the
 /// full standalone chrome. Unknown query values stay `None` so a newer

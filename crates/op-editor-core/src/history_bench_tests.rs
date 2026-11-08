@@ -33,6 +33,7 @@ fn empty_doc() -> PenDocument {
         version: "1.0.0".into(),
         name: None,
         themes: None,
+        theme: None,
         variables: None,
         pages: None,
         children: Vec::new(),
@@ -46,6 +47,7 @@ fn empty_doc() -> PenDocument {
         design_md: None,
         conversion: None,
         motion: None,
+        shared_styles: None,
         responsive: None,
     }
 }

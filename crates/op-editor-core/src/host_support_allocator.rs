@@ -376,6 +376,7 @@ impl EditorState {
             crate::walkers::remove_from_children(self.active_children_mut(), source_id);
         }
         self.active_children_mut().push(node);
+        crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
         Ok(Some(id))
     }
 }

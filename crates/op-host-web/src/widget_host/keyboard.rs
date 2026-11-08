@@ -326,6 +326,11 @@ impl WidgetHost {
             return true;
         }
         if self.editor_state.ui.property_focus.is_some() {
+            if self.editor_state.ui.property_focus
+                == Some(op_editor_core::PropertyFocus::TextDesign(0))
+            {
+                return self.apply_text('\n');
+            }
             self.commit_property_focus_if_any();
             return true;
         }
@@ -458,7 +463,7 @@ impl WidgetHost {
     /// Phase C2 keyboard forwarding stub. (No-op; the CanvasKit keydown handler
     /// dispatches per-key directly. Kept tested + ready.)
     #[allow(dead_code)]
-    pub fn apply_key(&mut self, _event: &op_editor_ui::KeyEvent) -> bool {
+    pub(in crate::widget_host) fn key_layout(&mut self, _event: &op_editor_ui::KeyEvent) -> bool {
         false
     }
 

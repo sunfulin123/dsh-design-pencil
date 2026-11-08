@@ -232,6 +232,7 @@ fn equivalence_multi_page_matches_full_clone_reference() {
         let mut state = state_with(Vec::new());
         state.doc.pages = Some(vec![
             PenPage {
+                theme: None,
                 id: "p0".into(),
                 name: "One".into(),
                 children: many_roots(4),
@@ -240,6 +241,7 @@ fn equivalence_multi_page_matches_full_clone_reference() {
                 lifecycle: None,
             },
             PenPage {
+                theme: None,
                 id: "p1".into(),
                 name: "Two".into(),
                 children: many_roots(3),
@@ -437,6 +439,7 @@ fn empty() -> PenDocument {
         version: "1.0.0".into(),
         name: None,
         themes: None,
+        theme: None,
         variables: None,
         pages: None,
         children: Vec::new(),
@@ -450,6 +453,7 @@ fn empty() -> PenDocument {
         design_md: None,
         conversion: None,
         motion: None,
+        shared_styles: None,
         responsive: None,
     }
 }

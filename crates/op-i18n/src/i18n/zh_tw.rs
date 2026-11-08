@@ -790,6 +790,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "正在解析 Figma 檔案…",
         "importProgress.htmlTitle" => "正在解析 HTML 和頁面資源…",
         "importProgress.htmlSubtitle" => "正在讀取樣式和圖片，請稍候",
+        "canvas.pageLoading" => "正在載入頁面…",
         "importProgress.largeFileSubtitle" => "大型檔案需要幾秒，請稍候",
         "account.signedOutHint" => "登入後即可同步你的設定與偏好",
         "code.noUsableCode" => "AI 未回傳可用程式碼。請重試，或切換 AI 模型後再試。",

@@ -232,7 +232,11 @@ impl RunStyle {
             strikethrough: self.strikethrough || run.strikethrough,
             letter_spacing: self.letter_spacing,
             color: run.fill.unwrap_or(self.color),
-            family: self.family.clone(),
+            family: run
+                .font_family
+                .as_deref()
+                .map(primary_family)
+                .unwrap_or_else(|| self.family.clone()),
         }
     }
 }
@@ -391,6 +395,7 @@ mod tests {
         n.text_runs = vec![SceneTextRun {
             start: 6,
             end: 10,
+            font_family: Some("Georgia".into()),
             font_size: 0.0,
             font_weight: 700,
             fill: None,
@@ -402,6 +407,7 @@ mod tests {
         assert!(xml.contains("<a:t>plain </a:t>"), "{xml}");
         assert!(xml.contains("b=\"1\""), "{xml}");
         assert!(xml.contains("<a:t>bold</a:t>"), "{xml}");
+        assert!(xml.contains("typeface=\"Georgia\""), "{xml}");
         // Both runs keep the node's size — the run overrode weight only.
         assert_eq!(xml.matches("sz=\"2400\"").count(), 2, "{xml}");
     }

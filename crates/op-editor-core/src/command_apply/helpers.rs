@@ -115,7 +115,9 @@ pub(crate) fn command_marks_document_dirty(cmd: &EditorCommand) -> bool {
     }
     !matches!(
         cmd,
-        C::SetActiveTool { .. }
+        C::Design(crate::DesignCommand::CopyProperties { .. })
+            | C::SetActiveTool { .. }
+            | C::SetUiScale { .. }
             | C::SetViewport { .. }
             | C::Undo
             | C::Redo

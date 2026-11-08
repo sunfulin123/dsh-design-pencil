@@ -4,7 +4,7 @@
 //! `TextContent::Styled` keeps its flattened string for back-compat
 //! (wrap, inline editing and hit-testing stay flat) and ADDITIONALLY
 //! carries one [`TextRunPayload`] per segment so the canvas painter
-//! can restyle each painted slice (per-segment font size / weight /
+//! can restyle each painted slice (per-segment font family / size / weight /
 //! fill / italic / underline / strikethrough — TS rich-text parity).
 
 // Two distinct `FontStyleKind` enums exist in the schema: the
@@ -35,6 +35,10 @@ pub(crate) fn apply_text_content(p: &mut NodePayload, n: &TextNode) {
                 .iter()
                 .map(|seg| TextRunPayload {
                     text: seg.text.clone(),
+                    font_family: seg
+                        .font_family
+                        .clone()
+                        .filter(|family| !family.trim().is_empty()),
                     font_size: seg.font_size.unwrap_or(0.0).max(0.0),
                     font_weight: seg
                         .font_weight

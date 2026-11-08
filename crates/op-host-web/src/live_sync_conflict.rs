@@ -138,10 +138,28 @@ fn parse_server_authoritative(body: &str) -> Option<bool> {
 }
 
 /// Ask the daemon once, at start-up, which deployment this is.
-pub(super) fn probe_serve_mode(base: &str) {
+pub(super) fn probe_serve_mode<C: crate::repaint_ctx::RepaintContext + 'static>(
+    base: &str,
+    inner: &std::rc::Rc<std::cell::RefCell<C>>,
+) {
+    let weak = std::rc::Rc::downgrade(inner);
     crate::live_sync::get(
         &format!("{base}/api/mcp/server"),
-        std::rc::Rc::new(|body: String| note_serve_mode(&body)),
+        std::rc::Rc::new(move |body: String| {
+            note_serve_mode(&body);
+            let supported = serde_json::from_str::<serde_json::Value>(&body)
+                .ok()
+                .and_then(|v| v.get("draftRecovery").and_then(|v| v.as_bool()));
+            if let (Some(inner), Some(supported)) = (weak.upgrade(), supported) {
+                let mut b = inner.borrow_mut();
+                b.host_mut()
+                    .editor_state_mut()
+                    .editor_ui
+                    .draft_recovery_supported = supported;
+                b.host_mut().mark_editor_state_dirty();
+                crate::repaint_coalescer::request();
+            }
+        }),
     );
 }
 
@@ -203,22 +221,22 @@ mod server_authority_tests {
     use op_editor_core::CollabConnectionPhase;
 
     #[test]
-    fn an_online_daemon_is_authoritative() {
-        assert_eq!(
-            parse_server_authoritative(r#"{"running":true,"port":3100,"serveMode":"online"}"#),
-            Some(true)
-        );
-    }
-
-    #[test]
-    fn a_local_or_managed_daemon_is_not() {
-        for mode in ["local", "managed"] {
+    fn online_and_managed_daemons_are_authoritative() {
+        for mode in ["online", "managed"] {
             assert_eq!(
                 parse_server_authoritative(&format!(r#"{{"serveMode":"{mode}"}}"#)),
-                Some(false),
+                Some(true),
                 "{mode}"
             );
         }
+    }
+
+    #[test]
+    fn a_local_daemon_is_not_authoritative() {
+        assert_eq!(
+            parse_server_authoritative(r#"{"serveMode":"local"}"#),
+            Some(false)
+        );
     }
 
     #[test]

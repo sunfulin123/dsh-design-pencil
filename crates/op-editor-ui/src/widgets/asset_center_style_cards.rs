@@ -142,6 +142,56 @@ pub fn filtered_style_guide_cards(query: &str) -> Vec<StyleGuideCard> {
     cards
 }
 
+pub fn cards_for_editor(state: &op_editor_core::EditorState, query: &str) -> Vec<StyleGuideCard> {
+    let Some(assets) = state.editor_ui.managed_assets.as_ref() else {
+        return filtered_style_guide_cards(query);
+    };
+    let query = query.trim().to_lowercase();
+    let mut cards: Vec<_> = assets
+        .entries
+        .iter()
+        .filter(|a| {
+            a["kind"] == "style-guide" && a["id"].as_str().is_some_and(|id| id.starts_with("user:"))
+        })
+        .map(|a| {
+            let strings = |key: &str| {
+                a[key]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|v| v.as_str().map(str::to_owned))
+                    .collect::<Vec<_>>()
+            };
+            let tags = strings("tags");
+            StyleGuideCard {
+                id: a["id"].as_str().unwrap_or_default().into(),
+                name: a["name"].as_str().unwrap_or_default().into(),
+                platform: Platform::from_str(a["platform"].as_str().unwrap_or("webapp")),
+                swatches: strings("swatches")
+                    .iter()
+                    .filter_map(|s| parse_swatch(s))
+                    .take(STYLE_SWATCH_COUNT)
+                    .collect(),
+                summary: tags
+                    .iter()
+                    .take(4)
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(" · "),
+                tags,
+                is_user: true,
+            }
+        })
+        .collect();
+    cards.extend(
+        style_guide_registry()
+            .iter()
+            .map(StyleGuideCard::from_guide),
+    );
+    cards.retain(|card| card.matches(&query));
+    cards
+}
+
 /// How many of `cards` are imports.
 ///
 /// The list is ordered imports-first, so this is also the index the corpus

@@ -5,6 +5,39 @@ use std::collections::BTreeMap;
 use super::{get_design_prompt_snapshot, McpTool, ToolOutcome};
 
 #[test]
+fn design_tools_guide_is_discoverable_and_included_in_full_prompt() {
+    let state = op_editor_core::EditorState::new();
+    for section in ["all", "design-tools"] {
+        let args = BTreeMap::from([("section".into(), section.into())]);
+        match get_design_prompt_snapshot(&state).call(&args) {
+            ToolOutcome::Ok(out) => {
+                let prompt = out.get("designPrompt").unwrap();
+                assert!(prompt.contains("tool_search"));
+                assert!(prompt.contains("set_instance_properties"));
+                assert!(prompt.contains("reset_instance_properties"));
+                assert!(prompt.contains("update_slot"));
+                assert!(prompt.contains("delete_slot"));
+                assert!(prompt.contains("set_component_behaviour"));
+                assert!(prompt.contains("export_code"));
+                assert!(prompt.contains("zoom_percent"));
+                assert!(prompt.contains("Unicode scalars"));
+                assert!(prompt.contains("does NOT follow moved endpoints"));
+                for keyword in [
+                    "inspect_figma_node",
+                    "get_figma_import_status",
+                    "resume_figma_import",
+                    "compare_figma_fidelity",
+                    "FIGMA_TIMEOUT",
+                ] {
+                    assert!(prompt.contains(keyword), "{keyword}");
+                }
+            }
+            other => panic!("expected design tools guide, got {other:?}"),
+        }
+    }
+}
+
+#[test]
 fn get_design_prompt_defaults_to_all_and_lists_sections() {
     let state = op_editor_core::EditorState::new();
 
@@ -58,6 +91,7 @@ fn get_design_prompt_full_includes_mobile_quality_guardrails() {
     }
 }
 
+#[cfg(feature = "script")]
 #[test]
 fn get_design_prompt_elements_section_is_script_first_and_edits_with_operations() {
     let state = op_editor_core::EditorState::new();
@@ -84,6 +118,54 @@ fn get_design_prompt_elements_section_is_script_first_and_edits_with_operations(
             assert!(prompt.contains("never overlays"));
             assert!(prompt.contains("Size the appended binding"));
             assert!(!prompt.contains("add_card_row_v1"));
+        }
+        other => panic!("expected prompt ok, got {other:?}"),
+    }
+}
+
+#[cfg(not(feature = "script"))]
+#[test]
+fn get_design_prompt_without_script_engine_builds_trees_with_operation_inserts() {
+    let state = op_editor_core::EditorState::new();
+    let mut args = BTreeMap::new();
+    args.insert("section".into(), "elements".into());
+
+    match get_design_prompt_snapshot(&state).call(&args) {
+        ToolOutcome::Ok(out) => {
+            let prompt = out.get("designPrompt").expect("prompt");
+            assert!(prompt.contains("operations-first"));
+            assert!(prompt.contains("binding=I(parent, nodeJson)"));
+            assert!(prompt.contains("`batch_design.script` and `K()` UIKit calls are rejected"));
+            assert!(prompt.contains("U(nodeId, patchJson)"));
+            assert!(prompt.contains("target must exist and have zero children"));
+            assert!(!prompt.contains("script-first"));
+            assert!(!prompt.contains("Do not create fresh UI trees with `I()` in operations"));
+        }
+        other => panic!("expected prompt ok, got {other:?}"),
+    }
+}
+
+#[test]
+fn design_prompt_teaches_visual_verification_examples_and_breakpoints() {
+    let state = op_editor_core::EditorState::new();
+    match get_design_prompt_snapshot(&state).call(&BTreeMap::new()) {
+        ToolOutcome::Ok(out) => {
+            let prompt = out.get("designPrompt").expect("prompt");
+            for needle in [
+                "get_screenshot",
+                "fall back to snapshot_layout plus get_design_quality",
+                "Never describe a screenshot you did not receive",
+                "calc($space-base * 2)",
+                r#""kind":"switch""#,
+                "innerRadius",
+                "fillRule",
+                ">=1280",
+                "768-1279",
+                "<768",
+                "bottom sheets",
+            ] {
+                assert!(prompt.contains(needle), "missing {needle}");
+            }
         }
         other => panic!("expected prompt ok, got {other:?}"),
     }

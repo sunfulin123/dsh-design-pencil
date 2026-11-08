@@ -87,12 +87,16 @@ impl EditorState {
             crate::variables_resolve::effective_theme(&self.doc, &self.ui.variables.active_theme);
         if let Some(pages) = self.doc.pages.as_mut() {
             for page in pages {
+                let mut page_theme = theme.clone();
+                if let Some(overrides) = &page.theme {
+                    page_theme.extend(overrides.clone());
+                }
                 crate::variables_resolve::replace_variable_refs_in_tree(
                     &mut page.children,
                     old,
                     new,
                     vars_snapshot.as_ref(),
-                    &theme,
+                    &page_theme,
                 );
             }
         }
@@ -103,6 +107,116 @@ impl EditorState {
             vars_snapshot.as_ref(),
             &theme,
         );
+        if let Some(variables) = self.doc.variables.as_mut() {
+            for definition in variables.values_mut() {
+                match &mut definition.value {
+                    VariableValue::Scalar(value) => {
+                        let old_themes = new
+                            .is_none()
+                            .then(|| vars_snapshot.as_ref()?.get(old))
+                            .flatten()
+                            .and_then(|old| match &old.value {
+                                VariableValue::Themed(entries) => Some(entries),
+                                _ => None,
+                            });
+                        if let Some(entries) = old_themes {
+                            let mut rewritten = Vec::new();
+                            for entry in entries {
+                                let mut entry_theme = theme.clone();
+                                if let Some(selector) = &entry.theme {
+                                    entry_theme.extend(selector.clone());
+                                }
+                                if let Some(value) =
+                                    crate::variables_resolve::rewrite_variable_scalar(
+                                        value,
+                                        old,
+                                        new,
+                                        vars_snapshot.as_ref(),
+                                        &entry_theme,
+                                    )
+                                {
+                                    rewritten.push(ThemedValue {
+                                        value,
+                                        theme: entry.theme.clone(),
+                                    });
+                                }
+                            }
+                            if !rewritten.is_empty() {
+                                definition.value = VariableValue::Themed(rewritten);
+                            }
+                        } else if let Some(rewritten) =
+                            crate::variables_resolve::rewrite_variable_scalar(
+                                value,
+                                old,
+                                new,
+                                vars_snapshot.as_ref(),
+                                &theme,
+                            )
+                        {
+                            *value = rewritten;
+                        }
+                    }
+                    VariableValue::Themed(entries) => {
+                        for entry in entries {
+                            let mut entry_theme = theme.clone();
+                            if let Some(selector) = &entry.theme {
+                                entry_theme.extend(selector.clone());
+                            }
+                            if let Some(rewritten) =
+                                crate::variables_resolve::rewrite_variable_scalar(
+                                    &entry.value,
+                                    old,
+                                    new,
+                                    vars_snapshot.as_ref(),
+                                    &entry_theme,
+                                )
+                            {
+                                entry.value = rewritten;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(styles) = self.doc.shared_styles.as_mut() {
+            fn rewrite(
+                value: &mut serde_json::Value,
+                old: &str,
+                new: Option<&str>,
+                vars: Option<&BTreeMap<String, VariableDefinition>>,
+                theme: &BTreeMap<String, String>,
+            ) {
+                match value {
+                    serde_json::Value::String(text) => {
+                        if let Some(scalar) = crate::variables_resolve::rewrite_variable_scalar(
+                            &VariableScalar::Str(text.clone()),
+                            old,
+                            new,
+                            vars,
+                            theme,
+                        ) {
+                            *value = serde_json::json!(scalar);
+                        }
+                    }
+                    serde_json::Value::Array(values) => {
+                        for value in values {
+                            rewrite(value, old, new, vars, theme);
+                        }
+                    }
+                    serde_json::Value::Object(values) => {
+                        for value in values.values_mut() {
+                            rewrite(value, old, new, vars, theme);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            for style in styles.values_mut() {
+                for value in style.properties.values_mut() {
+                    rewrite(value, old, new, vars_snapshot.as_ref(), &theme);
+                }
+            }
+        }
     }
 
     /// Rename a variable. Rejects an unknown `old`, an empty (post-

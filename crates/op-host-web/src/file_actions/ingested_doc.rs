@@ -14,6 +14,8 @@ use op_editor_core::EditorState;
 pub struct IngestedDoc {
     pub state: EditorState,
     pub warnings: Vec<String>,
+    /// Skip automatic framing after installation when the file restored a view.
+    pub restored_viewport: bool,
     /// Typed HTML-import degradations, for the post-import diagnostics
     /// overlay. Empty for every non-HTML ingest path.
     pub diagnostics: Vec<HtmlImportDiagnostic>,
@@ -25,6 +27,7 @@ impl IngestedDoc {
         Self {
             state,
             warnings,
+            restored_viewport: false,
             diagnostics: Vec::new(),
         }
     }
@@ -39,6 +42,7 @@ impl IngestedDoc {
         Self {
             state,
             warnings,
+            restored_viewport: false,
             diagnostics: op_editor_core::html_import_diagnostics::rows_from_parts(
                 op_html::diagnostic_parts(typed),
             ),

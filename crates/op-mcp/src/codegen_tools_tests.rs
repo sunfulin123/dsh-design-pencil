@@ -265,6 +265,7 @@ fn codegen_plan_defaults_to_first_page_and_honors_page_id() {
     state.doc.pages = Some(vec![
         PenPage {
             id: "page-1".into(),
+            theme: None,
             name: "Page 1".into(),
             children: vec![rect("p1n1", "First", 0.0, 0.0, 10.0, 10.0)],
             background_color: None,
@@ -273,6 +274,7 @@ fn codegen_plan_defaults_to_first_page_and_honors_page_id() {
         },
         PenPage {
             id: "page-2".into(),
+            theme: None,
             name: "Page 2".into(),
             children: vec![rect("p2n1", "Second", 0.0, 0.0, 10.0, 10.0)],
             background_color: None,

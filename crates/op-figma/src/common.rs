@@ -113,6 +113,19 @@ pub struct ConversionContext<'tree> {
     pub instance_assignments: HashMap<String, String>,
     /// Exact, bounded memoization of resolved instance child trees.
     pub instance_expansions: InstanceExpansionCache,
+    /// Component/instance linkage, when the caller keeps the whole document
+    /// (see [`crate::linkage`]). `None` always emits exact expansions.
+    pub linkage: Option<crate::linkage::Linkage>,
+    /// Nesting depth inside instance expansions / component definitions;
+    /// only depth-0 (page-level) instances are linked.
+    pub expansion_depth: u32,
+    /// Convert hidden layers as `visible: false` instead of dropping them
+    /// (linkage components, so instances can re-show them by override).
+    pub keep_hidden: bool,
+    /// Color variables for resolving bound paints in expanded instances.
+    pub variables: std::rc::Rc<crate::paint_vars::VariableIndex>,
+    /// Explicit variable modes of the ancestors being converted.
+    pub mode_scope: crate::paint_vars::ModeScope,
 }
 
 impl ConversionContext<'_> {
@@ -241,6 +254,10 @@ pub fn map_corner_smoothing(figma: &FigValue) -> f64 {
 }
 
 /// Assemble the shared base props spread into every PenNode.
+/// Synthetic field carrying a node's REST-form Figma id when it differs from
+/// its record `guid` (instance sub-layers, REST payload ids).
+pub(crate) const SOURCE_ID_KEY: &str = "dshSourceId";
+
 pub fn common_props(figma: &FigValue, id: String) -> PenNodeBase {
     let (x, y) = extract_position(figma);
     let (flip_x, flip_y) = extract_flip(figma);
@@ -269,13 +286,21 @@ pub fn common_props(figma: &FigValue, id: String) -> PenNodeBase {
         pin: None,
         flip_x,
         flip_y,
+        lock_aspect_ratio: figma.get_bool("constrainProportions"),
+        component_design: None,
+        component_values: None,
         mask_type: figma_mask_type(figma),
         blend_mode: map_blend_mode(figma.get_str("blendMode")),
         theme: None,
+        variable_bindings: None,
         transition: None,
         animations: None,
         // Figma import never authors responsive size constraints.
         constraints: None,
+        figma_node_id: figma
+            .get_str(SOURCE_ID_KEY)
+            .map(str::to_string)
+            .or_else(|| figma.get("guid").and_then(crate::tree::guid_to_string)),
     }
 }
 

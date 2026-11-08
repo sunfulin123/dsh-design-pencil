@@ -15,6 +15,26 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
     use PropertyPanelAction as A;
 
     match action {
+        A::DesignSystem(action) => {
+            use op_editor_core::design_system_inspector_draft::DesignSystemAction as S;
+            match action {
+                S::Kind(_)
+                | S::Scope(_)
+                | S::LoadStyle(_)
+                | S::BrowseStyle(_)
+                | S::BrowseFinding(_)
+                | S::ExportTokens
+                | S::Lint => G::LocalUi,
+                _ => G::Document(D::Unsupported(U::VariablesThemes)),
+            }
+        }
+        A::ComponentInspector(action) => {
+            if action.mutates_document() {
+                G::Document(D::Unsupported(U::Components))
+            } else {
+                G::LocalUi
+            }
+        }
         A::SetFlexLayout(_) => G::Document(D::NodeProperty(F::Layout)),
         A::ToggleSizeFillWidth | A::ToggleSizeHugWidth => G::Document(D::NodeProperty(F::Width)),
         A::ToggleSizeFillHeight | A::ToggleSizeHugHeight => G::Document(D::NodeProperty(F::Height)),
@@ -66,7 +86,11 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
         | A::ToggleVideoHoldLastFrame
         | A::ToggleVideoClickToReplay => G::Document(D::Unsupported(U::UnsupportedNodeProperty)),
         A::ClearPageBackground => G::Document(D::Unsupported(U::PageBackground)),
-        A::SetTextAlign(_)
+        A::ApplyTextMarkdown
+        | A::ApplyTextRange
+        | A::ApplyTextParagraph
+        | A::SetTextTruncation(_)
+        | A::SetTextAlign(_)
         | A::SetTextVerticalAlign(_)
         | A::SetTextGrowth(_)
         | A::SetFontFamilyIndex(_)
@@ -79,7 +103,10 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
             G::Document(D::Unsupported(U::VisibilityAndLocking))
         }
 
-        A::SetPropertyTab(_)
+        A::CycleTextRangeFlag(_)
+        | A::ToggleTextRangeClearLink
+        | A::SetTextParagraphList(_)
+        | A::SetPropertyTab(_)
         | A::CopyTextContent
         | A::ToggleCornerExpand
         | A::ToggleCompositingPicker(_)

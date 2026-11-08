@@ -13,15 +13,15 @@ mod property_compositing_dispatch;
 mod property_input_dispatch;
 
 use super::WidgetHostNative;
-use op_editor_ui::widgets::property_panel_dispatch as dispatch;
 use op_editor_ui::widgets::PropertyPanelAction;
+use op_editor_ui::widgets::property_panel_dispatch as dispatch;
 
 impl WidgetHostNative {
     pub(in crate::widget_host) fn apply_property_action(&mut self, action: PropertyPanelAction) {
+        use PropertyPanelAction as A;
         use dispatch::{
             InstanceLifecycleOutcome, PropertyActionFollowUp as F, PropertyActionOutcome as O,
         };
-        use PropertyPanelAction as A;
         if !self.collab_allows_user_action(dispatch::collab_gate_action(&action)) {
             return;
         }
@@ -43,8 +43,11 @@ impl WidgetHostNative {
         if let InstanceLifecycleOutcome::Handled {
             page_switched,
             select,
-        } = dispatch::apply_instance_lifecycle_action(&mut self.editor_state, &action)
-        {
+        } = dispatch::apply_instance_lifecycle_action_at(
+            &mut self.editor_state,
+            &action,
+            self.now_ms,
+        ) {
             if page_switched {
                 self.fit_active_page_after_switch(self.last_viewport_w, self.last_viewport_h);
             }

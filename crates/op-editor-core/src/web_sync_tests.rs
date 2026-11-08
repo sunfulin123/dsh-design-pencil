@@ -256,3 +256,64 @@ fn selection_body_carries_the_active_page_id() {
     let body: serde_json::Value = serde_json::from_str(&selection_push_body(&state)).expect("json");
     assert_eq!(body["activePageId"], "p2");
 }
+
+fn applied_client(version: u64, viewport: Option<crate::Viewport>) -> WebSyncClient {
+    let mut c = WebSyncClient::new();
+    c.mark_applied(version);
+    if let Some(viewport) = viewport {
+        c.note_applied_viewport(viewport);
+    }
+    c
+}
+
+#[test]
+fn an_unchanged_probe_skips_the_document_download() {
+    let view = crate::Viewport {
+        pan_x: 10.0,
+        pan_y: -4.5,
+        zoom: 0.5,
+    };
+    let c = applied_client(7, Some(view));
+    let probe = r#"{"version":7,"viewport":{"panX":10,"panY":-4.5,"zoom":0.5},"uiScale":null}"#;
+    assert!(c.probe_skips_document(probe, false));
+    // Identity camera is stored as `None`; a null probe viewport matches it.
+    let identity = applied_client(7, None);
+    assert!(identity.probe_skips_document(r#"{"version":7,"viewport":null,"uiScale":null}"#, false));
+}
+
+#[test]
+fn a_probe_requests_the_document_whenever_the_full_reply_could_matter() {
+    let view = crate::Viewport {
+        pan_x: 10.0,
+        pan_y: -4.5,
+        zoom: 0.5,
+    };
+    let c = applied_client(7, Some(view));
+    let same = r#"{"version":7,"viewport":{"panX":10,"panY":-4.5,"zoom":0.5},"uiScale":null}"#;
+    for (probe, why) in [
+        (
+            r#"{"version":8,"viewport":{"panX":10,"panY":-4.5,"zoom":0.5},"uiScale":null}"#,
+            "newer content",
+        ),
+        (
+            r#"{"version":7,"viewport":{"panX":11,"panY":-4.5,"zoom":0.5},"uiScale":null}"#,
+            "daemon camera moved",
+        ),
+        (
+            r#"{"version":7,"viewport":{"panX":10,"panY":-4.5,"zoom":0.5},"uiScale":125}"#,
+            "pending UI scale hint",
+        ),
+        (r#"{"version":7}"#, "older daemon without probe metadata"),
+        ("not json", "unreadable probe"),
+    ] {
+        assert!(!c.probe_skips_document(probe, false), "{why}");
+    }
+    assert!(
+        !c.probe_skips_document(same, true),
+        "a forced view pull still fetches"
+    );
+    assert!(
+        !WebSyncClient::new().probe_skips_document(same, false),
+        "the first pull always fetches"
+    );
+}

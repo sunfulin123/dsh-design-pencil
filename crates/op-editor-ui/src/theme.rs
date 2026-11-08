@@ -75,10 +75,8 @@ pub struct Theme {
     /// Primary-tinted row highlight (e.g. selected layer row).
     /// Approximates `bg-blue-500/15` from the TS app.
     pub row_selected_primary: Color,
-    /// Infinite-canvas surface behind document nodes. Slightly
-    /// lighter than `background` so the canvas reads as a distinct
-    /// surface (matches the TS app's `oklch(0.145 0 0)` ≈ `#252525`
-    /// canvas tone, dialed back a touch for OP's chrome).
+    /// Infinite-canvas surface behind document nodes: light gray in
+    /// light mode and white in dark mode, independent of panel colors.
     pub canvas_surface: Color,
     /// Fill for user message bubbles in the AI chat transcript.
     /// Follows the overall neutral shell: a distinct graphite chip
@@ -111,7 +109,6 @@ impl Theme {
         } else {
             rgb(255, 255, 255)
         };
-        theme.canvas_surface = theme.card;
         theme.popover = theme.card;
         theme.foreground = if dark {
             rgb(249, 250, 251)
@@ -187,8 +184,7 @@ impl Theme {
             button_hover: rgba(0xff, 0xff, 0xff, 0.06),
             row_selected: rgb(0x30, 0x30, 0x30),
             row_selected_primary: rgba(0x3b, 0x82, 0xf6, 0.22),
-            // Pencil-like dark canvas, kept slightly warmer/lighter than the shell.
-            canvas_surface: rgb(0x1b, 0x1b, 0x1b),
+            canvas_surface: Color::WHITE,
             user_bubble: rgb(0x50, 0x52, 0x60),
             user_bubble_foreground: rgb(0xff, 0xff, 0xff),
             // GitHub-style success green ~#3FB950 for completed ✓ rings.
@@ -227,8 +223,7 @@ impl Theme {
             button_hover: rgba(0x00, 0x00, 0x00, 0.06),
             row_selected: rgb(0xe4, 0xe4, 0xe7),
             row_selected_primary: rgba(0x3b, 0x82, 0xf6, 0.18),
-            // Pencil-like light canvas, distinct from side panels but not stark white.
-            canvas_surface: rgb(0xf3, 0xf3, 0xf3),
+            canvas_surface: rgb(0xf4, 0xf4, 0xf4),
             user_bubble: rgb(0x5f, 0x62, 0x70),
             user_bubble_foreground: rgb(0xff, 0xff, 0xff),
             // Success green is the same in both themes.
@@ -267,6 +262,16 @@ mod tests {
         let l = Theme::light();
         assert_eq!(d.primary.r, l.primary.r);
         assert_eq!(d.primary.b, l.primary.b);
+    }
+
+    #[test]
+    fn canvas_background_is_light_gray_in_light_mode_and_white_in_dark_mode() {
+        for theme in [Theme::light(), Theme::managed(false)] {
+            assert_eq!(theme.canvas_surface, rgb(0xf4, 0xf4, 0xf4));
+        }
+        for theme in [Theme::dark(), Theme::managed(true)] {
+            assert_eq!(theme.canvas_surface, Color::WHITE);
+        }
     }
 
     #[test]

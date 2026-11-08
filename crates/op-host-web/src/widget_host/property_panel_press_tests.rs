@@ -658,20 +658,11 @@ fn web_property_panel_image_actions_match_native_state_intents() {
     );
     assert!(!host.editor_state.editor_ui.image_panel.generate_open);
 
-    let generate = point_for_action(&host, |action| {
-        matches!(action, PropertyPanelAction::ToggleImageGeneratePopover)
-    });
-    assert!(host.apply_press(generate.x, generate.y, VIEWPORT_W, VIEWPORT_H));
-    assert!(host.editor_state.editor_ui.image_panel.generate_open);
-    assert_eq!(
-        host.editor_state
-            .editor_ui
-            .image_panel
-            .generate_prompt
-            .text(),
-        "Hero photo"
-    );
-    assert!(!host.editor_state.editor_ui.image_panel.search_open);
+    // fb91df6f moved AI image generation to the DSH chat; only search remains.
+    assert!(PropertyPanel::for_selection(&host.editor_state)
+        .expect("property panel")
+        .hit_test_action(property_rect(&host), search)
+        .is_some_and(|action| !matches!(action, PropertyPanelAction::ToggleImageGeneratePopover)));
 
     host.editor_state.editor_ui.image_panel.close_popovers();
     host.editor_state.editor_ui.image_panel.asset_check = Some(ImageAssetCheck {
@@ -761,14 +752,14 @@ fn codegen_action_press_sets_and_release_clears_pressed_button() {
     let point = point_for_action(&host, |action| {
         matches!(
             action,
-            PropertyPanelAction::Codegen(CodegenAction::Regenerate)
+            PropertyPanelAction::Codegen(CodegenAction::ToggleFrameworkPicker)
         )
     });
 
     assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
     assert_eq!(
         host.editor_state.editor_ui.pressed_button,
-        Some(ButtonPressTarget::Codegen(CodegenHover::Regenerate))
+        Some(ButtonPressTarget::Codegen(CodegenHover::FrameworkTrigger))
     );
 
     assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));

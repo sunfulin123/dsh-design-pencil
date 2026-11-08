@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Wiederherstellungskopien",
+        "drafts.notice" => "Die Wiederherstellung ersetzt das aktuelle Dokument und kann in einem Schritt rückgängig gemacht werden. Zuerst wird eine Sicherung erstellt. Die verknüpfte Datei wird nicht gespeichert.",
+        "drafts.create" => "Prüfpunkt erstellen",
+        "drafts.label" => "Prüfpunktname",
+        "drafts.empty" => "Noch keine Wiederherstellungskopien.",
+        "drafts.restoreConfirm" => "Diese Kopie wiederherstellen?",
+        "drafts.deleteConfirm" => "Diese Wiederherstellungskopie dauerhaft löschen?",
+        "drafts.syncError" => "Warten Sie, bis lokale Änderungen synchronisiert sind, und versuchen Sie es erneut.",
+        "drafts.refresh" => "Aktualisieren",
+        "drafts.failed" => "Wiederherstellung fehlgeschlagen: {{message}}",
+        "drafts.loading" => "Wiederherstellungskopien werden aktualisiert…",
+        "drafts.autosave" => "Automatische Speicherung",
+        "drafts.checkpoint" => "Prüfpunkt",
+        "drafts.backup" => "Sicherungskopie",
+        "colorPicker.sampleError" => "Farbaufnahme fehlgeschlagen: {{message}}",
+        "statusbar.interfaceScale" => "Oberflächenskalierung",
+        "statusbar.viewOptions" => "Ansichtsoptionen",
     "preview.emptyPage" => "Diese Seite hat keine sichtbaren Frames für die Vorschau.",
     "preview.noFrame" => "Ohne Rahmen",
     "preview.fit" => "Einpassen",

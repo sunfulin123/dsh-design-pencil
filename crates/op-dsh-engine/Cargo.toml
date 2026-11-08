@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 base64 = "0.22"
 jian-ops-schema = { path = "../../vendor/jian/crates/jian-ops-schema" }
 op-design-lint = { path = "../op-design-lint" }
+op-ai-skills = { path = "../op-ai-skills" }
 op-editor-core = { path = "../op-editor-core" }
 op-figma = { path = "../op-figma" }
 op-html = { path = "../op-html" }
@@ -20,3 +21,8 @@ op-mcp = { path = "../op-mcp", default-features = false }
 op-pen-loader = { path = "../op-pen-loader", default-features = false }
 serde_json = { workspace = true }
 wasm-bindgen = "=0.2.117"
+
+[dev-dependencies]
+jian-core = { path = "../../vendor/jian/crates/jian-core" }
+op-codegen = { path = "../op-codegen" }
+op-preview-core = { path = "../op-preview-core", features = ["testing"] }

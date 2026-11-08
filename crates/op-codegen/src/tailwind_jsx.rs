@@ -12,7 +12,7 @@ use crate::{fmt_num, html_escape, node_children, node_hidden, root_nodes, Codege
 use jian_ops_schema::node::text::FontStyleKind;
 use jian_ops_schema::node::{
     AlignItems, CornerRadius, FontWeight, ImageFitMode, JustifyContent, LayoutMode,
-    NumberOrExpression, Padding, PenNode, TextAlign, TextContent,
+    NumberOrExpression, Padding, PenNode, TextAlign,
 };
 use jian_ops_schema::sizing::{SizingBehavior, SizingKeyword};
 use jian_ops_schema::style::{PenEffect, PenFill, StrokeThickness};
@@ -49,6 +49,11 @@ pub fn generate_tailwind_jsx_selection(
 }
 
 pub fn generate_tailwind_jsx_for_node_refs(doc: &PenDocument, nodes: &[&PenNode]) -> String {
+    if let Some(output) =
+        crate::html_css::component_behaviour::generate_jsx(doc, nodes, emit_tailwind_jsx_node)
+    {
+        return output;
+    }
     let mut blocks = Vec::new();
     for node in nodes {
         let mut out = String::new();
@@ -458,6 +463,24 @@ fn emit_tailwind_jsx_node(
     depth: usize,
     out: &mut String,
 ) {
+    if crate::html_css::component_behaviour::emit_component(
+        doc,
+        node,
+        parent,
+        true,
+        out,
+        emit_tailwind_jsx_node,
+    ) || crate::html_css::component_behaviour::emit_bound(
+        doc,
+        node,
+        parent,
+        depth,
+        true,
+        out,
+        emit_tailwind_jsx_node,
+    ) {
+        return;
+    }
     if node_hidden(node) {
         return;
     }
@@ -630,6 +653,14 @@ fn emit_tailwind_jsx_node(
             if let Some(ls) = n.letter_spacing.filter(|v| v.abs() > f64::EPSILON) {
                 classes.push(format!("tracking-[{}px]", fmt_num(ls)));
             }
+            if n.truncates() {
+                let lines = n.max_lines.unwrap_or(1).max(1);
+                classes.push(if lines == 1 {
+                    "truncate".into()
+                } else {
+                    format!("line-clamp-{lines}")
+                });
+            }
             match n.text_align {
                 Some(TextAlign::Center) => classes.push("text-center".into()),
                 Some(TextAlign::Right) => classes.push("text-right".into()),
@@ -643,13 +674,7 @@ fn emit_tailwind_jsx_node(
             } else {
                 format!(" className=\"{}\"", classes.join(" "))
             };
-            let content = match &n.content {
-                TextContent::Plain(s) => html_escape(s),
-                TextContent::Styled(segs) => segs
-                    .iter()
-                    .map(|seg| html_escape(&seg.text))
-                    .collect::<String>(),
-            };
+            let content = crate::html_css::rich_text::body(n, true);
             out.push_str(&format!("{indent}<p{data_name}{cls_attr}>{content}</p>\n"));
             return;
         }

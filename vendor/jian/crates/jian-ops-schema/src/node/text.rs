@@ -61,6 +61,18 @@ pub enum TextGrowth {
     FixedWidthHeight,
 }
 
+/// Overflow treatment for text that does not fit its box (Figma
+/// `textTruncation`). `Ending` cuts the last visible line and appends an
+/// ellipsis measured with the real glyph widths.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
+#[serde(rename_all = "snake_case")]
+pub enum TextTruncation {
+    None,
+    Ending,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
@@ -93,6 +105,12 @@ pub struct TextNode {
     pub text_align_vertical: Option<TextAlignVertical>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text_growth: Option<TextGrowth>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_truncation: Option<TextTruncation>,
+    /// Maximum visible lines when `text_truncation` is `ending`; `None`
+    /// truncates only where the fixed box height runs out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_lines: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub underline: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -137,9 +155,29 @@ pub fn canonical_line_height_multiplier(line_height: Option<f64>) -> Option<f64>
     line_height.filter(|value| value.is_finite() && *value > 0.0 && *value <= 4.0)
 }
 
+impl TextNode {
+    /// Whether overflow should be cut with an ellipsis.
+    pub fn truncates(&self) -> bool {
+        self.text_truncation == Some(TextTruncation::Ending)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::canonical_line_height_multiplier;
+
+    #[test]
+    fn truncation_fields_are_optional_and_round_trip() {
+        let plain: super::TextNode =
+            serde_json::from_str(r#"{"id":"t","content":"Channel"}"#).unwrap();
+        assert!(!plain.truncates());
+        assert_eq!(plain.max_lines, None);
+        let json = r#"{"id":"t","content":"Channel","textTruncation":"ending","maxLines":2}"#;
+        let node: super::TextNode = serde_json::from_str(json).unwrap();
+        assert!(node.truncates());
+        assert_eq!(node.max_lines, Some(2));
+        assert_eq!(serde_json::to_string(&node).unwrap(), json);
+    }
 
     #[test]
     fn canonical_line_height_accepts_only_finite_unitless_multipliers() {

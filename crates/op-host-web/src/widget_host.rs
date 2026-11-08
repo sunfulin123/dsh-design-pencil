@@ -94,17 +94,30 @@ mod deferred_press_tests;
 mod design_md_press;
 #[cfg(test)]
 mod design_md_press_tests;
+#[cfg(test)]
+mod draft_recovery_tests;
+mod eyedropper;
+#[cfg(test)]
+mod eyedropper_tests;
 pub(crate) mod icon_ingest;
 #[cfg(all(test, feature = "canvaskit"))]
 mod preview_hover_tests;
+mod sampling;
+mod screenshot;
 // Browser file-IO ingestion (Open / Figma import / clipboard paste)
 // — needs the codegen-gated document-pipeline deps (jian-ops-schema).
+mod canvas_tiles;
+mod canvas_tiles_host;
+pub(crate) mod diagram_import;
+#[cfg(test)]
+mod diagram_import_tests;
 #[cfg(feature = "canvaskit")]
 mod file_ingest;
 #[cfg(test)]
 mod file_menu_paint_tests;
 #[cfg(test)]
 mod font_picker_keyboard_tests;
+pub(crate) mod frame_perf;
 mod geometry;
 mod group_ops;
 mod history_guard;
@@ -150,6 +163,9 @@ mod overlay_keys;
 #[cfg(test)]
 mod overlay_press_tests;
 mod overlay_rects;
+mod page_loading;
+#[cfg(test)]
+mod page_loading_tests;
 #[cfg(test)]
 mod page_switch_center_tests;
 mod paint;
@@ -196,6 +212,7 @@ mod release_input;
 mod resize_drag;
 #[cfg(test)]
 mod resize_drag_tests;
+mod scene_fonts;
 #[cfg(test)]
 mod scene_template_ime_tests;
 mod scene_template_press;
@@ -215,6 +232,9 @@ mod theme_tests;
 mod toolbar_actions;
 #[cfg(test)]
 mod topbar_hover_tests;
+mod ui_scale;
+#[cfg(test)]
+mod ui_scale_tests;
 mod variables_panel_commit;
 mod variables_panel_geometry;
 mod variables_panel_press;
@@ -222,7 +242,9 @@ mod variables_panel_rows;
 #[cfg(test)]
 mod variables_panel_tests;
 mod variables_preset_press;
+mod view_options;
 mod viewport_fit;
+pub(crate) mod viewport_gesture;
 mod web_fonts;
 mod wheel_pan;
 
@@ -265,6 +287,21 @@ pub struct WidgetHost {
     /// interaction (hover, scroll, selection, caret drafts, and per-frame chat /
     /// codegen streaming), but most leave the scene inputs identical.
     pub(in crate::widget_host) scene_cache: op_pen_loader::SceneBuildCache,
+    /// Active page index `layout_scene` was built for.
+    pub(in crate::widget_host) scene_page_index: usize,
+    /// Bumped whenever `layout_scene` is replaced; keys scene-derived caches.
+    pub(in crate::widget_host) scene_generation: u64,
+    /// Page whose loading cover has been painted; its scene rebuild runs on
+    /// the following frame (see `page_loading`).
+    pub(in crate::widget_host) page_loading_cover: Option<usize>,
+    /// True from painting a loading cover until the next frame starts; holds
+    /// off every scene rebuild so the cover frame is presented first.
+    pub(in crate::widget_host) page_cover_frame: bool,
+    /// Viewport size of a page switch whose "fit to content" waits for the
+    /// new page's scene, applied by the paint pass right after it is built.
+    pub(in crate::widget_host) pending_page_fit: Option<(f32, f32)>,
+    /// A "camera shows nothing" check waiting for a deferred page scene.
+    pub(in crate::widget_host) pending_offscreen_fit: bool,
     /// Set whenever `editor_state` is mutated. Drives the lazy rebuild
     /// of `layout_scene` — `refresh_layout_scene()` rebuilds + clears
     /// the flag, so a sequence of mutations re-derives once.
@@ -287,6 +324,8 @@ pub struct WidgetHost {
     /// Mirrors native/TS transient pan mode: canvas presses pan even
     /// when the active tool is Select or a creation tool.
     space_pan: bool,
+    /// Nonzero only while root paint/input is in chrome-layout coordinates.
+    ui_scale_active: f32,
     chat_drag: Option<ChatDragState>,
     /// Active image-fill adjustment slider drag in the floating
     /// property popover.
@@ -381,6 +420,9 @@ pub struct WidgetHost {
     /// the toast is still live before trusting it (see
     /// `op_editor_ui::widgets::editor_toast_flow::press`).
     pub(in crate::widget_host) toast_rect: Option<op_editor_ui::Rect>,
+    eyedropper: Option<eyedropper::Eyedropper>,
+    draft_recovery_requested: bool,
+    diagram_import_requested: bool,
     /// Most recent viewport size seen via `apply_press` etc. — cached
     /// so `apply_cursor_move(x, y)` can rebuild the canvas region
     /// when its signature can't carry viewport dims (mirrors native).
@@ -470,6 +512,14 @@ pub struct WidgetHost {
     /// -font detection is a one-shot modal, so completing it while these are in
     /// flight would accuse every bundled family of being missing.
     pub(in crate::widget_host) bundled_fonts_pending: bool,
+    /// Opt-in per-frame section timing (`?perf=1`).
+    pub(crate) frame_perf: frame_perf::FramePerf,
+    /// Pan / zoom interaction snapshot state (see `viewport_gesture`).
+    pub(crate) viewport_gesture: viewport_gesture::ViewportGesture,
+    /// Scene of a non-active page built for one `get_screenshot` capture.
+    pub(crate) screenshot_scene: Option<op_editor_ui::layout_scene::LayoutScene>,
+    /// Retained canvas tiles (see `canvas_tiles`).
+    pub(crate) canvas_tiles: canvas_tiles::CanvasTiles,
 }
 
 impl WidgetHost {

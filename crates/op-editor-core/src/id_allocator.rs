@@ -351,6 +351,7 @@ mod tests {
     fn document_id_helpers_cover_pages_nodes_and_namespace_high_water() {
         let mut doc = crate::EditorState::new().doc;
         doc.pages = Some(vec![jian_ops_schema::page::PenPage {
+            theme: None,
             id: "n8".into(),
             name: "Page".into(),
             children: vec![frame(

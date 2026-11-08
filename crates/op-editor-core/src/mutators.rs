@@ -467,6 +467,7 @@ impl EditorState {
         if removed_any {
             self.selection.set = kept;
             self.selection.anchor = self.selection.set.last().cloned().unwrap_or(NodeId::NONE);
+            crate::shared_styles::prune_missing_shared_style_members(&mut self.doc);
             true
         } else {
             false

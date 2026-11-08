@@ -24,9 +24,16 @@ pub struct PenDocument {
     /// Wire shape: axis-name → ordered theme names. Frozen from v0.x.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub themes: Option<BTreeMap<String, Vec<String>>>,
+    /// Persisted collection/axis mode selections; node and page themes override these.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<BTreeMap<String, String>>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub variables: Option<BTreeMap<String, VariableDefinition>>,
+
+    /// Reusable authored appearance and document-wide node memberships.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shared_styles: Option<BTreeMap<String, crate::style::SharedStyle>>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pages: Option<Vec<PenPage>>,
@@ -82,7 +89,9 @@ impl Clone for PenDocument {
             version: self.version.clone(),
             name: self.name.clone(),
             themes: self.themes.clone(),
+            theme: self.theme.clone(),
             variables: self.variables.clone(),
+            shared_styles: self.shared_styles.clone(),
             pages: self.pages.clone(),
             children: self.children.clone(),
             format_version: self.format_version.clone(),
@@ -112,6 +121,18 @@ impl PenDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_styles_survive_save_and_clone() {
+        let input = serde_json::json!({
+            "version": "1.0", "children": [],
+            "sharedStyles": {"brand": {"name": "Brand", "kind": "paint",
+                "properties": {"fill": [{"type": "solid", "color": "#ff0000"}]},
+                "nodeIds": ["n1"]}}
+        });
+        let doc: PenDocument = serde_json::from_value(input.clone()).unwrap();
+        assert_eq!(serde_json::to_value(doc.clone()).unwrap(), input);
+    }
 
     #[test]
     fn minimal_document() {

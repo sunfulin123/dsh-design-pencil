@@ -6,24 +6,13 @@
 
 use super::{
     EditorUiState, FontPickerPurpose, Locale, MissingFontSurface, RecentFile, SceneTemplateFocus,
-    ThemeMode, RECENT_FILE_CAP,
+    RECENT_FILE_CAP,
 };
 
 impl EditorUiState {
     /// A fresh UI state — sidebar open, dark theme, no menus open.
     pub fn new() -> Self {
         Self::default()
-    }
-
-    /// Theme currently painted by the editor. An embedding host may override
-    /// the user's stored preference for this page without mutating it.
-    pub fn effective_theme_mode(&self) -> ThemeMode {
-        self.host_theme_override.unwrap_or(self.theme_mode)
-    }
-
-    /// Set or clear a page-lifetime embedding-host theme override.
-    pub fn set_host_theme_override(&mut self, theme: Option<ThemeMode>) {
-        self.host_theme_override = theme;
     }
 
     /// Locale currently presented by the editor. An embedding host may

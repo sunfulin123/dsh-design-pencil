@@ -164,6 +164,7 @@ fn delete_component_clears_source_flag_outside_active_page() {
     }
     s.doc.pages = Some(vec![
         PenPage {
+            theme: None,
             id: "p1".into(),
             name: "Page 1".into(),
             children: Vec::new(),
@@ -172,6 +173,7 @@ fn delete_component_clears_source_flag_outside_active_page() {
             lifecycle: None,
         },
         PenPage {
+            theme: None,
             id: "p2".into(),
             name: "Page 2".into(),
             children: vec![component_frame],

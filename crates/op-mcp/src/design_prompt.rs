@@ -26,6 +26,7 @@ const PROMPT_SECTIONS: &[&str] = &[
     "overflow",
     "cjk",
     "variables",
+    "design-tools",
     "codegen-planning",
     "codegen-chunk",
     "codegen-assembly",
@@ -55,7 +56,11 @@ const PLANNING_GUIDE: &str = r#"DESIGN PLANNING:
 - Classify by purpose: marketing/informational pages use desktop 1200px wide scrollable roots; single-task screens use mobile 375x812; dashboards/admin workspaces use desktop layouts.
 - Create a skeleton first, fill each section with content, then refine.
 - Keep forms together with their primary action. Split only when one section would be too large.
-- Default to light neutral styling unless the request explicitly asks for dark, cyber, neon, terminal, noir, night, or similar themes."#;
+- Default to light neutral styling unless the request explicitly asks for dark, cyber, neon, terminal, noir, night, or similar themes.
+- Responsive / multi-device requests: design one screen per breakpoint with upsert_screen (keys such as page-large, page-medium, page-small) and share the same components, styles and variables across them.
+  - Large >=1280 (e.g. 1440 wide): persistent left navigation/sidebar and right detail panel beside the main content.
+  - Medium 768-1279 (e.g. 1024 wide): keep only one side panel expanded at a time; the other collapses to an icon rail or toggle.
+  - Small <768 (e.g. 390 wide): content-first single column; secondary panels become bottom sheets and navigation moves to a tab bar or menu."#;
 
 const AESTHETIC_QUALITY_GUIDE: &str = r#"AESTHETIC QUALITY BAR:
 - Avoid crowded output. Prefer fewer, stronger modules with visible negative space over filling every pixel.
@@ -91,7 +96,61 @@ Light/dark handling:
 - Use variable refs such as `$--background`, `$--foreground`, and `$--card` when the document provides them.
 - If the user explicitly asks for a one-off dark or light design and no variables exist, use concrete high-contrast fills and text colors directly."##;
 
+/// Element guide for hosts built without QuickJS (the wasm DSH engine):
+/// `batch_design.script` is unavailable there, so trees are built with the
+/// operations-DSL insert grammar instead.
+const OPERATIONS_ELEMENT_TOOL_GUIDE: &str = r##"RUST MCP ELEMENT TOOL COMPATIBILITY:
+- This Rust MCP server does not expose the TS `add_*_v1` element-tool family unless those exact tools appear in tools/list. Do not call `add_*` tools just because older prompt text or examples mention them.
+- This host has no script engine: `batch_design.script` and `K()` UIKit calls are rejected. Build custom UI trees with `batch_design.operations` insert programs instead (operations-first).
+- An insert program is one `binding=I(parent, nodeJson)` per line. `parent` is `null` for the active page root, an earlier binding from the same program, or one real existing parent id. `nodeJson` is strict JSON using canonical PenNode fields (quote every key) and may omit `id`, because Rust remaps inserted ids. Nested `children` arrays are allowed. The whole program is atomic.
+- Keep insert programs and edits in separate batch_design calls. Edit existing nodes after inspection with one-at-a-time `U(nodeId, patchJson)`, `D(nodeId)`, `M(nodeId, parent, index?)`, `binding=C(sourceId, parent, overrides?)`, `binding=R(nodeId, nodeJson)`, and `binding=G(slotIdOrBinding, "search"|"generate", prompt[, "append"])`.
+- The default 3-argument `G` is strict slot-fill: its target must exist and have zero children. The explicit fourth argument `"append"` is accepted only on a parent that declares layout `"horizontal"` or `"vertical"`; it never overlays a layout-none/omitted parent.
+- `U` currently patches geometry/name/fill fields; use dedicated `set_node_*` tools for text, rotation, stroke, font, effects, and other specialized fields.
+
+Example:
+`batch_design({operations: `
+root=I(null, {"type":"frame","name":"Page","width":1200,"height":800,"layout":"vertical","gap":24,"fill":"#ffffff"})
+hero=I(root, {"type":"frame","name":"Hero","width":"fill_container","height":360,"layout":"vertical","gap":16})
+title=I(hero, {"type":"text","name":"Headline","content":"Welcome Back","width":"fill_container","height":64,"fontSize":48,"fontWeight":700})
+`})`
+
+Light/dark handling:
+- Inspect `get_variables` / `get_active_theme` first when the document already defines theme axes.
+- Use variable refs such as `$--background`, `$--foreground`, and `$--card` when the document provides them.
+- If the user explicitly asks for a one-off dark or light design and no variables exist, use concrete high-contrast fills and text colors directly."##;
+
+fn element_tool_guide() -> &'static str {
+    if cfg!(feature = "script") {
+        RUST_ELEMENT_TOOL_GUIDE
+    } else {
+        OPERATIONS_ELEMENT_TOOL_GUIDE
+    }
+}
+
 const DEFAULT_DESIGN_MD: &str = "No design.md loaded in the current document.";
+
+const DESIGN_TOOL_GUIDE: &str = r#"DESIGN TOOL WORKFLOW:
+- Use tool_search(query) to discover current tools and their authoritative schemas. Inspect read_nodes/snapshot_layout before editing. Never infer a tool or property from older examples.
+- Reuse persistent styles: list_styles -> create_style/apply_style; update_style propagates to attached nodes, detach_style retains the authored appearance. Styles accept canonical paint/text/effect properties.
+- Import/export DTCG variables with import_design_tokens/export_design_tokens. Bind explicit nodeIds using bind_variable; unbind_variable retains the resolved value. Typed bindings include visible/enabled, text properties and existing effect paths such as effects.0.blur (shadow) or effects.0.radius (blur). Unsupported fields, types and effect indexes reject atomically. get_variable_mode inspects explicit/resolved modes; set_variable_mode scopes node/page/global. Empty modes clears overrides; mode auto removes an axis override. Resolution inherits defaults -> global -> preview -> page -> ancestor/node. evaluate_variable uses the renderer's alias/calc solver. Number variable values can be strings such as calc($spacing * 2). Reject invalid modes, cycles and nonfinite formulas instead of inventing fallback values.
+- Formula scales: define one base and derive the rest so the system stays coherent, e.g. set_variables({"variables":{"space-base":{"type":"number","value":8},"space-lg":{"type":"number","value":"calc($space-base * 2)"},"font-body":{"type":"number","value":16},"font-h1":{"type":"number","value":"calc($font-body * 2)"}}}) -> bind_variable({"nodeIds":[frameId],"property":"gap","variable":"space-lg"}) -> evaluate_variable({"id":"space-lg"}) to confirm the resolved value. Changing space-base then rescales every bound node.
+- Components: create_component on an authored frame, add_component_property for text/visibility/instance-swap, then set_instance_properties on a Ref. reset_instance_properties(instanceId, properties?: string[]) removes named values to restore defaults; omit properties to reset all, preserving descendant overrides. create_slot/list_slots/fill_slot target named containers without changing master content. create_slot rejects duplicate names; update_slot(componentId, name, targetId, min?, max?) replaces an existing slot contract (min defaults to 0; omitted max is unbounded) and validates every referencing instance fill. delete_slot(componentId, name) removes only the definition, preserving containers and descendant overrides. These tools target explicit IDs without requiring UI selection. create_variant promotes an already-designed frame; list_variants/set_instance_variant choose within a family. Variant switching clears incompatible overrides.
+- Interaction: get_component_behaviour/set_component_behaviour author validated button/switch/checkbox/tabs/slider state. Bind state to existing typed component properties or family variants. Nested interactive behaviours and instance-swap bindings are rejected. Preview changes transient instance visuals, not the authored document.
+- Behaviour example (switch): design the on/off visuals in one frame, create_component, expose the "on" layer as a boolean property, then set_component_behaviour({"componentId":id,"behaviour":{"kind":"switch","defaultValue":false,"stateBindings":[{"type":"property","propertyId":"checked"}]}}). Use kind button for actions, checkbox/switch for booleans, tabs for one-of-many (bind to a variant family) and slider for ranges. Confirm with get_component_behaviour (executable:true). Only HTML/CSS and React Tailwind exports emit the interactive state and ARIA.
+- Export: export_code(format:html-css|tailwind-jsx|design-jsx,nodeIds?) returns deterministic code for the active page or explicit real node IDs. HTML/CSS and React Tailwind JSX include supported interactive state and ARIA. This is read-only, not AI execution or a file write.
+- View: get_viewport/set_viewport use pan_x/pan_y and zoom_percent strings. Saved editorMeta.viewport preserves fractional browser pan and bounded zoom; view-only changes do not dirty content or enter undo history. Do not confuse camera zoom with UI scaling.
+- UI: get_ui_scale/set_ui_scale control actual chrome/layout/hit-testing at scale 100, 110, 125 or 150. This is separate from document geometry and camera zoom, and does not create document edits. Managed browsers acknowledge the requested preference asynchronously.
+- Color: sample_color({x,y}|{nodeId}) reads actual CanvasKit-composited RGBA8/hex, not model fills. It requires an open synchronized Node-hosted editor; move offscreen targets into view and wait for image decoding. Sampling excludes chrome/grid/selection and does not edit content. Never invent a sampled color after an error.
+- Recovery: list_drafts inspects persistent snapshots for the parent-bound file and returns currentVersion for optional stale-write protection. create_draft(label?) checkpoints before risky edits; restore_draft(id,baseVersion?) creates a protective backup and one undoable edit without saving the bound file. Inspect the chosen snapshot's metadata before restoring; recovery is never automatic. delete_draft discards an unwanted snapshot. Live edits are autosaved per session; a draft-write-failed error with applied:true means the live edit landed but its recovery copy did not.
+- Text: set_node_text(markdown:true) or set_text_markdown converts the supported Markdown subset into styled content. get_text_style before set_text_style(start,end,style); offsets count Unicode scalars, not UTF-8 bytes or UTF-16 code units. Range fontFamily is rendered and persisted; empty clears the override. Mixed-size/family runs wrap using their actual metrics. set_paragraph_style applies list/paragraph formatting.
+- Geometry: copy_properties/paste_properties copy appearance, not content/identity/placement. update_node data.lockAspectRatio locks proportional resizing. arrange_nodes operates only on eligible free-moving siblings, never flex-flow children. set_vector_path validates SVG geometry; ellipse arcs and flips use their existing tools.
+- Geometry in batch_design inserts: rings/gauges/donut charts are ellipses with innerRadius (0-1 ratio), startAngle and sweepAngle in degrees, e.g. ring=I(card, {"type":"ellipse","width":120,"height":120,"innerRadius":0.7,"startAngle":-90,"sweepAngle":270}). Icons and custom shapes are paths with an SVG d starting with M plus fillRule nonzero|evenodd, e.g. icon=I(card, {"type":"path","width":24,"height":24,"d":"M4 12 L10 18 L20 6","fillRule":"evenodd"}). Mirror with "flipX"/"flipY":true instead of redrawing. Malformed d or fillRule rejects the whole batch.
+- Imports: paste_html(mode:text|layers), import_mermaid(flowchart subset), import_drawio(single flat XML or bounded compressed diagram). create_connector creates static editable geometry; it does NOT follow moved endpoints.
+- For a whole-file Figma migration, prefer a user-exported .fig local copy with import_figma(figPath), and keep REST link import as a supplement for selected nodes and automation. Neither path guarantees pixel parity: verify with get_screenshot and compare_figma_fidelity using the original Figma URL. The official REST API does not provide a raw .fig download endpoint; do not pretend its JSON is a .fig file.
+- Figma import: for a figma.com link call inspect_figma_node(url) first when the target may be large (a parent with many boards); import_figma(url) then runs a chunked job (parent frame first, one board per request, oversized boards split, cached and resumable). If it returns status:"running", poll get_figma_import_status({jobId,waitMs:20000}) until succeeded/partial/failed — never re-run import_figma for the same link while a job runs. For partial/failed, read failed[].code: FIGMA_TIMEOUT/FIGMA_NODE_TOO_LARGE -> resume_figma_import (or import fewer nodeIds); FIGMA_RATE_LIMITED -> wait then resume; FIGMA_AUTH -> ask for a token. Imports insert beside existing content (or at x/y/parent) and the editor frames them automatically. Keep layout:"preserve" for pixel fidelity; use "semantic" only when the user wants responsive Hug/Fill structure. After importing, compare_figma_fidelity({url,nodeId:rootIds[0]}) and fix the reported nodes (font, truncation, size) until the diff is small; report remaining differences honestly.
+- Quality: lint_document(rules,nodeIds) -> fix_lint_issues(issueIds) is one undoable transaction. Re-lint after edits because issue IDs encode observed values. Advisory findings need authored design decisions; do not report them as automatically fixed.
+- Visual verification loop: after generating a screen or making a major edit, call get_screenshot({nodeId:screenId}) (or no nodeId for the whole page) and inspect the image for overlap, clipped or truncated text, low contrast, misalignment and broken hierarchy. Fix what you see, then screenshot again; stop after about 3 rounds and report anything still unresolved. get_screenshot needs an open synchronized editor; if it errors, fall back to snapshot_layout plus get_design_quality and say that visual output was not checked. Never describe a screenshot you did not receive.
+- Verify actual layout and save/reopen persistence. Tool registration or a successful write is not proof of visual fidelity."#;
 
 pub struct GetDesignPrompt {
     design_md_policy: Option<String>,
@@ -170,13 +229,14 @@ fn section_content(section: &str) -> Option<String> {
         "quality" => Some(AESTHETIC_QUALITY_GUIDE.into()),
         "mobile" => Some(skill_content("mobile-app")),
         "planning" => Some(PLANNING_GUIDE.into()),
-        "elements" => Some(RUST_ELEMENT_TOOL_GUIDE.into()),
-        "elements-cookbook" => Some(RUST_ELEMENT_TOOL_GUIDE.into()),
+        "elements" => Some(element_tool_guide().into()),
+        "elements-cookbook" => Some(element_tool_guide().into()),
         "design-md" => Some(DEFAULT_DESIGN_MD.into()),
         "copywriting" => Some(skill_content("copywriting")),
         "overflow" => Some(skill_content("overflow")),
         "cjk" => Some(skill_content("cjk-typography")),
         "variables" => Some(skill_content("variables")),
+        "design-tools" => Some(DESIGN_TOOL_GUIDE.into()),
         "codegen-planning" => Some(skill_content("codegen-planning")),
         "codegen-chunk" => Some(skill_content("codegen-chunk")),
         "codegen-assembly" => Some(skill_content("codegen-assembly")),
@@ -206,7 +266,8 @@ fn build_full_prompt() -> String {
         &skill_content("text-rules"),
         &skill_content("design-principles"),
         &skill_content("variables"),
-        RUST_ELEMENT_TOOL_GUIDE,
+        element_tool_guide(),
+        DESIGN_TOOL_GUIDE,
     ]
     .join("\n\n")
 }

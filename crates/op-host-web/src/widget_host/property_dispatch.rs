@@ -69,8 +69,11 @@ impl WidgetHost {
         if let InstanceLifecycleOutcome::Handled {
             page_switched,
             select,
-        } = dispatch::apply_instance_lifecycle_action(&mut self.editor_state, &action)
-        {
+        } = dispatch::apply_instance_lifecycle_action_at(
+            &mut self.editor_state,
+            &action,
+            self.now_ms,
+        ) {
             if page_switched {
                 self.fit_active_page_after_switch(self.last_viewport_w, self.last_viewport_h);
             }

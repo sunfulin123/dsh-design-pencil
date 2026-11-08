@@ -55,6 +55,7 @@ fn assert_chat_and_lower_hover_cleared(host: &WidgetHost) {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn cursor_move_tracks_hovered_design_json_card_for_copy_reveal() {
     let mut host = WidgetHost::new();
     host.editor_state.editor_ui.enter_chat_tab();
@@ -86,6 +87,7 @@ fn cursor_move_tracks_hovered_design_json_card_for_copy_reveal() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn cursor_move_tracks_chat_footer_buttons() {
     let mut host = WidgetHost::new();
     host.editor_state
@@ -138,6 +140,7 @@ fn cursor_move_tracks_chat_footer_buttons() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn chat_blank_surface_blocks_lower_hover_and_stable_move_needs_no_repaint() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -190,6 +193,7 @@ fn chat_blank_surface_blocks_lower_hover_and_stable_move_needs_no_repaint() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn entering_chat_clears_stale_higher_and_lower_hover_in_one_move() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -261,6 +265,7 @@ fn entering_chat_clears_stale_higher_and_lower_hover_in_one_move() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn composer_card_wins_when_overlapping_tall_variables_panel() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -302,6 +307,7 @@ fn composer_card_wins_when_overlapping_tall_variables_panel() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn align_toolbar_padding_clears_stale_chat_hover() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -344,6 +350,7 @@ fn align_toolbar_padding_clears_stale_chat_hover() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn context_menu_footprint_clears_chat_and_lower_hover_in_one_move() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -405,6 +412,7 @@ fn status_bar_footprint_clears_chat_and_lower_hover_in_one_move() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn static_color_picker_clears_stale_chat_hover() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -489,6 +497,7 @@ fn property_image_popup_clears_stale_chat_model_picker_hover() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn cursor_move_tracks_chat_model_picker_row_hover() {
     use op_editor_ui::widgets::ai_chat_model_picker::{
         MODEL_GROUP_H, MODEL_PICKER_PAD_Y, MODEL_ROW_H, MODEL_SEARCH_H,
@@ -523,6 +532,7 @@ fn cursor_move_tracks_chat_model_picker_row_hover() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn open_model_picker_blocks_layer_and_lower_hover_dispatch() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 900.0);
@@ -564,6 +574,7 @@ fn open_model_picker_blocks_layer_and_lower_hover_dispatch() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn leaving_higher_context_menu_updates_model_picker_in_same_move() {
     use op_editor_ui::widgets::ai_chat_model_picker::{
         MODEL_GROUP_H, MODEL_PICKER_PAD_Y, MODEL_ROW_H, MODEL_SEARCH_H,
@@ -611,6 +622,7 @@ fn leaving_higher_context_menu_updates_model_picker_in_same_move() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn leaving_higher_floating_panel_updates_model_picker_in_same_move() {
     use op_editor_ui::widgets::ai_chat_model_picker::{
         MODEL_GROUP_H, MODEL_PICKER_PAD_Y, MODEL_ROW_H, MODEL_SEARCH_H,
@@ -663,6 +675,7 @@ fn import_menu_owns_hover_above_model_picker() {
 }
 
 #[test]
+#[ignore = "in-editor AI chat retired in fb91df6f (AI moved to DSH chat); legacy chat UI is kept as dead code"]
 fn model_picker_hover_wins_when_overlapping_variables_panel() {
     let mut host = WidgetHost::new();
     let (viewport_w, viewport_h) = (1440.0, 600.0);

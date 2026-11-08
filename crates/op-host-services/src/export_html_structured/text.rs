@@ -112,7 +112,11 @@ pub fn emit(out: &mut String, n: &SceneNode, rect: Rect) {
 /// The authored family (already a CSS stack per the scene contract)
 /// ahead of the system fallbacks.
 fn family_stack(n: &SceneNode) -> String {
-    let authored = n.font_family.trim();
+    family_stack_from(&n.font_family)
+}
+
+fn family_stack_from(family: &str) -> String {
+    let authored = family.trim();
     if authored.is_empty() {
         FALLBACK_STACK.to_string()
     } else {
@@ -175,6 +179,9 @@ fn is_char_boundary_pair(text: &str, start: usize, end: usize) -> bool {
 /// omitted declaration already does.
 fn run_style(run: &SceneTextRun) -> String {
     let mut style = String::new();
+    if let Some(family) = run.font_family.as_deref() {
+        css::decl(&mut style, "font-family", &family_stack_from(family));
+    }
     if run.font_size > 0.0 {
         css::decl(
             &mut style,

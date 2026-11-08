@@ -21,7 +21,7 @@ pub use jian_widgets::components::menu::MenuHit;
 use op_editor_core::editor_ui_state::{LayerContextMenuState, LayerContextTarget};
 use op_editor_core::EditorState;
 
-pub const LAYER_CONTEXT_MENU_WIDTH: f32 = 168.0;
+pub const LAYER_CONTEXT_MENU_WIDTH: f32 = 224.0;
 const ROW_HEIGHT: f32 = 32.0;
 const PAD_Y: f32 = 6.0;
 const ROW_FONT: f32 = 13.0;
@@ -33,6 +33,11 @@ pub enum LayerContextAction {
     // Layer-row actions
     RenameLayer,
     Duplicate,
+    CopyProperties,
+    PasteProperties,
+    TidyUp,
+    PackHorizontal,
+    PackVertical,
     Delete,
     GroupSelection,
     /// Boolean path ops — TS `boolean-union` etc. rows
@@ -72,6 +77,36 @@ struct Row {
 }
 
 const LAYER_ROWS: &[Row] = &[
+    Row {
+        icon: Icon::Copy,
+        action: LayerContextAction::CopyProperties,
+        label_key: "layerMenu.copyProperties",
+        destructive: false,
+    },
+    Row {
+        icon: Icon::Copy,
+        action: LayerContextAction::PasteProperties,
+        label_key: "layerMenu.pasteProperties",
+        destructive: false,
+    },
+    Row {
+        icon: Icon::Component,
+        action: LayerContextAction::TidyUp,
+        label_key: "layerMenu.tidyUp",
+        destructive: false,
+    },
+    Row {
+        icon: Icon::ArrowUp,
+        action: LayerContextAction::PackHorizontal,
+        label_key: "layerMenu.packHorizontal",
+        destructive: false,
+    },
+    Row {
+        icon: Icon::ArrowDown,
+        action: LayerContextAction::PackVertical,
+        label_key: "layerMenu.packVertical",
+        destructive: false,
+    },
     Row {
         icon: Icon::Pencil,
         action: LayerContextAction::RenameLayer,
@@ -191,6 +226,10 @@ impl LayerContextMenu {
                 .copied()
                 .filter(|row| match row.action {
                     LayerContextAction::GroupSelection => state.selection_count() > 1,
+                    LayerContextAction::PasteProperties => state.ui.appearance_clipboard.is_some(),
+                    LayerContextAction::TidyUp
+                    | LayerContextAction::PackHorizontal
+                    | LayerContextAction::PackVertical => state.arrange_targets(&[]).is_ok(),
                     // TS `requireBoolean` rows (`layer-context-menu.tsx:35-57`).
                     LayerContextAction::BooleanUnion
                     | LayerContextAction::BooleanSubtract

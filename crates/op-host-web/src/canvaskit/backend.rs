@@ -730,6 +730,50 @@ impl RenderBackend for CanvasKitBackend {
     fn dpi_scale(&self) -> f32 {
         self.dpr
     }
+    fn begin_tile(&mut self, width: u32, height: u32) -> bool {
+        if !self.ck.begin_tile(width, height) {
+            return false;
+        }
+        // Tiles are rasterized in device pixels: no DPR frame scale.
+        self.ck.begin_frame();
+        true
+    }
+    fn end_tile(&mut self) -> u32 {
+        self.ck.end_tile()
+    }
+    fn draw_tile(&mut self, id: u32, src: Rect, dst: Rect) -> bool {
+        self.ck.draw_tile(
+            id,
+            src.origin.x,
+            src.origin.y,
+            src.size.x,
+            src.size.y,
+            dst.origin.x,
+            dst.origin.y,
+            dst.size.x,
+            dst.size.y,
+        )
+    }
+    fn draw_tiles(&mut self, draws: &[(u32, Rect, Rect)]) -> Vec<u32> {
+        let ids: Vec<u32> = draws.iter().map(|(id, _, _)| *id).collect();
+        let mut geo = Vec::with_capacity(draws.len() * 8);
+        for (_, src, dst) in draws {
+            geo.extend_from_slice(&[
+                src.origin.x,
+                src.origin.y,
+                src.size.x,
+                src.size.y,
+                dst.origin.x,
+                dst.origin.y,
+                dst.size.x,
+                dst.size.y,
+            ]);
+        }
+        self.ck.draw_tiles(&ids, &geo)
+    }
+    fn drop_tile(&mut self, id: u32) {
+        self.ck.drop_tile(id);
+    }
 }
 
 /// Initialise CanvasKit on `canvas_id` and return a ready `CanvasKitBackend`.

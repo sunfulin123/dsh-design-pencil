@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "이름 변경",
+        "layerMenu.copyProperties" => "속성 복사",
+        "layerMenu.pasteProperties" => "속성 붙여넣기",
+        "layerMenu.tidyUp" => "정리",
+        "layerMenu.packHorizontal" => "가로로 밀집 배치",
+        "layerMenu.packVertical" => "세로로 밀집 배치",
+        "layerMenu.designError" => "편집할 수 없음: {{reason}}",
         "common.duplicate" => "복제",
         "common.delete" => "삭제",
         "common.cancel" => "취소",
@@ -776,6 +782,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Figma 파일 분석 중…",
         "importProgress.htmlTitle" => "HTML 및 페이지 리소스 분석 중…",
         "importProgress.htmlSubtitle" => "스타일과 이미지를 불러오는 중입니다.",
+        "canvas.pageLoading" => "페이지를 불러오는 중…",
         "importProgress.largeFileSubtitle" => "큰 파일은 몇 초가 걸립니다. 잠시만 기다려 주세요.",
         "account.signedOutHint" => "로그인하면 설정과 환경설정이 동기화됩니다",
         "code.noUsableCode" => "AI가 사용 가능한 코드를 반환하지 않았습니다. 다시 시도하거나 AI 모델을 변경해 보세요.",

@@ -189,7 +189,9 @@ impl Serialize for SharedDoc {
         map.serialize_entry("version", &doc.version)?;
         serialize_option(&mut map, "name", &doc.name)?;
         serialize_option(&mut map, "themes", &doc.themes)?;
+        serialize_option(&mut map, "theme", &doc.theme)?;
         serialize_option(&mut map, "variables", &doc.variables)?;
+        serialize_option(&mut map, "sharedStyles", &doc.shared_styles)?;
         if doc.pages.is_some() {
             map.serialize_entry("pages", &SharedPages(self))?;
         }
@@ -260,6 +262,7 @@ impl Serialize for SharedPage<'_> {
         let mut map = serializer.serialize_map(None)?;
         map.serialize_entry("id", &self.page.id)?;
         map.serialize_entry("name", &self.page.name)?;
+        serialize_option(&mut map, "theme", &self.page.theme)?;
         map.serialize_entry("children", &SharedNodes(self.children))?;
         serialize_option(&mut map, "backgroundColor", &self.page.background_color)?;
         serialize_option(&mut map, "state", &self.page.state)?;
@@ -310,6 +313,7 @@ fn strip_children(doc: &PenDocument) -> PenDocument {
         version: doc.version.clone(),
         name: doc.name.clone(),
         themes: doc.themes.clone(),
+        theme: doc.theme.clone(),
         variables: doc.variables.clone(),
         pages: doc
             .pages
@@ -326,6 +330,7 @@ fn strip_children(doc: &PenDocument) -> PenDocument {
         design_md: doc.design_md.clone(),
         conversion: doc.conversion.clone(),
         motion: doc.motion,
+        shared_styles: doc.shared_styles.clone(),
         // The responsive schema opt-in is document-level metadata, not
         // node content — survives the children-strip like every other
         // metadata field above.
@@ -339,6 +344,7 @@ fn strip_page_children(page: &PenPage) -> PenPage {
     PenPage {
         id: page.id.clone(),
         name: page.name.clone(),
+        theme: page.theme.clone(),
         background_color: page.background_color.clone(),
         state: page.state.clone(),
         lifecycle: page.lifecycle.clone(),

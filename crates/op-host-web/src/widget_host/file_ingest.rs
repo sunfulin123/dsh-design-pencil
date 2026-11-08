@@ -9,14 +9,6 @@
 use super::WidgetHost;
 
 impl WidgetHost {
-    /// Public viewport-fit wrapper — mirrors the native host's
-    /// `fit_content_to_viewport` (`viewport_fit.rs`). The browser
-    /// file-IO glue calls it after a document swap so the loaded
-    /// content frames within the canvas.
-    pub fn fit_content_to_viewport(&mut self, viewport_w: f32, viewport_h: f32) {
-        self.zoom_to_fit(viewport_w, viewport_h);
-    }
-
     /// Replace the editor state with an ingested document (Figma
     /// import) while preserving the live chrome state — port of the
     /// native `install_imported_state`. The whole live `editor_ui` is
@@ -51,7 +43,7 @@ impl WidgetHost {
     /// viewport, with fresh ids, batched undo, and the pasted roots
     /// selected — mirrors TS `use-figma-paste.ts:67-100` and the
     /// native `paste_figma_nodes`.
-    pub fn paste_figma_nodes(
+    pub(in crate::widget_host) fn paste_figma_nodes_layout(
         &mut self,
         nodes: Vec<jian_ops_schema::node::PenNode>,
         viewport_w: f32,

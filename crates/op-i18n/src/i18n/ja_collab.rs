@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "復元用コピー",
+        "drafts.notice" => "復元は現在のドキュメントを置き換え、1 回の操作で元に戻せます。先に保護用バックアップを作成します。関連付けられたファイルは保存されません。",
+        "drafts.create" => "チェックポイントを作成",
+        "drafts.label" => "チェックポイント名",
+        "drafts.empty" => "復元用コピーはありません。",
+        "drafts.restoreConfirm" => "このコピーを復元しますか？",
+        "drafts.deleteConfirm" => "この復元用コピーを完全に削除しますか？",
+        "drafts.syncError" => "ローカル編集の同期が完了してから再試行してください。",
+        "drafts.refresh" => "更新",
+        "drafts.failed" => "復元リクエストに失敗しました: {{message}}",
+        "drafts.loading" => "復元用コピーを更新中…",
+        "drafts.autosave" => "自動保存",
+        "drafts.checkpoint" => "チェックポイント",
+        "drafts.backup" => "保護用バックアップ",
+        "colorPicker.sampleError" => "色のサンプリングに失敗しました: {{message}}",
+        "statusbar.interfaceScale" => "インターフェースの倍率",
+        "statusbar.viewOptions" => "表示オプション",
     "preview.emptyPage" => "このページにはプレビューできる表示中のフレームがありません。",
     "preview.noFrame" => "枠なし",
     "preview.fit" => "ウィンドウに合わせる",

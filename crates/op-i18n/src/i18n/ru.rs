@@ -3,6 +3,12 @@
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
         "common.rename" => "Переименовать",
+        "layerMenu.copyProperties" => "Копировать свойства",
+        "layerMenu.pasteProperties" => "Вставить свойства",
+        "layerMenu.tidyUp" => "Упорядочить",
+        "layerMenu.packHorizontal" => "Плотно по горизонтали",
+        "layerMenu.packVertical" => "Плотно по вертикали",
+        "layerMenu.designError" => "Нельзя изменить: {{reason}}",
         "common.duplicate" => "Дублировать",
         "common.delete" => "Удалить",
         "common.cancel" => "Отмена",
@@ -780,6 +786,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "importProgress.figmaTitle" => "Разбор файла Figma…",
         "importProgress.htmlTitle" => "Разбор HTML и ресурсов страницы…",
         "importProgress.htmlSubtitle" => "Загрузка стилей и изображений. Подождите.",
+        "canvas.pageLoading" => "Загрузка страницы…",
         "importProgress.largeFileSubtitle" => "Большие файлы занимают несколько секунд. Подождите.",
         "account.signedOutHint" => "Войдите, чтобы синхронизировать настройки и предпочтения",
         "code.noUsableCode" => "ИИ не вернул пригодный код. Повторите попытку или смените модель ИИ.",

@@ -143,7 +143,16 @@ pub struct CanvasViewport<'a> {
     /// rect instead of the widget rect. The host's pan cache uses it
     /// to repaint only the strip a scroll refresh exposed.
     pub cull_override: Option<Rect>,
+    /// Retained document content (the host's tile cache). When it returns
+    /// true it has drawn every node, so the live walk only collects the
+    /// hover / selection hits that the chrome overlays need.
+    pub content_layer: ContentLayer<'a>,
 }
+
+/// One-shot painter for the scene content, called between the grid and the
+/// chrome overlays with the canvas rect.
+pub type ContentLayer<'a> =
+    std::cell::Cell<Option<&'a mut dyn FnMut(&mut PaintCx<'_>, Rect) -> bool>>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CanvasNodeDragOverlay {
@@ -285,26 +294,41 @@ impl<'a> Widget for CanvasViewport<'a> {
                 cx.backend
                     .draw_text(&label, Point2D::new(ghost.origin.x, ghost.origin.y - 6.0));
             }
-            let child_hits = super::canvas_viewport_paint::paint_scene_nodes_with_options_hiding(
-                cx,
-                &page.children,
-                viewport_origin,
-                viewport.zoom,
-                edit_caret.clone(),
-                cull,
-                reveal_schedule,
-                hovered_lookup,
-                selected_lookup,
-                self.pen_in_progress.as_deref(),
-                hidden_drag_node,
-                self.now_ms,
-                generation_sets.as_ref().map(|sets| &sets.scan),
-                generation_sets
-                    .as_ref()
-                    .map(|_| super::canvas_generation_scan::SKELETON_BLUE),
-                generation_sets.as_ref().map(|sets| &sets.queued),
-                self.fast_interaction,
-            );
+            let composited = self
+                .content_layer
+                .take()
+                .is_some_and(|layer| layer(cx, rect));
+            let child_hits = if composited {
+                super::canvas_tile_paint::collect_hits(
+                    &page.children,
+                    viewport_origin,
+                    viewport.zoom,
+                    hovered_lookup,
+                    selected_lookup,
+                    self.pen_in_progress.as_deref(),
+                )
+            } else {
+                super::canvas_viewport_paint::paint_scene_nodes_with_options_hiding(
+                    cx,
+                    &page.children,
+                    viewport_origin,
+                    viewport.zoom,
+                    edit_caret.clone(),
+                    cull,
+                    reveal_schedule,
+                    hovered_lookup,
+                    selected_lookup,
+                    self.pen_in_progress.as_deref(),
+                    hidden_drag_node,
+                    self.now_ms,
+                    generation_sets.as_ref().map(|sets| &sets.scan),
+                    generation_sets
+                        .as_ref()
+                        .map(|_| super::canvas_generation_scan::SKELETON_BLUE),
+                    generation_sets.as_ref().map(|sets| &sets.queued),
+                    self.fast_interaction,
+                )
+            };
             paint_hits.merge_missing(child_hits);
             if let Some(overlay) = self.node_drag_overlay.as_ref() {
                 if let Some(node) = page.find(overlay.node_id.as_str()) {

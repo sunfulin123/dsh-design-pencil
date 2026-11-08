@@ -65,6 +65,15 @@ function __snapCornerRadius(val) {
   }
   return val;
 }
+// A uniform radius equal to half the fixed width or height is an
+// intentional capsule (switch track, pill); snapping it breaks the shape.
+function __isAuthoredCapsuleRadius(obj) {
+  var r = obj.cornerRadius;
+  if (typeof r !== "number" || !Number.isFinite(r) || r <= 0) return false;
+  return [obj.width, obj.height].some(function (side) {
+    return typeof side === "number" && Number.isFinite(side) && Math.abs(side / 2 - r) < 0.01;
+  });
+}
 function __snapFontSize(val) {
   if (typeof val !== "number" || !Number.isFinite(val) || val <= 0) return 16;
   return __snapToScale(val, __FONT_SCALE, 4);
@@ -79,7 +88,7 @@ function __normalizeAestheticProps(obj, isPatch) {
   if (__hasOwn(out, "padding")) {
     out.padding = __snapSpacingValue(out.padding);
   }
-  if (__hasOwn(out, "cornerRadius")) {
+  if (__hasOwn(out, "cornerRadius") && !__isAuthoredCapsuleRadius(out)) {
     out.cornerRadius = __snapCornerRadius(out.cornerRadius);
   }
   if (__hasOwn(out, "fontSize") && typeof out.fontSize === "number") {

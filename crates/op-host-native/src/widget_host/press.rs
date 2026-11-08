@@ -32,6 +32,8 @@ impl WidgetHostNative {
         use op_editor_ui::widgets::layer_context_menu::LayerContextAction as Action;
 
         let mutation = match action {
+            Action::CopyProperties => None,
+            _ => Some(match action {
             Action::RenameLayer => Mutation::NodeProperty(Field::Name),
             Action::Duplicate => Mutation::Unsupported(Unsupported::Duplicate),
             Action::Delete => Mutation::NodeDelete,
@@ -43,6 +45,10 @@ impl WidgetHostNative {
             Action::CreateComponent | Action::DetachComponent | Action::DetachInstance => {
                 Mutation::Unsupported(Unsupported::Components)
             }
+            Action::CopyProperties => unreachable!("local UI handled before mutation classification"),
+            Action::PasteProperties | Action::TidyUp | Action::PackHorizontal | Action::PackVertical => {
+                Mutation::Unsupported(Unsupported::BulkWrite)
+            }
             Action::ToggleLock | Action::ToggleVisibility => {
                 Mutation::Unsupported(Unsupported::VisibilityAndLocking)
             }
@@ -51,8 +57,9 @@ impl WidgetHostNative {
             | Action::MovePageUp
             | Action::MovePageDown
             | Action::DeletePage => Mutation::Unsupported(Unsupported::PageStructure),
+            }),
         };
-        if !self.collab_allows_document_mutation(mutation) {
+        if mutation.is_some_and(|mutation| !self.collab_allows_document_mutation(mutation)) {
             return;
         }
         match press_flow::apply_layer_context_action(

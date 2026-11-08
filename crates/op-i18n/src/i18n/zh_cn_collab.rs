@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "草稿恢复",
+        "drafts.notice" => "恢复会替换当前文档，可一次撤销，并会先创建保护性备份。不会保存绑定文件。",
+        "drafts.create" => "创建检查点",
+        "drafts.label" => "检查点名称",
+        "drafts.empty" => "暂无恢复副本。",
+        "drafts.restoreConfirm" => "恢复此副本？",
+        "drafts.deleteConfirm" => "永久删除此恢复副本？",
+        "drafts.syncError" => "请等待本地编辑同步完成后重试。",
+        "drafts.refresh" => "刷新",
+        "drafts.failed" => "恢复请求失败：{{message}}",
+        "drafts.loading" => "正在更新恢复副本…",
+        "drafts.autosave" => "自动保存",
+        "drafts.checkpoint" => "检查点",
+        "drafts.backup" => "保护性备份",
+        "colorPicker.sampleError" => "颜色采样失败：{{message}}",
+        "statusbar.interfaceScale" => "界面缩放",
+        "statusbar.viewOptions" => "视图选项",
     "preview.emptyPage" => "当前页面没有可预览的可见画板。",
     "preview.noFrame" => "无设备边框",
     "preview.fit" => "适应窗口",

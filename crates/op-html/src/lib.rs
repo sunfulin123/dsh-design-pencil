@@ -9,6 +9,7 @@ use jian_ops_schema::style::{PenFill, SolidFillBody};
 pub mod color;
 pub mod css;
 pub mod css_encoding;
+pub mod diagram;
 pub mod dom;
 pub(crate) mod font_face;
 pub mod html_encoding;
@@ -467,6 +468,7 @@ pub(crate) fn wrap_imported_document(imported: HtmlImportResult) -> HtmlDocument
             version: "1.0".to_string(),
             name,
             themes: None,
+            theme: None,
             variables,
             pages: None,
             children: imported.nodes,
@@ -481,6 +483,7 @@ pub(crate) fn wrap_imported_document(imported: HtmlImportResult) -> HtmlDocument
             design_md: None,
             conversion: None,
             motion: None,
+            shared_styles: None,
         },
         imported.diagnostics,
     )

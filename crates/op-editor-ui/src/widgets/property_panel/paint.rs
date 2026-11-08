@@ -208,6 +208,8 @@ impl Widget for PropertyPanel {
                 x,
                 y,
                 w,
+                &self.text_inspector,
+                self.text_inspector_enabled,
             );
         }
         if self.snapshot.widget.is_some() {
@@ -335,25 +337,38 @@ impl Widget for PropertyPanel {
                 w,
             );
         }
+        if let (Some(model), Some(bounds)) = (
+            &self.component_inspector,
+            self.component_inspector_rect(rect),
+        ) {
+            crate::widgets::property_panel_components::paint(
+                cx,
+                &self.theme,
+                &edit_ctx,
+                self.locale,
+                model,
+                bounds,
+            );
+        }
+        if let Some(bounds) = self.design_system_inspector_rect(rect) {
+            crate::widgets::property_panel_design_system::paint(
+                cx,
+                &self.theme,
+                &edit_ctx,
+                self.locale,
+                &self.design_system_inspector,
+                true,
+                bounds.origin.x,
+                bounds.origin.y,
+                bounds.size.x,
+            );
+        }
         // Base-action feedback belongs to the scrolling panel body. Paint it
         // before every floating menu so a stale hover/press wash can never be
         // composited over popup chrome. The menu-specific hover states below
         // then remain the sole feedback on the top-most surface.
         if self.action_hover.is_some() || self.action_pressed.is_some() {
-            let rects = sections::action_button_rects_with_fill_picker(
-                self.scrolled_rect(rect),
-                self.visible_sections(),
-                &self.snapshot.effects,
-                &self.snapshot.fills,
-                &self.snapshot.interactions,
-                self.fill_type_picker.open,
-                self.fill_type_picker_index,
-                self.font_picker.open,
-                self.font_weight_picker_open,
-                self.export_scale_picker_open,
-                self.export_format_picker_open,
-                self.padding_mode_popover_open,
-            );
+            let rects = self.body_action_rects(rect);
             if let Some(i) = self.action_hover {
                 if let Some((action, r)) = rects.get(i) {
                     let wash = action_wash_rect(action, *r, &self.labels, self.locale, cx.backend);

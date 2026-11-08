@@ -2,6 +2,23 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "drafts.title" => "Recovery copies",
+        "drafts.notice" => "Restoring replaces the live document as one undoable edit and creates a protective backup. The bound file is not saved.",
+        "drafts.create" => "Create checkpoint",
+        "drafts.label" => "Checkpoint name",
+        "drafts.empty" => "No recovery copies yet.",
+        "drafts.restoreConfirm" => "Restore this recovery copy?",
+        "drafts.deleteConfirm" => "Delete this recovery copy permanently?",
+        "drafts.syncError" => "Wait for local edits to synchronize, then retry.",
+        "drafts.refresh" => "Refresh",
+        "drafts.failed" => "Recovery request failed: {{message}}",
+        "drafts.loading" => "Updating recovery copies…",
+        "drafts.autosave" => "Autosave",
+        "drafts.checkpoint" => "Checkpoint",
+        "drafts.backup" => "Protective backup",
+        "colorPicker.sampleError" => "Color sampling failed: {{message}}",
+        "statusbar.interfaceScale" => "Interface scale",
+        "statusbar.viewOptions" => "View options",
     "preview.emptyPage" => "This page has no visible frames to preview.",
     "preview.noFrame" => "No frame",
     "preview.fit" => "Fit",

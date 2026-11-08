@@ -3,10 +3,14 @@
   "version": "0.8.5-synapse.4",
   "private": true,
   "type": "commonjs",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
+    "lint": "bash ../../tools/check-maintenance.sh",
     "build:engine": "bash build-engine.sh",
     "build:web": "bash build-web.sh",
-    "test": "node --test *.test.mjs"
+    "test": "node --test *.test.mjs",
+    "test:verify": "DSH_VERIFY_FINGERPRINT=1 node --test *.test.mjs"
   }
 }

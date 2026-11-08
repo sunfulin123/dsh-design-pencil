@@ -30,6 +30,14 @@ thread_local! {
 /// once the press-time `inner` borrow is released. The flag is taken
 /// FIRST so a failed handler can't re-fire on every later press.
 pub(crate) fn drain_pending_file_action<C: RepaintContext + 'static>(inner: &InnerRc<C>) {
+    let diagram = inner.borrow_mut().host_mut().take_diagram_import_request();
+    if diagram {
+        super::diagram_import::import_diagram(inner);
+    }
+    let recover = inner.borrow_mut().host_mut().take_draft_recovery_request();
+    if recover {
+        crate::draft_recovery::open(inner);
+    }
     let action = inner
         .borrow_mut()
         .host_mut()
@@ -235,6 +243,7 @@ fn start_daemon_save<C: RepaintContext + 'static>(
         snap_rev,
         snap_active_page_index,
         snap_preserve_authored_geometry,
+        snap_viewport,
     ) = {
         let b = inner.borrow();
         let state = b.host().editor_state();
@@ -267,6 +276,7 @@ fn start_daemon_save<C: RepaintContext + 'static>(
             snap_rev,
             state.ui.active_page_index,
             state.editor_ui.preserve_authored_geometry,
+            state.viewport,
         )
     };
     let body = match body {
@@ -303,6 +313,7 @@ fn start_daemon_save<C: RepaintContext + 'static>(
                                 snap_rev,
                                 snap_active_page_index,
                                 snap_preserve_authored_geometry,
+                                snap_viewport,
                             );
                         }
                         b.host_mut().editor_state_mut().editor_ui.file_name_display =
@@ -549,14 +560,17 @@ fn apply_opened_document<C: RepaintContext + 'static>(
             for w in &ingested.warnings {
                 console_warn(&format!("[open] schema warning: {w}"));
             }
+            let restored_viewport = ingested.restored_viewport;
             let mut state = ingested.state;
             state.editor_ui.file_name_display = Some(file_name.to_string());
             // Use the shared ingestion path so an opened `.op` / `.pen` gets
             // the same cache invalidation and missing-font detection as Figma
             // and HTML document imports.
             b.host_mut().install_ingested_state(state);
-            let (w, h) = b.viewport_size();
-            b.host_mut().fit_content_to_viewport(w, h);
+            if !restored_viewport {
+                let (w, h) = b.viewport_size();
+                b.host_mut().fit_content_to_viewport(w, h);
+            }
             let _ = b.repaint();
         }
         Err(e) => console_error(&format!("[open] {file_name}: {e}")),

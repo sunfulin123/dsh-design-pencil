@@ -17,9 +17,13 @@ jian-ops-schema = { path = "../../vendor/jian/crates/jian-ops-schema" }
 flate2 = "1"
 ruzstd = "0.7"
 base64 = "0.22"
+# Figma REST API JSON (`rest_adapter`).
+serde_json = { workspace = true }
+# Component linkage verifies each emitted `ref` with the editor's own ref
+# resolver (wasm32-clean; op-editor-core never depends on this crate).
+op-editor-core = { path = "../op-editor-core" }
 
 [dev-dependencies]
-op-editor-core = { path = "../op-editor-core" }
 op-editor-ui = { path = "../op-editor-ui" }
 op-pen-loader = { path = "../op-pen-loader", default-features = false }
 serde_json = { workspace = true }

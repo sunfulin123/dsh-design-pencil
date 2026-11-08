@@ -200,7 +200,8 @@ fn empty_state_action_button_contents_are_centered() {
 
     panel.paint(&mut cx, rect);
 
-    for label in ["导入 design.md"] {
+    {
+        let label = "导入 design.md";
         let (text, text_origin) = backend
             .texts
             .iter()

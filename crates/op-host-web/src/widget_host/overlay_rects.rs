@@ -31,19 +31,21 @@ impl WidgetHost {
         viewport_w: f32,
         viewport_h: f32,
     ) {
-        overlay_geometry::status_bar_zoom(&mut self.editor_state, zoom_in, viewport_w, viewport_h);
+        let (_, _, width, height) = self.canvas_region(viewport_w, viewport_h);
+        self.zoom_at_layout(
+            Point2D::new(width / 2.0, height / 2.0),
+            if zoom_in { 120.0 } else { -120.0 },
+        );
         self.mark_dirty();
     }
 
     /// Zoom + pan so the active page's content is framed within the canvas.
     pub(in crate::widget_host) fn zoom_to_fit(&mut self, viewport_w: f32, viewport_h: f32) {
         self.refresh_layout_scene();
-        overlay_geometry::zoom_to_fit(
-            &mut self.editor_state,
-            &self.layout_scene,
-            viewport_w,
-            viewport_h,
-        );
+        if let Some(bounds) = self.layout_scene.content_bounds() {
+            let (_, _, width, height) = self.canvas_region(viewport_w, viewport_h);
+            self.fit_camera_layout(bounds, width, height, 64.0);
+        }
         self.mark_dirty();
     }
 

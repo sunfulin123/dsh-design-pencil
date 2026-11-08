@@ -5,6 +5,7 @@
 //! ([`tree`]) and converted to a `PenDocument` ([`converters`] /
 //! [`node_mapper`]). Clipboard-JSON (`.fig.json`) keeps the
 //! hand-rolled shallow extractor below.
+#![cfg_attr(test, recursion_limit = "256")]
 
 mod boolean_fallback;
 mod clipboard;
@@ -19,12 +20,15 @@ mod image_resolver;
 mod instance;
 mod kiwi;
 mod layout_positioning;
+mod linkage;
 mod mappers;
 mod mask;
 mod node_build;
 mod node_mapper;
 mod page_mapper;
+mod paint_vars;
 mod prepared;
+pub mod rest_adapter;
 mod text_cache;
 mod text_mapper;
 mod tree;
@@ -34,6 +38,8 @@ mod zip_reader;
 
 #[cfg(test)]
 mod binary_e2e_tests;
+#[cfg(test)]
+mod real_file_probe_tests;
 
 pub use clipboard::{
     enrich_nodes_from_html_hints, extract_figma_clipboard_data, figma_clipboard_to_nodes,
@@ -120,6 +126,20 @@ pub fn parse_fig_binary(
     layout_mode: FigLayoutMode,
 ) -> Result<FigImport, FigParseError> {
     parse_fig_binary_with_images(bytes, file_name, layout_mode, None)
+}
+
+/// [`parse_fig_binary`] keeping component/instance linkage: components the
+/// pages use land on an extra "Components" page and page-level instances
+/// become `ref`s verified to render identically. Use only when the whole
+/// returned document (every page) is kept.
+pub fn parse_fig_binary_linked(
+    bytes: &[u8],
+    file_name: &str,
+    layout_mode: FigLayoutMode,
+) -> Result<FigImport, FigParseError> {
+    prepare_fig_binary(bytes, file_name, layout_mode)?
+        .with_component_linkage(true)
+        .into_all_pages_with_images(None)
 }
 
 /// [`parse_fig_binary`] with an optional host [`ImageTransform`]
@@ -513,6 +533,8 @@ fn build_node(variant: FigmaNodeVariant, base: PenNodeBase) -> PenNode {
             text_align: None,
             text_align_vertical: None,
             text_growth: None,
+            text_truncation: None,
+            max_lines: None,
             underline: None,
             strikethrough: None,
             fill: None,
