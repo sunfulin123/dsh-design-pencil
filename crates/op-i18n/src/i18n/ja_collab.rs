@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "ライブラリ更新 {{count}} 件 · 承認",
         "drafts.title" => "復元用コピー",
         "drafts.notice" => "復元は現在のドキュメントを置き換え、1 回の操作で元に戻せます。先に保護用バックアップを作成します。関連付けられたファイルは保存されません。",
         "drafts.create" => "チェックポイントを作成",

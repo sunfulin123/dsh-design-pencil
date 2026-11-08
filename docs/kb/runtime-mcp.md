@@ -46,6 +46,9 @@ sample_color、compare_figma_fidelity 归为 render-wait；它们不能持有 mu
 ## 资产持久化与 UI 确认
 
 范围：managed Node host，不泛化到无文件系统的直接 WASM 调用。
+CLI 默认目录由 [asset-directory](../../packages/dsh-node-runtime/asset-directory.mjs) 决定，
+是用户级而非文档旁目录：DSH 每个草稿都在临时目录启动，文档旁目录会随草稿丢失。
+发布 staging 必须包含运行时全部非测试 `.mjs`，`package.test.mjs` 会启动 staged CLI 验证。
 [资产目录](../../packages/dsh-node-runtime/asset-store.mjs) 使用 SQLite 事务；
 user id 不由名称推导，同名导入不会覆盖旧资产。更新/删除必须携带 revision，
 跨 host 写入失败或目录读取期间改变均明确返回错误，不接受混合版本的元数据。
@@ -82,19 +85,19 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 {
   "version": 1,
   "status": "verified",
-  "task_id": "6feafc4e-5363-47a4-9db0-483ee4b6380b",
-  "verified_at": "2026-11-08T01:45:26.872669+00:00",
+  "task_id": "6ab8131e-b65c-4c11-8908-3c92286f3e21",
+  "verified_at": "2026-11-08T06:36:35.480617+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "96ee73db5c988ad3ed2d302377e359ba1ae418ea50391ea02481c118bdfd3ef1",
     "packages/dsh-node-runtime/build-web.sh": "596d045386c43ec612f77c97ba2d2a752f3614b24cbbff301df75f950a76684f",
-    "crates/op-dsh-engine/src/tool_catalog.rs": "e048f175e7c07438b78764318b8429bfc114a3a155abef75ec5c7dca6cb3103b",
-    "crates/op-dsh-engine/src/lib.rs": "26fcaed77e30d238ce115e74bc464ba1fa561abe9b1e7c912601d4c64d335e7e",
+    "crates/op-dsh-engine/src/tool_catalog.rs": "32f1d1c04d0d1d0f3d91106cadd68ad3ac00c8a9bc6ab231a7bf92814bd8048c",
+    "crates/op-dsh-engine/src/lib.rs": "be01a3ea56c8cfce44e7332739b6eee2d1718e8036aaa6452fd678e2bb114c91",
     "crates/op-mcp/Cargo.toml": "1d260158e5a08f8287175910ab205e2a7fd9abc3a15a780abbcd20e6b635e2bd",
     "crates/op-mcp/src/batch_design.rs": "dec04c3a39db844599d5b13fc0352814662dbaff97323152fc0b59220a417199",
     "packages/dsh-node-runtime/engine-session.mjs": "37b6cd8fdde391b7b793377ee6ed6e25c29f26bcc94d00c9b0049f3e0d6d5f26",
-    "packages/dsh-node-runtime/node-host.mjs": "1ebdd730a46bb6f7b47e3659cfd6aa9c057e990161303140a57bf5878dce8aa5",
-    "packages/dsh-node-runtime/asset-store.mjs": "24d87013389c06c7044a243f98273a658cc5c55f97d7c98e82926d7333330e10",
+    "packages/dsh-node-runtime/node-host.mjs": "850d1a625f14c5df26ed20f6c829b3bf5f1026ecb1fb6af9e4796e93c807e0e0",
+    "packages/dsh-node-runtime/asset-store.mjs": "66df967d9c4e7be10e36f1f8348d377ca90dad87f3d32291296c177ebcd6d483",
     "packages/dsh-node-runtime/asset-tools.mjs": "fdf48f0240503792ceab96cc435ca018b9941be3adad8fce3220b3324ccc7c46",
     "packages/dsh-node-runtime/editor-control.mjs": "8fb0da89f7e860384a4e3ff4f935446295dc0877ddbe93c403834d3cd50b0d09",
     "packages/dsh-node-runtime/asset-browser.test.mjs": "7ec18bb7069fbc40edee28fbab0316904064a4a1424cf272d26999c993313e7b",
@@ -104,7 +107,7 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-dsh-engine/src/asset_semantics.rs": "1b91e8c8205116614e9c948e83f27256b42341e28e1fe6f8ba4221debd94341f",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "f640a2169d729b6a65702ac5e55dc4793485afca0ccef7a0861835e8f7ebeb85"
   },
-  "reason": "Rechecked SQLite revision conflicts, template namespace and theme migration, batch-only argument extraction, ack queues and new-client readiness after reload; retained actual Node versus WASM script boundaries.",
-  "evidence": "Final runtime suite with fingerprint and Chrome enabled: 162 passed, zero skipped; HTTP suite: 11 passed; feature-enabled Web lib: 776 passed, 29 existing ignored; final engine/web builds and Clippy exit zero."
+  "reason": "CLI asset directory is user-level because DSH drafts live in temporary directories; release staging must ship every non-test runtime module",
+  "evidence": "node --test packages/dsh-node-runtime/asset-directory.test.mjs packages/dsh-node-runtime/package.test.mjs (staged CLI starts), node --test packages/dsh-node-runtime/*.test.mjs 164 passed"
 }
 ```

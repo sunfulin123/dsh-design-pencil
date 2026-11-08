@@ -5,7 +5,7 @@ phase: [generation]
 trigger:
   flags: [hasVariables]
 priority: 45
-budget: 800
+budget: 850
 category: base
 ---
 
@@ -14,6 +14,7 @@ DESIGN VARIABLES:
 - With document variables, use "$variableName" refs, not hardcoded values.
 - Color: [{ "type": "solid", "color": "$--primary" }]. Number: "gap": "$spacing-2".
 - Only reference listed variables — never invent names.
+- Talkdesk Cobalt library variables (`$--primary-9`, `$--text-default`, `$--surface-elevation-1`, `$--spacing-small`, ...) may be referenced even when not yet listed: they are imported with their aliases on first use. Prefer document variables when both exist.
 
 ## shadcn token palette (hasSemanticPalette=true)
 

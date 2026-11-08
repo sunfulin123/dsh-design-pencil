@@ -174,6 +174,7 @@ const KNOWN_TOP_LEVEL_FIELDS: &[&str] = &[
     "name",
     "themes",
     "variables",
+    "variableCollections",
     "pages",
     "children",
     "app",

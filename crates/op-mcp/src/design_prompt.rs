@@ -93,8 +93,8 @@ K("shadcn/btn-primary", hero, {label:"Get started"});
 
 Light/dark handling:
 - Inspect `get_variables` / `get_active_theme` first when the document already defines theme axes.
-- Use variable refs such as `$--background`, `$--foreground`, and `$--card` when the document provides them.
-- If the user explicitly asks for a one-off dark or light design and no variables exist, use concrete high-contrast fills and text colors directly."##;
+- Use the document's own variables when it defines them. Otherwise reference Talkdesk Cobalt library variables such as `$--surface-elevation-0`, `$--text-default` and `$--primary-9`; they import on first use and follow the `Color scheme (Primitives)` Light/Dark axis.
+- If the user explicitly asks for a one-off design in another style, use concrete high-contrast fills and text colors directly."##;
 
 /// Element guide for hosts built without QuickJS (the wasm DSH engine):
 /// `batch_design.script` is unavailable there, so trees are built with the
@@ -116,8 +116,8 @@ title=I(hero, {"type":"text","name":"Headline","content":"Welcome Back","width":
 
 Light/dark handling:
 - Inspect `get_variables` / `get_active_theme` first when the document already defines theme axes.
-- Use variable refs such as `$--background`, `$--foreground`, and `$--card` when the document provides them.
-- If the user explicitly asks for a one-off dark or light design and no variables exist, use concrete high-contrast fills and text colors directly."##;
+- Use the document's own variables when it defines them. Otherwise reference Talkdesk Cobalt library variables such as `$--surface-elevation-0`, `$--text-default` and `$--primary-9`; they import on first use and follow the `Color scheme (Primitives)` Light/Dark axis.
+- If the user explicitly asks for a one-off design in another style, use concrete high-contrast fills and text colors directly."##;
 
 fn element_tool_guide() -> &'static str {
     if cfg!(feature = "script") {

@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "라이브러리 업데이트 {{count}}개 · 수락",
         "drafts.title" => "복구 사본",
         "drafts.notice" => "복원은 현재 문서를 교체하며 한 번에 실행 취소할 수 있습니다. 먼저 보호용 백업을 만듭니다. 연결된 파일은 저장하지 않습니다.",
         "drafts.create" => "체크포인트 만들기",

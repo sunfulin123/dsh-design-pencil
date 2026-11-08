@@ -269,6 +269,24 @@ export class AssetStore {
     });
   }
 
+  /** Insert an asset from another library under its existing stable id. */
+  async adopt({ id, kind, payload }) {
+    checkKind(kind);
+    checkId(id);
+    const json = payloadJson(kind, payload);
+    const name = checkName(payload.name);
+    return this.#mutate(undefined, () => {
+      if (
+        kind === 'scene-template' &&
+        this.#db.prepare('SELECT count(*) AS n FROM assets WHERE kind=?').get(kind).n >= 50
+      ) {
+        throw new AssetStoreError('asset-quota', 'The 50 saved-template quota is full');
+      }
+      this.#db.prepare('INSERT INTO assets VALUES (?,?,?,?)').run(id, kind, name, json);
+      return { id, kind, name, payload: JSON.parse(json) };
+    });
+  }
+
   async rename(kind, id, name, { expectedRevision } = {}) {
     checkKind(kind);
     checkId(id);

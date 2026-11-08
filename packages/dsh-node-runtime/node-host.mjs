@@ -9,7 +9,7 @@ import {
 } from './host-http.mjs';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { FontFetcher } from './font-fetcher.mjs';
 import { defaultFigmaCacheDir } from './figma-import-jobs.mjs';
 import { readDocumentFile, writeDocumentFile } from './document-file.mjs';
@@ -20,7 +20,8 @@ import { ScreenshotRenderer } from './screenshot-renderer.mjs';
 import { HeadlessRenderer } from './headless-renderer.mjs';
 import { DraftRecovery, DraftWriteError } from './draft-recovery.mjs';
 import { serveStatic } from './static-assets.mjs';
-import { AssetStore, AssetStoreError } from './asset-store.mjs';
+import { AssetStoreError } from './asset-store.mjs';
+import { openAssetStore } from './asset-directory.mjs';
 import { AssetTools } from './asset-tools.mjs';
 import { assetRoute } from './asset-routes.mjs';
 import { EditorControl } from './editor-control.mjs';
@@ -344,6 +345,7 @@ export async function startNodeHost({
   sourcePath,
   draftDirectory,
   assetDirectory,
+  legacyAssetDirectory,
   webRoot,
   canvaskitRoot,
   onShutdown,
@@ -353,14 +355,11 @@ export async function startNodeHost({
     path: sourcePath,
     contents: sourcePath ? await readDocumentFile(sourcePath) : null,
   };
-  const assetsDirectory =
-    assetDirectory ??
-    (sourcePath && file.contents
-      ? join(dirname(resolve(sourcePath)), '.dsh-design', 'assets')
-      : undefined);
-  const assetStore = assetsDirectory
-    ? await AssetStore.open({ directory: assetsDirectory })
-    : undefined;
+  const assetStore = await openAssetStore({
+    assetDirectory,
+    legacyDirectory: legacyAssetDirectory,
+    sourcePath: file.contents ? sourcePath : undefined,
+  });
   let session;
   try {
     session = new EngineSession(document, sourcePath ? { figmaJobScope: resolve(sourcePath) } : {});

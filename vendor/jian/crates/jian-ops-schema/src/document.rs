@@ -31,6 +31,10 @@ pub struct PenDocument {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub variables: Option<BTreeMap<String, VariableDefinition>>,
 
+    /// Figma-style collection metadata keyed by collection (= theme axis) name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variable_collections: Option<BTreeMap<String, crate::variable::VariableCollection>>,
+
     /// Reusable authored appearance and document-wide node memberships.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shared_styles: Option<BTreeMap<String, crate::style::SharedStyle>>,
@@ -106,6 +110,7 @@ impl Clone for PenDocument {
             design_md: self.design_md.clone(),
             conversion: self.conversion.clone(),
             motion: self.motion,
+            variable_collections: self.variable_collections.clone(),
         };
         crate::image_thumbs::propagate_to_clone(self, &mut cloned);
         cloned
@@ -113,6 +118,32 @@ impl Clone for PenDocument {
 }
 
 impl PenDocument {
+    /// A document holding only `children`; every optional section is unset.
+    pub fn with_children(version: impl Into<String>, children: Vec<crate::node::PenNode>) -> Self {
+        Self {
+            version: version.into(),
+            name: None,
+            themes: None,
+            theme: None,
+            variables: None,
+            pages: None,
+            children,
+            format_version: None,
+            id: None,
+            app: None,
+            routes: None,
+            state: None,
+            lifecycle: None,
+            logic_modules: None,
+            design_md: None,
+            conversion: None,
+            motion: None,
+            variable_collections: None,
+            shared_styles: None,
+            responsive: None,
+        }
+    }
+
     pub fn is_responsive(&self) -> bool {
         self.responsive.unwrap_or(false)
     }

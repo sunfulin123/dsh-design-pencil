@@ -55,6 +55,10 @@ pub fn parse_style_guide_file(raw: &str) -> Option<ParsedStyleGuide> {
 static REGISTRY: OnceLock<Vec<ParsedStyleGuide>> = OnceLock::new();
 
 /// The embedded style-guide registry, parsed + cached on first call.
+/// The default product style: Talkdesk Cobalt, backed by the built-in
+/// variable library of the same id.
+pub const PREFERRED_STYLE_GUIDE: &str = "talkdesk-cobalt";
+
 pub fn style_guide_registry() -> &'static [ParsedStyleGuide] {
     REGISTRY.get_or_init(|| {
         let mut out = Vec::new();
@@ -71,6 +75,8 @@ pub fn style_guide_registry() -> &'static [ParsedStyleGuide] {
                 }
             }
         }
+        // The preferred guide leads listings and wins equal-score tag matches.
+        out.sort_by_key(|guide| guide.name != PREFERRED_STYLE_GUIDE);
         out
     })
 }
@@ -166,6 +172,7 @@ mod tests {
             reg.len()
         );
         assert!(reg.iter().all(|g| !g.name.is_empty()));
+        assert_eq!(reg[0].name, PREFERRED_STYLE_GUIDE);
     }
 
     #[test]

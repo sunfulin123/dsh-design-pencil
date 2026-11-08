@@ -34,6 +34,7 @@
 //! - `crud` — create / delete / rename / bulk + theme-axis selection
 
 mod crud;
+mod design_md_tokens;
 mod scalars;
 #[cfg(test)]
 mod tests;

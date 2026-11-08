@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} लाइब्रेरी अपडेट · स्वीकारें",
         "drafts.title" => "पुनर्प्राप्ति प्रतियाँ",
         "drafts.notice" => "पुनर्स्थापना वर्तमान दस्तावेज़ को बदलती है और एक चरण में पूर्ववत की जा सकती है। पहले सुरक्षा बैकअप बनाया जाता है। लिंक की गई फ़ाइल सहेजी नहीं जाती।",
         "drafts.create" => "चेकपॉइंट बनाएँ",

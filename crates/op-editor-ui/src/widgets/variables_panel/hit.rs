@@ -53,6 +53,12 @@ impl VariablesPanel {
                 return Some(hit);
             }
         }
+        if self
+            .library_updates_rect(rect)
+            .is_some_and(|r| r.contains(point))
+        {
+            return Some(VariablesPanelHit::AcceptLibraryUpdates);
+        }
         for (idx, axis) in self.theme_tab_labels().iter().enumerate() {
             if (self.theme_tab_rect(rect, idx)).contains(point) {
                 if *axis == self.active_axis_label() {

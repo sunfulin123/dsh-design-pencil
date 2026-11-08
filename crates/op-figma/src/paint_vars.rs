@@ -17,7 +17,7 @@
 
 use crate::kiwi::FigValue;
 use crate::tree::{guid_to_string, TreeNode};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Lookup keys a library record is published under: exact version and key.
 fn asset_keys(node: &FigValue) -> Vec<String> {
@@ -43,6 +43,32 @@ pub(crate) struct VariableIndex {
     set_ids: HashMap<String, String>,
     /// Canonical collection guid → default mode id.
     default_modes: HashMap<String, String>,
+    /// Collection guid → (theme axis, mode id → mode name).
+    set_axes: HashMap<String, (String, HashMap<String, String>)>,
+    /// The file's variables as document variables.
+    pub(crate) document: crate::fig_document_variables::FigDocumentVariables,
+}
+
+fn rgb_hex((r, g, b): (f64, f64, f64)) -> String {
+    let channel = |v: f64| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    format!("#{:02X}{:02X}{:02X}", channel(r), channel(g), channel(b))
+}
+
+/// Synthetic paint field naming the document variable a paint is bound to.
+pub(crate) const BOUND_VARIABLE: &str = "__dshVariable";
+
+#[cfg(test)]
+thread_local! {
+    /// Fidelity probes convert once baked and once bound to compare them.
+    pub(crate) static BAKE_ONLY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// `key:<key>` for library records, else the guid (see `fig_variables`).
+fn canonical_id(node: &FigValue) -> Option<String> {
+    match node.get_str("key") {
+        Some(key) => Some(format!("key:{key}")),
+        None => node.get("guid").and_then(guid_to_string),
+    }
 }
 
 impl VariableIndex {
@@ -76,7 +102,143 @@ impl VariableIndex {
                 _ => {}
             }
         }
+        let table = crate::fig_variables::variables_from_node_changes(nodes);
+        index.document = crate::fig_document_variables::fig_document_variables(&table);
+        for node in nodes
+            .iter()
+            .filter(|n| n.get_str("type") == Some("VARIABLE_SET"))
+        {
+            let (Some(guid), Some(canonical)) = (
+                node.get("guid").and_then(guid_to_string),
+                canonical_id(node),
+            ) else {
+                continue;
+            };
+            let (Some(axis), Some(collection)) = (
+                index.document.axes.get(&canonical),
+                table.collection(&canonical),
+            ) else {
+                continue;
+            };
+            let modes = collection.modes.iter().cloned().collect();
+            index.set_axes.insert(guid, (axis.clone(), modes));
+        }
         index
+    }
+
+    /// Document theme overrides for explicit Figma modes (innermost wins).
+    pub(crate) fn theme_for(&self, modes: &[(String, String)]) -> BTreeMap<String, String> {
+        let mut theme = BTreeMap::new();
+        for (set, mode) in modes {
+            if let Some((axis, names)) = self.set_axes.get(set) {
+                if let Some(name) = names.get(mode) {
+                    theme.insert(axis.clone(), name.clone());
+                }
+            }
+        }
+        theme
+    }
+
+    /// `#RRGGBB` a document variable resolves to under `theme` (default mode
+    /// for unset axes), following aliases.
+    fn document_hex(
+        &self,
+        name: &str,
+        theme: &BTreeMap<String, String>,
+        depth: u8,
+    ) -> Option<String> {
+        use jian_ops_schema::variable::{VariableScalar, VariableValue};
+        if depth > 16 {
+            return None;
+        }
+        let scalar = match &self.document.variables.get(name)?.value {
+            VariableValue::Scalar(scalar) => scalar,
+            VariableValue::Themed(entries) => {
+                let matches = |entry: &&jian_ops_schema::variable::ThemedValue| {
+                    entry.theme.as_ref().is_some_and(|t| {
+                        t.iter()
+                            .all(|(axis, mode)| theme.get(axis).is_none_or(|m| m == mode))
+                            && t.keys().all(|axis| theme.contains_key(axis))
+                    })
+                };
+                &entries
+                    .iter()
+                    .find(matches)
+                    .or_else(|| entries.first())?
+                    .value
+            }
+        };
+        let VariableScalar::Str(text) = scalar else {
+            return None;
+        };
+        match text.strip_prefix('$') {
+            Some(target) => self.document_hex(target, theme, depth + 1),
+            None => Some(text.get(..7)?.to_ascii_uppercase()),
+        }
+    }
+
+    /// Record explicit Figma modes as the node's theme overrides, so
+    /// variable-bound values resolve in the mode Figma rendered them in.
+    pub(crate) fn set_mode_theme(
+        &self,
+        node: &mut jian_ops_schema::node::PenNode,
+        modes: &[(String, String)],
+    ) {
+        let theme = self.theme_for(modes);
+        if theme.is_empty() {
+            return;
+        }
+        let base = crate::layout_positioning::base_mut(node);
+        let current = base.theme.get_or_insert_with(Default::default);
+        for (axis, mode) in theme {
+            current.entry(axis).or_insert(mode);
+        }
+    }
+
+    /// Resolve an instance expansion: component layers render in the
+    /// instance's mode scope, the component's own modes then the instance's.
+    pub(crate) fn resolve_instance(
+        &self,
+        outer: &ModeScope,
+        [component, instance]: [&FigValue; 2],
+        merged: &mut FigValue,
+        children: &mut [TreeNode],
+    ) {
+        if self.is_empty() {
+            return;
+        }
+        let mut scope = outer.clone();
+        self.push_modes(component, &mut scope);
+        self.push_modes(instance, &mut scope);
+        self.resolve_value(merged, &scope);
+        for child in children {
+            self.resolve_tree(child, &mut scope);
+        }
+    }
+
+    /// A component's own modes apply to each expansion of it.
+    pub(crate) fn set_component_theme(
+        &self,
+        node: &mut jian_ops_schema::node::PenNode,
+        component: &FigValue,
+    ) {
+        let mut modes = Vec::new();
+        self.push_modes(component, &mut modes);
+        self.set_mode_theme(node, &modes);
+    }
+
+    /// Document variable name of an alias reference, when the file defines it.
+    fn bound_name(&self, alias: &FigValue) -> Option<String> {
+        #[cfg(test)]
+        if BAKE_ONLY.with(std::cell::Cell::get) {
+            return None;
+        }
+        let id = canonical_id(self.variable(alias)?)?;
+        let name = self.document.names.get(&id)?;
+        self.document
+            .variables
+            .contains_key(name)
+            .then(|| name.clone())
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -184,12 +346,31 @@ impl VariableIndex {
                 .iter_mut()
                 .for_each(|item| self.resolve_value(item, scope)),
             FigValue::Object(_) => {
-                if let Some(rgb) = value
+                let alias = value
                     .get("colorVar")
                     .and_then(|var| var.get("value"))
                     .and_then(|var| var.get("alias"))
-                    .and_then(|alias| self.resolve(alias, scope, 0))
-                {
+                    .cloned();
+                let rgb = alias
+                    .as_ref()
+                    .and_then(|alias| self.resolve(alias, scope, 0));
+                if let (Some(alias), Some(rgb)) = (alias.as_ref(), rgb) {
+                    // A paint citing an older library version can render a
+                    // value the document (newest version) cannot; bake it.
+                    // Instance expansion re-resolves in another scope, so an
+                    // earlier binding is replaced, never kept stale.
+                    let theme = self.theme_for(scope);
+                    let name = self.bound_name(alias).filter(|name| {
+                        self.document_hex(name, &theme, 0).as_deref() == Some(rgb_hex(rgb).as_str())
+                    });
+                    if name.is_some() || value.get(BOUND_VARIABLE).is_some() {
+                        value.set(
+                            BOUND_VARIABLE,
+                            FigValue::Str(name.unwrap_or_default().into()),
+                        );
+                    }
+                }
+                if let Some(rgb) = rgb {
                     let alpha = value
                         .get("color")
                         .and_then(|color| color.get_f64("a"))
@@ -363,6 +544,57 @@ mod tests {
         assert!(
             (color_of(&node) - 0.4).abs() < 1e-6,
             "white cache replaced by the variable value"
+        );
+    }
+
+    #[test]
+    fn bound_paints_keep_their_variable_and_explicit_modes_become_themes() {
+        let mode = |id: u32, name: &str| {
+            obj(vec![
+                ("id", guid(1, id)),
+                ("name", FigValue::Str(name.into())),
+            ])
+        };
+        let index = VariableIndex::from_node_changes(&[
+            obj(vec![
+                ("guid", guid(1, 1)),
+                ("type", FigValue::Str("VARIABLE_SET".into())),
+                ("name", FigValue::Str("Colors".into())),
+                (
+                    "variableSetModes",
+                    FigValue::Array(vec![mode(2, "Light"), mode(3, "Dark")]),
+                ),
+            ]),
+            obj(vec![
+                ("guid", guid(2, 1)),
+                ("type", FigValue::Str("VARIABLE".into())),
+                ("name", FigValue::Str("Gray".into())),
+                ("variableResolvedType", FigValue::Str("COLOR".into())),
+                ("variableSetID", obj(vec![("guid", guid(1, 1))])),
+                (
+                    "variableDataValues",
+                    obj(vec![(
+                        "entries",
+                        FigValue::Array(vec![
+                            entry(guid(1, 2), obj(vec![("colorValue", rgb(0.4, 0.4, 0.4))])),
+                            entry(guid(1, 3), obj(vec![("colorValue", rgb(0.9, 0.9, 0.9))])),
+                        ]),
+                    )]),
+                ),
+            ]),
+        ]);
+        assert_eq!(index.document.themes["Colors"], ["Light", "Dark"]);
+        let mut paint = FigValue::Array(vec![bound_paint(obj(vec![("guid", guid(2, 1))]))]);
+        index.resolve_value(&mut paint, &Vec::new());
+        let fills = crate::mappers::map_figma_fills(paint.as_array()).unwrap();
+        let jian_ops_schema::style::PenFill::Solid(solid) = &fills[0] else {
+            panic!("solid fill expected");
+        };
+        assert_eq!(solid.color, "$Gray");
+        let theme = index.theme_for(&[("1:1".to_string(), "1:3".to_string())]);
+        assert_eq!(
+            theme,
+            BTreeMap::from([("Colors".to_string(), "Dark".to_string())])
         );
     }
 

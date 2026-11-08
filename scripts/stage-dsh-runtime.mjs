@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { indexRuntimePayload } from './dsh-runtime-payload.mjs'
@@ -10,12 +10,13 @@ export async function stageRuntime({ root, destination, revision }) {
   const metadata = JSON.parse(await readFile(join(runtime, 'package.json'), 'utf8'))
   await rm(destination, { recursive: true, force: true })
   await mkdir(destination, { recursive: true })
+  // Every runtime module, so an import added to the host cannot be left out
+  // of the release; tests and test helpers stay behind.
+  const modules = (await readdir(runtime)).filter(
+    name => name.endsWith('.mjs') && !/\.test(?:-helper)?\.mjs$/.test(name),
+  )
   for (const path of [
-    'package.json', 'cli.mjs', 'offline-cli.mjs', 'document-file.mjs', 'document-store.mjs',
-    'engine-session.mjs', 'node-host.mjs', 'static-assets.mjs', 'color-sampler.mjs', 'screenshot-renderer.mjs',
-    'draft-recovery.mjs', 'document-history.mjs',
-    'figma-rest-client.mjs', 'figma-images.mjs', 'figma-import-jobs.mjs', 'font-fetcher.mjs', 'font-inventory.mjs', 'headless-renderer.mjs',
-    'figma-fidelity.mjs', 'png-diff.mjs',
+    'package.json', ...modules,
     'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/canvaskit',

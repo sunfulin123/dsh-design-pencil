@@ -198,6 +198,7 @@ pub mod uikit;
 mod uikit_allocator;
 pub mod uikit_io;
 pub mod uikit_shadcn;
+pub mod variable_library;
 pub mod variables;
 pub mod variables_panel_state;
 pub mod variables_resolve;

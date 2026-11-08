@@ -3,6 +3,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
+import { createInterface } from 'node:readline'
+import { fileURLToPath } from 'node:url'
 import { stageRuntime } from '../../scripts/stage-dsh-runtime.mjs'
 
 test('stages only the Node/WASM runtime and required browser assets', async context => {
@@ -14,7 +18,8 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     'engine-session.mjs', 'node-host.mjs', 'static-assets.mjs', 'color-sampler.mjs', 'screenshot-renderer.mjs',
     'draft-recovery.mjs', 'document-history.mjs',
     'figma-rest-client.mjs', 'figma-images.mjs', 'figma-import-jobs.mjs', 'font-fetcher.mjs', 'font-inventory.mjs', 'headless-renderer.mjs',
-    'figma-fidelity.mjs', 'png-diff.mjs',
+    'figma-fidelity.mjs', 'png-diff.mjs', 'asset-directory.mjs', 'asset-store.mjs', 'host-http.mjs',
+    'png-fixture.test-helper.mjs',
     'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/snippets/bridge.js',
@@ -50,6 +55,10 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.ok(manifest.files['screenshot-renderer.mjs'])
   assert.ok(manifest.files['draft-recovery.mjs'])
   assert.ok(manifest.files['document-history.mjs'])
+  for (const module of ['asset-directory.mjs', 'asset-store.mjs', 'host-http.mjs']) {
+    assert.ok(manifest.files[module], `${module} is imported by the host and must be staged`)
+  }
+  assert.equal(manifest.files['png-fixture.test-helper.mjs'], undefined)
   assert.ok(manifest.files['web-bundle/op_host_web_bg.wasm'])
   assert.ok(manifest.files['web-bundle/assets/i18n/ja.json'])
   assert.ok(manifest.files['web-bundle/snippets/bridge.js'])
@@ -58,4 +67,31 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   }
   const persisted = JSON.parse(await readFile(join(destination, 'openpencil-runtime.json')))
   assert.deepEqual(persisted, manifest)
+})
+test('the staged real runtime starts a managed host with every imported module', async context => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-node-staged-'))
+  context.after(() => rm(root, { recursive: true, force: true }))
+  const repo = fileURLToPath(new URL('../..', import.meta.url))
+  const destination = join(root, 'runtime')
+  await stageRuntime({ root: repo, destination, revision: '1'.repeat(40) })
+  const document = join(root, 'design.op')
+  await writeFile(document, JSON.stringify({ version: '0.8.5', children: [] }))
+  const child = spawn(process.execPath, [
+    join(destination, 'cli.mjs'), '--serve-web', '--managed', '--port', '0', '--file', document,
+    '--draft-dir', join(root, 'drafts'),
+  ], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, DSH_ASSET_DIR: join(root, 'assets'), DSH_HEADLESS: '0' } })
+  const exited = once(child, 'exit')
+  context.after(async () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+    await exited
+  })
+  let diagnostics = ''
+  child.stderr.setEncoding('utf8').on('data', message => { diagnostics += message })
+  const [line] = await Promise.race([
+    once(createInterface({ input: child.stdout }), 'line', { signal: AbortSignal.timeout(10_000) }),
+    exited.then(() => { throw new Error(`staged CLI exited: ${diagnostics}`) }),
+  ])
+  assert.equal(JSON.parse(line).ok, true)
+  child.stdin.end()
+  assert.equal((await exited)[0], 0, diagnostics)
 })

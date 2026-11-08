@@ -2,9 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use base64::Engine;
-use jian_ops_schema::node::PenNode;
-use op_editor_core::{EditorCommand, EditorState, NodeId};
+use op_editor_core::{EditorCommand, EditorState};
 use op_mcp::import_common::{
     count_subtree_nodes, import_result_to_outcome, parse_import_placement, parse_viewport_height,
 };
@@ -15,13 +13,19 @@ use wasm_bindgen::prelude::*;
 mod asset_catalog;
 mod asset_semantics;
 mod change_tracker;
+mod figma_file_import;
 mod figma_rest_import;
+mod html_resources;
+mod library_tools;
 mod replies;
 mod tool_catalog;
 mod tool_search;
+use html_resources::{decode_resources_map, lookup_resource};
 use replies::{error_reply, js_error, ok_reply};
 #[cfg(test)]
 mod asset_tests;
+#[cfg(test)]
+mod library_tests;
 
 #[wasm_bindgen]
 pub struct DesignEngine {
@@ -174,7 +178,12 @@ impl DesignEngine {
         if asset_catalog::is_host_tool(name) {
             return Ok(error_reply("This asset tool requires a managed Node host"));
         }
-        let Some(tool) = tool_catalog::build_tool(name, &self.state) else {
+        if let Some(reply) = self.call_library_tool(name, &args) {
+            return Ok(reply);
+        }
+        let base = library_tools::with_referenced_imports(&self.state, arguments);
+        let Some(tool) = tool_catalog::build_tool(name, base.as_ref().unwrap_or(&self.state))
+        else {
             return Ok(error_reply(&format!("Unknown tool: {name}")));
         };
         let (value, command) = match tool.call(&args) {
@@ -190,10 +199,11 @@ impl DesignEngine {
                 return Ok(error_reply("Image content requires the rendering host"));
             }
         };
-        if let Some(command) = command {
-            return Ok(self.commit_command(value, command));
+        match (command, base) {
+            (Some(command), Some(base)) => Ok(self.commit_command_from(base, true, value, command)),
+            (Some(command), None) => Ok(self.commit_command(value, command)),
+            (None, _) => Ok(ok_reply(value)),
         }
-        Ok(ok_reply(value))
     }
 
     pub fn tools_json(&self) -> String {
@@ -356,117 +366,6 @@ impl DesignEngine {
             }
             ToolOutcome::Err(_, message) => error_reply(&message),
             _ => error_reply("Unexpected import_html outcome"),
-        }
-    }
-
-    fn call_import_figma(&mut self, args: &BTreeMap<String, String>) -> String {
-        let Some(b64) = args
-            .get("bytesBase64")
-            .or_else(|| args.get("bytes_base64"))
-            .or_else(|| args.get("bytesB64"))
-            .filter(|v| !v.trim().is_empty())
-        else {
-            if args.get("url").is_some_and(|url| !url.trim().is_empty()) {
-                return error_reply(
-                    "import_figma url links are fetched by the Node host (network access); the standalone engine accepts figPath (via the host) or bytesBase64",
-                );
-            }
-            return error_reply("figPath, url, or bytesBase64 is required");
-        };
-        let bytes = match base64::engine::general_purpose::STANDARD.decode(b64.trim()) {
-            Ok(bytes) => bytes,
-            Err(error) => return error_reply(&format!("invalid bytesBase64: {error}")),
-        };
-        let file_name = args
-            .get("fileName")
-            .or_else(|| args.get("file_name"))
-            .map(String::as_str)
-            .unwrap_or("Figma Import");
-        let placement = match parse_import_placement(args) {
-            Ok(placement) => placement,
-            Err((_, message)) => return error_reply(&message),
-        };
-        let doc_is_empty = self.state.doc.children.is_empty()
-            && self
-                .state
-                .doc
-                .pages
-                .as_ref()
-                .is_none_or(|pages| pages.iter().all(|p| p.children.is_empty()));
-        let replaces_document =
-            doc_is_empty && placement.parent_id == NodeId::NONE && placement.page_id.is_none();
-        let layout_mode = if replaces_document {
-            op_figma::FigLayoutMode::Preserve
-        } else {
-            op_figma::FigLayoutMode::OpenPencil
-        };
-        // Linkage adds a Components page that `ref`s point at; an insert keeps
-        // only the first page, so it must import exact expansions instead.
-        let parsed = if replaces_document {
-            op_figma::parse_fig_binary_linked(&bytes, file_name, layout_mode)
-        } else {
-            op_figma::parse_fig_binary(&bytes, file_name, layout_mode)
-        };
-        let mut import = match parsed {
-            Ok(import) => import,
-            Err(error) => return error_reply(&format!("failed to parse Figma file: {error}")),
-        };
-        let page_count = import.document.pages.as_ref().map_or(1, Vec::len);
-        let node_count: usize = import
-            .document
-            .pages
-            .as_ref()
-            .map(|pages| pages.iter().map(|p| count_subtree_nodes(&p.children)).sum())
-            .unwrap_or_else(|| count_subtree_nodes(&import.document.children));
-        if replaces_document {
-            figma_rest_import::normalize_document_roots(&mut import.document);
-            let previous = self.state.snapshot_for_history();
-            self.state.replace_document(import.document);
-            op_pen_loader::apply_editor_meta(
-                &mut self.state,
-                op_pen_loader::EditorMeta {
-                    active_page_index: 0,
-                    preserve_authored_geometry: true,
-                    scenario: None,
-                    pinned_style_guide: None,
-                    viewport: None,
-                },
-            );
-            self.state.history_push_past(previous);
-            let value = json!({
-                "wrote": "true",
-                "pageCount": page_count,
-                "nodeCount": node_count,
-                "warnings": import.warnings,
-            });
-            return ok_reply(value);
-        }
-        let mut nodes: Vec<PenNode> = import
-            .document
-            .pages
-            .and_then(|pages| pages.into_iter().next().map(|page| page.children))
-            .unwrap_or(import.document.children);
-        if nodes.is_empty() {
-            return error_reply("Figma file contains no importable nodes");
-        }
-        figma_rest_import::translate_roots(&mut nodes, self.drop_origin(args, &placement));
-        let value = json!({
-            "wrote": "true",
-            "pageCount": page_count,
-            "nodeCount": count_subtree_nodes(&nodes),
-            "warnings": import.warnings,
-        });
-        match self.insert_preserving_roots(
-            nodes,
-            &placement.parent_id,
-            placement.page_id.as_deref(),
-            false,
-            layout_mode == op_figma::FigLayoutMode::OpenPencil,
-        ) {
-            Some(_) => ok_reply(value),
-            None => error_reply(
-                "Figma import could not be inserted: the parent is missing or not a container",
-            ),
         }
     }
 
@@ -643,6 +542,18 @@ impl DesignEngine {
     }
 
     fn commit_command(&mut self, value: Value, command: EditorCommand) -> String {
+        self.commit_command_from(self.state.clone(), false, value, command)
+    }
+
+    /// Apply `command` to `base` (the current state, possibly with imported
+    /// library variables) as one undo step from the current state.
+    fn commit_command_from(
+        &mut self,
+        base: EditorState,
+        imported: bool,
+        value: Value,
+        command: EditorCommand,
+    ) -> String {
         let was_empty = self.state.doc.children.is_empty()
             && self
                 .state
@@ -651,7 +562,7 @@ impl DesignEngine {
                 .as_ref()
                 .is_none_or(|pages| pages.iter().all(|p| p.children.is_empty()));
         let is_import = matches!(command, EditorCommand::InsertSubtree { .. });
-        let mut next = self.state.clone();
+        let mut next = base;
         if !apply_command(&mut next, command) {
             let reason = next.ui.design_reject.take();
             return error_reply(reason.as_deref().unwrap_or("Design command was rejected"));
@@ -668,6 +579,11 @@ impl DesignEngine {
                 },
             );
         }
+        if imported {
+            // The command may have pushed the import-augmented base; one undo
+            // must also remove the variables imported for it.
+            next.history = self.state.history.clone();
+        }
         if next.doc != self.state.doc && next.history.past == self.state.history.past {
             next.history_push_past(self.state.snapshot_for_history());
         }
@@ -675,35 +591,6 @@ impl DesignEngine {
         self.changes.record_commit(prev, &mut self.state);
         ok_reply(value)
     }
-}
-
-fn decode_resources_map(raw: Option<&str>) -> Result<BTreeMap<String, Vec<u8>>, String> {
-    let Some(raw) = raw.filter(|s| !s.trim().is_empty()) else {
-        return Ok(BTreeMap::new());
-    };
-    let encoded: BTreeMap<String, String> =
-        serde_json::from_str(raw).map_err(|e| format!("invalid resourcesJson: {e}"))?;
-    let mut out = BTreeMap::new();
-    for (key, value) in encoded {
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(value.trim())
-            .map_err(|e| format!("invalid resource base64 for {key}: {e}"))?;
-        out.insert(key, bytes);
-    }
-    Ok(out)
-}
-
-fn lookup_resource(resources: &BTreeMap<String, Vec<u8>>, url: &str) -> Option<Vec<u8>> {
-    if let Some(bytes) = resources.get(url) {
-        return Some(bytes.clone());
-    }
-    let stripped = url
-        .strip_prefix(op_html::VIRTUAL_PROJECT_ORIGIN)
-        .unwrap_or(url)
-        .split(['?', '#'])
-        .next()?
-        .trim_start_matches('/');
-    resources.get(stripped).cloned()
 }
 
 fn apply_command(state: &mut EditorState, command: EditorCommand) -> bool {

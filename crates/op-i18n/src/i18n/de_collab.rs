@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} Bibliotheksupdates · Übernehmen",
         "drafts.title" => "Wiederherstellungskopien",
         "drafts.notice" => "Die Wiederherstellung ersetzt das aktuelle Dokument und kann in einem Schritt rückgängig gemacht werden. Zuerst wird eine Sicherung erstellt. Die verknüpfte Datei wird nicht gespeichert.",
         "drafts.create" => "Prüfpunkt erstellen",

@@ -1,3 +1,4 @@
+use super::scalars::*;
 use super::*;
 use crate::widgets::button::paint_button_feedback_wash;
 use crate::widgets::property_panel_text_input::{
@@ -56,6 +57,7 @@ pub(super) fn paint_panel(panel: &VariablesPanel, cx: &mut PaintCx<'_>, rect: Re
     paint_search_row(panel, cx, rect, &labels);
     paint_rows(panel, cx, rect, &labels);
     paint_footer(panel, cx, rect, footer_top, &labels);
+    super::collections::paint_library_updates(panel, cx, rect);
     menus::paint_menus(panel, cx, rect, &labels);
 }
 
@@ -470,7 +472,7 @@ fn paint_variable_name_cell(
             panel.now_ms,
         );
     } else {
-        let display = truncate(name, 24);
+        let display = truncate(name.strip_prefix("--").unwrap_or(name), 24);
         paint_text(cx, "-", 13.0, theme.foreground, text_x, text_y);
         paint_text(
             cx,
@@ -501,6 +503,13 @@ fn paint_value_cell(
 ) {
     let theme = panel.theme;
     let origin = Point2D::new(cell_rect.origin.x, cell_rect.origin.y + 10.0);
+    if panel.editing_value_cell != Some(cell) {
+        if let Some(VariableScalar::Str(alias)) = scalar.filter(|s| is_alias(s)) {
+            let resolved = var.alias_resolved.get(cell.1).cloned().flatten();
+            paint_alias_cell(cx, theme, origin, alias, resolved.as_ref());
+            return;
+        }
+    }
     match var.kind {
         VariableKind::Color => {
             let rgba = scalar.and_then(scalar_as_color).unwrap_or(Color::WHITE);
@@ -735,48 +744,6 @@ pub(super) fn paint_text(
         Point2D::new(0.0, 0.0),
     );
     cx.backend.draw_text(&layout, Point2D::new(x, baseline_y));
-}
-
-fn scalar_as_color(s: &VariableScalar) -> Option<Color> {
-    let hex = match s {
-        VariableScalar::Str(hex) => hex,
-        _ => return None,
-    };
-    let (r, g, b) = op_editor_core::color_picker::parse_hex_rgb(hex)?;
-    Some(Color { r, g, b, a: 1.0 })
-}
-
-/// Alpha channel of a `#rrggbbaa` hex as 0-100 (TS
-/// `variable-row.tsx getOpacityForTheme`); `None` for non-9-char
-/// strings → caller falls back to 100.
-fn scalar_alpha_percent(s: &VariableScalar) -> Option<u32> {
-    let VariableScalar::Str(hex) = s else {
-        return None;
-    };
-    if !hex.starts_with('#') || hex.len() != 9 {
-        return None;
-    }
-    let alpha = u8::from_str_radix(&hex[7..9], 16).ok()?;
-    Some(((alpha as f32 / 255.0) * 100.0).round() as u32)
-}
-
-fn scalar_hex_label(s: &VariableScalar) -> Option<String> {
-    let VariableScalar::Str(hex) = s else {
-        return None;
-    };
-    if hex.starts_with('#') && hex.len() >= 7 {
-        Some(hex[..7].to_string())
-    } else {
-        Some(hex.clone())
-    }
-}
-
-fn scalar_to_label(s: &VariableScalar) -> String {
-    match s {
-        VariableScalar::Str(s) => s.clone(),
-        VariableScalar::Num(n) => format!("{n}"),
-        VariableScalar::Bool(b) => if *b { "true" } else { "false" }.to_string(),
-    }
 }
 
 use crate::util::truncate_ellipsis as truncate;

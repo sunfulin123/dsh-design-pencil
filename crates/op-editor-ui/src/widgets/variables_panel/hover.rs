@@ -8,6 +8,7 @@ impl VariablesPanel {
         use VariablesPanelButton as B;
         match self.hit_test(rect, point)? {
             VariablesPanelHit::Close => Some(B::Close),
+            VariablesPanelHit::AcceptLibraryUpdates => None,
             VariablesPanelHit::ThemeTab(axis) | VariablesPanelHit::ToggleThemeMenu(axis) => self
                 .theme_tab_labels()
                 .iter()

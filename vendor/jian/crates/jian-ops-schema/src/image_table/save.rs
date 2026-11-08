@@ -436,6 +436,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            variable_collections: None,
             shared_styles: None,
         };
 
@@ -516,6 +517,7 @@ mod tests {
                 design_md: None,
                 conversion: None,
                 motion: None,
+                variable_collections: None,
                 shared_styles: None,
             };
             let mut output = Vec::new();
@@ -686,6 +688,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            variable_collections: None,
             shared_styles: None,
         };
         let thumbnails = image_thumbs::capture_snapshot();

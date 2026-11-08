@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { startNodeHost } from './node-host.mjs';
+import { defaultAssetDirectory, legacyAssetDirectory } from './asset-directory.mjs';
 
 async function main() {
   if (process.argv[2] && !process.argv[2].startsWith('-')) {
@@ -52,7 +53,10 @@ async function main() {
     webRoot,
     canvaskitRoot,
     onShutdown: stop,
-    assetDirectory: values['asset-dir'],
+    // Shared user library, like a Figma team library: drafts in temporary
+    // directories must not take saved styles and presets with them.
+    assetDirectory: values['asset-dir'] ?? defaultAssetDirectory(),
+    legacyAssetDirectory: values['asset-dir'] ? undefined : legacyAssetDirectory(sourcePath),
     headless: !values['no-headless'] && process.env.DSH_HEADLESS !== '0',
   });
   if (stopping) return host.close();

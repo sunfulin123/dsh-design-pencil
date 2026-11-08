@@ -47,9 +47,13 @@ Node host（packages/dsh-node-runtime）
 
 [AssetStore](packages/dsh-node-runtime/asset-store.mjs) 用 Node 标准库 SQLite 持久化
 用户模板、风格原始 Markdown 和 `.optheme` JSON；同目录的多个 host 共用事务与
-`assetsRevision`，不同目录相互隔离。默认目录是已绑定且存在的文档目录下的
-`.dsh-design/assets`；显式 `--asset-dir` 可跨文档共享。未绑定时仍可查询内置资产，
-但不能假装已持久化用户资产。
+`assetsRevision`，不同目录相互隔离。CLI 默认使用用户级目录
+（[asset-directory](packages/dsh-node-runtime/asset-directory.mjs)：`DSH_ASSET_DIR`，否则
+macOS `~/Library/Application Support/dsh-design-pencil/assets`、Linux XDG data、Windows
+`LOCALAPPDATA`），因此每次用临时草稿文件启动的 DSH 会话共享同一资产库，重启不丢失。
+显式 `--asset-dir` 优先。旧的文档旁 `.dsh-design/assets` 在启动时一次性、非破坏性合并，
+旁边写 `migrated.json` 防止删除的资产复活；合并失败只写 stderr，不阻止启动。
+直接调用 `startNodeHost` 的库调用方未传目录时仍使用文档旁目录。
 
 [资产工具](packages/dsh-node-runtime/asset-tools.mjs) 同时服务 MCP 与 `/api/assets`。
 目录只返回元数据，正文按稳定 id 获取；目录读取期间 revision 改变会明确拒绝，
@@ -76,6 +80,28 @@ MCP 和共享 HTTP API 的设计变更均经过原有 draft autosave。
 embedding host override > 临时 MCP override > 设备偏好。
 `persist` 默认 false；true 必须确认 effective 和 preference，保存失败/宿主强制主题/
 无编辑器/超时均明确报错。render-only Chrome 不冒充交互编辑器。
+
+## 变量集合与内置库
+
+变量模型对齐 Figma：`PenDocument.variableCollections` 记录集合（集合名即 `themes` 中的
+主题轴，模式即轴值，首个为默认；单模式集合不建轴）、来源库 id/key/version 和成员。
+[variable_library](crates/op-editor-core/src/variable_library.rs) 从源码内逐字保存的
+`libraries/talkdesk-cobalt/` 解析内置 Talkdesk Cobalt 库（排第一、为默认），集合 key 与
+Figma 团队库一致。库变量在文档中用 CSS 名（`--primary-9`），别名写成 `$--purple-9`。
+
+文档只保存用到的库变量：[library_tools](crates/op-dsh-engine/src/library_tools.rs) 在
+`call_tool` 前扫描参数中的库变量名，在 state 副本上按别名闭包导入后执行工具，与工具
+产生的修改合成一个 undo；只读或失败的调用不留下导入。库更新只提示不自动应用
+（`get_library_updates` / `accept_library_updates`，变量面板底部同样提供接受入口）。
+重命名库变量即与库解除关联。`cornerRadius`、`fontSize` 等纯数值字段不接受 `$` 引用，
+AI 指南只把库变量用于颜色、gap、padding、opacity。
+
+`.fig` 导入经 [fig_document_variables](crates/op-figma/src/fig_document_variables.rs) 保留集合、
+模式、别名和文件保存时的值；key 匹配内置库的集合关联到该库并使用 CSS 名。
+[paint_vars](crates/op-figma/src/paint_vars.rs) 仅在文档按节点主题解析出的颜色与 Figma
+渲染值一致时把 SOLID paint 绑定为 `$name`（引用旧库版本或半透明缓存的保持烘焙值），
+并把显式模式写成节点 `theme` 覆盖。DESIGN.md frontmatter 的 `colors`（`dark-*` 合并为
+`Mode` 轴的同名变量）、`rounded`、`spacing` 同步为变量。
 
 ## 画布渲染
 

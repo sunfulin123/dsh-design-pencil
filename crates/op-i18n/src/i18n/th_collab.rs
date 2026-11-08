@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "อัปเดตไลบรารี {{count}} รายการ · ยอมรับ",
         "drafts.title" => "สำเนาสำหรับกู้คืน",
         "drafts.notice" => "การกู้คืนจะแทนที่เอกสารปัจจุบันและเลิกทำได้ในขั้นตอนเดียว โดยสร้างสำเนาสำรองป้องกันก่อน ไฟล์ที่เชื่อมโยงจะไม่ถูกบันทึก",
         "drafts.create" => "สร้างจุดตรวจสอบ",

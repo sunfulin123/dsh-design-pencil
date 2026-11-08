@@ -172,6 +172,7 @@ impl DesignEngine {
         page: Option<&str>,
         was_empty: bool,
         semantic: bool,
+        variables: op_figma::fig_document_variables::FigDocumentVariables,
     ) -> Option<Vec<String>> {
         let target = match page {
             Some(page) => Some(page_index(&self.state.doc, page)?),
@@ -185,6 +186,7 @@ impl DesignEngine {
         let roots = self.state.insert_subtree_preserving_roots(nodes, parent);
         self.state.ui.active_page_index = original_page;
         let roots = roots?;
+        variables.apply_to(&mut self.state.doc);
         if was_empty {
             op_pen_loader::apply_editor_meta(
                 &mut self.state,
@@ -412,6 +414,7 @@ impl DesignEngine {
             placement.page_id.as_deref(),
             was_empty,
             semantic,
+            Default::default(),
         ) else {
             return error_reply(
                 "Figma import could not be inserted: the parent is missing or not a container",

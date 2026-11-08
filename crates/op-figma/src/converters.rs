@@ -121,6 +121,7 @@ pub fn convert_node(
         }
     };
     let kept = ctx.mode_scope.len() - pushed_modes;
+    variables.set_mode_theme(&mut node, &ctx.mode_scope[kept..]);
     ctx.mode_scope.truncate(kept);
     apply_layout_positioning(&mut node, &tree.figma, parent_stack_mode, ctx.layout_mode);
     Some(node)
@@ -374,25 +375,18 @@ fn convert_instance(
                 let mut children = children;
                 crate::instance::tag_instance_source_ids(&tree.figma, &mut children);
                 let mut merged = merge_symbol_props(&tree.figma, &symbol_node.figma);
-                if !ctx.variables.is_empty() {
-                    // Component layers render in the instance's mode scope:
-                    // the component's own modes, then the instance's.
-                    let mut scope = ctx.mode_scope.clone();
-                    ctx.variables.push_modes(&symbol_node.figma, &mut scope);
-                    ctx.variables.push_modes(&tree.figma, &mut scope);
-                    ctx.variables.resolve_value(&mut merged, &scope);
-                    for child in &mut children {
-                        ctx.variables.resolve_tree(child, &mut scope);
-                    }
-                }
+                let (vars, modes) = (&ctx.variables, [&symbol_node.figma, &tree.figma]);
+                vars.resolve_instance(&ctx.mode_scope, modes, &mut merged, &mut children);
                 let synthetic = TreeNode {
                     figma: merged,
                     children,
                 };
                 let page_level = ctx.expansion_depth == 0;
                 ctx.expansion_depth += 1;
-                let expanded = convert_frame(&synthetic, parent_stack_mode, ctx);
+                let mut expanded = convert_frame(&synthetic, parent_stack_mode, ctx);
                 ctx.expansion_depth -= 1;
+                let vars = &ctx.variables;
+                vars.set_component_theme(&mut expanded, &symbol_node.figma);
                 if page_level && ctx.linkage.is_some() {
                     return crate::linkage::link_instance(ctx, &key, symbol_node, expanded);
                 }

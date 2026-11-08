@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} kütüphane güncellemesi · Kabul et",
         "drafts.title" => "Kurtarma kopyaları",
         "drafts.notice" => "Geri yükleme geçerli belgeyi değiştirir ve tek adımda geri alınabilir. Önce koruyucu bir yedek oluşturulur. Bağlı dosya kaydedilmez.",
         "drafts.create" => "Kontrol noktası oluştur",

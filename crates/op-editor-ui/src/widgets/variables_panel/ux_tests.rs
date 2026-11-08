@@ -210,7 +210,7 @@ fn row_menu_anchors_to_filtered_position() {
 
 #[test]
 fn alpha_percent_derives_from_rrggbbaa() {
-    use super::paint::scalar_alpha_percent;
+    use super::scalars::scalar_alpha_percent;
     assert_eq!(
         scalar_alpha_percent(&VariableScalar::Str("#11223380".into())),
         Some(50)

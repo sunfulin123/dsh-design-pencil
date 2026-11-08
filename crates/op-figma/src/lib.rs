@@ -15,6 +15,8 @@ mod component_props;
 mod container;
 mod converters;
 mod corner_geometry;
+pub mod fig_document_variables;
+pub mod fig_variables;
 mod figma_types;
 mod image_resolver;
 mod instance;
@@ -38,6 +40,8 @@ mod zip_reader;
 
 #[cfg(test)]
 mod binary_e2e_tests;
+#[cfg(test)]
+mod fig_variables_probe_tests;
 #[cfg(test)]
 mod real_file_probe_tests;
 

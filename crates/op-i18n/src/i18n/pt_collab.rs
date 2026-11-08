@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} atualizações da biblioteca · Aceitar",
         "drafts.title" => "Cópias de recuperação",
         "drafts.notice" => "A restauração substitui o documento atual e pode ser desfeita em uma etapa. Uma cópia de segurança é criada antes. O arquivo vinculado não é salvo.",
         "drafts.create" => "Criar ponto de controle",

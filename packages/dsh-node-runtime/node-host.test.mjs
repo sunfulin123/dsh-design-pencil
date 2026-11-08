@@ -642,7 +642,7 @@ for (const shutdownMethod of ['stdin', 'rpc']) {
         '--draft-dir',
         join(root, 'drafts'),
       ],
-      { stdio: ['pipe', 'pipe', 'pipe'] },
+      { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, DSH_ASSET_DIR: join(root, 'assets') } },
     );
     const exited = once(child, 'exit');
     const lines = createInterface({ input: child.stdout });

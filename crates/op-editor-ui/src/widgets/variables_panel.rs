@@ -6,6 +6,7 @@ use jian_ops_schema::variable::{VariableKind, VariableScalar, VariableValue};
 use op_editor_core::editor_ui_state::VariableRowFocus;
 use op_editor_core::{ButtonPressTarget, EditorState, Locale, VariablesPanelButton};
 
+mod collections;
 mod empty_state;
 mod geometry;
 mod header;
@@ -13,6 +14,7 @@ mod hit;
 mod hover;
 mod menus;
 mod paint;
+mod scalars;
 
 use geometry::*;
 
@@ -78,6 +80,7 @@ pub enum VariablesPanelHit {
     Resize(VariablesResizeEdge),
     /// Focus the search filter input.
     SearchBox,
+    AcceptLibraryUpdates,
     /// Row indices below are UNFILTERED `doc.variables` positions so
     /// hosts can index `editor_state_var_table` directly even while a
     /// search filter narrows the painted list.
@@ -116,6 +119,8 @@ struct VarRow {
     kind: VariableKind,
     value: VariableValue,
     resolved: Option<VariableScalar>,
+    /// Per variant column: what an alias value (`$name`) resolves to.
+    alias_resolved: Vec<Option<VariableScalar>>,
 }
 
 #[derive(Debug, Clone)]
@@ -126,6 +131,7 @@ struct AxisChip {
 
 pub struct VariablesPanel {
     rows: Vec<VarRow>,
+    library_updates: usize,
     /// Unfiltered variable count — drives search-box visibility.
     total_rows: usize,
     theme: Theme,
@@ -190,6 +196,7 @@ impl VariablesPanel {
                         kind: def.kind.clone(),
                         value: def.value.clone(),
                         resolved: state.resolve_variable(name).cloned(),
+                        alias_resolved: Vec::new(),
                     })
                     .collect()
             })
@@ -211,6 +218,7 @@ impl VariablesPanel {
             .as_ref()
             .map(|t| t.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
             .unwrap_or_default();
+        collections::add_collection_tabs(state, &mut themes);
         if themes.is_empty() && !rows.is_empty() {
             themes.push(("Theme-1".to_string(), vec!["Default".to_string()]));
         }
@@ -230,6 +238,7 @@ impl VariablesPanel {
                     .cloned()
             })
             .or_else(|| themes.first().map(|(axis, _)| axis.clone()));
+        let rows = collections::tab_rows(state, current_axis.as_deref(), &themes, rows);
         let mut search_input = jian_core::text_input::TextInputState::with_text(
             state.editor_ui.variables_search.clone(),
         );
@@ -237,6 +246,7 @@ impl VariablesPanel {
 
         Self {
             rows,
+            library_updates: op_editor_core::variable_library::library_updates(&state.doc).len(),
             total_rows,
             theme: theme_for(&state.editor_ui),
             locale: state.editor_ui.effective_locale(),
@@ -317,34 +327,6 @@ impl VariablesPanel {
 
     pub fn variant_column_count(&self) -> usize {
         self.variant_column_labels().len()
-    }
-
-    fn variant_scalar_for<'a>(
-        &self,
-        var: &'a VarRow,
-        axis: &str,
-        value: &str,
-    ) -> Option<&'a VariableScalar> {
-        match &var.value {
-            VariableValue::Scalar(s) => Some(s),
-            VariableValue::Themed(entries) => entries
-                .iter()
-                .find(|entry| {
-                    entry
-                        .theme
-                        .as_ref()
-                        .and_then(|theme| theme.get(axis))
-                        .is_some_and(|v| v == value)
-                })
-                .map(|entry| &entry.value)
-                .or_else(|| {
-                    entries
-                        .iter()
-                        .find(|entry| entry.theme.is_none())
-                        .map(|entry| &entry.value)
-                })
-                .or_else(|| entries.first().map(|entry| &entry.value)),
-        }
     }
 
     /// Total height (header + chips row + variable rows). Used by

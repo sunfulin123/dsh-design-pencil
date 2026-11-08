@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} 個資料庫更新 · 接受",
         "drafts.title" => "草稿復原",
         "drafts.notice" => "復原會取代目前文件，可一次復原操作，並會先建立保護性備份。不會儲存繫結檔案。",
         "drafts.create" => "建立檢查點",

@@ -78,6 +78,13 @@ impl WidgetHost {
                 self.mark_dirty();
                 true
             }
+            VariablesPanelHit::AcceptLibraryUpdates => {
+                op_editor_core::host_variables_transitions::accept_all_library_updates(
+                    &mut self.editor_state,
+                );
+                self.mark_dirty();
+                true
+            }
             VariablesPanelHit::ThemeTab(axis) => {
                 vars_flow::select_variable_axis(&mut self.editor_state, axis);
                 self.mark_dirty();

@@ -28,7 +28,8 @@ If you need access to many tools in one turn, call `ToolSearch` with:
 - Do NOT pull a full style guide when you are adjusting an existing composition.
 
 **Visual style for new or refreshed work:**
-- Early in the loop, also fetch one visual style with `get_guidelines(category:"style", name:"Atlas Grid", colorPalette:"Alloy Blue", roundness:"medium", elevation:"low", headings:"Inter", body:"Inter", captions:"Inter", data:"IBM Plex Mono")`; choose styles like Atlas Grid, Beacon Landing, or Console Board and palettes like Alloy Blue or Amber Field.
+- The default style is **Talkdesk Cobalt**. Unless the user names another look or the document already has its own design system, fetch `get_style_guide({"name":"talkdesk-cobalt"})` and build with Cobalt library tokens (Step 4).
+- Only when the user asks for a different visual direction: early in the loop, also fetch one visual style with `get_guidelines(category:"style", name:"Atlas Grid", colorPalette:"Alloy Blue", roundness:"medium", elevation:"low", headings:"Inter", body:"Inter", captions:"Inter", data:"IBM Plex Mono")`; choose styles like Atlas Grid, Beacon Landing, or Console Board and palettes like Alloy Blue or Amber Field.
 - Treat the returned TokenMap as visual-direction reference. In Step 4, choose one colour/token source of truth before drawing; do not mix this palette with an unrelated preset.
 
 ### Step 4 — Design variables and built-in design systems
@@ -38,11 +39,15 @@ Call `get_variables` to see the existing design variables and themes. Reuse them
 Choose exactly ONE source of truth:
 
 1. **Existing project variables/design system:** preserve and reuse them. Do not install a preset on top.
-2. **New empty canvas where a built-in matches the requested visual direction:** call `apply_design_system(name)` ONCE, before creating visual nodes; then call `get_variables` again and use those tokens from the first batch onward.
-3. **No matching built-in:** keep the selected style guide's concrete palette/font/radius values. Do not install an unrelated preset and do not retroactively token-swap a visually approved screen.
+2. **Default — Talkdesk Cobalt library:** reference Cobalt variables directly (`$--surface-elevation-0`, `$--text-default`, `$--primary-9`, gap/padding `$--spacing-small`, …; cornerRadius and fontSize stay numbers). Each one is imported into the document with its aliases the first time a tool call uses it, so no preset call is needed; `list_library_variables` shows the names. Cobalt themes through the `Color scheme (Primitives)` axis (Light/Dark).
+3. **The user asked for another look and a built-in matches it:** call `apply_design_system(name)` ONCE, before creating visual nodes; then call `get_variables` again and use those tokens from the first batch onward.
+4. **No matching built-in:** keep the selected style guide's concrete palette/font/radius values. Do not install an unrelated preset and do not retroactively token-swap a visually approved screen.
 
-`apply_design_system(name)` installs a complete token table (Light + Dark themed) plus the `Mode` theme axis:
+Cobalt roles: page `$--surface-elevation-0`, card/panel `$--surface-elevation-1`, text `$--text-default` / `$--text-description`, primary button `$--primary-9` with label `$--primary-contrast`, secondary button `$--secondary-5` with `$--secondary-12`, dividers `$--gray-6`, focus `$--border-focus-color`. The shadcn table below applies only to documents using a shadcn-vocabulary preset.
 
+`apply_design_system(name)` installs a complete token table (Light + Dark themed) plus its theme axis:
+
+- `cobalt` — the whole Talkdesk Cobalt library at once (rarely needed: Cobalt tokens import on use)
 - `halo` — clean SaaS blue, soft neutrals
 - `lunaris` — dark-first, muted violet
 - `nitro` — high-energy, saturated accents
@@ -66,9 +71,11 @@ The single most common mistake: reaching for `$--accent` to make something the b
 
 Reference tokens instead of raw hex everywhere they fit: `fill: "$--card"`, borders `"$--border"`, sidebars the `$--sidebar-*` family, radii `$--radius-m`. A design built on tokens re-themes to Dark for free.
 
-**Only reference tokens that EXIST in `get_variables`.** The built-in systems currently include `$--white` and `$--black`; a custom document may not. `$--gray-100` is not guaranteed. An unknown fill reference falls back visibly (typically black), but it is still a broken design-system binding and must be replaced deliberately, never auto-guessed from nearby colours. For text/icons on the brand colour, prefer the semantic `$--primary-foreground` token.
+**Only reference tokens that EXIST in `get_variables` or in the Cobalt library (`list_library_variables`).** Legacy Cobalt scales such as `--gray-100` are deliberately not in the library; use the 1–12 steps. A custom document may lack `$--white` and `$--black`. An unknown fill reference falls back visibly (typically black), but it is still a broken design-system binding and must be replaced deliberately, never auto-guessed from nearby colours.
+For text/icons on the brand colour, use Cobalt's `$--primary-contrast`.
+In a shadcn-vocabulary document the equivalent is the semantic `$--primary-foreground` token.
 
-When you create your OWN variables, use the same shadcn vocabulary (`--background`, `--card`, `--primary`, `--muted-foreground`, …) — never invent parallel names like `$brand-blue` for a concept the vocabulary already covers.
+When you create your OWN variables in a shadcn-vocabulary document, use the same shadcn vocabulary (`--background`, `--card`, `--primary`, `--muted-foreground`, …) — never invent parallel names like `$brand-blue` for a concept the vocabulary already covers.
 
 ### Step 5 — Read components and existing structure
 

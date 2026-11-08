@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} 个库更新 · 接受",
         "drafts.title" => "草稿恢复",
         "drafts.notice" => "恢复会替换当前文档，可一次撤销，并会先创建保护性备份。不会保存绑定文件。",
         "drafts.create" => "创建检查点",

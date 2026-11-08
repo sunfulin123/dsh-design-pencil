@@ -72,6 +72,7 @@ impl EditorState {
         if vars.remove(name).is_none() {
             return false;
         }
+        crate::variable_library::rename_collection_member(&mut self.doc, name, None);
         // Drop any ref caches pointing at the now-deleted variable.
         self.ui.variables.fill_refs.retain(|_, v| v != name);
         self.ui.variables.stroke_refs.retain(|_, v| v != name);
@@ -245,6 +246,7 @@ impl EditorState {
             return false;
         };
         vars.insert(new_trimmed.to_string(), def);
+        crate::variable_library::rename_collection_member(&mut self.doc, old, Some(new_trimmed));
         for v in self.ui.variables.fill_refs.values_mut() {
             if v == old {
                 *v = new_trimmed.to_string();
@@ -279,13 +281,34 @@ impl EditorState {
         true
     }
 
-    /// Synchronize color tokens from a `DesignMdSpec` into `doc.variables` so
+    /// Synchronize tokens from a `DesignMdSpec` into `doc.variables` so
     /// the `{}` Variables panel and AI variable context immediately reflect
     /// the active Design System / Style Guide.
     pub fn sync_design_md_to_variables(
         &mut self,
         spec: &jian_ops_schema::design_md::DesignMdSpec,
     ) -> usize {
+        // A frontmatter token block is the authoritative, complete set; the
+        // prose palette is only a fallback for markdown without one.
+        let (tokens, has_dark) = super::design_md_tokens::frontmatter_token_variables(&spec.raw);
+        if !tokens.is_empty() {
+            if has_dark {
+                let modes = self
+                    .doc
+                    .themes
+                    .get_or_insert_with(BTreeMap::new)
+                    .entry(super::design_md_tokens::MODE_AXIS.to_string())
+                    .or_default();
+                for mode in ["Light", "Dark"] {
+                    if !modes.iter().any(|m| m == mode) {
+                        modes.push(mode.to_string());
+                    }
+                }
+            }
+            let count = tokens.len();
+            self.variables_mut().extend(tokens);
+            return count;
+        }
         let Some(colors) = spec.color_palette.as_ref() else {
             return 0;
         };

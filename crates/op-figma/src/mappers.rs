@@ -80,9 +80,15 @@ fn map_single_fill(paint: &FigValue) -> Option<PenFill> {
     let blend_mode = map_blend_mode(paint.get_str("blendMode"));
     match paint.get_str("type")? {
         "SOLID" => {
-            paint.get("color")?;
+            let alpha = paint.get("color")?.get_f64("a").unwrap_or(1.0);
+            // A bound paint keeps its variable unless its cached alpha
+            // (which a variable reference cannot carry) is translucent.
+            let bound = paint
+                .get_str(crate::paint_vars::BOUND_VARIABLE)
+                .filter(|name| !name.is_empty() && alpha >= 0.999)
+                .map(|name| format!("${name}"));
             Some(PenFill::Solid(SolidFillBody {
-                color: fill_color_hex(paint),
+                color: bound.unwrap_or_else(|| fill_color_hex(paint)),
                 explain: None,
                 opacity,
                 blend_mode,

@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} library updates · Accept",
         "drafts.title" => "Recovery copies",
         "drafts.notice" => "Restoring replaces the live document as one undoable edit and creates a protective backup. The bound file is not saved.",
         "drafts.create" => "Create checkpoint",

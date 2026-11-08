@@ -191,6 +191,7 @@ impl Serialize for SharedDoc {
         serialize_option(&mut map, "themes", &doc.themes)?;
         serialize_option(&mut map, "theme", &doc.theme)?;
         serialize_option(&mut map, "variables", &doc.variables)?;
+        serialize_option(&mut map, "variableCollections", &doc.variable_collections)?;
         serialize_option(&mut map, "sharedStyles", &doc.shared_styles)?;
         if doc.pages.is_some() {
             map.serialize_entry("pages", &SharedPages(self))?;
@@ -330,6 +331,7 @@ fn strip_children(doc: &PenDocument) -> PenDocument {
         design_md: doc.design_md.clone(),
         conversion: doc.conversion.clone(),
         motion: doc.motion,
+        variable_collections: doc.variable_collections.clone(),
         shared_styles: doc.shared_styles.clone(),
         // The responsive schema opt-in is document-level metadata, not
         // node content — survives the children-strip like every other

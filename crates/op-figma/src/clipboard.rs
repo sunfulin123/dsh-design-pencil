@@ -707,28 +707,8 @@ fn find_partial_hint<'a>(
 // ── Internal: image-blob resolve wrapper ────────────────────────────
 
 fn build_doc_for_resolve(children: Vec<PenNode>) -> jian_ops_schema::document::PenDocument {
-    jian_ops_schema::document::PenDocument {
-        version: "1".to_string(),
-        name: None,
-        themes: None,
-        theme: None,
-        variables: None,
-        pages: None,
-        children,
-        format_version: None,
-        id: None,
-        app: None,
-        routes: None,
-        state: None,
-        lifecycle: None,
-        logic_modules: None,
-        design_md: None,
-        conversion: None,
-        motion: None,
-        shared_styles: None,
-        // Figma import never authors the responsive schema opt-in.
-        responsive: None,
-    }
+    // Figma import never authors the responsive schema opt-in.
+    jian_ops_schema::document::PenDocument::with_children("1", children)
 }
 
 fn extract_doc_children(doc: jian_ops_schema::document::PenDocument) -> Vec<PenNode> {

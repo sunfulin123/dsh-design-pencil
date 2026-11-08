@@ -120,16 +120,16 @@ bun run format:check
 ## MCP 设计资产
 
 ```sh
-node --test packages/dsh-node-runtime/asset-store.test.mjs packages/dsh-node-runtime/asset-tools.test.mjs packages/dsh-node-runtime/editor-control.test.mjs
+node --test packages/dsh-node-runtime/asset-store.test.mjs packages/dsh-node-runtime/asset-tools.test.mjs packages/dsh-node-runtime/asset-directory.test.mjs packages/dsh-node-runtime/editor-control.test.mjs
 cargo test -p op-dsh-engine asset_tests
 cargo test -p op-host-web --lib --features canvaskit managed_assets_tests
 DSH_E2E_CHROME=1 node --test packages/dsh-node-runtime/asset-browser.test.mjs
 DSH_VERIFY_FINGERPRINT=1 DSH_E2E_CHROME=1 node --test --test-concurrency=1 packages/dsh-node-runtime/*.test.mjs
 ```
 
-资产默认存到已存在的绑定文档目录下 `.dsh-design/assets`。在原 CLI 启动命令中加
-`--asset-dir /absolute/path/to/test-assets` 可显式指定共享目录；使用临时测试目录，
-不要操作用户资产。需 Node 24+ 的内置 SQLite；没有额外 npm 数据库依赖。
+CLI 默认把资产存到用户级目录（macOS `~/Library/Application Support/dsh-design-pencil/assets`），
+跨草稿和重启保留；`DSH_ASSET_DIR=/absolute/path` 或 `--asset-dir /absolute/path` 覆盖它。
+测试一律传临时目录，不要操作用户资产。需 Node 24+ 的内置 SQLite；没有额外 npm 数据库依赖。
 
 可发现工具：
 - 模板：`list_scene_templates`、`get_scene_template`、`save_scene_template`、
@@ -143,6 +143,24 @@ DSH_VERIFY_FINGERPRINT=1 DSH_E2E_CHROME=1 node --test --test-concurrency=1 packa
   需要真实交互编辑器在线，headless 截图页不提供外观确认。
 
 `import_design_md` 默认导入共享风格库；`target:"document"` 更新当前文档规范。
+
+## 变量库（Talkdesk Cobalt）
+
+```sh
+cargo test -p op-editor-core --lib variable_library
+cargo test -p op-dsh-engine library_tests
+cargo test -p op-figma --lib fig_document_variables paint_vars
+cargo test -p op-editor-ui --lib variables_panel
+# 可选：只读核对真实 .fig 的变量绑定保真度（不输出文档文本）
+DSH_REAL_FIG=/path/file.fig cargo test -p op-figma --release --lib fig_binding_fidelity_probe -- --ignored --nocapture
+```
+
+库工具：`list_libraries`、`list_library_variables`、`import_library_variables`、
+`get_library_updates`、`accept_library_updates`；`apply_design_system({"name":"cobalt"})`
+一次导入整库。设计时直接引用 `$--primary-9` 等名称即自动导入。
+本机 `target` 若是失效符号链接，cargo 命令前设置
+`CARGO_TARGET_DIR=$HOME/.cache/dsh-design-pencil/target`；WASM 构建脚本需要 PATH 中有
+`wasm-bindgen`（通常在 `~/.cargo/bin`）。
 `.optheme` 导入传 JSON 对象，Markdown 导入传正文，均不接受任意宿主文件路径。
 更新/改名/删除用户资产需查询最新 `revision` 并传 `expectedRevision`。
 `/api/assets` 只给目录，`/api/assets/<kind>/<encoded-id>` 读取完整配置，

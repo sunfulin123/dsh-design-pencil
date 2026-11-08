@@ -236,7 +236,8 @@ pub fn add_variable_theme(state: &mut EditorState) {
     close_variable_menus(&mut state.editor_ui);
 }
 
-/// Make `axis` the current one, seeding its active value if unset.
+/// Make `axis` the current one, seeding its active value if unset. A
+/// single-mode collection is a tab without a theme axis.
 pub fn select_variable_axis(state: &mut EditorState, axis: String) {
     let Some(values) = state
         .doc
@@ -244,6 +245,16 @@ pub fn select_variable_axis(state: &mut EditorState, axis: String) {
         .as_ref()
         .and_then(|themes| themes.get(&axis))
     else {
+        if axis == UNGROUPED_VARIABLES_TAB
+            || state
+                .doc
+                .variable_collections
+                .as_ref()
+                .is_some_and(|c| c.contains_key(&axis))
+        {
+            state.editor_ui.variables_current_axis = Some(axis);
+            close_variable_menus(&mut state.editor_ui);
+        }
         return;
     };
     let fallback = values.first().cloned().unwrap_or_else(|| "Default".into());
@@ -288,7 +299,10 @@ pub fn add_variable(
     now_ms: u64,
 ) {
     let snap = state.snapshot_for_history();
-    ensure_variable_axis(state);
+    let collection = current_collection_tab(state);
+    if collection.is_none() {
+        ensure_variable_axis(state);
+    }
     let name = unique_numbered(base, |candidate| {
         state
             .doc
@@ -310,6 +324,7 @@ pub fn add_variable(
         _ => None,
     };
     if state.create_variable(&name, kind, default) {
+        add_to_collection(state, collection.as_deref(), &name);
         state.history_push_past(snap);
         if let Some((focus, draft, select_all)) = default_focus {
             // Row index = position in `doc.variables` (BTreeMap order),
@@ -345,6 +360,20 @@ pub fn add_variable(
 /// Resolve the axis every write path needs: the current one when it
 /// still exists, else the first known axis, else a freshly minted one.
 pub fn ensure_variable_axis(state: &mut EditorState) -> String {
+    // Adding a mode to a single-mode collection makes it a theme axis.
+    if let Some(axis) = current_collection_tab(state) {
+        state
+            .doc
+            .themes
+            .get_or_insert_with(BTreeMap::new)
+            .insert(axis.clone(), vec!["Default".into()]);
+        state
+            .ui
+            .variables
+            .active_theme
+            .insert(axis.clone(), "Default".into());
+        return axis;
+    }
     if let Some(axis) = state
         .editor_ui
         .variables_current_axis
@@ -384,6 +413,65 @@ pub fn ensure_variable_axis(state: &mut EditorState) -> String {
         .insert(axis.clone(), "Default".into());
     state.editor_ui.variables_current_axis = Some(axis.clone());
     axis
+}
+
+/// Accept every pending library update in one undo step.
+pub fn accept_all_library_updates(state: &mut EditorState) -> bool {
+    let snap = state.snapshot_for_history();
+    let accepted = crate::variable_library::accept_library_updates(&mut state.doc, None);
+    if !accepted.is_empty() {
+        state.history_push_past(snap);
+    }
+    !accepted.is_empty()
+}
+
+/// Panel tab listing variables that belong to no collection, shown when
+/// every other tab is a collection.
+pub const UNGROUPED_VARIABLES_TAB: &str = "Variables";
+
+/// The current panel tab when it has no theme axis: a single-mode
+/// collection or the ungrouped tab.
+fn current_collection_tab(state: &EditorState) -> Option<String> {
+    let axis = state.editor_ui.variables_current_axis.as_ref()?;
+    if axis == UNGROUPED_VARIABLES_TAB
+        && !state
+            .doc
+            .themes
+            .as_ref()
+            .is_some_and(|t| t.contains_key(axis))
+    {
+        return Some(axis.clone());
+    }
+    let is_axis = state
+        .doc
+        .themes
+        .as_ref()
+        .is_some_and(|t| t.contains_key(axis));
+    let is_collection = state
+        .doc
+        .variable_collections
+        .as_ref()
+        .is_some_and(|c| c.contains_key(axis));
+    (is_collection && !is_axis).then(|| axis.clone())
+}
+
+/// A variable created on a collection tab joins that collection (or the
+/// current axis's collection), so it stays visible where it was added.
+fn add_to_collection(state: &mut EditorState, tab: Option<&str>, name: &str) {
+    let axis = tab
+        .map(str::to_string)
+        .or_else(|| state.editor_ui.variables_current_axis.clone());
+    let Some(collection) = axis
+        .and_then(|axis| state.doc.variable_collections.as_mut()?.get_mut(&axis))
+        .filter(|collection| collection.library.is_none())
+    else {
+        return;
+    };
+    let member = jian_ops_schema::variable::CollectionVariable {
+        name: name.to_string(),
+        key: None,
+    };
+    collection.variables.insert(name.to_string(), member);
 }
 
 /// `base-N` with the lowest free `N`.

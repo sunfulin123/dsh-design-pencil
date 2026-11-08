@@ -22,7 +22,7 @@ macro_rules! tools {
                     "required": $required, "additionalProperties": false,
                 },
             })),*];
-            list.extend(extra_schemas().into_iter().chain(crate::asset_catalog::schemas()));
+            list.extend(extra_schemas().into_iter().chain(crate::asset_catalog::schemas()).chain(crate::library_tools::schemas()));
             list
         }
     };
@@ -480,7 +480,7 @@ tools!(state;
     ("set_themes", op_mcp::set_themes_snapshot(),
      "Merge or replace design-token theme axes, not the DSH application theme.", {"themes":{"type":"object"},"replace":{"type":"boolean"}}, ["themes"]),
     ("apply_design_system", op_mcp::apply_design_system_snapshot(),
-     "Apply a bundled design-token preset in one undoable edit.", {"name":{"type":"string","enum":["halo","lunaris","nitro","shadcn"]}}, ["name"]),
+     "Apply a bundled design-token preset in one undoable edit. cobalt imports the whole Talkdesk Cobalt library (usually unnecessary: library variables import on use).", {"name":{"type":"string","enum":["cobalt","halo","lunaris","nitro","shadcn"]}}, ["name"]),
     ("create_variable", op_mcp::create_variable_snapshot(state),
      "Create a typed design variable.", {"name":{"type":"string"},"kind":{"type":"string","enum":["color","number","boolean","string"]},"default_value":{"type":"string"}}, ["name","kind","default_value"]),
     ("delete_variable", op_mcp::delete_variable_snapshot(state),

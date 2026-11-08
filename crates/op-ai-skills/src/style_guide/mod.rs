@@ -29,7 +29,10 @@ pub use design_md_import::{
     parse_design_md, slugify, DesignMdImportError, ImportedDesignMd, MAX_DESIGN_MD_BYTES,
 };
 pub use key_aesthetics::{key_aesthetics, signature_recipes};
-pub use loader::{parse_style_guide_file, select_style_guide, style_guide_registry, SelectOptions};
+pub use loader::{
+    parse_style_guide_file, select_style_guide, style_guide_registry, SelectOptions,
+    PREFERRED_STYLE_GUIDE,
+};
 pub use mapping::{build_style_mapping, ColorReplacement, PropertyReplacement, RadiusReplacement};
 pub use parser::{extract_style_guide_values, StyleGuideValues};
 pub use summary::{style_guide_summary, StyleGuideSummary};

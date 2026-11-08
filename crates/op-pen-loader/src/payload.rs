@@ -572,6 +572,7 @@ fn is_known_top_level_field(field: &str) -> bool {
             | "name"
             | "themes"
             | "variables"
+            | "variableCollections"
             | "pages"
             | "children"
             | "app"

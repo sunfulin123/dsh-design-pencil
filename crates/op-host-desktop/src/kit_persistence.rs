@@ -132,6 +132,7 @@ fn kit_to_persisted(kit: &UIKit) -> PersistedKit {
             design_md: None,
             conversion: None,
             motion: None,
+            variable_collections: None,
             shared_styles: None,
             // A persisted component kit never opts into the responsive schema.
             responsive: None,
@@ -298,6 +299,7 @@ mod tests {
             design_md: None,
             conversion: None,
             motion: None,
+            variable_collections: None,
             shared_styles: None,
             responsive: None,
         };

@@ -2,6 +2,7 @@
 
 pub fn lookup(key: &str) -> Option<&'static str> {
     Some(match key {
+        "variables.libraryUpdates" => "{{count}} pembaruan pustaka · Terima",
         "drafts.title" => "Salinan pemulihan",
         "drafts.notice" => "Pemulihan mengganti dokumen saat ini dan dapat dibatalkan dalam satu langkah. Cadangan pelindung dibuat terlebih dahulu. Berkas tertaut tidak disimpan.",
         "drafts.create" => "Buat titik pemeriksaan",

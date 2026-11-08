@@ -49,6 +49,41 @@ pub struct VariableDefinition {
     pub value: VariableValue,
 }
 
+/// Figma-style variable collection metadata. The collection name is also the
+/// theme axis in `PenDocument.themes`, whose values are the collection modes
+/// (first = default). Library collections record where they came from so a
+/// later library version can be offered as an update instead of applied.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
+#[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct VariableCollection {
+    /// Built-in library id (`talkdesk-cobalt`) when linked to one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub library: Option<String>,
+    /// Figma library key of the collection, when imported from Figma.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    /// Library version the values were taken from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// Document variable name → its member metadata.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub variables: std::collections::BTreeMap<String, CollectionVariable>,
+}
+
+/// One collection member: its Figma display path (`/` separates groups) and
+/// optional library identity.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
+#[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionVariable {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
