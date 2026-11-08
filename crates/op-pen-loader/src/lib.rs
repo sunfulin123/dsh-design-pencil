@@ -87,8 +87,8 @@ pub mod variables;
 /// directly from the layout-resolved `DocPayload` — no intermediate
 /// shell-core `Document`.
 pub use editor_scene::{
-    editor_state_to_active_page_layout_scene, editor_state_to_layout_scene,
-    editor_state_to_page_layout_scene,
+    editor_state_roots_to_scene_nodes, editor_state_to_active_page_layout_scene,
+    editor_state_to_layout_scene, editor_state_to_page_layout_scene,
 };
 pub use layout_scene::{
     pen_document_to_layout_scene, pen_document_to_layout_scene_for_preview,

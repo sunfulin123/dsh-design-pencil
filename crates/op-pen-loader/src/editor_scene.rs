@@ -112,14 +112,42 @@ pub fn editor_state_to_page_layout_scene(
         )
     };
 
+    let active_meta = &pages[active_page_index];
+    pages[active_page_index].children = build_roots_scene(
+        state,
+        active_page_index,
+        &active_meta.id,
+        &active_meta.name,
+        roots,
+    );
+
+    LayoutScene {
+        pages,
+        active_page_index,
+    }
+}
+
+/// Convert an explicit slice of roots (such as a single prototype screen frame)
+/// on `page_index` into [`jian_scene::layout_scene::SceneNode`]s without laying
+/// out the rest of the page.
+pub fn editor_state_roots_to_scene_nodes(
+    state: &op_editor_core::EditorState,
+    page_index: usize,
+    roots: &[jian_ops_schema::node::PenNode],
+) -> Vec<jian_scene::layout_scene::SceneNode> {
+    build_roots_scene(state, page_index, "preview-page", "Preview", roots)
+}
+
+fn build_roots_scene(
+    state: &op_editor_core::EditorState,
+    active_page_index: usize,
+    page_id: &str,
+    page_name: &str,
+    roots: &[jian_ops_schema::node::PenNode],
+) -> Vec<jian_scene::layout_scene::SceneNode> {
     let mut prepared = std::borrow::Cow::Borrowed(roots);
     if op_editor_core::ref_resolve::roots_have_refs(prepared.as_ref()) {
         prepared = std::borrow::Cow::Owned(if state.document_revision() == 0 {
-            // A freshly loaded/imported state's registry was built from this
-            // exact document. Reusing it avoids indexing every inactive page
-            // on each switch. Once any canonical edit has happened the
-            // registry may be a stale prototype snapshot, so preserve the old
-            // live-document semantics by taking the full lookup path instead.
             op_editor_core::ref_resolve::resolve_refs_for_canvas_roots_with_components(
                 prepared.as_ref(),
                 &state.components,
@@ -152,23 +180,17 @@ pub fn editor_state_to_page_layout_scene(
         prepared = std::borrow::Cow::Owned(owned);
     }
 
-    let active_meta = &pages[active_page_index];
     let payload = crate::adapter::pen_roots_to_page_payload(
-        &active_meta.id,
-        &active_meta.name,
+        page_id,
+        page_name,
         prepared.as_ref(),
         active_page_index,
         state.editor_ui.preserve_authored_geometry,
     );
     let var_table = editor_state_var_table(state);
-    pages[active_page_index].children = payload
+    payload
         .children
         .iter()
         .map(|node| crate::layout_scene::node_payload_to_scene(node, &var_table, 1.0))
-        .collect();
-
-    LayoutScene {
-        pages,
-        active_page_index,
-    }
+        .collect()
 }

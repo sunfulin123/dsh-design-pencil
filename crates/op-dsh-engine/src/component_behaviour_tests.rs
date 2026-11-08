@@ -1,5 +1,4 @@
 use super::*;
-use std::rc::Rc;
 
 fn call(engine: &mut DesignEngine, name: &str, args: Value) -> Value {
     serde_json::from_str(&engine.call_tool(name, &args.to_string()).unwrap()).unwrap()
@@ -73,23 +72,22 @@ fn active_behaviour_tools_drive_preview_exports_history_and_reopen() {
     );
 
     let doc: jian_ops_schema::PenDocument = serde_json::from_str(&saved).unwrap();
-    let mut preview = op_preview_core::PreviewSession::enter(
-        &doc,
-        (500.0, 400.0),
-        &Default::default(),
-        0,
-        true,
-        true,
-        Rc::new(jian_core::layout::measure::EstimateBackend),
-        0,
-    )
-    .unwrap();
-    preview.dispatch_pointer_phase_at(175.0, 20.0, jian_core::gesture::PointerPhase::Down, 1);
-    preview.dispatch_pointer_phase_at(175.0, 20.0, jian_core::gesture::PointerPhase::Up, 20);
-    let scene = preview.preview_scene_for_test();
-    let page = scene.active_page().unwrap();
-    assert!(!page.find("instance__indicator").unwrap().hidden);
-    assert!(page.find("indicator").unwrap().hidden);
+    let mut player =
+        op_editor_core::prototype::PrototypePlayer::enter(&doc, 0, None, (0.0, 0.0), 0).unwrap();
+    assert!(player.pointer_down(175.0, 20.0, 1));
+    assert!(player.pointer_up(175.0, 20.0, 20));
+    assert_eq!(
+        player.property_overrides.get("instance__indicator"),
+        Some(&op_editor_core::prototype::PropertyOverrideValue::Visible(
+            true
+        ))
+    );
+    assert_eq!(
+        player.property_overrides.get("indicator"),
+        Some(&op_editor_core::prototype::PropertyOverrideValue::Visible(
+            false
+        ))
+    );
     assert_eq!(engine.document_json().unwrap(), saved);
     let html = op_codegen::generate_html_css_for_nodes(&doc, &doc.children);
     assert!(html.contains("role=\"checkbox\""));

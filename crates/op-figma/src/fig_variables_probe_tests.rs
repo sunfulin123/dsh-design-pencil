@@ -166,3 +166,85 @@ fn fig_binding_fidelity_probe() {
         }
     }
 }
+
+#[test]
+#[ignore = "needs DSH_REAL_FIG"]
+fn fig_prototype_schema_probe() {
+    let Ok(path) = std::env::var("DSH_REAL_FIG") else {
+        return;
+    };
+    let bytes = std::fs::read(&path).expect("read .fig");
+    let import = crate::parse_fig_binary(&bytes, "probe.fig", crate::FigLayoutMode::Preserve)
+        .expect("parse");
+    let doc = &import.document;
+    let mut node_ids = std::collections::HashSet::new();
+    let mut sections = 0usize;
+    let mut reaction_nodes = 0usize;
+    let mut nav_actions = 0usize;
+    let mut swap_actions = 0usize;
+    let mut targets = Vec::new();
+    fn walk(
+        nodes: &[jian_ops_schema::node::PenNode],
+        node_ids: &mut std::collections::HashSet<String>,
+        sections: &mut usize,
+        reaction_nodes: &mut usize,
+        nav_actions: &mut usize,
+        swap_actions: &mut usize,
+        targets: &mut Vec<String>,
+    ) {
+        for n in nodes {
+            let base = n.node_base();
+            node_ids.insert(base.id.clone());
+            if base.section == Some(true) {
+                *sections += 1;
+            }
+            if let Some(reactions) = base.reactions.as_ref() {
+                *reaction_nodes += 1;
+                for r in reactions {
+                    for a in &r.actions {
+                        if let Some(dst) = a.destination_id.as_ref() {
+                            targets.push(dst.clone());
+                        }
+                        match a.effective_navigation() {
+                            Some(jian_ops_schema::prototype::PrototypeNavigation::ChangeTo) => {
+                                *swap_actions += 1;
+                            }
+                            Some(_) => {
+                                *nav_actions += 1;
+                            }
+                            None => {}
+                        }
+                    }
+                }
+            }
+            if let Some(kids) = op_editor_core::pen_node_ext::PenNodeExt::children(n) {
+                walk(
+                    kids,
+                    node_ids,
+                    sections,
+                    reaction_nodes,
+                    nav_actions,
+                    swap_actions,
+                    targets,
+                );
+            }
+        }
+    }
+    for page in doc.pages.iter().flatten() {
+        walk(
+            &page.children,
+            &mut node_ids,
+            &mut sections,
+            &mut reaction_nodes,
+            &mut nav_actions,
+            &mut swap_actions,
+            &mut targets,
+        );
+    }
+    let dangling = targets.iter().filter(|t| !node_ids.contains(*t)).count();
+    let flows = doc.prototype.as_ref().map_or(0, |p| p.flows.len());
+    println!(
+        "sections={sections} flows={flows} reactionNodes={reaction_nodes} navActions={nav_actions} swapActions={swap_actions} dangling={dangling}"
+    );
+    assert_eq!(dangling, 0, "all prototype destinationIds must resolve");
+}

@@ -27,30 +27,68 @@ impl WidgetHost {
             .iter()
             .position(|frame| Some(&frame.id) == current.as_ref())
             .unwrap_or(0);
+        let title = active
+            .get(index)
+            .map(|f| f.name.as_str())
+            .unwrap_or("Present");
+        let scale_label = self.preview_browser.scale_mode.label();
         let counter = format!("{} / {}", index + 1, active.len());
+        let viewport = self.preview_viewport();
+        let flows = self
+            .preview
+            .as_ref()
+            .map(|s| s.player.flows())
+            .unwrap_or(&[]);
+        let active_flow_idx = self
+            .preview
+            .as_ref()
+            .and_then(|s| s.player.active_flow_index);
         let mut rows = Vec::new();
-        let mut last_page = None;
-        for (index, frame) in self.preview_browser.frames.iter().enumerate() {
-            if last_page != Some(frame.page) {
+        if !flows.is_empty() {
+            rows.push(PreviewNavigationRow {
+                label: "Flows",
+                frame: None,
+                flow: None,
+                selected: false,
+            });
+            for (f_idx, flow) in flows.iter().enumerate() {
                 rows.push(PreviewNavigationRow {
-                    label: &frame.page_label,
+                    label: &flow.name,
                     frame: None,
+                    flow: Some(f_idx),
+                    selected: active_flow_idx == Some(f_idx),
+                });
+            }
+        }
+        let mut last_group: Option<(&str, Option<&str>)> = None;
+        for (index, frame) in self.preview_browser.frames.iter().enumerate() {
+            let group = (frame.page_label.as_str(), frame.section_name.as_deref());
+            if last_group != Some(group) {
+                rows.push(PreviewNavigationRow {
+                    label: frame.section_name.as_deref().unwrap_or(&frame.page_label),
+                    frame: None,
+                    flow: None,
                     selected: false,
                 });
-                last_page = Some(frame.page);
+                last_group = Some(group);
             }
             rows.push(PreviewNavigationRow {
                 label: &frame.name,
                 frame: Some(index),
+                flow: None,
                 selected: frame.page == self.preview_browser.page
                     && Some(&frame.id) == current.as_ref(),
             });
         }
         action(&PreviewToolbar {
             locale,
+            title,
+            scale_label,
             counter: &counter,
             present: self.preview_browser.present,
-            zoom_percent: (self.preview_screen_scale() * 100.0).round().max(1.0) as u32,
+            zoom_percent: (viewport.scale * 100.0).round().max(1.0) as u32,
+            can_zoom_out: viewport.can_zoom_out(),
+            can_zoom_in: viewport.can_zoom_in(),
             list_open: self.preview_browser.list_open,
             hover: self.preview_browser.hover,
             can_go_back: index > 0,
@@ -68,29 +106,6 @@ impl WidgetHost {
                 .now_ms
                 .saturating_sub(self.preview_browser.last_activity_ms)
                 < 2000
-    }
-
-    pub(super) fn preview_stage_press(&mut self, x: f32, y: f32) -> bool {
-        if self.preview_browser.present {
-            return false;
-        }
-        let point = Point2D::new(x, y);
-        self.preview_browser.pan_capture = Some((point, self.preview_browser.pan));
-        self.preview_surface_capture = None;
-        true
-    }
-
-    fn preview_screen_scale(&self) -> f32 {
-        self.preview_browser.zoom.unwrap_or_else(|| {
-            let Some(frame) = self.preview_device_frame.as_ref() else {
-                return 1.0;
-            };
-            if !self.preview_browser.present {
-                return frame.fit;
-            }
-            let size = self.preview_screen_size();
-            frame.frame.size.x / size.0.max(1.0)
-        })
     }
 
     pub(super) fn preview_controls_wake_deadline_ms(&self) -> Option<u64> {
@@ -140,7 +155,8 @@ impl WidgetHost {
         let point = Point2D::new(x, y);
         let hit = self.with_preview_toolbar(|toolbar| toolbar.hit_test(canvas, point));
         let inside = hit.is_some()
-            || !self.preview_browser.present && PreviewToolbar::zoom_rect(canvas).contains(point)
+            || !self.preview_browser.present
+                && PreviewToolbar::bottom_bar_rect(canvas).contains(point)
             || y < canvas.origin.y + PreviewToolbar::header_height(canvas)
             || self.preview_browser.list_open && PreviewToolbar::list_rect(canvas).contains(point)
             || (x - canvas.origin.x - canvas.size.x / 2.0).abs() < 88.0
@@ -166,10 +182,6 @@ impl WidgetHost {
         }
         let was_visible = self.preview_controls_visible();
         self.preview_browser.last_activity_ms = self.now_ms;
-        if let Some((start, pan)) = self.preview_browser.pan_capture {
-            self.preview_pan_to(Point2D::new(pan.x + x - start.x, pan.y + y - start.y));
-            return true;
-        }
         let canvas = self.preview_canvas_rect(width, height);
         let hit = self.with_preview_toolbar(|toolbar| toolbar.hit_test(canvas, Point2D::new(x, y)));
         if self.preview_browser.hover != hit || !was_visible {
@@ -183,11 +195,6 @@ impl WidgetHost {
     }
 
     pub(super) fn preview_controls_release(&mut self) -> bool {
-        if self.preview_browser.pan_capture.take().is_some() {
-            // Repaint at full quality now that fast_interaction pan ended.
-            self.mark_dirty();
-            return true;
-        }
         if !std::mem::take(&mut self.preview_browser.controls_captured) {
             return false;
         }
@@ -208,8 +215,28 @@ impl WidgetHost {
                 self.preview_browser.list_open = !self.preview_browser.list_open;
                 self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
             }
+            PreviewControl::Restart => {
+                if let Some(session) = self.preview.as_mut() {
+                    session.player.restart(self.now_ms);
+                    let entry = session.player.current_screen_id.clone();
+                    let page = session.player.current_page_index();
+                    let _ = self.preview_go_to_frame(page, &entry);
+                }
+            }
+            PreviewControl::ScaleMode => {
+                self.preview_cycle_scale_mode();
+            }
+            PreviewControl::Flow(flow_index) => {
+                if let Some(session) = self.preview.as_mut() {
+                    if session.player.select_flow(flow_index, self.now_ms) {
+                        let entry = session.player.current_screen_id.clone();
+                        let page = session.player.current_page_index();
+                        let _ = self.preview_go_to_frame(page, &entry);
+                    }
+                }
+            }
             PreviewControl::ZoomButton(button) => match button {
-                op_editor_core::StatusBarButton::Search => self.preview_set_zoom(None),
+                op_editor_core::StatusBarButton::Search => self.preview_fit(),
                 op_editor_core::StatusBarButton::ZoomOut => {
                     self.preview_zoom_by(-110.0);
                 }
@@ -241,36 +268,52 @@ impl WidgetHost {
         }
         if present {
             self.preview_browser.inspection_position = Some((
-                self.preview_browser.zoom,
-                self.preview_browser.pan,
-                self.preview_scroll_y,
+                self.preview_browser.zoom_factor,
+                self.preview_browser.scroll,
             ));
         }
         self.preview_browser.present = present;
         self.preview_browser.list_open = false;
         if present {
-            self.preview_browser.pan = Point2D::new(0.0, 0.0);
-            self.preview_browser.zoom = None;
+            self.preview_reset_view();
         }
         self.initialize_device_preview(self.last_viewport_w, self.last_viewport_h);
         if !present {
-            if let Some((zoom, pan, scroll)) = self.preview_browser.inspection_position.take() {
-                self.preview_browser.zoom = zoom;
-                self.preview_browser.pan = pan;
-                self.preview_scroll_y = scroll;
+            if let Some((zoom_factor, scroll)) = self.preview_browser.inspection_position.take() {
+                self.preview_browser.zoom_factor = zoom_factor;
+                self.preview_browser.scroll = scroll;
                 self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
             }
         }
         self.mark_dirty();
     }
 
-    pub(crate) fn preview_zoom_by(&mut self, delta: f32) -> bool {
+    /// Multiplicative zoom from a wheel/pinch delta, anchored at `anchor`
+    /// (host pixels) or the stage centre.
+    pub(crate) fn preview_zoom_by_at(&mut self, delta: f32, anchor: Option<Point2D>) -> bool {
         if !self.managed_preview_active() {
             return false;
         }
-        let current = self.preview_screen_scale();
-        self.preview_set_zoom(Some(current * (delta * 0.002).exp()));
+        let factor = self.preview_viewport().zoom_factor * (delta * 0.002).exp();
+        self.preview_zoom_to(factor, anchor);
         true
+    }
+
+    pub(crate) fn preview_zoom_by(&mut self, delta: f32) -> bool {
+        self.preview_zoom_by_at(delta, None)
+    }
+
+    fn preview_fit(&mut self) {
+        self.preview_reset_view();
+        self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
+        self.mark_dirty();
+    }
+
+    fn preview_cycle_scale_mode(&mut self) {
+        self.preview_browser.scale_mode = self.preview_browser.scale_mode.next();
+        self.preview_browser.preferences.scale_mode = Some(self.preview_browser.scale_mode);
+        self.save_preview_preferences();
+        self.preview_fit();
     }
 
     pub(crate) fn preview_zoom_shortcut(&mut self, key: &str) -> bool {
@@ -284,12 +327,34 @@ impl WidgetHost {
             "-" => {
                 self.preview_zoom_by(-110.0);
             }
-            "0" => self.preview_set_zoom(None),
+            "0" => self.preview_fit(),
             _ => return false,
         }
         true
     }
 
+    /// Figma Present single-key shortcuts: Space/N next, R restart, Z cycle
+    /// the scale mode. Arrow keys are handled by `preview_dispatch_key`.
+    pub fn preview_present_shortcut(&mut self, key: &str) -> bool {
+        if !self.managed_preview_active() {
+            return false;
+        }
+        match key {
+            " " | "n" | "N" => {
+                self.preview_navigation_step(1);
+            }
+            "r" | "R" => self.activate_preview_control(PreviewControl::Restart),
+            "z" | "Z" => self.preview_cycle_scale_mode(),
+            _ => return false,
+        }
+        self.preview_browser.last_activity_ms = self.now_ms;
+        self.mark_dirty();
+        true
+    }
+
+    /// Wheel/trackpad scroll: the side list scrolls when hovered; otherwise
+    /// the stage scrolls within the scaled screen's bounds (never panned
+    /// off the edge, and not at all on axes that already fit).
     pub(super) fn preview_scroll_by(&mut self, x: f32, y: f32, dx: f32, dy: f32) -> bool {
         let canvas = self.preview_canvas_rect(self.last_viewport_w, self.last_viewport_h);
         let point = Point2D::new(x, y);
@@ -302,14 +367,14 @@ impl WidgetHost {
             self.mark_dirty();
             return true;
         }
-        let pan = self.preview_browser.pan;
-        self.preview_pan_to(Point2D::new(pan.x + dx, pan.y + dy));
+        let before = self.preview_viewport();
+        self.preview_browser.scroll = Point2D::new(before.scroll.0 - dx, before.scroll.1 - dy);
+        let after = self.preview_viewport();
+        self.preview_browser.scroll = Point2D::new(after.scroll.0, after.scroll.1);
+        if after.scroll != before.scroll {
+            self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
+            self.mark_dirty();
+        }
         true
-    }
-
-    fn preview_pan_to(&mut self, pan: Point2D) {
-        self.preview_browser.pan = pan;
-        self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
-        self.mark_dirty();
     }
 }

@@ -48,21 +48,31 @@ Talkdesk Cobalt 是源码内置、排第一的默认风格（`talkdesk-cobalt` �
 语义让导入文件、AI 生成和变量面板一致。复验见
 [命令入口](../../COMMANDS.md#变量库talkdesk-cobalt)。
 
+## Figma 式原型与 Present
+
+全屏 Present 预览由 `op-editor-core::prototype` 与 `op-host-web::preview_host` 驱动，
+已移除 `op-preview-core`（`jian_core::Runtime`）依赖：进入成本 O(画板数)，按需单画板构建场景并带
+CanvasKit 快照缓存，支持 Figma `SECTION` 子画板展开、Flows/画板侧栏切换、Navigate/Overlay/Swap/ChangeTo/Back
+交互、Smart Animate 与转场动画，以及组件 `Behaviour` 变体/属性覆盖派生。Present 视口与 Figma 一致：
+零边距、默认 Fit width、缩放不低于适配尺寸、无拖动平移、滚动受边界约束、控件在固定顶栏/底栏不遮挡设计。`.fig` 与 REST 导入自动保留
+flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_prototype`、`set_reactions`、
+`set_scroll_behavior`、`simulate_prototype` 编写并自检原型。复验见 [命令入口](../../COMMANDS.md#原型与-present)。
+
 ## Provenance
 
 ```json
 {
   "version": 1,
   "status": "verified",
-  "task_id": "6ab8131e-b65c-4c11-8908-3c92286f3e21",
-  "verified_at": "2026-11-08T06:36:35.069764+00:00",
+  "task_id": "cfcc85cf-8533-48bd-b08e-4095ff4b8772",
+  "verified_at": "2026-11-08T11:00:30.606374+00:00",
   "sources": {
-    "ARCHITECTURE.md": "36122e7a44224c8acbc464b5b577c65530b8583c6f58425da69041590a62e6f7",
+    "ARCHITECTURE.md": "57001b15b218a2b4f4a8e79e1dd878658d5c2b7646a15eb90eaee1b60d5b77fd",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
-    "COMMANDS.md": "3503a18236b710c825c57dc56285547f5844770012592c9756496f78829d5b61",
+    "COMMANDS.md": "c3909ba235c3538cb1f36ca7993b8f3eece4f8a69dd32adcddedcda7ed6dd939",
     "crates/op-dsh-engine/src/tool_catalog.rs": "32f1d1c04d0d1d0f3d91106cadd68ad3ac00c8a9bc6ab231a7bf92814bd8048c"
   },
-  "reason": "Default asset persistence moved to a user-level directory; Talkdesk Cobalt became the built-in default style and variable library with import-on-use and library updates; .fig import keeps variable collections",
-  "evidence": "cargo test -p op-dsh-engine (79 passed incl. library_tests), cargo test -p op-editor-core --lib variable_library, node --test packages/dsh-node-runtime/*.test.mjs (164 passed), real .fig fidelity probe 0 mismatches, browser accept round-trip updates 1->0"
+  "reason": "Present viewport now Figma-style: edge-to-edge stage between fixed bars, default Fit width, zoom floor = fit (max 4x), no drag pan, bounded scroll",
+  "evidence": "cargo test -p op-editor-core --lib prototype::viewport (5 passed); cargo test -p op-host-web --lib --features canvaskit (776 passed); cargo test -p op-editor-ui --lib preview_toolbar status_bar (11 passed); Chrome 1280x800 screenshots on Live-Widgets"
 }
 ```

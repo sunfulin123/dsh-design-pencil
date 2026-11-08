@@ -151,6 +151,7 @@ pub mod prompt_center_catalog;
 pub mod prompt_center_keyboard;
 pub mod property_edit_mutators;
 pub mod property_panel_state;
+pub mod prototype;
 pub mod ref_resolve;
 pub mod rename;
 pub mod render_backend;

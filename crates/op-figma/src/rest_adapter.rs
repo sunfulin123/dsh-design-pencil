@@ -305,10 +305,22 @@ pub fn convert_rest_nodes(roots: &[Value], options: &RestImportOptions) -> RestI
         variables: Default::default(),
         mode_scope: Vec::new(),
     };
-    let nodes: Vec<PenNode> = trees
+    let mut nodes: Vec<PenNode> = trees
         .iter()
         .filter_map(|tree| convert_node(tree, None, &mut ctx))
         .collect();
+    for root in roots {
+        if let Some(flows) = root.get("flowStartingPoints").and_then(Value::as_array) {
+            for flow in flows {
+                let Some(node_id) = str_of(flow, "nodeId") else {
+                    continue;
+                };
+                let name = str_of(flow, "name").unwrap_or("Flow 1").to_string();
+                attach_rest_flow(&mut nodes, node_id, &name);
+            }
+        }
+    }
+    crate::fig_prototype::resolve_nodes_prototype(&mut nodes);
     let to_array = |b: Bounds| [b.x, b.y, b.w, b.h];
     RestImportResult {
         nodes,
@@ -341,4 +353,24 @@ pub fn convert_rest_response(body: &Value, options: &RestImportOptions) -> RestI
         vec![body.clone()]
     };
     convert_rest_nodes(&roots, options)
+}
+
+fn attach_rest_flow(nodes: &mut [PenNode], figma_node_id: &str, name: &str) -> bool {
+    for node in nodes {
+        let base = node.node_base_mut();
+        if base.figma_node_id.as_deref() == Some(figma_node_id) {
+            base.flow_starting_point = Some(jian_ops_schema::prototype::FlowStartingPoint {
+                node_id: base.id.clone(),
+                name: name.to_string(),
+                description: None,
+            });
+            return true;
+        }
+        if let Some(children) = node.children_mut_slice() {
+            if attach_rest_flow(children, figma_node_id, name) {
+                return true;
+            }
+        }
+    }
+    false
 }

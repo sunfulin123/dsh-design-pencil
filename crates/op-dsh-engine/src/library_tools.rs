@@ -16,6 +16,9 @@ use std::collections::BTreeMap;
 
 use crate::{error_reply, ok_reply, DesignEngine};
 
+#[path = "prototype_tools.rs"]
+pub(crate) mod prototype_tools;
+
 const LIBRARY: &str = "Built-in library id; defaults to talkdesk-cobalt.";
 
 pub(crate) fn schemas() -> Vec<Value> {
@@ -36,6 +39,9 @@ pub(crate) fn schemas() -> Vec<Value> {
         json!({"name":"accept_library_updates","description":"Accept library updates in one undo step: all, or only `names`.",
             "inputSchema":{"type":"object","additionalProperties":false,"required":[],"properties":{"names":names}}}),
     ]
+    .into_iter()
+    .chain(prototype_tools::schemas())
+    .collect()
 }
 
 fn names_arg(args: &BTreeMap<String, String>) -> Result<Option<Vec<String>>, String> {
@@ -161,7 +167,7 @@ impl DesignEngine {
                     .unwrap_or_default();
                 self.mutate_library(|doc| import_library_variables(doc, all))
             }
-            _ => return None,
+            _ => return self.call_prototype_tool(name, args),
         })
     }
 

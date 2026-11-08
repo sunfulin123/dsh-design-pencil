@@ -85,6 +85,10 @@ pub struct PenDocument {
     /// Authored document motion preference. Hosts may reduce further.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub motion: Option<crate::motion::MotionPreference>,
+
+    /// Document-level prototype metadata for single-page documents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prototype: Option<crate::prototype::PagePrototype>,
 }
 
 impl Clone for PenDocument {
@@ -110,6 +114,7 @@ impl Clone for PenDocument {
             design_md: self.design_md.clone(),
             conversion: self.conversion.clone(),
             motion: self.motion,
+            prototype: self.prototype.clone(),
             variable_collections: self.variable_collections.clone(),
         };
         crate::image_thumbs::propagate_to_clone(self, &mut cloned);
@@ -138,6 +143,7 @@ impl PenDocument {
             design_md: None,
             conversion: None,
             motion: None,
+            prototype: None,
             variable_collections: None,
             shared_styles: None,
             responsive: None,

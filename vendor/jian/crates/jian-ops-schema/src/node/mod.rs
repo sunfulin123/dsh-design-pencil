@@ -150,6 +150,72 @@ impl PenNode {
         }
     }
 
+    /// Mutable children slice of a container node, if any.
+    pub fn children_mut_slice(&mut self) -> Option<&mut [PenNode]> {
+        match self {
+            PenNode::Frame(node) => node.children.as_deref_mut(),
+            PenNode::Group(node) => node.children.as_deref_mut(),
+            PenNode::Rectangle(node) => node.children.as_deref_mut(),
+            PenNode::Tabs(node) => node.children.as_deref_mut(),
+            PenNode::Ref(node) => node.children.as_deref_mut(),
+            _ => None,
+        }
+    }
+
+    /// Shared [`PenNodeBase`] of any variant.
+    pub fn node_base(&self) -> &PenNodeBase {
+        match self {
+            PenNode::Frame(n) => &n.base,
+            PenNode::Group(n) => &n.base,
+            PenNode::Rectangle(n) => &n.base,
+            PenNode::Ellipse(n) => &n.base,
+            PenNode::Line(n) => &n.base,
+            PenNode::Polygon(n) => &n.base,
+            PenNode::Path(n) => &n.base,
+            PenNode::Text(n) => &n.base,
+            PenNode::TextInput(n) => &n.base,
+            PenNode::Image(n) => &n.base,
+            PenNode::IconFont(n) => &n.base,
+            PenNode::TextArea(n) => &n.base,
+            PenNode::Select(n) => &n.base,
+            PenNode::Switch(n) => &n.base,
+            PenNode::Checkbox(n) => &n.base,
+            PenNode::Slider(n) => &n.base,
+            PenNode::RadioGroup(n) => &n.base,
+            PenNode::NumberInput(n) => &n.base,
+            PenNode::Progress(n) => &n.base,
+            PenNode::Tabs(n) => &n.base,
+            PenNode::Ref(n) => &n.base,
+        }
+    }
+
+    /// Mutable [`PenNodeBase`] of any variant.
+    pub fn node_base_mut(&mut self) -> &mut PenNodeBase {
+        match self {
+            PenNode::Frame(n) => &mut n.base,
+            PenNode::Group(n) => &mut n.base,
+            PenNode::Rectangle(n) => &mut n.base,
+            PenNode::Ellipse(n) => &mut n.base,
+            PenNode::Line(n) => &mut n.base,
+            PenNode::Polygon(n) => &mut n.base,
+            PenNode::Path(n) => &mut n.base,
+            PenNode::Text(n) => &mut n.base,
+            PenNode::TextInput(n) => &mut n.base,
+            PenNode::Image(n) => &mut n.base,
+            PenNode::IconFont(n) => &mut n.base,
+            PenNode::TextArea(n) => &mut n.base,
+            PenNode::Select(n) => &mut n.base,
+            PenNode::Switch(n) => &mut n.base,
+            PenNode::Checkbox(n) => &mut n.base,
+            PenNode::Slider(n) => &mut n.base,
+            PenNode::RadioGroup(n) => &mut n.base,
+            PenNode::NumberInput(n) => &mut n.base,
+            PenNode::Progress(n) => &mut n.base,
+            PenNode::Tabs(n) => &mut n.base,
+            PenNode::Ref(n) => &mut n.base,
+        }
+    }
+
     /// Borrow the optional `gestures` and `semantics` blocks from any
     /// variant. Used by the focus-chain extractor in `jian-core` to
     /// avoid round-tripping the entire schema through

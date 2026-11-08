@@ -261,7 +261,7 @@ pub(crate) const SOURCE_ID_KEY: &str = "dshSourceId";
 pub fn common_props(figma: &FigValue, id: String) -> PenNodeBase {
     let (x, y) = extract_position(figma);
     let (flip_x, flip_y) = extract_flip(figma);
-    PenNodeBase {
+    let mut base = PenNodeBase {
         id,
         name: figma
             .get_str("name")
@@ -301,7 +301,15 @@ pub fn common_props(figma: &FigValue, id: String) -> PenNodeBase {
             .get_str(SOURCE_ID_KEY)
             .map(str::to_string)
             .or_else(|| figma.get("guid").and_then(crate::tree::guid_to_string)),
-    }
+        reactions: None,
+        scroll_behavior: None,
+        overflow_direction: None,
+        overlay: None,
+        section: None,
+        flow_starting_point: None,
+    };
+    crate::fig_prototype::apply_node_prototype(figma, &mut base);
+    base
 }
 
 /// Width as a `SizingBehavior` — fixed pixels in preserve mode, the

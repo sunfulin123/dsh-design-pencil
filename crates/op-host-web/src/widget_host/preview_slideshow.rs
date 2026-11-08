@@ -180,7 +180,7 @@ impl WidgetHost {
 
         if matches!(
             self.preview_mode_transition.as_ref().map(|t| t.kind()),
-            Some(op_preview_core::ModeTransitionKind::Exit)
+            Some(crate::preview_host::ModeTransitionKind::Exit)
         ) {
             self.finish_exit_teardown();
         }
@@ -230,8 +230,8 @@ impl WidgetHost {
                     #[cfg(feature = "canvaskit")]
                     {
                         self.preview_mode_transition =
-                            Some(op_preview_core::ModeTransition::start(
-                                op_preview_core::ModeTransitionKind::Enter,
+                            Some(crate::preview_host::ModeTransition::start(
+                                crate::preview_host::ModeTransitionKind::Enter,
                                 source_rect,
                                 settled,
                                 self.now_ms,
@@ -338,6 +338,7 @@ impl WidgetHost {
             frame_backend.clip_rect(screen);
             session.paint_scene(
                 frame_backend,
+                self.preview_active_scene_page(),
                 canvas_rect,
                 (
                     self.editor_state.viewport.pan_x,
@@ -498,10 +499,7 @@ impl WidgetHost {
         viewport_w: f32,
         viewport_h: f32,
     ) -> bool {
-        if self.managed_preview_active()
-            && (self.preview_browser.controls_captured
-                || self.preview_browser.pan_capture.is_some())
-        {
+        if self.managed_preview_active() && self.preview_browser.controls_captured {
             self.preview_controls_hover(x, y, viewport_w, viewport_h);
             return true;
         }

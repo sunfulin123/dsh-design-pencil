@@ -161,9 +161,6 @@ impl WidgetHost {
                 if self.preview_controls_press(x, y, viewport_width, viewport_height) {
                     return true;
                 }
-                if self.preview_stage_press(x, y) {
-                    return true;
-                }
                 self.capture_device_preview_surface(x, y);
                 return self.preview_dispatch_press(x, y, viewport_width, viewport_height);
             }
@@ -384,7 +381,7 @@ impl WidgetHost {
                 let cleared = self
                     .preview
                     .as_mut()
-                    .is_some_and(op_preview_core::PreviewSession::clear_hover);
+                    .is_some_and(crate::preview_host::PreviewSession::clear_hover);
                 if cleared {
                     self.mark_dirty();
                 }
@@ -496,6 +493,7 @@ impl WidgetHost {
         // a tap by where the pointer came up, so an Up at the origin never
         // completes the tap on the widget the Down landed on.
         if let Some(session) = self.preview.as_mut() {
+            let before_screen = session.player.current_screen_id.clone();
             session.dispatch_pointer_for_id_at(
                 LEGACY_WEB_PREVIEW_POINTER_ID,
                 jian_core::gesture::pointer::PointerKind::Mouse,
@@ -504,6 +502,13 @@ impl WidgetHost {
                 PointerPhase::Up,
                 self.now_ms,
             );
+            let after_screen = session.player.current_screen_id.clone();
+            let after_page = session.player.current_page_index();
+            if after_screen != before_screen {
+                self.preview_browser.page = after_page;
+                self.ensure_preview_screen_scene(after_page, &after_screen);
+                self.on_preview_screen_switched(self.last_viewport_w, self.last_viewport_h);
+            }
         }
         self.mark_dirty();
         true

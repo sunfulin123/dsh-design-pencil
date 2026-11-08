@@ -25,4 +25,3 @@ wasm-bindgen = "=0.2.117"
 [dev-dependencies]
 jian-core = { path = "../../vendor/jian/crates/jian-core" }
 op-codegen = { path = "../op-codegen" }
-op-preview-core = { path = "../op-preview-core", features = ["testing"] }

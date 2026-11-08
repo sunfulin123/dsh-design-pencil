@@ -38,7 +38,7 @@ impl WidgetHost {
             if self.preview.is_none()
                 || matches!(
                     self.preview_mode_transition.as_ref().map(|t| t.kind()),
-                    Some(op_preview_core::ModeTransitionKind::Exit)
+                    Some(crate::preview_host::ModeTransitionKind::Exit)
                 )
             {
                 return; // already out, or already exiting
@@ -48,8 +48,8 @@ impl WidgetHost {
                     self.framed_root_to_screen_rect(rect, viewport_width, viewport_height)
                 })
             });
-            self.preview_mode_transition = Some(op_preview_core::ModeTransition::start(
-                op_preview_core::ModeTransitionKind::Exit,
+            self.preview_mode_transition = Some(crate::preview_host::ModeTransition::start(
+                crate::preview_host::ModeTransitionKind::Exit,
                 dest_rect,
                 settled,
                 self.now_ms,
@@ -68,7 +68,6 @@ impl WidgetHost {
         self.preview_browser.controls_captured = false;
         self.preview_browser.pressed = None;
         self.preview_browser.hover = None;
-        self.preview_browser.pan_capture = None;
         self.clear_device_preview_state();
         self.preview_pressed_pids.clear();
         self.preview_last_doc_by_pid.clear();
@@ -82,6 +81,7 @@ impl WidgetHost {
         #[cfg(feature = "canvaskit")]
         {
             self.preview_mode_transition = None;
+            crate::preview_host::invalidate_preview_snapshots();
         }
     }
 
@@ -100,7 +100,7 @@ impl WidgetHost {
             if transition.is_active(self.now_ms) {
                 return;
             }
-            if transition.kind() == op_preview_core::ModeTransitionKind::Exit {
+            if transition.kind() == crate::preview_host::ModeTransitionKind::Exit {
                 // ACTUAL teardown deferred by do_exit_preview
                 self.finish_exit_teardown();
             } else {

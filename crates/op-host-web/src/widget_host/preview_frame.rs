@@ -16,11 +16,11 @@ use op_editor_core::PreviewDeviceKind;
 use op_editor_ui::widgets::{PaintCx, PreviewDeviceSwitcher, ScreenSwitcherPills};
 use op_editor_ui::{Point2D, Rect};
 
-use op_preview_core::device_frame::{
+use crate::preview_host::device_frame::{
     compute_frame_geometry, device_scene_point, device_surface_at, frame_radius,
     infer_kind_for_width, paint_corner_notches, scroll_max, PinnedGeom,
 };
-use op_preview_core::PinnedPaint;
+use crate::preview_host::{lerp_color, PinnedPaint};
 
 impl super::WidgetHost {
     /// Canvas region preview presents into. While presenting a deck slideshow,
@@ -126,7 +126,7 @@ impl super::WidgetHost {
             self.preview_device_frame = None;
             return;
         };
-        let Some((_, mut root_rect)) = session.framed_root() else {
+        let Some((_, root_rect)) = session.framed_root() else {
             // No framed root yet: keep an empty silhouette so the bezel
             // still paints rather than flashing raw canvas.
             self.preview_device_frame = Some(compute_frame_geometry(
@@ -142,9 +142,6 @@ impl super::WidgetHost {
             self.preview_scroll_y = 0.0;
             return;
         };
-        if self.managed_preview_active() && kind == PreviewDeviceKind::Canvas {
-            root_rect = self.preview_canvas_bounds().unwrap_or(root_rect);
-        }
         let is_phone = kind == PreviewDeviceKind::Phone;
         let whole_page = self.managed_preview_active() && kind == PreviewDeviceKind::Canvas;
         let nav = if whole_page {
@@ -332,10 +329,10 @@ impl super::WidgetHost {
             .as_ref()
             .filter(|t| t.is_active(self.now_ms));
         #[cfg(not(feature = "canvaskit"))]
-        let active_mode_transition: Option<&op_preview_core::ModeTransition> = None;
+        let active_mode_transition: Option<&crate::preview_host::ModeTransition> = None;
 
         let interpolated;
-        let (device_frame, chrome_blend): (&op_preview_core::device_frame::DeviceFrame, f32) =
+        let (device_frame, chrome_blend): (&crate::preview_host::device_frame::DeviceFrame, f32) =
             match active_mode_transition {
                 Some(transition) => {
                     let is_phone = steady_frame.kind == op_editor_core::PreviewDeviceKind::Phone;
@@ -387,11 +384,7 @@ impl super::WidgetHost {
         // runs) at the un-settled end of a Track M-1 merge — equivalent
         // to true alpha blending since the backdrop underneath is a
         // known solid colour.
-        let bezel_fill = op_preview_core::lerp_color(
-            self.theme.canvas_surface,
-            settled_bezel_fill,
-            chrome_blend,
-        );
+        let bezel_fill = lerp_color(self.theme.canvas_surface, settled_bezel_fill, chrome_blend);
         backend.fill_round_rect(device_frame.frame, radius, bezel_fill);
 
         if let Some((root_id, _)) = session.framed_root() {
@@ -430,6 +423,7 @@ impl super::WidgetHost {
             // push/pop/replace transition.
             session.paint_framed_animated(
                 backend,
+                self.preview_active_scene_page(),
                 &root_id,
                 content_clip,
                 content_origin,
@@ -453,8 +447,7 @@ impl super::WidgetHost {
             radius,
             self.theme.canvas_surface,
         );
-        let border_color =
-            op_preview_core::lerp_color(self.theme.canvas_surface, self.theme.border, chrome_blend);
+        let border_color = lerp_color(self.theme.canvas_surface, self.theme.border, chrome_blend);
         backend.stroke_round_rect(device_frame.frame, radius, border_color, 1.0);
         backend.restore();
     }

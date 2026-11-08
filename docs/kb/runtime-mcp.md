@@ -85,11 +85,11 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 {
   "version": 1,
   "status": "verified",
-  "task_id": "6ab8131e-b65c-4c11-8908-3c92286f3e21",
-  "verified_at": "2026-11-08T06:36:35.480617+00:00",
+  "task_id": "8f1754c3-0ef9-4895-a261-f6c3b8c70674",
+  "verified_at": "2026-11-08T10:17:51.980076+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
-    "crates/op-host-web/Cargo.toml": "96ee73db5c988ad3ed2d302377e359ba1ae418ea50391ea02481c118bdfd3ef1",
+    "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
     "packages/dsh-node-runtime/build-web.sh": "596d045386c43ec612f77c97ba2d2a752f3614b24cbbff301df75f950a76684f",
     "crates/op-dsh-engine/src/tool_catalog.rs": "32f1d1c04d0d1d0f3d91106cadd68ad3ac00c8a9bc6ab231a7bf92814bd8048c",
     "crates/op-dsh-engine/src/lib.rs": "be01a3ea56c8cfce44e7332739b6eee2d1718e8036aaa6452fd678e2bb114c91",
@@ -107,7 +107,7 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-dsh-engine/src/asset_semantics.rs": "1b91e8c8205116614e9c948e83f27256b42341e28e1fe6f8ba4221debd94341f",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "f640a2169d729b6a65702ac5e55dc4793485afca0ccef7a0861835e8f7ebeb85"
   },
-  "reason": "CLI asset directory is user-level because DSH drafts live in temporary directories; release staging must ship every non-test runtime module",
-  "evidence": "node --test packages/dsh-node-runtime/asset-directory.test.mjs packages/dsh-node-runtime/package.test.mjs (staged CLI starts), node --test packages/dsh-node-runtime/*.test.mjs 164 passed"
+  "reason": "Removed op-preview-core from op-host-web/Cargo.toml and registered prototype tools via library_tools; workspace members, feature boundaries (web vs canvaskit), and MCP dispatch invariants remain unchanged",
+  "evidence": "cargo test -p op-host-web --lib --features canvaskit (777 passed), cargo test -p op-dsh-engine (80 passed), node --test packages/dsh-node-runtime/*.test.mjs (164 passed)"
 }
 ```

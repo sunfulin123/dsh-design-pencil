@@ -128,16 +128,9 @@ impl WidgetHost {
             if self.device_mode_active() {
                 backend.save();
                 if self.managed_preview_active() {
-                    backend.clip_rect(self.preview_stage_rect(canvas));
+                    self.paint_preview_stage_backdrop(backend, canvas);
                 }
-                if self.managed_preview_active()
-                    && !self.preview_browser.present
-                    && self.browser_device_kind() == op_editor_core::PreviewDeviceKind::Canvas
-                {
-                    self.paint_preview_canvas(backend, canvas);
-                } else {
-                    self.paint_device_frame(backend, canvas);
-                }
+                self.paint_device_frame(backend, canvas);
                 backend.restore();
             } else if self.preview_slideshow_active() {
                 self.frame_slideshow_board((viewport_width, viewport_height));
@@ -146,6 +139,7 @@ impl WidgetHost {
                 let viewport = self.editor_state.viewport;
                 session.paint_scene(
                     backend,
+                    self.preview_active_scene_page(),
                     canvas,
                     (viewport.pan_x, viewport.pan_y),
                     viewport.zoom,
@@ -364,6 +358,7 @@ impl WidgetHost {
                     let viewport = self.editor_state.viewport;
                     session.paint_scene(
                         backend,
+                        self.preview_active_scene_page(),
                         canvas_rect,
                         (viewport.pan_x, viewport.pan_y),
                         viewport.zoom,

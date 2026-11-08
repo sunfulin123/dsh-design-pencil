@@ -338,7 +338,7 @@ impl WidgetHost {
         self.last_viewport_h = viewport_height;
         #[cfg(feature = "canvaskit")]
         if self.managed_preview_active() {
-            self.preview_browser.pan_capture = Some((Point2D::new(x, y), self.preview_browser.pan));
+            // Present has no free panning: the stage only scrolls via wheel.
             return true;
         }
         if self.over_topmost_panel(x, y, viewport_width, viewport_height)

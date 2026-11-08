@@ -207,6 +207,7 @@ impl Serialize for SharedDoc {
         serialize_option(&mut map, "logicModules", &doc.logic_modules)?;
         serialize_option(&mut map, "designMd", &doc.design_md)?;
         serialize_option(&mut map, "conversion", &doc.conversion)?;
+        serialize_option(&mut map, "prototype", &doc.prototype)?;
         map.end()
     }
 }
@@ -331,6 +332,7 @@ fn strip_children(doc: &PenDocument) -> PenDocument {
         design_md: doc.design_md.clone(),
         conversion: doc.conversion.clone(),
         motion: doc.motion,
+        prototype: doc.prototype.clone(),
         variable_collections: doc.variable_collections.clone(),
         shared_styles: doc.shared_styles.clone(),
         // The responsive schema opt-in is document-level metadata, not

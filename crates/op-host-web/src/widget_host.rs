@@ -457,11 +457,11 @@ pub struct WidgetHost {
     /// Holds the interactive runtime, layout, and rendering state.
     /// `None` when not previewing or if preview entry failed.
     #[cfg(feature = "canvaskit")]
-    preview: Option<op_preview_core::PreviewSession>,
+    preview: Option<crate::preview_host::PreviewSession>,
     /// Cached device-frame geometry for the active preview presentation.
     /// Derived state: rebuilt by `recompute_device_frame` on enter,
     /// resize, device switch, and app-mode screen switch.
-    preview_device_frame: Option<op_preview_core::device_frame::DeviceFrame>,
+    preview_device_frame: Option<crate::preview_host::device_frame::DeviceFrame>,
     /// Logical scroll offset of the framed content, in scene pixels.
     preview_scroll_y: f32,
     /// Segment the user explicitly chose; `None` means "keep inferring
@@ -469,7 +469,7 @@ pub struct WidgetHost {
     preview_manual_pick: Option<op_editor_core::PreviewDeviceKind>,
     /// Presentation surface captured at pointer-down, so a held drag
     /// keeps mapping through the surface it started on.
-    preview_surface_capture: Option<op_preview_core::device_frame::PreviewSurface>,
+    preview_surface_capture: Option<crate::preview_host::device_frame::PreviewSurface>,
     /// Pressed preview pointer ids (R4 Canonical PreviewInput): one
     /// entry per pointer between Down and Up, guarding the per-pointer Up
     /// dispatch — sending an unpaired Up leaves the runtime's gesture
@@ -499,7 +499,7 @@ pub struct WidgetHost {
     /// Lives here (not in `PreviewSession`) because it must survive the session teardown
     /// on exit and be driven from the paint loop.
     #[cfg(feature = "canvaskit")]
-    pub(in crate::widget_host) preview_mode_transition: Option<op_preview_core::ModeTransition>,
+    pub(in crate::widget_host) preview_mode_transition: Option<crate::preview_host::ModeTransition>,
     /// Current pointer position for slideshow gesture tracking (swipe detection).
     pub(in crate::widget_host) slideshow_cursor: Option<(f32, f32)>,
     /// Pointer-down position for slideshow board press, used to distinguish

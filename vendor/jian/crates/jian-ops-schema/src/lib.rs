@@ -24,6 +24,7 @@ pub mod pack;
 pub mod page;
 pub mod page_ids;
 pub mod promote;
+pub mod prototype;
 pub mod routes;
 pub mod screen_projection;
 pub mod semantics;

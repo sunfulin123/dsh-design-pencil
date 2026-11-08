@@ -12,11 +12,18 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use op_editor_ui::{Point2D, Rect};
-use op_preview_core::PreviewVideoOverlay;
 use wasm_bindgen::JsCast;
 use web_sys::{DomRect, HtmlCanvasElement, HtmlVideoElement, MouseEvent};
 
 use crate::listener::{add_listener, Listener};
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PreviewVideoOverlay {
+    pub node_id: String,
+    pub scene_rect: Rect,
+    pub poster: Option<String>,
+    pub video: op_editor_ui::layout_scene::SceneVideo,
+}
 
 /// A preview video source plus its already-mapped logical screen rectangle.
 #[derive(Debug, Clone)]

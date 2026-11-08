@@ -66,7 +66,6 @@ const OVERRIDE_SKIP_KEYS: &[&str] = &[
     "componentKey",
     "variableConsumptionMap",
     "parameterConsumptionMap",
-    "prototypeInteractions",
     "styleIdForFill",
     "styleIdForStrokeFill",
     "styleIdForText",

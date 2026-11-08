@@ -29,12 +29,12 @@
 {
   "version": 1,
   "status": "verified",
-  "task_id": "6ab8131e-b65c-4c11-8908-3c92286f3e21",
-  "verified_at": "2026-11-08T06:36:43.686479+00:00",
+  "task_id": "8f1754c3-0ef9-4895-a261-f6c3b8c70674",
+  "verified_at": "2026-11-08T10:17:52.480090+00:00",
   "sources": {
     "AGENTS.md": "7da0c473de69169cfb78912511768de09471c37b27dda73ffa5a7c86ba8694ce",
     "CLAUDE.md": "bc7d7d08404221dac202b49a8ae99a6d27852c065739aa56962d38354392b235",
-    "COMMANDS.md": "3503a18236b710c825c57dc56285547f5844770012592c9756496f78829d5b61",
+    "COMMANDS.md": "c3909ba235c3538cb1f36ca7993b8f3eece4f8a69dd32adcddedcda7ed6dd939",
     "CODING_STANDARDS.md": "ffcd96889725001358ffcddc9dd58ace062c20b286823677b25a3c28bbb5f78d",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
     "REVIEW.md": "27935d6e64cb4ed95272e396530c1aed3d1ea16f156e78b8ca8d31fc404488b4",
@@ -53,7 +53,7 @@
     ".github/instructions/javascript.instructions.md": "258739dfde0348a64036ab71cd3a6c956cc4e641e931df8b322304ee3a160c09",
     ".github/workflows/maintenance.yml": "a766085afc8367de20e2b85778d4f1401b072a2ec09516fe317f3e9bd4bb3f0d"
   },
-  "reason": "COMMANDS.md only gained the variable-library test commands, DSH_ASSET_DIR and the CARGO_TARGET_DIR/wasm-bindgen notes; it remains the single command authority and no standard or workflow rule changed",
-  "evidence": "Reviewed docs/kb/standards.md against the COMMANDS.md diff; commands listed there were run in this task (see note Validation)"
+  "reason": "COMMANDS.md only gained the prototype test command block; coding standards and task/knowledge workflow rules are unchanged",
+  "evidence": "bash tools/check-file-line-cap.sh --baseline-ref 1854f5727614e9efac05c0e6b69d72a2e7bef77e passed"
 }
 ```

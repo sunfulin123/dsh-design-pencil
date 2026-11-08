@@ -45,6 +45,8 @@ pub struct StatusBar {
     pub pixel_grid_label: String,
     pub view_options_hover: bool,
     pub view_options_label: String,
+    /// Controls rendered dimmed and excluded from hit testing.
+    pub disabled: [Option<StatusBarButton>; 2],
 }
 
 impl StatusBar {
@@ -58,6 +60,7 @@ impl StatusBar {
             pixel_grid_visible: false,
             show_pixel_grid: true,
             pixel_grid_label: "Rulers and pixel grid".into(),
+            disabled: [None, None],
             view_options_hover: false,
             view_options_label: "View options".into(),
         }
@@ -95,7 +98,33 @@ impl StatusBar {
                 "statusbar.viewOptions",
             )
             .to_string(),
+            disabled: [None, None],
         }
+    }
+
+    fn is_disabled(&self, button: StatusBarButton) -> bool {
+        self.disabled.contains(&Some(button))
+    }
+
+    fn control_color(
+        &self,
+        cx: &mut PaintCx<'_>,
+        glyph_x: f32,
+        center_y: f32,
+        button: StatusBarButton,
+    ) -> Color {
+        if self.is_disabled(button) {
+            return self.theme.border;
+        }
+        paint_control_bg(
+            cx,
+            &self.theme,
+            glyph_x,
+            center_y,
+            button,
+            self.hover,
+            self.pressed,
+        )
     }
 
     /// Top-left x of the search / minus / plus glyphs for a pill at
@@ -139,10 +168,11 @@ impl StatusBar {
         let cy = rect.origin.y + rect.size.y / 2.0;
         let (_search_x, minus_x, plus_x) = self.glyph_x(rect);
         if zoom_hit(minus_x + ICON_SIZE / 2.0, cy, point) {
-            return Some(StatusBarButton::ZoomOut);
+            return (!self.is_disabled(StatusBarButton::ZoomOut))
+                .then_some(StatusBarButton::ZoomOut);
         }
         if zoom_hit(plus_x + ICON_SIZE / 2.0, cy, point) {
-            return Some(StatusBarButton::ZoomIn);
+            return (!self.is_disabled(StatusBarButton::ZoomIn)).then_some(StatusBarButton::ZoomIn);
         }
         None
     }
@@ -198,15 +228,7 @@ impl Widget for StatusBar {
             search_color,
             1.4,
         );
-        let minus_color = paint_control_bg(
-            cx,
-            &self.theme,
-            minus_x,
-            center_y,
-            StatusBarButton::ZoomOut,
-            self.hover,
-            self.pressed,
-        );
+        let minus_color = self.control_color(cx, minus_x, center_y, StatusBarButton::ZoomOut);
         draw_icon(
             cx.backend,
             Icon::Minus,
@@ -235,15 +257,7 @@ impl Widget for StatusBar {
             &label,
             Point2D::new(text_x + (40.0 - label_width) / 2.0, center_y + 4.5),
         );
-        let plus_color = paint_control_bg(
-            cx,
-            &self.theme,
-            plus_x,
-            center_y,
-            StatusBarButton::ZoomIn,
-            self.hover,
-            self.pressed,
-        );
+        let plus_color = self.control_color(cx, plus_x, center_y, StatusBarButton::ZoomIn);
         draw_icon(
             cx.backend,
             Icon::Plus,

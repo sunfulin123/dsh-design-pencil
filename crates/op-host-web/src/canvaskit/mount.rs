@@ -505,7 +505,10 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     canvas_delta_y,
                 } => {
                     if b.host.managed_preview_active() && (evt.ctrl_key() || evt.meta_key()) {
-                        b.host.preview_zoom_by(canvas_delta_y)
+                        b.host.preview_zoom_by_at(
+                            canvas_delta_y,
+                            Some(op_editor_ui::Point2D::new(x, y)),
+                        )
                     } else {
                         b.host.apply_wheel_with_canvas_delta(
                             x,

@@ -62,6 +62,7 @@ pub(crate) fn empty_document(name: &str) -> PenDocument {
         design_md: None,
         conversion: None,
         motion: None,
+        prototype: None,
         variable_collections: None,
         shared_styles: None,
         // Figma import never authors the responsive schema opt-in.
@@ -177,6 +178,7 @@ pub(crate) fn convert_tree_all_pages(
 
     let mut document = document_with_pages(file_name, pen_pages);
     ctx.variables.document.clone().apply_to(&mut document);
+    crate::fig_prototype::resolve_document_prototype(&mut document, &pages);
     let mut image_blobs = collect_image_blobs(std::mem::take(&mut ctx.blobs));
     retain_referenced_image_blobs(&document, &mut image_blobs);
     FigmaImportResult {
@@ -259,6 +261,7 @@ pub(crate) fn convert_tree_page(
 
     let mut document = document_with_pages(file_name, vec![pen]);
     ctx.variables.document.clone().apply_to(&mut document);
+    crate::fig_prototype::resolve_document_prototype(&mut document, &[page]);
     let mut image_blobs = collect_image_blobs(std::mem::take(&mut ctx.blobs));
     retain_referenced_image_blobs(&document, &mut image_blobs);
     FigmaImportResult {

@@ -158,6 +158,17 @@ DSH_REAL_FIG=/path/file.fig cargo test -p op-figma --release --lib fig_binding_f
 库工具：`list_libraries`、`list_library_variables`、`import_library_variables`、
 `get_library_updates`、`accept_library_updates`；`apply_design_system({"name":"cobalt"})`
 一次导入整库。设计时直接引用 `$--primary-9` 等名称即自动导入。
+
+## 原型与 Present
+
+```sh
+cargo test -p op-editor-core --lib prototype
+cargo test -p op-figma --lib fig_prototype
+cargo test -p op-dsh-engine prototype_tools
+cargo test -p op-host-web --lib --features canvaskit preview
+```
+
+原型 MCP 工具：`get_prototype`、`set_prototype`、`set_reactions`、`set_scroll_behavior`、`simulate_prototype`。
 本机 `target` 若是失效符号链接，cargo 命令前设置
 `CARGO_TARGET_DIR=$HOME/.cache/dsh-design-pencil/target`；WASM 构建脚本需要 PATH 中有
 `wasm-bindgen`（通常在 `~/.cargo/bin`）。

@@ -16,6 +16,7 @@ mod container;
 mod converters;
 mod corner_geometry;
 pub mod fig_document_variables;
+pub(crate) mod fig_prototype;
 pub mod fig_variables;
 mod figma_types;
 mod image_resolver;

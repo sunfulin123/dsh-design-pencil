@@ -46,6 +46,11 @@ pub(super) fn register_keyboard_listeners(
             let prompt_center_open = b.host.editor_state().editor_ui.prompt_center.open;
             let preview_active = b.host.is_preview_active();
             if preview_active {
+                if !is_mod && !b.host.input_active() && b.host.preview_present_shortcut(&key) {
+                    crate::repaint_coalescer::request();
+                    evt.prevent_default();
+                    return;
+                }
                 if starts_space_pan && !b.host.input_active() {
                     b.host.set_space_pan(true);
                     crate::repaint_coalescer::request();

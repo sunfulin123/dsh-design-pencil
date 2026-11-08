@@ -286,27 +286,7 @@ fn convert_group(
     )
 }
 
-/// Whether a symbol instance carries visual (non-layout) overrides.
-fn has_visual_overrides(figma: &FigValue) -> bool {
-    !crate::instance::own_assignments(figma).is_empty()
-        || figma
-            .get("symbolData")
-            .and_then(|s| s.get_array("symbolOverrides"))
-            .map(|ovs| {
-                ovs.iter().any(|ov| {
-                    ov.get_array("fillPaints").map(|p| !p.is_empty()) == Some(true)
-                        || ov.get_array("strokePaints").map(|p| !p.is_empty()) == Some(true)
-                        || ov.get("arcData").is_some()
-                        || ov.get("textData").is_some()
-                        || ov.get("fontSize").is_some()
-                        || ov.get("overriddenSymbolID").is_some()
-                        || ov
-                            .get_array("componentPropAssignments")
-                            .is_some_and(|assignments| !assignments.is_empty())
-                })
-            })
-            .unwrap_or(false)
-}
+use crate::fig_prototype::has_visual_overrides;
 
 fn convert_instance(
     tree: &TreeNode,

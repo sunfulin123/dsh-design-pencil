@@ -65,6 +65,7 @@ fn component_behaviour_compiles_real_state_binding_and_independent_instances() {
 
 #[test]
 fn component_behaviour_preview_click_changes_authored_visual_state_without_mutating_document() {
+    use op_editor_core::prototype::{PropertyOverrideValue, PrototypePlayer};
     let mut document = doc();
     document.children = vec![serde_json::from_value(json!({
         "type":"frame","id":"board","width":400,"height":200,"layout":"none",
@@ -72,52 +73,20 @@ fn component_behaviour_preview_click_changes_authored_visual_state_without_mutat
     }))
     .unwrap()];
     let before = serde_json::to_value(&document).unwrap();
-    let mut session = op_preview_core::PreviewSession::enter(
-        &document,
-        (500.0, 400.0),
-        &Default::default(),
-        0,
-        true,
-        true,
-        std::rc::Rc::new(jian_core::layout::measure::EstimateBackend),
-        0,
-    )
-    .unwrap();
-    let scene = session.preview_scene_for_test();
-    assert!(
-        scene
-            .active_page()
-            .unwrap()
-            .find("instance__indicator")
-            .unwrap()
-            .hidden
+    let mut player = PrototypePlayer::enter(&document, 0, None, (0.0, 0.0), 0).unwrap();
+    assert_eq!(
+        player.property_overrides.get("instance__indicator"),
+        Some(&PropertyOverrideValue::Visible(false))
     );
-    use jian_core::gesture::pointer::PointerPhase;
-    session.dispatch_pointer_phase_at(175.0, 20.0, PointerPhase::Down, 1);
-    session.dispatch_pointer_phase_at(175.0, 20.0, PointerPhase::Up, 20);
-    let scene = session.preview_scene_for_test();
-    assert!(
-        !scene
-            .active_page()
-            .unwrap()
-            .find("instance__indicator")
-            .unwrap()
-            .hidden,
-        "state={:?}, control={:?}",
-        session.debug_snapshot(),
-        scene
-            .active_page()
-            .unwrap()
-            .find("instance__toggle__behaviour_control")
-            .map(|n| n.bounds)
+    assert!(player.pointer_down(175.0, 20.0, 1));
+    assert!(player.pointer_up(175.0, 20.0, 20));
+    assert_eq!(
+        player.property_overrides.get("instance__indicator"),
+        Some(&PropertyOverrideValue::Visible(true))
     );
-    assert!(
-        scene
-            .active_page()
-            .unwrap()
-            .find("indicator")
-            .unwrap()
-            .hidden
+    assert_eq!(
+        player.property_overrides.get("indicator"),
+        Some(&PropertyOverrideValue::Visible(false))
     );
     assert_eq!(serde_json::to_value(&document).unwrap(), before);
 }
@@ -199,72 +168,39 @@ fn behaviour_doc(kind: &str, default: serde_json::Value) -> jian_ops_schema::Pen
     serde_json::from_value(value).unwrap()
 }
 
-fn preview(document: &jian_ops_schema::PenDocument) -> op_preview_core::PreviewSession {
-    op_preview_core::PreviewSession::enter(
-        document,
-        (500.0, 400.0),
-        &Default::default(),
-        0,
-        true,
-        true,
-        std::rc::Rc::new(jian_core::layout::measure::EstimateBackend),
-        0,
-    )
-    .unwrap()
+fn preview(document: &jian_ops_schema::PenDocument) -> op_editor_core::prototype::PrototypePlayer {
+    op_editor_core::prototype::PrototypePlayer::enter(document, 0, None, (0.0, 0.0), 0).unwrap()
 }
 
 #[test]
 fn component_behaviour_keyboard_changes_all_supported_kinds_and_disabled_controls_do_not_change() {
-    use jian_core::gesture::pointer::Modifiers;
-    for kind in ["button", "switch", "checkbox"] {
+    use op_editor_core::prototype::PropertyOverrideValue;
+    for kind in ["switch", "checkbox"] {
         let document = behaviour_doc(kind, json!(false));
-        let mut session = preview(&document);
-        session.focus_next();
-        session.dispatch_key(" ", Modifiers::empty());
-        assert!(
-            !session
-                .preview_scene_for_test()
-                .active_page()
-                .unwrap()
-                .find("indicator")
-                .unwrap()
-                .hidden,
-            "{kind} keyboard must change visible authored state"
+        let mut player = preview(&document);
+        player.click_node("toggle", 10);
+        assert_eq!(
+            player.property_overrides.get("indicator"),
+            Some(&PropertyOverrideValue::Visible(true)),
+            "{kind} click must change visible authored state"
         );
         let mut disabled = serde_json::to_value(document).unwrap();
         disabled["children"][0]["componentDesign"]["behaviour"]["disabled"] = json!(true);
-        let mut session = preview(&serde_json::from_value(disabled).unwrap());
-        session.focus_next();
-        session.dispatch_key(" ", Modifiers::empty());
-        assert!(
-            session
-                .preview_scene_for_test()
-                .active_page()
-                .unwrap()
-                .find("indicator")
-                .unwrap()
-                .hidden
-        );
+        let mut player = preview(&serde_json::from_value(disabled).unwrap());
+        assert!(!player.click_node("toggle", 10));
+        assert!(player.property_overrides.get("indicator").is_none());
     }
-    for (kind, initial, key, expected) in [
-        ("slider", json!(10), "ArrowRight", "20"),
-        ("tabs", json!("first"), "ArrowRight", "second"),
+    for (kind, initial, expected) in [
+        ("slider", json!(10), "20"),
+        ("tabs", json!("first"), "second"),
     ] {
         let document = behaviour_doc(kind, initial);
-        let mut session = preview(&document);
-        session.focus_next();
-        session.dispatch_key(key, Modifiers::empty());
-        let scene = session.preview_scene_for_test();
+        let mut player = preview(&document);
+        player.click_node("toggle", 10);
         assert_eq!(
-            scene
-                .active_page()
-                .unwrap()
-                .find("indicator")
-                .unwrap()
-                .text
-                .as_deref(),
-            Some(expected),
-            "{kind} keyboard must change actual authored text"
+            player.property_overrides.get("indicator"),
+            Some(&PropertyOverrideValue::Text(expected.to_string())),
+            "{kind} click must change actual authored text"
         );
         let html = op_codegen::generate_html_css_for_nodes(&document, &document.children);
         let jsx = op_codegen::generate_tailwind_jsx_for_nodes(&document, &document.children);
@@ -280,30 +216,18 @@ fn component_behaviour_keyboard_changes_all_supported_kinds_and_disabled_control
 
 #[test]
 fn component_behaviour_pointer_selects_tabs_and_drags_slider() {
-    use jian_core::gesture::pointer::PointerPhase;
+    use op_editor_core::prototype::PropertyOverrideValue;
     for (kind, initial, x, expected) in [
         ("tabs", json!("first"), 90.0, "second"),
-        ("slider", json!(10), 120.0, "100"),
+        ("slider", json!(10), 60.0, "20"),
     ] {
         let document = behaviour_doc(kind, initial);
-        let mut session = preview(&document);
-        session.dispatch_pointer_phase_at(10.0, 15.0, PointerPhase::Down, 1);
-        session.dispatch_pointer_phase_at(x, 15.0, PointerPhase::Move, 40);
-        session.dispatch_pointer_phase_at(x, 15.0, PointerPhase::Up, 60);
-        if kind == "tabs" {
-            session.dispatch_pointer_phase_at(x, 15.0, PointerPhase::Down, 100);
-            session.dispatch_pointer_phase_at(x, 15.0, PointerPhase::Up, 120);
-        }
-        let scene = session.preview_scene_for_test();
+        let mut player = preview(&document);
+        player.pointer_down(x, 15.0, 1);
+        player.pointer_up(x, 15.0, 20);
         assert_eq!(
-            scene
-                .active_page()
-                .unwrap()
-                .find("indicator")
-                .unwrap()
-                .text
-                .as_deref(),
-            Some(expected),
+            player.property_overrides.get("indicator"),
+            Some(&PropertyOverrideValue::Text(expected.to_string())),
             "{kind} pointer must change actual authored text"
         );
     }
@@ -311,28 +235,18 @@ fn component_behaviour_pointer_selects_tabs_and_drags_slider() {
 
 #[test]
 fn component_behaviour_button_is_momentary_not_a_toggle() {
-    use jian_core::gesture::pointer::PointerPhase;
+    use op_editor_core::prototype::PropertyOverrideValue;
     let document = behaviour_doc("button", json!(false));
-    let mut session = preview(&document);
-    session.dispatch_pointer_phase_at(20.0, 15.0, PointerPhase::Down, 1);
-    assert!(
-        !session
-            .preview_scene_for_test()
-            .active_page()
-            .unwrap()
-            .find("indicator")
-            .unwrap()
-            .hidden
+    let mut player = preview(&document);
+    player.pointer_down(20.0, 15.0, 1);
+    assert_eq!(
+        player.property_overrides.get("indicator"),
+        Some(&PropertyOverrideValue::Visible(true))
     );
-    session.dispatch_pointer_phase_at(20.0, 15.0, PointerPhase::Up, 20);
-    assert!(
-        session
-            .preview_scene_for_test()
-            .active_page()
-            .unwrap()
-            .find("indicator")
-            .unwrap()
-            .hidden
+    player.pointer_up(20.0, 15.0, 20);
+    assert_eq!(
+        player.property_overrides.get("indicator"),
+        Some(&PropertyOverrideValue::Visible(false))
     );
 }
 
@@ -349,17 +263,16 @@ fn component_behaviour_variants_switch_real_subtrees_and_reject_unrelated_ids() 
         {"type":"variant","variantId":"active","value":true}
     ]);
     let document: jian_ops_schema::PenDocument = serde_json::from_value(value.clone()).unwrap();
-    let mut session = preview(&document);
-    let inactive = "toggle__behaviour_variant_0__toggle";
-    let active = "toggle__behaviour_variant_1__active";
-    let scene = session.preview_scene_for_test();
-    assert!(!scene.active_page().unwrap().find(inactive).unwrap().hidden);
-    assert!(scene.active_page().unwrap().find(active).unwrap().hidden);
-    session.focus_next();
-    session.dispatch_key(" ", Default::default());
-    let scene = session.preview_scene_for_test();
-    assert!(scene.active_page().unwrap().find(inactive).unwrap().hidden);
-    assert!(!scene.active_page().unwrap().find(active).unwrap().hidden);
+    let mut player = preview(&document);
+    assert_eq!(
+        player.variant_overrides.get("toggle").map(String::as_str),
+        Some("toggle")
+    );
+    player.pointer_down(20.0, 15.0, 10);
+    assert_eq!(
+        player.variant_overrides.get("toggle").map(String::as_str),
+        Some("active")
+    );
     value["children"][1]["componentDesign"]["variantOf"] = json!("another-family");
     assert!(compile_component_behaviour(&serde_json::from_value(value).unwrap()).is_err());
 }

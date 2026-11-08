@@ -388,6 +388,25 @@ pub(super) fn layout(node: &Value, parent_layout: Option<&str>, f: &mut Fields) 
     if node.get("itemReverseZIndex").and_then(Value::as_bool) == Some(true) {
         put(f, "stackReverseZIndex", FigValue::Bool(true));
     }
+    copy_str(f, node, "overflowDirection", "scrollDirection");
+    copy_str(f, node, "scrollBehavior", "scrollBehavior");
+    copy_str(f, node, "transitionNodeID", "transitionNodeID");
+    copy_num(f, node, "transitionDuration", "transitionDuration");
+    copy_str(f, node, "transitionEasing", "easingType");
+    if let Some(interactions) = node
+        .get("interactions")
+        .or_else(|| node.get("reactions"))
+        .and_then(Value::as_array)
+        .filter(|arr| !arr.is_empty())
+    {
+        if let Ok(serialized) = serde_json::to_string(interactions) {
+            put(
+                f,
+                crate::fig_prototype::REST_REACTIONS_KEY,
+                text(&serialized),
+            );
+        }
+    }
 }
 
 #[cfg(test)]

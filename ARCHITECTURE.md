@@ -103,6 +103,23 @@ AI 指南只把库变量用于颜色、gap、padding、opacity。
 并把显式模式写成节点 `theme` 覆盖。DESIGN.md frontmatter 的 `colors`（`dark-*` 合并为
 `Mode` 轴的同名变量）、`rounded`、`spacing` 同步为变量。
 
+## 原型与全屏 Present
+
+原型 schema（[prototype.rs](vendor/jian/crates/jian-ops-schema/src/prototype.rs)）镜像 Figma Plugin API
+与 Kiwi 结构：节点携带 `reactions`、`overflowDirection`、`scrollBehavior`、`overlay`、`section`、
+`flowStartingPoint`；文档携带 `prototype`（`flows`、`device`、`backgroundColor`）。
+[fig_prototype](crates/op-figma/src/fig_prototype.rs) 与 [rest_adapter](crates/op-figma/src/rest_adapter.rs)
+在 `.fig` 与 REST 两条导入路径提取原型数据，并将 Figma GUID 目标改写为 `PenNode` ID，剔除悬空或内部缓存符号目标。
+[op-editor-core::prototype](crates/op-editor-core/src/prototype.rs) 提供纯数据、O(画板数) 进入的
+`PrototypeGraph` 与 `PrototypePlayer`（展开 Figma `SECTION` 子画板、支持 Navigate/Overlay/Swap/ChangeTo/ScrollTo/Back/SetVariable 等动作、Smart Animate 图层匹配与转场插值，以及将 `ComponentBehaviour` 与旧 `onTap` 派生为交互），不再依赖 `op-preview-core` 或 `jian_core::Runtime`。
+Web 宿主（[preview_host](crates/op-host-web/src/preview_host.rs)、[preview_browser](crates/op-host-web/src/widget_host/preview_browser.rs)）
+按需单画板构建场景并结合 CanvasKit 离屏纹理快照缓存渲染全屏 Present（含顶栏、Flows/画板侧栏、缩放模式切换与底部翻页）。
+Present 视口规则由纯函数 [viewport](crates/op-editor-core/src/prototype/viewport.rs) 决定，与 Figma 一致：
+舞台夹在固定顶栏与固定底栏之间、零边距，默认“Fit width”铺满宽度；缩放下限为适配尺寸、上限 4 倍，
+以光标为锚点；不支持拖动平移，滚轮仅在画板超出舞台时做受边界约束的滚动；快捷键 ←/→/Space/N、R、Z、Cmd/Ctrl ±/0。
+AI 通过 [prototype_tools](crates/op-dsh-engine/src/prototype_tools.rs)（`get_prototype`、`set_prototype`、
+`set_reactions`、`set_scroll_behavior`、`simulate_prototype`）读写并无头验证原型流程。
+
 ## 画布渲染
 
 - 纯 tile geometry/planning 在 [canvas_tiles](crates/op-editor-ui/src/widgets/canvas_tiles.rs)。

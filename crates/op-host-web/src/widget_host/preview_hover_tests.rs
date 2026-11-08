@@ -44,7 +44,7 @@ fn bare_web_cursor_move_sets_preview_session_hover() {
     host.last_viewport_h = VIEWPORT_H;
     let active_theme = BTreeMap::new();
     host.preview = Some(
-        op_preview_core::PreviewSession::enter(
+        crate::preview_host::PreviewSession::enter(
             &host.editor_state.doc,
             (VIEWPORT_W, VIEWPORT_H),
             &active_theme,
@@ -97,7 +97,7 @@ fn preview_host() -> WidgetHost {
     host.editor_state = EditorState::from_document(document());
     host.editor_state.editor_ui.preview.mode = true;
     host.preview = Some(
-        op_preview_core::PreviewSession::enter(
+        crate::preview_host::PreviewSession::enter(
             &host.editor_state.doc,
             (VIEWPORT_W, VIEWPORT_H),
             &BTreeMap::new(),
@@ -132,7 +132,7 @@ fn navigation_host() -> WidgetHost {
     host.editor_state.selection.anchor = op_editor_core::NodeId::new("later");
     host.editor_state.viewport.pan_x = -9000.0;
     host.preview = Some(
-        op_preview_core::PreviewSession::enter(
+        crate::preview_host::PreviewSession::enter(
             &host.editor_state.doc,
             (VIEWPORT_W, VIEWPORT_H),
             &BTreeMap::new(),
@@ -148,78 +148,103 @@ fn navigation_host() -> WidgetHost {
     host
 }
 
-#[test]
-fn preview_canvas_fit_keeps_all_page_frames_visible() {
-    let mut host = navigation_host();
-    host.last_viewport_w = VIEWPORT_W;
-    host.last_viewport_h = VIEWPORT_H;
-    host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H);
-    host.editor_state.editor_ui.enter_preview();
-    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
-    assert_eq!(
-        host.browser_device_kind(),
-        op_editor_core::PreviewDeviceKind::Canvas
-    );
-    let stage = host.preview_stage_rect(host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H));
-    let frame = host.preview_device_frame.as_ref().unwrap();
-    for id in ["earlier", "later"] {
-        let bounds = host.preview_browser.canvas_scene.as_ref().unwrap().pages[0]
-            .find(id)
-            .unwrap()
-            .bounds;
-        let origin = frame.content_origin + bounds.origin * frame.fit;
-        let end = origin + bounds.size * frame.fit;
-        assert!(origin.x >= stage.origin.x && origin.y >= stage.origin.y);
-        assert!(end.x <= stage.origin.x + stage.size.x && end.y <= stage.origin.y + stage.size.y);
-    }
-}
-
-#[test]
-fn preview_blank_drag_preserves_document_and_camera() {
+fn entered_navigation_host() -> WidgetHost {
     let mut host = navigation_host();
     host.last_viewport_w = VIEWPORT_W;
     host.last_viewport_h = VIEWPORT_H;
     assert!(host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H));
     host.editor_state.editor_ui.enter_preview();
     host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
+    host
+}
+
+fn preview_stage(host: &WidgetHost) -> op_editor_ui::Rect {
+    host.preview_stage_rect(host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H))
+}
+
+fn preview_frame_rect(host: &WidgetHost) -> op_editor_ui::Rect {
+    host.preview_device_frame.as_ref().unwrap().frame
+}
+
+#[test]
+fn preview_fit_width_fills_stage_edge_to_edge() {
+    let mut host = entered_navigation_host();
+    assert_eq!(
+        host.browser_device_kind(),
+        op_editor_core::PreviewDeviceKind::Canvas
+    );
+    let stage = preview_stage(&host);
+    let canvas = host.preview_canvas_rect(VIEWPORT_W, VIEWPORT_H);
+    assert_eq!(stage.origin.x, canvas.origin.x);
+    assert_eq!(stage.size.x, canvas.size.x);
+    for id in ["later", "earlier"] {
+        assert!(host.preview_go_to_frame(0, id));
+        let frame = preview_frame_rect(&host);
+        assert!((frame.origin.x - stage.origin.x).abs() < 0.5, "{id}");
+        assert!((frame.size.x - stage.size.x).abs() < 0.5, "{id}");
+        if frame.size.y > stage.size.y {
+            assert!((frame.origin.y - stage.origin.y).abs() < 0.5, "{id}");
+        } else {
+            let gap_top = frame.origin.y - stage.origin.y;
+            let gap_bottom = stage.origin.y + stage.size.y - frame.origin.y - frame.size.y;
+            assert!((gap_top - gap_bottom).abs() < 0.5, "{id}");
+        }
+    }
+    assert!(host.preview_present_shortcut("z"));
+    assert_eq!(
+        host.preview_browser.scale_mode,
+        op_editor_core::prototype::PresentScaleMode::Fill
+    );
+    host.preview_browser.scale_mode = op_editor_core::prototype::PresentScaleMode::Fit;
+    for id in ["later", "earlier"] {
+        assert!(host.preview_go_to_frame(0, id));
+        let frame = preview_frame_rect(&host);
+        assert!(frame.origin.x >= stage.origin.x - 1.0 && frame.origin.y >= stage.origin.y - 1.0);
+        assert!(
+            frame.origin.x + frame.size.x <= stage.origin.x + stage.size.x + 1.0
+                && frame.origin.y + frame.size.y <= stage.origin.y + stage.size.y + 1.0
+        );
+    }
+}
+
+#[test]
+fn preview_drag_never_moves_stage_or_document() {
+    let mut host = entered_navigation_host();
     let camera = host.editor_state.viewport;
     let document = host.editor_state.doc.clone();
-    assert!(host.apply_press(8.0, 140.0, VIEWPORT_W, VIEWPORT_H));
-    host.preview_controls_hover(88.0, 180.0, VIEWPORT_W, VIEWPORT_H);
-    assert_eq!(host.preview_browser.pan, Point2D::new(80.0, 40.0));
+    let before = preview_frame_rect(&host);
+    let press = (before.origin.x + 20.0, before.origin.y + 20.0);
+    host.apply_press(press.0, press.1, VIEWPORT_W, VIEWPORT_H);
+    host.preview_controls_hover(press.0 + 80.0, press.1 + 40.0, VIEWPORT_W, VIEWPORT_H);
     host.preview_controls_release();
+    assert_eq!(preview_frame_rect(&host).origin, before.origin);
     host.set_space_pan(true);
-    let frame = host.preview_device_frame.as_ref().unwrap().frame;
-    assert!(host.apply_press(
-        frame.origin.x + 20.0,
-        frame.origin.y + 20.0,
-        VIEWPORT_W,
-        VIEWPORT_H
-    ));
-    assert!(host.preview_browser.pan_capture.is_some());
+    host.apply_press(press.0, press.1, VIEWPORT_W, VIEWPORT_H);
+    host.preview_controls_hover(press.0 + 80.0, press.1 + 40.0, VIEWPORT_W, VIEWPORT_H);
     host.preview_controls_release();
     host.set_space_pan(false);
+    assert_eq!(preview_frame_rect(&host).origin, before.origin);
     assert_eq!(host.editor_state.doc, document);
     assert_eq!(host.editor_state.viewport, camera);
 }
 
 #[test]
-fn preview_wrapper_can_pan_at_fit_and_returns_from_present() {
-    let mut host = navigation_host();
-    host.last_viewport_w = VIEWPORT_W;
-    host.last_viewport_h = VIEWPORT_H;
-    assert!(host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H));
-    host.editor_state.editor_ui.enter_preview();
-    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
+fn preview_scroll_is_bounded_and_restored_after_present() {
+    let mut host = entered_navigation_host();
     let camera = host.editor_state.viewport;
     let document = host.editor_state.doc.clone();
-    host.preview_browser.pan_capture = Some((Point2D::new(20.0, 100.0), Point2D::new(0.0, 0.0)));
-    assert!(host.preview_controls_hover(100.0, 140.0, VIEWPORT_W, VIEWPORT_H));
-    assert_eq!(host.preview_browser.pan, Point2D::new(80.0, 40.0));
-    host.preview_controls_release();
+    let stage = preview_stage(&host);
+    let start = preview_frame_rect(&host);
+    assert!(start.size.y > stage.size.y);
+    assert!(host.apply_pan_gesture(500.0, 300.0, 20.0, -1.0e5, VIEWPORT_W, VIEWPORT_H));
+    let bottom = preview_frame_rect(&host);
+    assert_eq!(bottom.origin.x, start.origin.x);
+    assert!((bottom.origin.y + bottom.size.y - stage.origin.y - stage.size.y).abs() < 0.5);
     host.set_preview_presentation(true);
     host.set_preview_presentation(false);
-    assert_eq!(host.preview_browser.pan, Point2D::new(80.0, 40.0));
+    assert!((preview_frame_rect(&host).origin.y - bottom.origin.y).abs() < 0.5);
+    assert!(host.apply_pan_gesture(500.0, 300.0, 0.0, 1.0e5, VIEWPORT_W, VIEWPORT_H));
+    assert!((preview_frame_rect(&host).origin.y - stage.origin.y).abs() < 0.5);
     assert_eq!(host.editor_state.viewport, camera);
     assert_eq!(host.editor_state.doc, document);
 }
@@ -242,36 +267,22 @@ fn preview_navigation_starts_selected_and_clamps_in_reading_order() {
 }
 
 #[test]
-fn managed_preview_zoom_leaves_editor_camera_unchanged() {
-    let mut host = navigation_host();
+fn managed_preview_zoom_never_drops_below_fit() {
+    let mut host = entered_navigation_host();
     let camera = host.editor_state.viewport;
     let before = host.editor_state.doc.clone();
-    host.last_viewport_w = VIEWPORT_W;
-    host.last_viewport_h = VIEWPORT_H;
-    assert!(host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H));
-    host.editor_state.editor_ui.enter_preview();
-    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
-    host.preview_set_zoom(Some(2.0));
-    assert_eq!(
-        host.preview_device_frame.as_ref().unwrap().frame.size.x,
-        2580.0
-    );
+    let stage = preview_stage(&host);
+    assert!(host.preview_zoom_by(-500.0));
+    assert!((preview_frame_rect(&host).size.x - stage.size.x).abs() < 0.5);
+    assert!(host.preview_zoom_by(350.0));
+    let zoomed = preview_frame_rect(&host);
+    assert!(zoomed.size.x > stage.size.x * 1.5);
+    assert!(zoomed.origin.x <= stage.origin.x);
+    assert!(zoomed.origin.x + zoomed.size.x >= stage.origin.x + stage.size.x - 0.5);
+    assert!(host.preview_zoom_shortcut("0"));
+    assert!((preview_frame_rect(&host).size.x - stage.size.x).abs() < 0.5);
     assert_eq!(host.editor_state.viewport, camera);
     assert_eq!(host.editor_state.doc, before);
-}
-
-#[test]
-fn managed_preview_trackpad_scroll_pans_canvas_without_changing_editor_camera() {
-    let mut host = navigation_host();
-    let camera = host.editor_state.viewport;
-    host.last_viewport_w = VIEWPORT_W;
-    host.last_viewport_h = VIEWPORT_H;
-    assert!(host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H));
-    host.editor_state.editor_ui.enter_preview();
-    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
-    assert!(host.apply_pan_gesture(500.0, 300.0, 20.0, -40.0, VIEWPORT_W, VIEWPORT_H));
-    assert_eq!(host.preview_browser.pan, Point2D::new(20.0, -40.0));
-    assert_eq!(host.editor_state.viewport, camera);
 }
 
 #[test]
@@ -308,7 +319,7 @@ fn preview_toolbar_switches_present_without_edits() {
     ));
     assert!(host.preview_controls_release());
     assert!(host.preview_browser.present);
-    assert_eq!(host.preview_browser.zoom, None);
+    assert_eq!(host.preview_browser.zoom_factor, 1.0);
     assert_eq!(host.editor_state.doc, before);
 }
 
@@ -388,7 +399,7 @@ fn routed_preview_starts_selected_screen_and_navigates_without_editor_edits() {
     host.editor_state = EditorState::from_document(doc.clone());
     host.editor_state.selection.anchor = op_editor_core::NodeId::new("detail");
     host.preview = Some(
-        op_preview_core::PreviewSession::enter(
+        crate::preview_host::PreviewSession::enter(
             &doc,
             (VIEWPORT_W, VIEWPORT_H),
             &BTreeMap::new(),
@@ -456,4 +467,93 @@ fn preview_device_buttons_switch_without_editing_document() {
         assert_eq!(host.editor_state.editor_ui.preview.device, Some(device));
         assert_eq!(host.editor_state.doc, before);
     }
+}
+
+#[test]
+fn section_screens_and_reaction_hotspots_navigate_in_managed_present() {
+    let doc = jian_ops_schema::load_str(
+        r#"{
+            "version": "1.1",
+            "children": [{
+                "type": "frame",
+                "id": "sec",
+                "name": "Widgets Section",
+                "section": true,
+                "x": 0,
+                "y": 0,
+                "width": 1000,
+                "height": 900,
+                "children": [
+                    {
+                        "type": "frame",
+                        "id": "screen_1",
+                        "name": "Screen 1",
+                        "x": 0,
+                        "y": 0,
+                        "width": 400,
+                        "height": 600,
+                        "flowStartingPoint": {"nodeId": "screen_1", "name": "Play"},
+                        "children": [{
+                            "type": "rectangle",
+                            "id": "next_btn",
+                            "name": "Next",
+                            "x": 20,
+                            "y": 20,
+                            "width": 160,
+                            "height": 80,
+                            "reactions": [{
+                                "trigger": {"type": "ON_CLICK"},
+                                "actions": [{
+                                    "type": "NODE",
+                                    "destinationId": "screen_2",
+                                    "navigation": "NAVIGATE"
+                                }]
+                            }]
+                        }]
+                    },
+                    {
+                        "type": "frame",
+                        "id": "screen_2",
+                        "name": "Screen 2",
+                        "x": 500,
+                        "y": 0,
+                        "width": 400,
+                        "height": 600
+                    }
+                ]
+            }]
+        }"#,
+    )
+    .unwrap()
+    .value;
+
+    let mut host = WidgetHost::new();
+    host.editor_state = EditorState::from_document(doc.clone());
+    host.last_viewport_w = VIEWPORT_W;
+    host.last_viewport_h = VIEWPORT_H;
+    host.invalidate_layout_scene();
+    host.preview = Some(
+        crate::preview_host::PreviewSession::enter_fast(&doc, 0, 0).expect("fast preview enter"),
+    );
+    assert!(host.initialize_preview_browser(VIEWPORT_W, VIEWPORT_H));
+    host.editor_state.editor_ui.enter_preview();
+    host.initialize_device_preview(VIEWPORT_W, VIEWPORT_H);
+
+    assert_eq!(host.preview_browser.frames.len(), 2);
+    assert_eq!(
+        host.preview.as_ref().unwrap().framed_root().unwrap().0,
+        "screen_1"
+    );
+
+    // Click inside the "next_btn" hotspot on screen_1 -> navigates to screen_2
+    let frame = host.preview_device_frame.as_ref().unwrap();
+    let click_x = frame.content_origin.x + 60.0 * frame.fit;
+    let click_y = frame.content_origin.y + 50.0 * frame.fit;
+    assert!(host.apply_press(click_x, click_y, VIEWPORT_W, VIEWPORT_H));
+    assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));
+    assert_eq!(
+        host.preview.as_ref().unwrap().framed_root().unwrap().0,
+        "screen_2"
+    );
+    assert_eq!(host.editor_state.doc, doc);
 }

@@ -1,6 +1,6 @@
 //! Transient Page/frame navigation for browser preview; canonical editor state stays unchanged.
 
-use op_editor_core::PenNodeExt;
+use op_editor_core::prototype::{zoom_about, PresentScaleMode, PresentViewport, PrototypeGraph};
 use op_editor_ui::widgets::preview_toolbar::PreviewControl;
 use op_editor_ui::Point2D;
 
@@ -9,6 +9,7 @@ use super::WidgetHost;
 pub(super) struct PreviewFrameEntry {
     pub page: usize,
     pub page_label: String,
+    pub section_name: Option<String>,
     pub id: String,
     pub name: String,
     pub screen: Option<String>,
@@ -20,15 +21,17 @@ pub(super) struct PreviewBrowserState {
     pub frames: Vec<PreviewFrameEntry>,
     pub canvas_scene: Option<op_editor_ui::layout_scene::LayoutScene>,
     pub present: bool,
-    pub zoom: Option<f32>,
-    pub pan: Point2D,
+    pub scale_mode: PresentScaleMode,
+    /// User zoom relative to the fitted scale; values below 1 mean "fit".
+    pub zoom_factor: f32,
+    /// Stage scroll offset in host pixels, clamped to the scaled screen.
+    pub scroll: Point2D,
     pub list_open: bool,
     pub list_scroll: f32,
     pub hover: Option<PreviewControl>,
     pub pressed: Option<PreviewControl>,
     pub controls_captured: bool,
-    pub pan_capture: Option<(Point2D, Point2D)>,
-    pub inspection_position: Option<(Option<f32>, Point2D, f32)>,
+    pub inspection_position: Option<(f32, Point2D)>,
     pub last_activity_ms: u64,
     pub preferences: PreviewPreferences,
     preferences_loaded: bool,
@@ -37,12 +40,95 @@ pub(super) struct PreviewBrowserState {
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
 pub(super) struct PreviewPreferences {
-    pub zoom: Option<f32>,
+    pub scale_mode: Option<PresentScaleMode>,
 }
 
 impl WidgetHost {
     pub(super) fn browser_device_kind(&self) -> op_editor_core::PreviewDeviceKind {
         op_editor_core::PreviewDeviceKind::Canvas
+    }
+
+    pub(super) fn preview_active_scene_page(
+        &self,
+    ) -> Option<&op_editor_ui::layout_scene::ScenePage> {
+        let page_idx = self.preview_browser.page;
+        self.preview_browser
+            .canvas_scene
+            .as_ref()
+            .and_then(|s| s.pages.get(page_idx))
+            .filter(|p| !p.children.is_empty())
+            .or_else(|| self.layout_scene.pages.get(page_idx))
+    }
+
+    pub(super) fn ensure_preview_screen_scene(&mut self, page_index: usize, screen_id: &str) {
+        if self.preview_browser.canvas_scene.is_none() {
+            let pages = match self
+                .editor_state
+                .doc
+                .pages
+                .as_ref()
+                .filter(|p| !p.is_empty())
+            {
+                Some(doc_pages) => doc_pages
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| {
+                        let children = self
+                            .layout_scene
+                            .pages
+                            .get(i)
+                            .filter(|sp| sp.id == p.id)
+                            .map(|sp| sp.children.clone())
+                            .unwrap_or_default();
+                        op_editor_ui::layout_scene::ScenePage {
+                            id: p.id.clone(),
+                            name: p.name.clone(),
+                            children,
+                        }
+                    })
+                    .collect(),
+                None => vec![op_editor_ui::layout_scene::ScenePage {
+                    id: "page-0".into(),
+                    name: "Page 1".into(),
+                    children: self
+                        .layout_scene
+                        .pages
+                        .first()
+                        .map(|sp| sp.children.clone())
+                        .unwrap_or_default(),
+                }],
+            };
+            self.preview_browser.canvas_scene = Some(op_editor_ui::layout_scene::LayoutScene {
+                pages,
+                active_page_index: page_index,
+            });
+        }
+        let already_built = self
+            .preview_browser
+            .canvas_scene
+            .as_ref()
+            .and_then(|s| s.pages.get(page_index))
+            .is_some_and(|p| {
+                crate::preview_host::paint::find_screen_scene_node(&p.children, screen_id).is_some()
+            });
+        if already_built {
+            return;
+        }
+        let Some(screen_pen_node) =
+            find_screen_pen_node(&self.editor_state.doc, page_index, screen_id)
+        else {
+            return;
+        };
+        let mut built = op_pen_loader::editor_state_roots_to_scene_nodes(
+            &self.editor_state,
+            page_index,
+            std::slice::from_ref(&screen_pen_node),
+        );
+        if let Some(scene) = self.preview_browser.canvas_scene.as_mut() {
+            if let Some(page) = scene.pages.get_mut(page_index) {
+                page.children.append(&mut built);
+            }
+        }
     }
 
     pub(super) fn browser_frame_geometry(
@@ -51,18 +137,110 @@ impl WidgetHost {
         root: op_editor_ui::Rect,
         nav: Option<op_editor_ui::Rect>,
         status: Option<op_editor_ui::Rect>,
-    ) -> op_preview_core::device_frame::DeviceFrame {
-        let size = (root.size.x, root.size.y);
-        op_preview_core::device_frame::compute_presentation_geometry(
+    ) -> crate::preview_host::device_frame::DeviceFrame {
+        let stage = self.preview_stage_rect(canvas);
+        let size = (root.size.x.max(1.0), root.size.y.max(1.0));
+        let vp = self.preview_viewport_for(stage, size);
+        let frame_rect = op_editor_ui::Rect::xywh(
+            stage.origin.x + vp.offset.0,
+            stage.origin.y + vp.offset.1,
+            vp.size.0,
+            vp.size.1,
+        );
+        crate::preview_host::device_frame::compute_presentation_geometry(
             self.browser_device_kind(),
-            self.preview_stage_rect(canvas),
+            frame_rect,
             root,
             size,
-            self.preview_browser.zoom,
-            self.preview_browser.pan,
             nav,
             status,
         )
+    }
+
+    pub(super) fn preview_viewport_for(
+        &self,
+        stage: op_editor_ui::Rect,
+        screen: (f32, f32),
+    ) -> PresentViewport {
+        PresentViewport::resolve(
+            self.preview_browser.scale_mode,
+            (stage.size.x, stage.size.y),
+            screen,
+            self.preview_browser.zoom_factor,
+            (self.preview_browser.scroll.x, self.preview_browser.scroll.y),
+        )
+    }
+
+    pub(super) fn preview_viewport(&self) -> PresentViewport {
+        let canvas = self.preview_canvas_rect(self.last_viewport_w, self.last_viewport_h);
+        self.preview_viewport_for(self.preview_stage_rect(canvas), self.preview_screen_size())
+    }
+
+    /// Zoom to the absolute fit-relative `factor` anchored at a host point,
+    /// never below the fitted scale.
+    pub(super) fn preview_zoom_to(&mut self, factor: f32, anchor: Option<Point2D>) {
+        let canvas = self.preview_canvas_rect(self.last_viewport_w, self.last_viewport_h);
+        let stage = self.preview_stage_rect(canvas);
+        let local = anchor
+            .filter(|p| stage.contains(*p))
+            .map_or((stage.size.x / 2.0, stage.size.y / 2.0), |p| {
+                (p.x - stage.origin.x, p.y - stage.origin.y)
+            });
+        let (zoom_factor, scroll) = zoom_about(
+            self.preview_browser.scale_mode,
+            (stage.size.x, stage.size.y),
+            self.preview_screen_size(),
+            (
+                self.preview_browser.zoom_factor,
+                (self.preview_browser.scroll.x, self.preview_browser.scroll.y),
+            ),
+            factor,
+            local,
+        );
+        self.preview_browser.zoom_factor = zoom_factor;
+        self.preview_browser.scroll = Point2D::new(scroll.0, scroll.1);
+        self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
+        self.mark_dirty();
+    }
+
+    /// Back to the fitted scale with the screen scrolled to its top-left.
+    pub(super) fn preview_reset_view(&mut self) {
+        self.preview_browser.zoom_factor = 1.0;
+        self.preview_browser.scroll = Point2D::new(0.0, 0.0);
+    }
+
+    /// Clip to the stage and fill it with the prototype background
+    /// (page override, then document, then Figma's dark default).
+    pub(super) fn paint_preview_stage_backdrop(
+        &self,
+        backend: &mut dyn op_editor_ui::RenderBackend,
+        canvas: op_editor_ui::Rect,
+    ) {
+        let stage = self.preview_stage_rect(canvas);
+        backend.clip_rect(stage);
+        let doc = &self.editor_state.doc;
+        let page_id = doc
+            .pages
+            .as_ref()
+            .and_then(|pages| pages.get(self.preview_browser.page))
+            .map(|page| page.id.as_str());
+        let color = doc
+            .prototype
+            .as_ref()
+            .and_then(|proto| {
+                page_id
+                    .and_then(|id| proto.pages.get(id))
+                    .and_then(|page| page.background_color.as_deref())
+                    .or(proto.background_color.as_deref())
+            })
+            .and_then(crate::preview_host::paint::parse_hex_color)
+            .unwrap_or(op_editor_ui::Color {
+                r: 0.118,
+                g: 0.118,
+                b: 0.118,
+                a: 1.0,
+            });
+        backend.fill_rect(stage, color);
     }
 
     pub(super) fn preview_screen_size(&self) -> (f32, f32) {
@@ -73,59 +251,6 @@ impl WidgetHost {
             .unwrap_or((1.0, 1.0))
     }
 
-    pub(super) fn paint_preview_canvas(
-        &mut self,
-        backend: &mut dyn op_editor_ui::RenderBackend,
-        canvas: op_editor_ui::Rect,
-    ) {
-        let Some(page) = self
-            .preview_browser
-            .canvas_scene
-            .as_ref()
-            .and_then(|scene| scene.pages.get(self.preview_browser.page))
-        else {
-            return;
-        };
-        let Some(frame) = self.preview_device_frame.as_ref() else {
-            return;
-        };
-        let fast = self.preview_browser.pan_capture.is_some();
-        op_editor_ui::widgets::paint_scene_page_without_video_badge_fast(
-            &mut op_editor_ui::widgets::PaintCx { backend },
-            page,
-            frame.content_origin,
-            frame.fit,
-            canvas,
-            fast,
-        );
-    }
-
-    pub(super) fn preview_canvas_bounds(&self) -> Option<op_editor_ui::Rect> {
-        let page = self
-            .preview_browser
-            .canvas_scene
-            .as_ref()?
-            .pages
-            .get(self.preview_browser.page)?;
-        let mut bounds = op_editor_ui::scene_bounds::BoundsAcc::new();
-        for node in page.children.iter().filter(|node| !node.hidden) {
-            let rect = node.bounds;
-            if rect.origin.is_finite()
-                && rect.size.is_finite()
-                && rect.size.x > 0.0
-                && rect.size.y > 0.0
-            {
-                bounds.add(
-                    rect.origin.x,
-                    rect.origin.y,
-                    rect.origin.x + rect.size.x,
-                    rect.origin.y + rect.size.y,
-                );
-            }
-        }
-        bounds.into_rect()
-    }
-
     pub(crate) fn managed_preview_active(&self) -> bool {
         self.preview.is_some() && !self.preview_browser.frames.is_empty()
     }
@@ -134,17 +259,19 @@ impl WidgetHost {
         if self.preview_browser.present {
             return canvas;
         }
-        let top = op_editor_ui::widgets::preview_toolbar::PreviewToolbar::header_height(canvas);
+        use op_editor_ui::widgets::preview_toolbar::PreviewToolbar;
+        let top = PreviewToolbar::header_height(canvas);
+        let bottom = PreviewToolbar::bottom_bar_height(canvas);
         let left = if self.preview_browser.list_open && canvas.size.x >= 600.0 {
             232.0
         } else {
             0.0
         };
         op_editor_ui::Rect::xywh(
-            canvas.origin.x + left + 24.0,
-            canvas.origin.y + top + 20.0,
-            (canvas.size.x - left - 48.0).max(1.0),
-            (canvas.size.y - top - 84.0).max(1.0),
+            canvas.origin.x + left,
+            canvas.origin.y + top,
+            (canvas.size.x - left).max(1.0),
+            (canvas.size.y - top - bottom).max(1.0),
         )
     }
 
@@ -156,125 +283,52 @@ impl WidgetHost {
             (canvas_w / 2.0 - viewport.pan_x) / viewport.zoom,
             (canvas_h / 2.0 - viewport.pan_y) / viewport.zoom,
         );
-        let mut frames = Vec::new();
-        let mut entry_target = None;
         let active_page = self.editor_state.ui.active_page_index;
         let selected = self.editor_state.selection.anchor.as_str();
-        fn contains(node: &jian_ops_schema::node::PenNode, id: &str) -> bool {
-            node.id_str() == id
-                || node
-                    .children()
-                    .is_some_and(|children| children.iter().any(|node| contains(node, id)))
-        }
-        let mut collect =
-            |page: usize, label: &str, children: &[jian_ops_schema::node::PenNode]| {
-                let mut roots: Vec<_> = children
-                    .iter()
-                    .filter(|node| {
-                        matches!(node, jian_ops_schema::node::PenNode::Frame(_))
-                            && node.base().visible != Some(false)
-                            && node
-                                .width_px()
-                                .is_none_or(|width| width.is_finite() && width > 0.0)
-                            && node
-                                .height_px()
-                                .is_none_or(|height| height.is_finite() && height > 0.0)
-                            && node.base().x.is_none_or(f64::is_finite)
-                            && node.base().y.is_none_or(f64::is_finite)
-                    })
-                    .collect();
-                roots.sort_by(|first, second| {
-                    first
-                        .base()
-                        .y
-                        .unwrap_or(0.0)
-                        .total_cmp(&second.base().y.unwrap_or(0.0))
-                        .then_with(|| {
-                            first
-                                .base()
-                                .x
-                                .unwrap_or(0.0)
-                                .total_cmp(&second.base().x.unwrap_or(0.0))
-                        })
-                });
-                if page == active_page {
-                    let nearest = roots.iter().min_by(|first, second| {
-                        let distance = |node: &jian_ops_schema::node::PenNode| {
-                            let delta_x = node.base().x.unwrap_or(0.0)
-                                + f64::from(node.width_px().unwrap_or(0.0)) / 2.0
-                                - f64::from(center.x);
-                            let delta_y = node.base().y.unwrap_or(0.0)
-                                + f64::from(node.height_px().unwrap_or(0.0)) / 2.0
-                                - f64::from(center.y);
-                            delta_x * delta_x + delta_y * delta_y
-                        };
-                        distance(first).total_cmp(&distance(second))
-                    });
-                    entry_target = roots
-                        .iter()
-                        .find(|node| contains(node, selected))
-                        .or(nearest)
-                        .map(|node| (node.id_str().to_owned(), node.screen().map(str::to_owned)));
-                }
-                frames.extend(roots.into_iter().map(|node| {
-                    PreviewFrameEntry {
-                        page,
-                        page_label: label.into(),
-                        id: node.id_str().into(),
-                        name: node
-                            .base()
-                            .name
-                            .clone()
-                            .unwrap_or_else(|| node.id_str().into()),
-                        screen: node.screen().map(str::to_owned),
-                    }
-                }));
-            };
-        match self
-            .editor_state
-            .doc
-            .pages
-            .as_ref()
-            .filter(|pages| !pages.is_empty())
-        {
-            Some(pages) => {
-                for (index, page) in pages.iter().enumerate() {
-                    collect(index, &page.name, &page.children);
-                }
-            }
-            None => collect(
-                0,
-                self.editor_state.doc.name.as_deref().unwrap_or("Page 1"),
-                &self.editor_state.doc.children,
-            ),
-        }
-        let Some(session) = self.preview.as_mut() else {
-            return false;
-        };
-        if session.is_app_mode() {
-            if let Some((id, route)) = entry_target {
-                if let Some(route) = route {
-                    session.navigate_to_screen(&route);
-                    session.reconcile(self.now_ms);
-                }
-                if !session.select_preview_frame(&id) {
-                    self.reject_empty_preview();
-                    return false;
-                }
-            } else {
-                self.reject_empty_preview();
-                return false;
-            }
-        } else if !session.select_preview_root(Some(selected), center) {
+        let graph = PrototypeGraph::from_document(&self.editor_state.doc);
+        if graph.screens.is_empty() {
             self.reject_empty_preview();
             return false;
         }
-        self.preview_browser.page = self.editor_state.ui.active_page_index;
+        let Some(entry_id) = graph.resolve_entry_screen(
+            active_page,
+            (!selected.is_empty()).then_some(selected),
+            &self.editor_state.doc,
+            (center.x, center.y),
+        ) else {
+            self.reject_empty_preview();
+            return false;
+        };
+        let entry_page = graph
+            .screen(&entry_id)
+            .map_or(active_page, |s| s.page_index);
+        let frames: Vec<PreviewFrameEntry> = graph
+            .screens
+            .iter()
+            .map(|s| PreviewFrameEntry {
+                page: s.page_index,
+                page_label: s.page_label.clone(),
+                section_name: s.section_name.clone(),
+                id: s.id.clone(),
+                name: s.name.clone(),
+                screen: s.route.clone(),
+            })
+            .collect();
+
+        let Some(session) = self.preview.as_mut() else {
+            return false;
+        };
+        if !session.select_preview_frame(&entry_id) {
+            self.reject_empty_preview();
+            return false;
+        }
+        session.player.entry_screen_id = entry_id.clone();
+
+        self.preview_browser.page = entry_page;
         self.preview_browser.frames = frames;
         self.preview_editor_viewport = Some(viewport);
-        self.preview_browser.canvas_scene = Some(op_pen_loader::editor_state_to_layout_scene(
-            &self.editor_state,
-        ));
+        self.preview_browser.canvas_scene = None;
+        self.ensure_preview_screen_scene(entry_page, &entry_id);
         if !self.preview_browser.preferences_loaded {
             #[cfg(target_arch = "wasm32")]
             if let Some(preferences) = web_sys::window()
@@ -291,33 +345,15 @@ impl WidgetHost {
             }
             self.preview_browser.preferences_loaded = true;
         }
-        self.preview_browser.zoom = if self.preview_browser.present {
-            None
-        } else {
-            self.preview_browser
-                .preferences
-                .zoom
-                .filter(|zoom| zoom.is_finite() && *zoom >= 0.05 && *zoom <= 8.0)
-        };
+        self.preview_browser.scale_mode = self
+            .preview_browser
+            .preferences
+            .scale_mode
+            .unwrap_or(PresentScaleMode::FitWidth);
         self.preview_browser.list_scroll = 0.0;
-        self.preview_browser.pan = Point2D::new(0.0, 0.0);
+        self.preview_reset_view();
         self.preview_browser.last_activity_ms = self.now_ms;
         true
-    }
-
-    pub(super) fn preview_set_zoom(&mut self, zoom: Option<f32>) {
-        self.preview_browser.zoom = zoom
-            .filter(|value| value.is_finite())
-            .map(|value| value.clamp(0.05, 8.0));
-        if !self.preview_browser.present {
-            self.preview_browser.preferences.zoom = self.preview_browser.zoom;
-            self.save_preview_preferences();
-        }
-        if zoom.is_none() {
-            self.preview_browser.pan = Point2D::new(0.0, 0.0);
-        }
-        self.recompute_device_frame(self.last_viewport_w, self.last_viewport_h);
-        self.mark_dirty();
     }
 
     pub(super) fn save_preview_preferences(&self) {
@@ -387,52 +423,15 @@ impl WidgetHost {
             session.set_now_ms(self.now_ms);
             session.navigate_to_screen(&route);
             session.reconcile(self.now_ms);
-        } else if page != self.preview_browser.page {
-            let next = if let Some(op_ck) = self.op_ck.as_ref() {
-                crate::preview_host::enter_preview(
-                    &self.editor_state.doc,
-                    (self.last_viewport_w, self.last_viewport_h),
-                    &self.editor_state.ui.variables.active_theme,
-                    page,
-                    op_ck,
-                    self.preview_browser.present,
-                    self.now_ms,
-                )
-            } else {
-                #[cfg(test)]
-                {
-                    op_preview_core::PreviewSession::enter(
-                        &self.editor_state.doc,
-                        (self.last_viewport_w, self.last_viewport_h),
-                        &self.editor_state.ui.variables.active_theme,
-                        page,
-                        false,
-                        self.preview_browser.present,
-                        jian_core::layout::measure::default_backend(),
-                        self.now_ms,
-                    )
-                }
-                #[cfg(not(test))]
-                {
-                    return false;
-                }
-            };
-            let Ok(mut next) = next else {
-                return false;
-            };
-            if !next.select_preview_frame(id) {
-                return false;
-            }
-            next.begin_lifecycle(self.now_ms);
-            self.preview = Some(next);
         }
+        self.ensure_preview_screen_scene(page, id);
         if let Some(session) = self.preview.as_mut() {
             if !session.select_preview_frame(id) {
                 return false;
             }
         }
         self.preview_browser.page = page;
-        self.preview_browser.pan = Point2D::new(0.0, 0.0);
+        self.preview_reset_view();
         self.preview_scroll_y = 0.0;
         self.preview_surface_capture = None;
         self.preview_pressed_pids.clear();
@@ -441,4 +440,34 @@ impl WidgetHost {
         self.mark_dirty();
         true
     }
+}
+
+fn find_screen_pen_node(
+    doc: &jian_ops_schema::PenDocument,
+    page_index: usize,
+    screen_id: &str,
+) -> Option<jian_ops_schema::node::PenNode> {
+    let roots = match doc.pages.as_ref().filter(|p| !p.is_empty()) {
+        Some(pages) => &pages.get(page_index)?.children,
+        None => &doc.children,
+    };
+    for node in roots {
+        if node.node_base().id == screen_id {
+            return Some(node.clone());
+        }
+        if node.node_base().section == Some(true) {
+            let sx = node.node_base().x.unwrap_or(0.0);
+            let sy = node.node_base().y.unwrap_or(0.0);
+            for child in node.children_ref().unwrap_or(&[]) {
+                if child.node_base().id == screen_id {
+                    let mut cloned = child.clone();
+                    let base = cloned.node_base_mut();
+                    base.x = Some(sx + base.x.unwrap_or(0.0));
+                    base.y = Some(sy + base.y.unwrap_or(0.0));
+                    return Some(cloned);
+                }
+            }
+        }
+    }
+    None
 }

@@ -101,6 +101,25 @@ pub struct PenNodeBase {
     /// an imported node back to its source for verification.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub figma_node_id: Option<String>,
+    /// Figma-compatible prototype interactions (`reactions`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reactions: Option<Vec<crate::prototype::Reaction>>,
+    /// Prototype scroll participation (`SCROLLS`, `FIXED`, `STICKY`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scroll_behavior: Option<crate::prototype::PrototypeScrollBehavior>,
+    /// Frame overflow scrolling axis (`NONE`, `HORIZONTAL`, `VERTICAL`, `BOTH`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overflow_direction: Option<crate::prototype::OverflowDirection>,
+    /// Overlay presentation settings when this frame is opened as an overlay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub overlay: Option<crate::prototype::OverlaySettings>,
+    /// True when this frame is a Figma `SECTION` organizational container
+    /// whose child frames are top-level screens.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub section: Option<bool>,
+    /// Figma `prototypeStartingPoint` when this frame starts a prototype flow.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow_starting_point: Option<crate::prototype::FlowStartingPoint>,
 }
 
 #[cfg(test)]
