@@ -344,9 +344,19 @@ pub fn import_html_with_resources(
         can_transfer_text_clip,
     );
     container.width = Some(SizingBehavior::Number(opts.viewport_width));
-    container.height = container
-        .height
-        .or(Some(SizingBehavior::Keyword(SizingKeyword::FitContent)));
+    // The page board hugs its content. A hugging frame does not apply
+    // `min-height`, so the legacy limit bake turned `min-height: 100vh` into a
+    // fixed one-viewport height and, with the usual `overflow-x: hidden`
+    // clip, cut every longer page off after its first screen.
+    let explicit_height = body_style
+        .get("height")
+        .is_some_and(|value| value.trim() != "auto");
+    container.height = if explicit_height {
+        container.height
+    } else {
+        None
+    }
+    .or(Some(SizingBehavior::Keyword(SizingKeyword::FitContent)));
     let mut body_children_centered = false;
     if container.align_items.is_none() {
         container.align_items =

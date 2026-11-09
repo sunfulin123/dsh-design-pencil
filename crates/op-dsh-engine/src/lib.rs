@@ -175,8 +175,8 @@ impl DesignEngine {
             }
             return Ok(error_reply("url is required"));
         }
-        if asset_catalog::is_host_tool(name) {
-            return Ok(error_reply("This asset tool requires a managed Node host"));
+        if asset_catalog::is_host_tool(name) || tool_catalog::is_html_host_tool(name) {
+            return Ok(error_reply("This tool requires a managed Node host"));
         }
         if let Some(reply) = self.call_library_tool(name, &args) {
             return Ok(reply);
@@ -561,13 +561,13 @@ impl DesignEngine {
                 .pages
                 .as_ref()
                 .is_none_or(|pages| pages.iter().all(|p| p.children.is_empty()));
-        let is_import = matches!(command, EditorCommand::InsertSubtree { .. });
+        let authored_import = op_mcp::import_common::inserts_authored_geometry(&command);
         let mut next = base;
         if !apply_command(&mut next, command) {
             let reason = next.ui.design_reject.take();
             return error_reply(reason.as_deref().unwrap_or("Design command was rejected"));
         }
-        if was_empty && is_import {
+        if was_empty && authored_import {
             op_pen_loader::apply_editor_meta(
                 &mut next,
                 op_pen_loader::EditorMeta {

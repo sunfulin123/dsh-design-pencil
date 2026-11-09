@@ -58,21 +58,28 @@ CanvasKit 快照缓存，支持 Figma `SECTION` 子画板展开、Flows/画板�
 flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_prototype`、`set_reactions`、
 `set_scroll_behavior`、`simulate_prototype` 编写并自检原型。复验见 [命令入口](../../COMMANDS.md#原型与-present)。
 
+## 网页导入
+
+`import_html` / `import_html_url` 默认在 headless Chrome 中渲染页面再导入计算布局（脚本内容、
+媒体查询、Web 字体、canvas 像素、原生控件），`viewports` 一次生成多个断点画板；无 Chrome 时
+回退静态 CSS 引擎并在结果中标明 `renderMode:"static-css"`。`compare_html_fidelity` 是导入验收入口。
+不变量与口径见 [html-import](html-import.md)，复验见 [命令入口](../../COMMANDS.md#html-导入与保真验收)。
+
 ## Provenance
 
 ```json
 {
   "version": 1,
   "status": "verified",
-  "task_id": "cfcc85cf-8533-48bd-b08e-4095ff4b8772",
-  "verified_at": "2026-11-08T11:00:30.606374+00:00",
+  "task_id": "74996489-c9be-4d1b-a26b-a81deaeef88f",
+  "verified_at": "2026-11-09T03:58:23.329253+00:00",
   "sources": {
-    "ARCHITECTURE.md": "57001b15b218a2b4f4a8e79e1dd878658d5c2b7646a15eb90eaee1b60d5b77fd",
+    "ARCHITECTURE.md": "68cf6ca0c98a3c1c7b0cede4d6878490c4259adf5c15ae2d03aaecc735a3f0d6",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
-    "COMMANDS.md": "c3909ba235c3538cb1f36ca7993b8f3eece4f8a69dd32adcddedcda7ed6dd939",
-    "crates/op-dsh-engine/src/tool_catalog.rs": "32f1d1c04d0d1d0f3d91106cadd68ad3ac00c8a9bc6ab231a7bf92814bd8048c"
+    "COMMANDS.md": "671f5ed61fb91516b89ec63042c2ac167d9cfadeff1c2da0e42fadf52061dae1",
+    "crates/op-dsh-engine/src/tool_catalog.rs": "fee753c0cc498cee0b8b504862b6347c9cf6e6cb95a2af444d79af493c38e53a"
   },
-  "reason": "Present viewport now Figma-style: edge-to-edge stage between fixed bars, default Fit width, zoom floor = fit (max 4x), no drag pan, bounded scroll",
-  "evidence": "cargo test -p op-editor-core --lib prototype::viewport (5 passed); cargo test -p op-host-web --lib --features canvaskit (776 passed); cargo test -p op-editor-ui --lib preview_toolbar status_bar (11 passed); Chrome 1280x800 screenshots on Live-Widgets"
+  "reason": "Product now imports web pages through a real browser render with multi-viewport boards and a compare_html_fidelity acceptance tool; architecture gained an HTML import section.",
+  "evidence": "tools/list shows new import_html/import_html_url args and compare_html_fidelity (html-fidelity.test.mjs); real MCP import of aether-store passed compare_html_fidelity at 1440"
 }
 ```

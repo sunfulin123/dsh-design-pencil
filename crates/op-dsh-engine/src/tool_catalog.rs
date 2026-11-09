@@ -4,6 +4,10 @@ use op_editor_core::EditorState;
 use op_mcp::McpTool;
 use serde_json::{json, Value};
 
+#[path = "html_import_catalog.rs"]
+pub(crate) mod html_import_catalog;
+pub(crate) use html_import_catalog::is_host_tool as is_html_host_tool;
+
 macro_rules! tools {
     ($state:ident; $(($name:literal, $factory:expr, $description:literal, $properties:tt, $required:tt)),* $(,)?) => {
         pub fn build_tool(name: &str, $state: &EditorState) -> Option<Box<dyn McpTool>> {
@@ -23,6 +27,7 @@ macro_rules! tools {
                 },
             })),*];
             list.extend(extra_schemas().into_iter().chain(crate::asset_catalog::schemas()).chain(crate::library_tools::schemas()));
+            html_import_catalog::patch_import_html(&mut list);
             list
         }
     };
@@ -30,6 +35,7 @@ macro_rules! tools {
 
 fn extra_schemas() -> Vec<Value> {
     let mut schemas = op_mcp::figma_import_tools::schemas();
+    schemas.extend(html_import_catalog::schemas());
     schemas.extend(vec![
         op_mcp::render_sampling_tool::schema(),
         op_mcp::render_screenshot_tool::schema(),
@@ -37,23 +43,6 @@ fn extra_schemas() -> Vec<Value> {
             "name":"tool_search",
             "description":"Search available design tool names/descriptions and return their authoritative input schemas. Discover components, styles, text, imports and geometry before editing.",
             "inputSchema":{"type":"object","additionalProperties":false,"properties":{"query":{"type":"string","minLength":1},"limit":{"type":"integer","minimum":1,"maximum":50}},"required":["query"]}
-        }),
-        json!({
-            "name": "import_html_url",
-            "description": "Fetch an HTTP(S) HTML page and import its DOM/CSS into canonical design nodes.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string"},
-                    "viewportHeight": {"type": "string"},
-                    "x": {"type": "string"},
-                    "y": {"type": "string"},
-                    "parent": {"type": "string"},
-                    "pageId": {"type": "string"}
-                },
-                "required": ["url"],
-                "additionalProperties": false
-            }
         }),
         json!({
             "name": "finalize_design",
@@ -333,8 +322,8 @@ tools!(state;
      "Import inline SVG or an SVG file into canonical design nodes.",
      {"svg":{"type":"string"},"svgPath":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
     ("import_html", op_mcp::import_html_tool::import_html_snapshot(),
-     "Import HTML/CSS markup or a local HTML file into canonical design nodes.",
-     {"html":{"type":"string"},"htmlPath":{"type":"string"},"viewportHeight":{"type":"string"},"x":{"type":"string"},"y":{"type":"string"},"parent":{"type":"string"},"pageId":{"type":"string"}}, []),
+     "Render HTML markup or a local HTML file in headless Chrome and import its computed DOM/CSS (scripts, web fonts, canvas pixels, native controls) into canonical design nodes; one board per viewport. Falls back to the static CSS importer with a warning when no browser exists. Check renderMode/warnings, then verify with compare_html_fidelity.",
+     {}, []),
     ("paste_html", op_mcp::paste_html_tool::PasteHtml,
      "Paste HTML as editable DOM/CSS design layers or as plain visible text. Insert under parentId, with one undo step. No remote resources are fetched.",
      {"html":{"type":"string"},"mode":{"type":"string","enum":["text","layers"]},"x":{"type":"string"},"y":{"type":"string"},"parentId":{"type":"string"},"pageId":{"type":"string"}}, ["html"]),

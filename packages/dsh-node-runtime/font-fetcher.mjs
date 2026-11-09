@@ -49,6 +49,41 @@ export class FontFetcher {
     return readFile(join(this.#directory, `${id}.ttf`))
   }
 
+  /** Register font bytes a page served itself (TTF/OTF only; the renderer cannot load WOFF). */
+  addFace(font, bytes) {
+    const operation = this.#queue.then(async () => {
+      const face = this.#face(font)
+      if (!Buffer.isBuffer(bytes) || bytes.length > 20 * 1024 * 1024 || !validFont(bytes)) {
+        return { ...face, available: false, error: 'Page font is not a TTF/OTF file' }
+      }
+      await mkdir(this.#directory, { recursive: true, mode: 0o700 })
+      await writeFile(join(this.#directory, `${face.id}.ttf`), bytes, { mode: 0o600 })
+      await this.#register(face)
+      return { ...face, available: true }
+    })
+    this.#queue = operation.then(() => undefined, () => undefined)
+    return operation
+  }
+
+  async #register(face) {
+    this.#faces.set(face.id, { ...face, path: `/api/fonts/${face.id}` })
+    await mkdir(this.#directory, { recursive: true, mode: 0o700 })
+    const temporary = join(this.#directory, `manifest.${process.pid}.tmp`)
+    await writeFile(temporary, JSON.stringify(this.manifest()), { mode: 0o600 })
+    await rename(temporary, join(this.#directory, 'manifest.json'))
+  }
+
+  #face(font) {
+    const family = String(font.family || '').trim()
+    const weight = Number(font.weight || 400)
+    const italic = Boolean(font.italic)
+    if (!family || family.length > 200 || !Number.isInteger(weight) || weight < 1 || weight > 1000) {
+      throw new TypeError('Invalid font face requested by import')
+    }
+    const id = createHash('sha256').update(JSON.stringify([family, weight, italic])).digest('hex')
+    return { id, family, weight, italic }
+  }
+
   ensure(fonts, { signal } = {}) {
     const operation = this.#queue.then(() => this.#ensure(fonts, signal))
     this.#queue = operation.then(() => undefined, () => undefined)
@@ -60,15 +95,10 @@ export class FontFetcher {
     // At most one new network font at a time; imports share pending promises.
     for (const font of fonts) {
       signal?.throwIfAborted()
-      const family = String(font.family || '').trim()
-      const weight = Number(font.weight || 400)
-      const italic = Boolean(font.italic)
-      if (!family || family.length > 200 || !Number.isInteger(weight) || weight < 1 || weight > 1000) {
-        throw new TypeError('Invalid font face requested by import')
-      }
-      const id = createHash('sha256').update(JSON.stringify([family, weight, italic])).digest('hex')
+      const face = this.#face(font)
+      const { id } = face
       if (!this.#pending.has(id)) {
-        this.#pending.set(id, this.#load({ id, family, weight, italic }, signal).finally(() => this.#pending.delete(id)))
+        this.#pending.set(id, this.#load(face, signal).finally(() => this.#pending.delete(id)))
       }
       outcomes.push(await this.#pending.get(id))
     }
@@ -129,11 +159,7 @@ export class FontFetcher {
         await writeFile(path, bytes, { mode: 0o600 })
       }
       if (!validFont(bytes)) throw new Error('Invalid cached sfnt font')
-      this.#faces.set(face.id, { ...face, path: `/api/fonts/${face.id}` })
-      await mkdir(this.#directory, { recursive: true, mode: 0o700 })
-      const temporary = join(this.#directory, `manifest.${process.pid}.tmp`)
-      await writeFile(temporary, JSON.stringify(this.manifest()), { mode: 0o600 })
-      await rename(temporary, join(this.#directory, 'manifest.json'))
+      await this.#register(face)
       return { ...face, available: true }
     } catch (error) {
       if (signal?.aborted) throw signal.reason

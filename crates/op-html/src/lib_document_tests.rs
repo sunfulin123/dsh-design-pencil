@@ -115,3 +115,30 @@ fn pathological_nesting_reports_depth_truncation() {
         .iter()
         .any(|warning| warning.contains("levels")));
 }
+
+/// `min-height: 100vh` is a floor, not the page height: baking it into a
+/// fixed root height (with the body's `overflow-x` clip) cut every page
+/// longer than one viewport off after its first screen.
+#[test]
+fn page_root_hugs_content_despite_a_viewport_min_height() {
+    let result = import_html(
+        "<body style='margin:0;min-height:100dvh;overflow-x:hidden'>\
+         <div style='height:2000px'>tall</div></body>",
+        &HtmlImportOptions::default(),
+    );
+    let PenNode::Frame(root) = &result.nodes[0] else {
+        panic!()
+    };
+    assert_eq!(
+        root.container.height,
+        Some(SizingBehavior::Keyword(SizingKeyword::FitContent))
+    );
+    let explicit = import_html(
+        "<body style='margin:0;height:640px'><p>x</p></body>",
+        &HtmlImportOptions::default(),
+    );
+    let PenNode::Frame(root) = &explicit.nodes[0] else {
+        panic!()
+    };
+    assert_eq!(root.container.height, Some(SizingBehavior::Number(640.0)));
+}

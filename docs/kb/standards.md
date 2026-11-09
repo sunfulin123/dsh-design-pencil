@@ -29,12 +29,12 @@
 {
   "version": 1,
   "status": "verified",
-  "task_id": "b3f56376-1e0c-4097-b48b-ce0eadca2f5f",
-  "verified_at": "2026-11-08T15:15:56.538590+00:00",
+  "task_id": "74996489-c9be-4d1b-a26b-a81deaeef88f",
+  "verified_at": "2026-11-09T03:58:23.888958+00:00",
   "sources": {
     "AGENTS.md": "7da0c473de69169cfb78912511768de09471c37b27dda73ffa5a7c86ba8694ce",
     "CLAUDE.md": "bc7d7d08404221dac202b49a8ae99a6d27852c065739aa56962d38354392b235",
-    "COMMANDS.md": "c3909ba235c3538cb1f36ca7993b8f3eece4f8a69dd32adcddedcda7ed6dd939",
+    "COMMANDS.md": "671f5ed61fb91516b89ec63042c2ac167d9cfadeff1c2da0e42fadf52061dae1",
     "CODING_STANDARDS.md": "ffcd96889725001358ffcddc9dd58ace062c20b286823677b25a3c28bbb5f78d",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
     "REVIEW.md": "27935d6e64cb4ed95272e396530c1aed3d1ea16f156e78b8ca8d31fc404488b4",
@@ -47,13 +47,13 @@
     "docs/notes/README.md": "4bf1dcfe8e97d610f6c936525b43e07bb50096f17ad5df7722ed2325ea3c7ebb",
     "docs/notes/proposed/_template.md": "785194ea2b7907507c29662772f89ad2bee0a6c8e00c4d78416974d8beb9f459",
     "docs/kb/AGENTS.md": "4afa897d8c621a2cef31c72ae84c964b36df6aff752082663a5009d4d7970353",
-    "docs/kb/README.md": "71def4b7671ec3e554c5ab9c15def49d06d377859cfe8f4a56a87215a76f690f",
+    "docs/kb/README.md": "ddafb0d3266b7d2c00a085bcccb8493ffe9ab0d96e2c21844c0609818009fe36",
     ".github/prompts/verify-task.prompt.md": "22d283dd060634e6cae7c2f69af29ad6150990097eab69ea5ca78985fea8b5f2",
     ".github/instructions/rust.instructions.md": "249ba9f96f46a7f774388ee789b78fa18ee4c73c305334b63e42f72c80f44291",
     ".github/instructions/javascript.instructions.md": "258739dfde0348a64036ab71cd3a6c956cc4e641e931df8b322304ee3a160c09",
     ".github/workflows/maintenance.yml": "a766085afc8367de20e2b85778d4f1401b072a2ec09516fe317f3e9bd4bb3f0d"
   },
-  "reason": "README index only gained the new figma-import entry and a canvas-resources summary phrase; standards links remain valid.",
-  "evidence": "Re-read docs/kb/standards.md against docs/kb/README.md"
+  "reason": "COMMANDS.md only gained an HTML import validation section; the standards entry links authoritative docs and its rules are unaffected.",
+  "evidence": "Reviewed COMMANDS.md diff: one new section, no changed gates or rules"
 }
 ```

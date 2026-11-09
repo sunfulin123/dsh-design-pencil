@@ -19,7 +19,9 @@ test('EngineSession supports batch_design script expansion, finalize_design, and
   try {
     const imported = session.callTool('import_html', { htmlPath })
     assert.equal(imported.isError, false, JSON.stringify(imported))
-    assert.equal(session.snapshot().document.editorMeta?.preserveAuthoredGeometry, true)
+    // Static CSS output relies on Hug sizing and text measurement, so the
+    // import must not switch the document to authored-geometry mode.
+    assert.notEqual(session.snapshot().document.editorMeta?.preserveAuthoredGeometry, true)
     assert.ok(session.snapshot().document.children.length > 0)
 
     const scripted = session.callTool('batch_design', {

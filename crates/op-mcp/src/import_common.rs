@@ -7,6 +7,8 @@
 
 use std::collections::BTreeMap;
 
+use serde_json::Value;
+
 use jian_ops_schema::node::PenNode;
 use op_editor_core::NodeId;
 use op_html::HtmlImportResult;
@@ -78,6 +80,35 @@ pub fn parse_import_placement(
         y,
         parent_id,
         page_id,
+    })
+}
+
+/// Can an inserted subtree switch an empty document to authored-geometry
+/// mode, which skips the flex/text layout pass entirely? Only when every node
+/// already carries its final geometry: browser snapshots and Figma preserve
+/// imports do; the static CSS importer and semantic imports rely on Hug/Fill
+/// sizing, auto-layout flow and text measurement, which that mode would
+/// collapse to zero-sized boxes stacked at their parent's origin.
+pub fn inserts_authored_geometry(command: &EditorCommand) -> bool {
+    let EditorCommand::InsertSubtree { nodes, .. } = command else {
+        return false;
+    };
+    serde_json::to_value(nodes).is_ok_and(|value| !needs_layout_pass(&value, None))
+}
+
+fn needs_layout_pass(nodes: &Value, parent_layout: Option<&str>) -> bool {
+    let flow_parent = matches!(parent_layout, Some("horizontal" | "vertical"));
+    nodes.as_array().into_iter().flatten().any(|node| {
+        let number = |key: &str| node.get(key).is_some_and(Value::is_number);
+        let keyword = |key: &str| node.get(key).is_some_and(Value::is_string);
+        let text = node.get("type").and_then(Value::as_str) == Some("text");
+        keyword("width")
+            || keyword("height")
+            || (flow_parent && !(number("x") && number("y")))
+            || (text && !number("height"))
+            || node.get("children").is_some_and(|children| {
+                needs_layout_pass(children, node.get("layout").and_then(Value::as_str))
+            })
     })
 }
 

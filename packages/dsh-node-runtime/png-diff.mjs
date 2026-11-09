@@ -50,7 +50,20 @@ export function decodePng(bytes) {
 }
 
 export function diffPng(source, imported, tolerance = 8) {
-  const a = decodePng(source), b = decodePng(imported)
+  return diffImages(decodePng(source), decodePng(imported), tolerance)
+}
+
+/** Crop a decoded image to its top-left `width` x `height` region. */
+export function cropImage(image, width, height) {
+  if (width === image.width && height === image.height) return image
+  const pixels = Buffer.alloc(width * height * 4)
+  for (let y = 0; y < height; y++) {
+    image.pixels.copy(pixels, y * width * 4, y * image.width * 4, y * image.width * 4 + width * 4)
+  }
+  return { width, height, pixels }
+}
+
+export function diffImages(a, b, tolerance = 8) {
   if (a.width !== b.width || a.height !== b.height) {
     return { comparable: false, reason: 'image-size-mismatch', source: [a.width, a.height], imported: [b.width, b.height] }
   }

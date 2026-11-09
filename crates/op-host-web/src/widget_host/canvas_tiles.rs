@@ -115,6 +115,14 @@ impl CanvasTiles {
         }
     }
 
+    /// Clears all retained tile entries and pending queue when the backend
+    /// surface was resized and already dropped all GPU tile textures.
+    pub(crate) fn clear_retained(&mut self) {
+        self.entries.clear();
+        self.drops.clear();
+        self.queue.clear();
+    }
+
     /// Reacts to out-of-band raster changes: a decoded image redraws the
     /// tiles that drew placeholders, a registered font redraws everything.
     pub(crate) fn note_raster_epoch(&mut self, epoch: (u64, u64)) {
@@ -178,13 +186,14 @@ impl CanvasTiles {
         self.visible_backlog = plan.missing.len() + plan.stale.len();
         self.incomplete = !plan.complete;
         self.last_target = target;
-        let mut queue: Vec<TileKey> = self
-            .overview_cells()
-            .into_iter()
-            .filter(|key| self.slot(*key) == TileSlot::Missing)
-            .collect();
+        let mut queue: Vec<TileKey> = Vec::new();
         queue.extend(plan.missing.iter().copied());
         queue.extend(plan.stale.iter().copied());
+        queue.extend(
+            self.overview_cells()
+                .into_iter()
+                .filter(|key| self.slot(*key) == TileSlot::Missing),
+        );
         queue.extend(plan.prefetch.iter().copied());
         queue.extend(
             self.overview_cells()
@@ -205,8 +214,15 @@ impl CanvasTiles {
         let lost = cx.backend.draw_tiles(&batch);
         if !lost.is_empty() {
             // The backend dropped its images (surface rebuilt on resize, or
-            // context loss): forget them all so they are redrawn.
-            self.entries.clear();
+            // context loss): drop any survivors and forget them all so they
+            // are redrawn cleanly.
+            let lost_set: std::collections::HashSet<u32> = lost.into_iter().collect();
+            self.drops.extend(
+                self.entries
+                    .drain()
+                    .map(|(_, entry)| entry.id)
+                    .filter(|id| !lost_set.contains(id)),
+            );
             // Re-plan: nothing is retained now, so this queues the view and
             // reports it uncovered (the frame paints live meanwhile).
             return self.composite(cx, view, target);

@@ -144,6 +144,21 @@ CLI 默认把资产存到用户级目录（macOS `~/Library/Application Support/
 
 `import_design_md` 默认导入共享风格库；`target:"document"` 更新当前文档规范。
 
+## HTML 导入与保真验收
+
+```sh
+cargo test -p op-html
+cargo test -p op-dsh-engine --lib empty_document
+node --test packages/dsh-node-runtime/html-import.test.mjs packages/dsh-node-runtime/html-fidelity.test.mjs
+DSH_E2E_CHROME=1 node --test packages/dsh-node-runtime/html-import.test.mjs packages/dsh-node-runtime/html-fidelity.test.mjs
+```
+
+真实浏览器用例需要 Chrome（`CHROME_PATH` 可覆盖）与已构建的 engine/web；skip 不算验收。
+MCP 用法：`import_html({htmlPath, viewports:[1440,390], readyExpression?, waitMs?})` 返回
+`renderMode`、`boards`、`rootIds`、`fonts` 与 `warnings`；随后
+`compare_html_fidelity({nodeId: rootIds[0], htmlPath})` 给出像素差、200px 分段、热点图层与可见文本覆盖率，
+`verified:true` 为通过。`renderMode:"static-css"` 说明未找到 Chrome，保真度较低。
+
 ## 变量库（Talkdesk Cobalt）
 
 ```sh

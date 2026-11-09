@@ -377,3 +377,74 @@ fn untracked_or_structural_changes_require_a_full_resync() {
     engine.restore_document(&doc).ok().unwrap();
     assert_eq!(changes(&mut engine)["full"], true, "document replacement");
 }
+
+fn tool(engine: &mut DesignEngine, name: &str, args: Value) -> Value {
+    let reply: Value =
+        serde_json::from_str(&engine.call_tool(name, &args.to_string()).ok().unwrap()).unwrap();
+    assert_eq!(reply["isError"], false, "{name}: {reply}");
+    reply["structuredContent"].clone()
+}
+
+fn layout_boxes(engine: &mut DesignEngine) -> Vec<(String, f64, f64, f64, f64)> {
+    fn walk(nodes: &Value, out: &mut Vec<(String, f64, f64, f64, f64)>) {
+        for node in nodes.as_array().into_iter().flatten() {
+            let number = |key: &str| node[key].as_f64().unwrap_or(f64::NAN);
+            out.push((
+                node["name"].as_str().unwrap_or_default().to_string(),
+                number("x"),
+                number("y"),
+                number("width"),
+                number("height"),
+            ));
+            walk(&node["children"], out);
+        }
+    }
+    let layout = tool(engine, "snapshot_layout", json!({"maxDepth": 20}));
+    let mut out = Vec::new();
+    walk(&layout["layout"], &mut out);
+    out
+}
+
+/// The static CSS importer emits Hug/Fill sizing and auto-layout flow. An
+/// import into an empty document used to switch on authored-geometry mode,
+/// which skips that layout pass and stacked every flex item at x=0 with
+/// zero height.
+#[test]
+fn static_html_import_into_an_empty_document_keeps_the_layout_pass() {
+    let mut engine = DesignEngine::new();
+    let html = r#"<!doctype html><html><head><style>
+        body{margin:0;width:1440px;height:300px}
+        .row{display:flex;width:1440px;height:68px;padding:0 24px;align-items:center;
+             justify-content:space-between;box-sizing:border-box}
+        .row span{width:200px;font-size:18px}
+    </style></head><body><div class="row"><span>Brand</span><span>Shop</span><span>Bag</span></div></body></html>"#;
+    tool(&mut engine, "import_html", json!({"html": html}));
+    let doc: Value = serde_json::from_str(&engine.document_json().ok().unwrap()).unwrap();
+    assert_ne!(doc["editorMeta"]["preserveAuthoredGeometry"], true);
+    let spans: Vec<_> = layout_boxes(&mut engine)
+        .into_iter()
+        .filter(|node| node.0 == "span")
+        .collect();
+    let xs: Vec<f64> = spans.iter().map(|span| span.1).collect();
+    assert_eq!(xs, [24.0, 620.0, 1216.0], "space-between row: {spans:?}");
+    assert!(
+        spans.iter().all(|span| span.4 > 10.0),
+        "text gives each span height: {spans:?}"
+    );
+}
+
+#[test]
+fn geometry_complete_import_into_an_empty_document_keeps_authored_geometry() {
+    let mut engine = DesignEngine::new();
+    let snapshot = json!({"version": 1, "root": {
+        "kind": "element", "tag": "body", "rect": {"x": 0, "y": 0, "w": 300, "h": 100},
+        "children": [{"kind": "element", "tag": "div", "rect": {"x": 10, "y": 10, "w": 80, "h": 40},
+            "styles": {"background-color": "rgb(255, 0, 0)"}, "children": []}]}});
+    tool(
+        &mut engine,
+        "import_web_snapshot",
+        json!({"snapshot": snapshot.to_string()}),
+    );
+    let doc: Value = serde_json::from_str(&engine.document_json().ok().unwrap()).unwrap();
+    assert_eq!(doc["editorMeta"]["preserveAuthoredGeometry"], true);
+}

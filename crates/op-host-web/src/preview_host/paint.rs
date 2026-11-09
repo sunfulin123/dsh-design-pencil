@@ -293,6 +293,8 @@ pub(crate) fn find_screen_scene_node<'a>(
     None
 }
 
+const MAX_SNAPSHOT_DIMENSION: u32 = 4096;
+
 fn paint_single_screen(
     backend: &mut dyn RenderBackend,
     screen_node: &SceneNode,
@@ -304,10 +306,16 @@ fn paint_single_screen(
     let aligned_x = (origin.x + screen_node.bounds.origin.x * fit - clip_rect.origin.x).abs() < 1.0;
     let aligned_y = (origin.y + screen_node.bounds.origin.y * fit - clip_rect.origin.y).abs() < 1.0;
     let dpr = backend.dpi_scale().clamp(1.0, 3.0);
-    let px_w = ((clip_rect.size.x * dpr).round() as u32).clamp(1, 4096);
-    let px_h = ((clip_rect.size.y * dpr).round() as u32).clamp(1, 4096);
+    let ideal_w = (clip_rect.size.x * dpr).round();
+    let ideal_h = (clip_rect.size.y * dpr).round();
+    let fits_snapshot_tile = ideal_w >= 16.0
+        && ideal_h >= 16.0
+        && ideal_w <= MAX_SNAPSHOT_DIMENSION as f32
+        && ideal_h <= MAX_SNAPSHOT_DIMENSION as f32;
 
-    if aligned_x && aligned_y && px_w >= 16 && px_h >= 16 && fit <= 2.5 {
+    if aligned_x && aligned_y && fits_snapshot_tile && fit <= 2.5 {
+        let px_w = ideal_w as u32;
+        let px_h = ideal_h as u32;
         let key = SnapshotKey {
             screen_id: screen_node.id.clone(),
             px_w,
@@ -418,5 +426,86 @@ pub(crate) fn parse_hex_color(hex: &str) -> Option<Color> {
             a: f32::from(byte(6)?) / 255.0,
         }),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use op_editor_ui::layout_scene::NodeKind;
+    use op_editor_ui::TextLayout;
+
+    #[derive(Default)]
+    struct SnapshotProbeBackend {
+        dpr: f32,
+        tiles_begun: Vec<(u32, u32)>,
+        filled_rects: Vec<Rect>,
+    }
+
+    impl RenderBackend for SnapshotProbeBackend {
+        fn begin_frame(&mut self) {}
+        fn end_frame(&mut self) {}
+        fn fill_rect(&mut self, rect: Rect, _: Color) {
+            self.filled_rects.push(rect);
+        }
+        fn stroke_rect(&mut self, _: Rect, _: Color, _: f32) {}
+        fn draw_text(&mut self, _: &TextLayout, _: Point2D) {}
+        fn clip_rect(&mut self, _: Rect) {}
+        fn stroke_line(&mut self, _: Point2D, _: Point2D, _: Color, _: f32) {}
+        fn fill_round_rect(&mut self, rect: Rect, _: f32, _: Color) {
+            self.filled_rects.push(rect);
+        }
+        fn stroke_round_rect(&mut self, _: Rect, _: f32, _: Color, _: f32) {}
+        fn stroke_svg_path(&mut self, _: &str, _: Point2D, _: f32, _: Color, _: f32) {}
+        fn save(&mut self) {}
+        fn restore(&mut self) {}
+        fn translate(&mut self, _: Point2D) {}
+        fn resize(&mut self, _: u32, _: u32) {}
+        fn dpi_scale(&self) -> f32 {
+            self.dpr
+        }
+        fn begin_tile(&mut self, w: u32, h: u32) -> bool {
+            self.tiles_begun.push((w, h));
+            true
+        }
+        fn end_tile(&mut self) -> u32 {
+            1
+        }
+        fn draw_tile(&mut self, _: u32, _: Rect, _: Rect) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn tall_screen_exceeding_4096_device_px_paints_directly_without_stretching_snapshot_tile() {
+        invalidate_preview_snapshots();
+        let mut root = SceneNode::leaf("tall-screen", NodeKind::Frame);
+        root.bounds = Rect::xywh(0.0, 0.0, 1440.0, 3370.0);
+        root.fill = Some(Color::WHITE);
+        let mut footer = SceneNode::leaf("footer", NodeKind::Rect);
+        footer.bounds = Rect::xywh(0.0, 3200.0, 1440.0, 170.0);
+        footer.fill = Some(Color::BLACK);
+        root.children.push(footer);
+
+        let fit = 0.866;
+        let clip_rect = Rect::xywh(16.0, 66.0, 1440.0 * fit, 3370.0 * fit);
+        let mut backend = SnapshotProbeBackend {
+            dpr: 2.0,
+            ..Default::default()
+        };
+
+        paint_single_screen(&mut backend, &root, clip_rect, clip_rect.origin, fit, 1);
+
+        assert!(
+            backend.tiles_begun.is_empty(),
+            "screens taller than 4096 device px must bypass the single-tile snapshot cache"
+        );
+        assert!(
+            backend
+                .filled_rects
+                .iter()
+                .any(|r| (r.origin.y - (clip_rect.origin.y + 3200.0 * fit)).abs() < 1.0),
+            "bottom footer beyond 4096 device px must paint at its unstretched y coordinate"
+        );
     }
 }

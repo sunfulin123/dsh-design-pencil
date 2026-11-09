@@ -98,6 +98,8 @@ The active Rust catalog also exposes:
 
 - `tool_search`: discover authoritative tool schemas by capability.
 - `copy_properties`, `paste_properties`, `arrange_nodes`, `set_vector_path`, and `paste_html`.
+- `import_html` / `import_html_url`: render the page in headless Chrome (scripts, media queries, web fonts, WebGL canvas pixels, native controls) and import one board per `viewports` width; fall back to the static CSS importer with `renderMode:"static-css"` and a warning when no Chrome exists.
+- `compare_html_fidelity`: render the HTML source and compare it with an imported board (pixel ratio, 200px bands, hot regions with layers, visible-text coverage); read-only, host only.
 - `set_text_content`, `set_text_markdown`, `set_text_style`, `get_text_style`, and `set_paragraph_style`. Existing `set_node_text` accepts `markdown: true`. Range offsets count Unicode scalar values. Range styles include `fontFamily` (empty clears the override). Styled canvas text measures each run's family, size and weight for wrapping, uses separate line ascent/descent boxes, and consistently scales all runs for auto-width shrink-to-fit.
 - `list_styles`, `create_style`, `update_style`, `delete_style`, `apply_style`, and `detach_style`. Shared styles persist in `sharedStyles`; updates propagate to attached nodes.
 - `bind_variable`, `unbind_variable`, `get_variable_mode`, `set_variable_mode`, `evaluate_variable`, and DTCG token import/export. Typed bindings cover visibility/enabled, text and supported existing shadow/blur effect paths. Node/page/global modes persist; `auto` removes an explicit axis override. Arithmetic uses bounded `calc(...)` expressions in numeric variable values, not executable scripts.

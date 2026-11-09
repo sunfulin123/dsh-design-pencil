@@ -13,8 +13,8 @@ import { basename, join, resolve } from 'node:path';
 import { FontFetcher } from './font-fetcher.mjs';
 import { defaultFigmaCacheDir } from './figma-import-jobs.mjs';
 import { readDocumentFile, writeDocumentFile } from './document-file.mjs';
-import { EngineSession, figmaErrorResult } from './engine-session.mjs';
-import { compareFigmaFidelity } from './figma-fidelity.mjs';
+import { EngineSession } from './engine-session.mjs';
+import { callRenderTool } from './host-render-tools.mjs';
 import { ColorSampler } from './color-sampler.mjs';
 import { ScreenshotRenderer } from './screenshot-renderer.mjs';
 import { HeadlessRenderer } from './headless-renderer.mjs';
@@ -25,33 +25,6 @@ import { openAssetStore } from './asset-directory.mjs';
 import { AssetTools } from './asset-tools.mjs';
 import { assetRoute } from './asset-routes.mjs';
 import { EditorControl } from './editor-control.mjs';
-
-// Routes a screenshot to a live CanvasKit renderer: the hidden headless one
-// (started on demand) or an open editor tab. Without Chrome, falls back to
-// the approximate server-side preview and says so in the result.
-async function captureScreenshot(lifecycle, session, args, version = session.version()) {
-  const shots = lifecycle.screenshots;
-  const headless = lifecycle.headless;
-  if (headless?.available) {
-    if (shots.connected('headless')) headless.touch();
-    else await headless.ensure();
-  } else if (headless && !shots.connected('editor')) {
-    const result = session.callTool('get_screenshot', args);
-    if (!result.isError) {
-      const meta = {
-        ...result.structuredContent,
-        renderer: 'approximate',
-        note: 'No Chrome was found; this preview omits text shaping and effects. Set DSH_CHROME_PATH for exact captures.',
-      };
-      result.structuredContent = meta;
-      result.content = result.content.map((item) =>
-        item.type === 'text' ? { type: 'text', text: JSON.stringify(meta) } : item,
-      );
-    }
-    return result;
-  }
-  return shots.capture(args, version);
-}
 
 async function dispatch(request, response, session, file, body, lifecycle) {
   const path = new URL(request.url, 'http://127.0.0.1').pathname;
@@ -277,28 +250,13 @@ async function dispatch(request, response, session, file, body, lifecycle) {
         error: { code: -32602, message: 'Invalid tool arguments' },
       });
     }
-    if (call.params.name.replace(/^(?:synapse_|openpencil_)/, '') === 'sample_color') {
-      return reply(
-        await lifecycle.colorSampler.sample(call.params.arguments ?? {}, session.version()),
-      );
-    }
-    if (call.params.name.replace(/^(?:synapse_|openpencil_)/, '') === 'get_screenshot') {
-      return reply(await captureScreenshot(lifecycle, session, call.params.arguments ?? {}));
-    }
-    if (call.params.name.replace(/^(?:synapse_|openpencil_)/, '') === 'compare_figma_fidelity') {
-      try {
-        return reply(
-          await compareFigmaFidelity(call.params.arguments ?? {}, {
-            capture: (args, version) => captureScreenshot(lifecycle, session, args, version),
-            layout: () => session.callTool('snapshot_layout', { maxDepth: 100 }),
-            version: () => session.version(),
-            document: () => session.snapshot().document,
-          }),
-        );
-      } catch (error) {
-        return reply(figmaErrorResult(error));
-      }
-    }
+    const rendered = await callRenderTool(
+      call.params.name.replace(/^(?:synapse_|openpencil_)/, ''),
+      call.params.arguments ?? {},
+      lifecycle,
+      session,
+    );
+    if (rendered !== undefined) return reply(rendered);
     const name = call.params.name.replace(/^(?:synapse_|openpencil_)/, '');
     const before = { revision: session.revision(), version: session.version() };
     try {
@@ -385,6 +343,7 @@ export async function startNodeHost({
   // Chunked Figma imports insert between MCP calls; autosave each chunk.
   session.onBackgroundWrite = (before) => lifecycle.drafts.persist(before);
   session.onFigmaFonts = (fonts, signal) => lifecycle.fonts.ensure(fonts, { signal });
+  session.fontFetcher = lifecycle.fonts;
   let mutations = Promise.resolve();
   const server = createServer(async (request, response) => {
     const port = server.address()?.port;

@@ -12,9 +12,18 @@ dropTile/dispose 应释放配套 image 和 surface。只测“创建成功”捕
 ## resize 是 context 生命周期边界
 
 同一 bridge 的 resize 重新创建 WebGL surface，旧 context 的 tile 不能继续使用。
-[host cache](../../crates/op-host-web/src/widget_host/canvas_tiles.rs) 与
+[resize_to_window](../../crates/op-host-web/src/canvaskit/inner.rs) 在调用
+`resize_for_display` 后必须同步清空 [host cache](../../crates/op-host-web/src/widget_host/canvas_tiles.rs)
+（`clear_retained`）与 [preview snapshot cache](../../crates/op-host-web/src/preview_host/paint.rs)
+（`invalidate_preview_snapshots`），避免下一帧 `raster_canvas_tiles` 先在 `paint_dyn`
+之前把新瓦片写入新 context、随后 `composite` 因混杂旧 ID 绘制失败而把刚光栅化的新瓦片一并清空。
+`composite` 入队顺序必须优先当前视口的 `plan.missing` 与 `plan.stale`，再排 `overview_cells`
+与 `plan.prefetch`，防止多画板长文档的 1/8 概览瓦片抢占视口主瓦片造成缩窄窗口后顶部/左侧边缘模糊。
 [host glue](../../crates/op-host-web/src/widget_host/canvas_tiles_host.rs)
 必须处理 missing tile、重新计划和完整内容兜底；不能把旧 ID 当成有效纹理。
+Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `clip_rect.size * dpr` 任一维超过
+4096（例如长网页在 `Fit width` 下）时，[paint_single_screen](../../crates/op-host-web/src/preview_host/paint.rs)
+必须跳过单瓦片缓存直接绘制，不能独立截断 `px_h = 4096` 再把截断纹理拉伸到完整画板高度。
 
 复验：先跑 `cargo test -p op-host-web --lib --features canvaskit canvas_tiles` 和
 `cargo test -p op-editor-ui canvas_tile` 的 geometry/cache 回归；
@@ -49,17 +58,19 @@ dropTile/dispose 应释放配套 image 和 surface。只测“创建成功”捕
 {
   "version": 1,
   "status": "verified",
-  "task_id": "b3f56376-1e0c-4097-b48b-ce0eadca2f5f",
-  "verified_at": "2026-11-08T17:09:44.043651+00:00",
+  "task_id": "2a0711ee-2f38-4187-a3f3-cb34abd32285",
+  "verified_at": "2026-11-09T07:37:45.006936+00:00",
   "sources": {
     "crates/op-host-web/src/op_ck_bridge.js": "0d64f916a1c08d196ac558b290ee92ff753e0989e1030e288bcaeacdfc3452ab",
-    "crates/op-host-web/src/widget_host/canvas_tiles.rs": "7d8713b9df109fc2d0f9b91489b46a9057336d7de0bd9cae82963ee7d33faafb",
+    "crates/op-host-web/src/canvaskit/inner.rs": "4360f05d5668d16c9fc7c0c495266e270fa5d743c63946e67cf419f0155072eb",
+    "crates/op-host-web/src/preview_host/paint.rs": "95c04f36d6c121bf586f8989ce5fe2fc36bf32193d8d0c6c03eb05ff9afd3e96",
+    "crates/op-host-web/src/widget_host/canvas_tiles.rs": "d07d96e7f153efa7b0c072d9a0755fbf31df9d83f52fae8b424f509ed9e24ee6",
     "crates/op-host-web/src/widget_host/canvas_tiles_host.rs": "4cd5f6eac913da31300cad53dcde7eebc7b0a91cf8ab652fa0021e95d612acc9",
     "crates/op-editor-ui/src/widgets/canvas_tiles.rs": "6b90bbe62de6a5ec8068658beb912f1e19ec737a39dfb9c1f5c944e6287f3616",
     "crates/op-editor-ui/src/widgets/canvas_text_edit.rs": "54132a7a2322ddfdc1efc29c0383fe13429f7de45a110718cea6d792f68d603f",
     "crates/op-editor-ui/src/widgets/canvas_viewport_text.rs": "0b0b3e7c8494cd1d5644945c0335652290afbb7d281f316ce141fb888e6c7c71"
   },
-  "reason": "Refreshed op_ck_bridge.js provenance after adding pushDropShadowLayer (MakeDropShadow); text-metric and tile lifecycle invariants remain verified.",
-  "evidence": "node --test crates/op-host-web/tests/*.test.mjs — 14 passed; cargo test -p op-host-web --lib --features canvaskit — 777 passed"
+  "reason": "Updated resize context lifecycle and Preview 4096px snapshot invariants after fixing CanvasTiles clear_retained on resize_to_window, prioritizing missing/stale viewport tiles over overview_cells, and bypassing single-tile snapshot cache when Preview screen exceeds 4096 device px.",
+  "evidence": "cargo test -p op-host-web --lib --features canvaskit — 778 passed (incl. tall_screen_exceeding_4096_device_px_paints_directly_without_stretching_snapshot_tile); live Playwright resize & Preview verification on aether-store (1440x3370 + 390x5879)"
 }
 ```

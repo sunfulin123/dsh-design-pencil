@@ -105,7 +105,7 @@ fn subtree_visual_bounds(
         return Ok(None);
     }
 
-    let own_bounds = finite_normalized_rect(node.bounds)?;
+    let own_bounds = finite_normalized_rect(node_own_visual_rect(node))?;
     let mut visual = own_bounds
         .map(|bounds| stroke_visual_bounds(node, bounds))
         .transpose()?;
@@ -187,6 +187,65 @@ fn subtree_visual_bounds(
     }
 
     Ok(visual)
+}
+
+fn node_own_visual_rect(node: &SceneNode) -> Rect {
+    if node.kind != NodeKind::Text || node.widget.is_some() || node.text_truncation {
+        return node.bounds;
+    }
+    let Some(text) = node.text.as_deref().filter(|s| !s.is_empty()) else {
+        return node.bounds;
+    };
+    let b = node.bounds;
+    if !b.origin.x.is_finite()
+        || !b.origin.y.is_finite()
+        || !b.size.x.is_finite()
+        || !b.size.y.is_finite()
+    {
+        return b;
+    }
+    let fs = if node.font_size.is_finite() && node.font_size > 0.0 {
+        node.font_size
+    } else {
+        13.0
+    };
+    let lh = if node.line_height.is_finite() && node.line_height > 0.0 {
+        node.line_height
+    } else {
+        1.2
+    };
+    let line_h = (fs * lh).max(fs);
+    let w = if b.size.x > 0.0 {
+        let slack = (b.size.x * 0.05).ceil().max(fs * 0.5);
+        b.size.x + slack
+    } else {
+        let max_chars = text
+            .lines()
+            .map(|l| l.chars().count())
+            .max()
+            .unwrap_or(1)
+            .max(1) as f32;
+        max_chars * fs * 0.75 + fs
+    };
+    let h = if b.size.y > 0.0 {
+        let extra_bottom = if node.text_wrap {
+            line_h + fs * 0.25
+        } else {
+            fs * 0.35
+        };
+        b.size.y + extra_bottom
+    } else {
+        let lines = text.lines().count().max(1) as f32;
+        lines * line_h + fs * 0.5
+    };
+    let pad_left = fs * 0.25;
+    let pad_top = fs * 0.25;
+    Rect::xywh(
+        b.origin.x - pad_left,
+        b.origin.y - pad_top,
+        w + pad_left,
+        h + pad_top,
+    )
 }
 
 fn stroke_visual_bounds(node: &SceneNode, bounds: Rect) -> Result<Rect, ()> {
@@ -619,6 +678,45 @@ mod tests {
         assert_eq!(
             node_composite_layer_bounds(&node, Point2D::ZERO, 1.0, cull, None, &[]),
             cull
+        );
+    }
+
+    #[test]
+    fn text_node_intersects_adjacent_horizontal_and_vertical_tiles() {
+        let mut single_line = SceneNode::leaf("heading", NodeKind::Text);
+        single_line.bounds = Rect::xywh(116.0, 181.0, 0.0, 57.0);
+        single_line.font_size = 48.0;
+        single_line.text = Some("Grade-5 titanium".to_string());
+
+        assert!(
+            subtree_intersects_cull(
+                &single_line,
+                Point2D::ZERO,
+                1.0,
+                Rect::xywh(256.0, 128.0, 128.0, 128.0),
+                None,
+                &[],
+            ),
+            "unconstrained single-line text must intersect tiles to the right of its origin tile"
+        );
+
+        let mut wrapped = SceneNode::leaf("body", NodeKind::Text);
+        wrapped.bounds = Rect::xywh(116.0, 200.0, 380.0, 50.0);
+        wrapped.font_size = 16.0;
+        wrapped.line_height = 1.5;
+        wrapped.text_wrap = true;
+        wrapped.text = Some("Line one\nLine two\nLine three".to_string());
+
+        assert!(
+            subtree_intersects_cull(
+                &wrapped,
+                Point2D::ZERO,
+                1.0,
+                Rect::xywh(128.0, 256.0, 128.0, 128.0),
+                None,
+                &[],
+            ),
+            "wrapped text with fallback-font line overflow must intersect the tile below"
         );
     }
 }

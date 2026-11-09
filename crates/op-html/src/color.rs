@@ -70,9 +70,13 @@ fn parse_hex(hex: &str) -> Option<Rgba> {
     })
 }
 
+/// Component tokens. CSS Color 4's `none` (a missing component, which
+/// Chromium emits when serializing `color-mix()` results such as
+/// `oklch(0.19 0.006 none / 0.14)`) converts as zero.
 fn parts(body: &str) -> Vec<&str> {
     body.split(|ch: char| ch == ',' || ch == '/' || ch.is_ascii_whitespace())
         .filter(|part| !part.is_empty())
+        .map(|part| if part == "none" { "0" } else { part })
         .collect()
 }
 
@@ -115,22 +119,11 @@ fn parse_hsl(body: &str) -> Option<Rgba> {
     let hue = parse_angle(values[0])?;
     let saturation = parse_percentage(values[1])?.clamp(0.0, 1.0);
     let lightness = parse_percentage(values[2])?.clamp(0.0, 1.0);
-    let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
-    let sector = hue.rem_euclid(360.0) / 60.0;
-    let x = chroma * (1.0 - (sector.rem_euclid(2.0) - 1.0).abs());
-    let (r, g, b) = match sector.floor() as u8 {
-        0 => (chroma, x, 0.0),
-        1 => (x, chroma, 0.0),
-        2 => (0.0, chroma, x),
-        3 => (0.0, x, chroma),
-        4 => (x, 0.0, chroma),
-        _ => (chroma, 0.0, x),
-    };
-    let m = lightness - chroma / 2.0;
+    let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
     Some(Rgba {
-        r: r + m,
-        g: g + m,
-        b: b + m,
+        r,
+        g,
+        b,
         a: values
             .get(3)
             .map_or(Some(1.0), |value| parse_alpha(value))?,
@@ -641,6 +634,23 @@ fn parse_named(value: &str) -> Option<Rgba> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn missing_none_components_convert_as_zero() {
+        // Chromium's serialization of `color-mix(in oklch, #121316 14%, transparent)`.
+        assert_eq!(
+            parse_css_color("oklch(0.186962 0.00628463 none / 0.14)").as_deref(),
+            Some("#16121324")
+        );
+        assert_eq!(
+            parse_css_color("hsl(none 0% 50%)").as_deref(),
+            Some("#808080")
+        );
+        assert_eq!(
+            parse_css_color("rgb(none 0 255)").as_deref(),
+            Some("#0000ff")
+        );
+    }
+
     use super::*;
 
     #[test]

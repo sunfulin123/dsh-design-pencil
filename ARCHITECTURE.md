@@ -120,6 +120,16 @@ Present 视口规则由纯函数 [viewport](crates/op-editor-core/src/prototype/
 AI 通过 [prototype_tools](crates/op-dsh-engine/src/prototype_tools.rs)（`get_prototype`、`set_prototype`、
 `set_reactions`、`set_scroll_behavior`、`simulate_prototype`）读写并无头验证原型流程。
 
+## HTML 导入
+
+`import_html` / `import_html_url` 由 Node 编排：[html-import-tool](packages/dsh-node-runtime/html-import-tool.mjs)
+用 [headless Chromium](packages/dsh-node-runtime/chrome-cdp.mjs) 渲染页面（每个视口一次，等待网络空闲、
+字体与可选 `readyExpression`），以 Rust 的 `snapshot-extractor.js` 采集计算样式，并附加 canvas 像素与原生控件状态，
+再逐个画板交给 `import_web_snapshot`；Rust（op-html `snapshot*`）只负责映射为节点。
+页面用到的字体经共享 FontFetcher 注册给 CanvasKit。没有 Chrome 时回退纯 Rust 静态 CSS 引擎并标记
+`renderMode:"static-css"`。`compare_html_fidelity` 在 host 渲染源页并与真实 CanvasKit 截图比对。
+不变量见 [KB](docs/kb/html-import.md)。
+
 ## 画布渲染
 
 - 纯 tile geometry/planning 在 [canvas_tiles](crates/op-editor-ui/src/widgets/canvas_tiles.rs)。

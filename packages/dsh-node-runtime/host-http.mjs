@@ -5,6 +5,7 @@ const RENDER_WAIT_TOOLS = new Set([
   'get_screenshot',
   'sample_color',
   'compare_figma_fidelity',
+  'compare_html_fidelity',
   'get_editor_theme',
   'set_editor_theme',
 ]);

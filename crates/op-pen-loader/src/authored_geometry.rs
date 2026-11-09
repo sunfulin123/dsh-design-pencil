@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use jian_ops_schema::node::base::PenNodeBase;
+use jian_ops_schema::node::text::TextNode;
 use jian_ops_schema::node::PenNode;
-use jian_ops_schema::sizing::SizingBehavior;
+use jian_ops_schema::sizing::{SizeLimits, SizingBehavior};
 
 pub fn rects_for_roots(roots: &[PenNode]) -> BTreeMap<String, [f32; 4]> {
     let mut out = BTreeMap::new();
@@ -30,32 +31,88 @@ fn collect_rect(
 
 fn size_of(node: &PenNode) -> (f32, f32) {
     match node {
-        PenNode::Frame(n) => numeric_size(&n.container.width, &n.container.height),
-        PenNode::Group(n) => numeric_size(&n.container.width, &n.container.height),
-        PenNode::Rectangle(n) => numeric_size(&n.container.width, &n.container.height),
-        PenNode::Ellipse(n) => numeric_size(&n.width, &n.height),
-        PenNode::Polygon(n) => numeric_size(&n.width, &n.height),
-        PenNode::Path(n) => numeric_size(&n.width, &n.height),
-        PenNode::Text(n) => numeric_size(&n.width, &n.height),
-        PenNode::TextInput(n) => numeric_size(&n.width, &n.height),
-        PenNode::TextArea(n) => numeric_size(&n.width, &n.height),
-        PenNode::Select(n) => numeric_size(&n.width, &n.height),
-        PenNode::Switch(n) => numeric_size(&n.width, &n.height),
-        PenNode::Checkbox(n) => numeric_size(&n.width, &n.height),
-        PenNode::Slider(n) => numeric_size(&n.width, &n.height),
-        PenNode::RadioGroup(n) => numeric_size(&n.width, &n.height),
-        PenNode::NumberInput(n) => numeric_size(&n.width, &n.height),
-        PenNode::Progress(n) => numeric_size(&n.width, &n.height),
-        PenNode::Tabs(n) => numeric_size(&n.width, &n.height),
-        PenNode::Image(n) => numeric_size(&n.width, &n.height),
-        PenNode::IconFont(n) => numeric_size(&n.width, &n.height),
+        PenNode::Frame(n) => {
+            numeric_size(&n.container.width, &n.container.height, &n.container.limits)
+        }
+        PenNode::Group(n) => {
+            numeric_size(&n.container.width, &n.container.height, &n.container.limits)
+        }
+        PenNode::Rectangle(n) => {
+            numeric_size(&n.container.width, &n.container.height, &n.container.limits)
+        }
+        PenNode::Ellipse(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Polygon(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Path(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Text(n) => text_size(n),
+        PenNode::TextInput(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::TextArea(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Select(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Switch(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Checkbox(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Slider(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::RadioGroup(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::NumberInput(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Progress(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Tabs(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::Image(n) => numeric_size(&n.width, &n.height, &n.limits),
+        PenNode::IconFont(n) => numeric_size(&n.width, &n.height, &n.limits),
         PenNode::Line(_) => (f32::NAN, f32::NAN),
         PenNode::Ref(_) => (0.0, 0.0),
     }
 }
 
-fn numeric_size(w: &Option<SizingBehavior>, h: &Option<SizingBehavior>) -> (f32, f32) {
-    (numeric(w), numeric(h))
+fn text_size(n: &TextNode) -> (f32, f32) {
+    let (mut w, mut h) = numeric_size(&n.width, &n.height, &n.limits);
+    if w > 0.0 && h > 0.0 {
+        return (w, h);
+    }
+    let text: String = match &n.content {
+        jian_ops_schema::node::text::TextContent::Plain(s) => s.clone(),
+        jian_ops_schema::node::text::TextContent::Styled(segs) => {
+            segs.iter().map(|seg| seg.text.as_str()).collect()
+        }
+    };
+    if text.is_empty() {
+        return (w, h);
+    }
+    let fs = n.font_size.unwrap_or(13.0).max(1.0) as f32;
+    let lh = n.layout_line_height_multiplier().unwrap_or(1.2).max(1.0) as f32;
+    let line_h = fs * lh;
+    let max_chars = text
+        .lines()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(1)
+        .max(1) as f32;
+    let natural_w = max_chars * fs * 0.65;
+    if w <= 0.0 {
+        w = natural_w;
+    }
+    if h <= 0.0 {
+        let lines = if w > 0.0 && natural_w > w {
+            (natural_w / w).ceil().max(1.0)
+        } else {
+            text.lines().count().max(1) as f32
+        };
+        h = lines * line_h;
+    }
+    (w, h)
+}
+
+fn numeric_size(
+    w: &Option<SizingBehavior>,
+    h: &Option<SizingBehavior>,
+    limits: &SizeLimits,
+) -> (f32, f32) {
+    (
+        numeric_or_min(w, limits.min_width),
+        numeric_or_min(h, limits.min_height),
+    )
+}
+
+fn numeric_or_min(value: &Option<SizingBehavior>, min: Option<f64>) -> f32 {
+    let min = min.filter(|v| v.is_finite() && *v > 0.0).unwrap_or(0.0) as f32;
+    numeric(value).max(min)
 }
 
 fn numeric(value: &Option<SizingBehavior>) -> f32 {

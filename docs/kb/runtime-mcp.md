@@ -33,8 +33,9 @@ Node [EngineSession](../../packages/dsh-node-runtime/engine-session.mjs) 还有�
 ## 截图等待不能锁住 renderer bootstrap
 
 范围：Node host 请求调度。
-[node-host](../../packages/dsh-node-runtime/node-host.mjs) 将 get_screenshot、
-sample_color、compare_figma_fidelity 归为 render-wait；它们不能持有 mutation queue，
+[host-http](../../packages/dsh-node-runtime/host-http.mjs) 将 get_screenshot、
+sample_color、compare_figma_fidelity、compare_html_fidelity 归为 render-wait（由
+[host-render-tools](../../packages/dsh-node-runtime/host-render-tools.mjs) 应答）；它们不能持有 mutation queue，
 否则 headless renderer 的 sync-reset/document pull 排在截图后面，会互相等待。
 新增需等待客户端的只读工具必须审查此边界，真正的文档 mutation 仍须有序。
 
@@ -85,18 +86,20 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 {
   "version": 1,
   "status": "verified",
-  "task_id": "8f1754c3-0ef9-4895-a261-f6c3b8c70674",
-  "verified_at": "2026-11-08T10:17:51.980076+00:00",
+  "task_id": "74996489-c9be-4d1b-a26b-a81deaeef88f",
+  "verified_at": "2026-11-09T03:58:23.609214+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
     "packages/dsh-node-runtime/build-web.sh": "596d045386c43ec612f77c97ba2d2a752f3614b24cbbff301df75f950a76684f",
-    "crates/op-dsh-engine/src/tool_catalog.rs": "32f1d1c04d0d1d0f3d91106cadd68ad3ac00c8a9bc6ab231a7bf92814bd8048c",
-    "crates/op-dsh-engine/src/lib.rs": "be01a3ea56c8cfce44e7332739b6eee2d1718e8036aaa6452fd678e2bb114c91",
+    "crates/op-dsh-engine/src/tool_catalog.rs": "fee753c0cc498cee0b8b504862b6347c9cf6e6cb95a2af444d79af493c38e53a",
+    "crates/op-dsh-engine/src/lib.rs": "24ae65072f011f377b955ca8bfa7ce5b86de25dcfafde4a5f0a8ce4cd950a4dd",
     "crates/op-mcp/Cargo.toml": "1d260158e5a08f8287175910ab205e2a7fd9abc3a15a780abbcd20e6b635e2bd",
     "crates/op-mcp/src/batch_design.rs": "dec04c3a39db844599d5b13fc0352814662dbaff97323152fc0b59220a417199",
-    "packages/dsh-node-runtime/engine-session.mjs": "37b6cd8fdde391b7b793377ee6ed6e25c29f26bcc94d00c9b0049f3e0d6d5f26",
-    "packages/dsh-node-runtime/node-host.mjs": "850d1a625f14c5df26ed20f6c829b3bf5f1026ecb1fb6af9e4796e93c807e0e0",
+    "packages/dsh-node-runtime/engine-session.mjs": "c2d7d8028a13da2ed0842e977496436d2161662be89d2d5a09078ec82adb73ce",
+    "packages/dsh-node-runtime/host-http.mjs": "43d6a480c630a30e78205e489058c02c8081ee1e6f8c835f7940cf3d65d3eca9",
+    "packages/dsh-node-runtime/host-render-tools.mjs": "5b2c35117471753aff5c55a8121c227a8e573c90b5137e19f53d1496b2614b63",
+    "packages/dsh-node-runtime/node-host.mjs": "ef1541d00731f3e5c78551f3487614cff8fce2a04fac5da0a93862418e15891d",
     "packages/dsh-node-runtime/asset-store.mjs": "66df967d9c4e7be10e36f1f8348d377ca90dad87f3d32291296c177ebcd6d483",
     "packages/dsh-node-runtime/asset-tools.mjs": "fdf48f0240503792ceab96cc435ca018b9941be3adad8fce3220b3324ccc7c46",
     "packages/dsh-node-runtime/editor-control.mjs": "8fb0da89f7e860384a4e3ff4f935446295dc0877ddbe93c403834d3cd50b0d09",
@@ -107,7 +110,7 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-dsh-engine/src/asset_semantics.rs": "1b91e8c8205116614e9c948e83f27256b42341e28e1fe6f8ba4221debd94341f",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "f640a2169d729b6a65702ac5e55dc4793485afca0ccef7a0861835e8f7ebeb85"
   },
-  "reason": "Removed op-preview-core from op-host-web/Cargo.toml and registered prototype tools via library_tools; workspace members, feature boundaries (web vs canvaskit), and MCP dispatch invariants remain unchanged",
-  "evidence": "cargo test -p op-host-web --lib --features canvaskit (777 passed), cargo test -p op-dsh-engine (80 passed), node --test packages/dsh-node-runtime/*.test.mjs (164 passed)"
+  "reason": "Render-wait host tools moved from node-host into host-render-tools and now include compare_html_fidelity; catalog/dispatch rule unchanged (new schemas live in tool_catalog's html_import_catalog submodule).",
+  "evidence": "host-http RENDER_WAIT_TOOLS includes compare_html_fidelity; DSH_E2E_CHROME=1 full node suite 177 passed incl. ai-design-loop and html-fidelity host tests"
 }
 ```

@@ -195,6 +195,8 @@ impl CkInner {
             || (self.backend.dpr - dpr).abs() > f32::EPSILON;
         if changed || backend_changed {
             self.backend.resize_for_display(css_w, css_h, dpr);
+            self.host.canvas_tiles.clear_retained();
+            crate::preview_host::invalidate_preview_snapshots();
             return Ok(true);
         }
         Ok(false)
