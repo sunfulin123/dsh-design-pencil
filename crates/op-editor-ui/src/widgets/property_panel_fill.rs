@@ -504,18 +504,10 @@ fn paint_one_fill(
     }
     let opacity_owned = ((fill.opacity * 100.0).round() as i32).to_string();
     let pct_text = edit.value_for(opacity_focus, &opacity_owned);
-    let pct = TextLayout::single_run(
-        pct_text,
-        "system-ui",
-        12.0,
-        (theme.foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
     let pct_x = pct_rect.origin.x + 10.0;
-    if !edit.paint_input_view_at(
+    crate::widgets::property_panel_inputs::paint_single_line_input_value(
         cx,
         theme,
-        opacity_focus,
         Rect {
             origin: Point2D::new(pct_x, pct_rect.origin.y),
             size: Point2D::new(
@@ -523,37 +515,15 @@ fn paint_one_fill(
                 pct_rect.size.y,
             ),
         },
+        pct_text,
         12.0,
-        0.0,
         pct_rect.origin.y + 19.0,
-    ) {
-        edit.paint_selection_at(
-            cx,
-            theme,
-            opacity_focus,
-            pct_text,
-            pct_x,
-            pct_rect.origin.y + 19.0,
-            12.0,
-            pct_rect.origin.x + pct_rect.size.x - 8.0,
-        );
-        cx.backend
-            .draw_text(&pct, Point2D::new(pct_x, pct_rect.origin.y + 19.0));
-        if let Some(pos) = edit.caret_at(opacity_focus) {
-            let w = text_metrics::measure_chrome(
-                cx.backend,
-                &pct_text[..pos.min(pct_text.len())],
-                12.0,
-            );
-            cx.backend.fill_rect(
-                Rect {
-                    origin: Point2D::new(pct_x + w, pct_rect.origin.y + 6.0),
-                    size: Point2D::new(1.5, pct_rect.size.y - 12.0),
-                },
-                theme.foreground,
-            );
-        }
-    }
+        opacity_focused,
+        edit.caret_at(opacity_focus),
+        edit.select_all_at(opacity_focus),
+        edit.input_at(opacity_focus),
+        edit.now_ms,
+    );
     let pct_unit = TextLayout::single_run(
         "%",
         "system-ui",

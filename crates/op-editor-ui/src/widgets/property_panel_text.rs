@@ -372,74 +372,31 @@ pub fn paint_text_section(
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(usable_w, INPUT_HEIGHT),
     };
-    cx.backend
-        .fill_round_rect(family_rect, INPUT_RADIUS, theme.muted);
-    cx.backend
-        .stroke_round_rect(family_rect, INPUT_RADIUS, theme.border, 1.0);
-    // The trigger shows the first family of the stack, painted in
-    // that family (TS trigger: `style={{ fontFamily: value }}` +
-    // `displayName(value)`).
     let family_name = display_font_family(&text.font_family);
-    let family = TextLayout::single_run(
+    crate::widgets::property_panel_text_input::paint_text_dropdown_trigger(
+        cx,
+        theme,
+        family_rect,
         family_name,
         family_name,
-        12.0,
-        (theme.foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
-    cx.backend.draw_text(
-        &family,
-        Point2D::new(family_rect.origin.x + 10.0, family_rect.origin.y + 19.0),
-    );
-    draw_icon(
-        cx.backend,
-        Icon::ChevronDown,
-        Point2D::new(
-            family_rect.origin.x + family_rect.size.x - 18.0,
-            family_rect.origin.y + 8.0,
-        ),
-        14.0,
-        theme.muted_foreground,
-        1.5,
     );
     y += INPUT_HEIGHT + FAMILY_ROW_GAP;
 
     let half_w = (usable_w - 8.0) / 2.0;
-    // Weight dropdown trigger — named weight (粗体 / 常规 / …) + chevron,
-    // mirroring the font-family trigger (TS Select parity).
     let weight_rect = Rect {
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(half_w, INPUT_HEIGHT),
     };
-    cx.backend
-        .fill_round_rect(weight_rect, INPUT_RADIUS, theme.muted);
-    cx.backend
-        .stroke_round_rect(weight_rect, INPUT_RADIUS, theme.border, 1.0);
     let weight_label = op_i18n::translate(
         locale,
         FontWeightChoice::nearest(text.font_weight).label_key(),
     );
-    let weight_text = TextLayout::single_run(
+    crate::widgets::property_panel_text_input::paint_text_dropdown_trigger(
+        cx,
+        theme,
+        weight_rect,
         weight_label,
         "system-ui",
-        12.0,
-        (theme.foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
-    cx.backend.draw_text(
-        &weight_text,
-        Point2D::new(weight_rect.origin.x + 10.0, weight_rect.origin.y + 19.0),
-    );
-    draw_icon(
-        cx.backend,
-        Icon::ChevronDown,
-        Point2D::new(
-            weight_rect.origin.x + weight_rect.size.x - 18.0,
-            weight_rect.origin.y + 8.0,
-        ),
-        14.0,
-        theme.muted_foreground,
-        1.5,
     );
     let font_size = format_panel_number(text.font_size);
     paint_input_with_prefix_focused_state(

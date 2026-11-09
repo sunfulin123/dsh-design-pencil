@@ -117,8 +117,9 @@ fn paint_page_header(
     } else {
         page_name
     };
+    let fitted = text_metrics::fit_chrome(cx.backend, text, (width - PAD_X * 2.0).max(16.0), 13.0);
     let layout = TextLayout::single_run(
-        text,
+        &fitted,
         "system-ui",
         13.0,
         theme.foreground.to_jian(),
@@ -161,43 +162,19 @@ fn paint_background_input(
         (rect.origin.x + rect.size.x - 8.0 - value_x).max(0.0),
         rect.size.y,
     );
-    if !edit.paint_input_view_at(
+    crate::widgets::property_panel_inputs::paint_single_line_input_value(
         cx,
         theme,
-        focus,
         input_view,
+        value,
         12.0,
-        0.0,
         rect.origin.y + 19.0,
-    ) {
-        edit.paint_selection_at(
-            cx,
-            theme,
-            focus,
-            value,
-            value_x,
-            rect.origin.y + 19.0,
-            12.0,
-            rect.origin.x + rect.size.x - 8.0,
-        );
-        let text = TextLayout::single_run(
-            value,
-            "system-ui",
-            12.0,
-            theme.foreground.to_jian(),
-            Point2D::new(0.0, 0.0),
-        );
-        cx.backend
-            .draw_text(&text, Point2D::new(value_x, rect.origin.y + 19.0));
-        if let Some(pos) = edit.caret_at(focus) {
-            let prefix = &value[..pos.min(value.len())];
-            let caret_x = value_x + text_metrics::measure_chrome(cx.backend, prefix, 12.0);
-            cx.backend.fill_rect(
-                Rect::xywh(caret_x, rect.origin.y + 6.0, 1.5, rect.size.y - 12.0),
-                theme.foreground,
-            );
-        }
-    }
+        focused,
+        edit.caret_at(focus),
+        edit.select_all_at(focus),
+        edit.input_at(focus),
+        edit.now_ms,
+    );
 }
 
 impl PropertyPanel {

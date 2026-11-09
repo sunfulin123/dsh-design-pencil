@@ -202,51 +202,25 @@ fn paint_labeled_input(
         .draw_text(&prefix_layout, Point2D::new(prefix_x, baseline_y));
     let prefix_w = text_metrics::measure_chrome(cx.backend, &prefix, 12.0);
     let value_x = prefix_x + prefix_w + 8.0;
-    if !edit.paint_input_view_at(
+    crate::widgets::property_panel_inputs::paint_single_line_input_value(
         cx,
         theme,
-        focus,
         Rect {
             origin: Point2D::new(value_x, rect.origin.y),
             size: Point2D::new(
-                (rect.origin.x + rect.size.x - 18.0 - value_x).max(0.0),
+                (rect.origin.x + rect.size.x - 8.0 - suffix_w - value_x).max(0.0),
                 rect.size.y,
             ),
         },
+        value,
         12.0,
-        0.0,
         baseline_y,
-    ) {
-        edit.paint_selection_at(
-            cx,
-            theme,
-            focus,
-            value,
-            value_x,
-            baseline_y,
-            12.0,
-            rect.origin.x + rect.size.x - 8.0,
-        );
-        let value_layout = TextLayout::single_run(
-            value,
-            "system-ui",
-            12.0,
-            (theme.foreground).to_jian(),
-            Point2D::new(0.0, 0.0),
-        );
-        cx.backend
-            .draw_text(&value_layout, Point2D::new(value_x, baseline_y));
-        if let Some(pos) = edit.caret_at(focus) {
-            let w = text_metrics::measure_chrome(cx.backend, &value[..pos.min(value.len())], 12.0);
-            cx.backend.fill_rect(
-                Rect {
-                    origin: Point2D::new(value_x + w, rect.origin.y + 6.0),
-                    size: Point2D::new(1.5, INPUT_HEIGHT - 12.0),
-                },
-                theme.foreground,
-            );
-        }
-    }
+        focused,
+        edit.caret_at(focus),
+        edit.select_all_at(focus),
+        edit.input_at(focus),
+        edit.now_ms,
+    );
     if let Some(unit) = suffix {
         // The unit trails the value, but it is clamped inside the input's
         // right padding: the input is clipped to `rect`, so a wide value

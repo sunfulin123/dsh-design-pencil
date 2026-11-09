@@ -14,7 +14,6 @@ use crate::widgets::property_panel_inputs::{
     SECTION_HEADER_HEIGHT,
 };
 use crate::widgets::property_panel_sections::EditContext;
-use crate::widgets::text_metrics;
 use crate::widgets::PaintCx;
 use crate::{Color, Point2D, Rect, TextLayout};
 use op_editor_core::PropertyFocus;
@@ -70,61 +69,26 @@ pub(crate) fn paint_fill_solid_body(
     cx.backend
         .stroke_round_rect(swatch_rect, 3.0, theme.border, 1.0);
     let hex_x = hex_rect.origin.x + 30.0;
-    let painted_hex = variable_ref.is_none()
-        && edit.paint_input_view_at(
-            cx,
-            theme,
-            hex_focus,
-            Rect {
-                origin: Point2D::new(hex_x, hex_rect.origin.y),
-                size: Point2D::new(
-                    (hex_rect.origin.x + hex_rect.size.x - 8.0 - hex_x).max(0.0),
-                    hex_rect.size.y,
-                ),
-            },
-            12.0,
-            0.0,
-            hex_rect.origin.y + 19.0,
-        );
-    if !painted_hex {
-        let hex_layout = TextLayout::single_run(
-            hex_text,
-            "system-ui",
-            12.0,
-            (theme.foreground).to_jian(),
-            Point2D::new(0.0, 0.0),
-        );
-        if variable_ref.is_none() {
-            edit.paint_selection_at(
-                cx,
-                theme,
-                hex_focus,
-                hex_text,
-                hex_x,
-                hex_rect.origin.y + 19.0,
-                12.0,
-                hex_rect.origin.x + hex_rect.size.x - 8.0,
-            );
-        }
-        cx.backend
-            .draw_text(&hex_layout, Point2D::new(hex_x, hex_rect.origin.y + 19.0));
-        if variable_ref.is_none() {
-            if let Some(pos) = edit.caret_at(hex_focus) {
-                let w = text_metrics::measure_chrome(
-                    cx.backend,
-                    &hex_text[..pos.min(hex_text.len())],
-                    12.0,
-                );
-                cx.backend.fill_rect(
-                    Rect {
-                        origin: Point2D::new(hex_x + w, hex_rect.origin.y + 6.0),
-                        size: Point2D::new(1.5, hex_rect.size.y - 12.0),
-                    },
-                    theme.foreground,
-                );
-            }
-        }
-    }
+    let editable = variable_ref.is_none();
+    crate::widgets::property_panel_inputs::paint_single_line_input_value(
+        cx,
+        theme,
+        Rect {
+            origin: Point2D::new(hex_x, hex_rect.origin.y),
+            size: Point2D::new(
+                (hex_rect.origin.x + hex_rect.size.x - 8.0 - hex_x).max(0.0),
+                hex_rect.size.y,
+            ),
+        },
+        hex_text,
+        12.0,
+        hex_rect.origin.y + 19.0,
+        editable && hex_focused,
+        editable.then(|| edit.caret_at(hex_focus)).flatten(),
+        editable && edit.select_all_at(hex_focus),
+        editable.then(|| edit.input_at(hex_focus)).flatten(),
+        edit.now_ms,
+    );
     if show_variable_button {
         paint_color_variable_button(
             cx,
@@ -179,10 +143,9 @@ pub(crate) fn paint_fill_gradient_body(
         let angle_owned = format_angle(snapshot.gradient_angle.unwrap_or(0.0));
         let value_text = edit.value_for(angle_focus, &angle_owned);
         let value_x = angle_rect.origin.x + 44.0;
-        if !edit.paint_input_view_at(
+        crate::widgets::property_panel_inputs::paint_single_line_input_value(
             cx,
             theme,
-            angle_focus,
             Rect {
                 origin: Point2D::new(value_x, angle_rect.origin.y),
                 size: Point2D::new(
@@ -190,44 +153,15 @@ pub(crate) fn paint_fill_gradient_body(
                     angle_rect.size.y,
                 ),
             },
+            value_text,
             12.0,
-            0.0,
             angle_rect.origin.y + 19.0,
-        ) {
-            let value = TextLayout::single_run(
-                value_text,
-                "system-ui",
-                12.0,
-                (theme.foreground).to_jian(),
-                Point2D::new(0.0, 0.0),
-            );
-            edit.paint_selection_at(
-                cx,
-                theme,
-                angle_focus,
-                value_text,
-                value_x,
-                angle_rect.origin.y + 19.0,
-                12.0,
-                angle_rect.origin.x + angle_rect.size.x - 8.0,
-            );
-            cx.backend
-                .draw_text(&value, Point2D::new(value_x, angle_rect.origin.y + 19.0));
-            if let Some(pos) = edit.caret_at(angle_focus) {
-                let w = text_metrics::measure_chrome(
-                    cx.backend,
-                    &value_text[..pos.min(value_text.len())],
-                    12.0,
-                );
-                cx.backend.fill_rect(
-                    Rect {
-                        origin: Point2D::new(value_x + w, angle_rect.origin.y + 6.0),
-                        size: Point2D::new(1.5, angle_rect.size.y - 12.0),
-                    },
-                    theme.foreground,
-                );
-            }
-        }
+            angle_focused,
+            edit.caret_at(angle_focus),
+            edit.select_all_at(angle_focus),
+            edit.input_at(angle_focus),
+            edit.now_ms,
+        );
         let unit = TextLayout::single_run(
             "°",
             "system-ui",
@@ -302,10 +236,9 @@ pub(crate) fn paint_fill_gradient_body(
         let hex_owned = stop_hex_rgb_only(&stop.hex);
         let hex_text = edit.value_for(hex_focus, &hex_owned);
         let hex_text_x = hex_rect.origin.x + 30.0;
-        if !edit.paint_input_view_at(
+        crate::widgets::property_panel_inputs::paint_single_line_input_value(
             cx,
             theme,
-            hex_focus,
             Rect {
                 origin: Point2D::new(hex_text_x, hex_rect.origin.y),
                 size: Point2D::new(
@@ -313,46 +246,15 @@ pub(crate) fn paint_fill_gradient_body(
                     hex_rect.size.y,
                 ),
             },
+            hex_text,
             12.0,
-            0.0,
             hex_rect.origin.y + 19.0,
-        ) {
-            let hex_layout = TextLayout::single_run(
-                hex_text,
-                "system-ui",
-                12.0,
-                (theme.foreground).to_jian(),
-                Point2D::new(0.0, 0.0),
-            );
-            edit.paint_selection_at(
-                cx,
-                theme,
-                hex_focus,
-                hex_text,
-                hex_text_x,
-                hex_rect.origin.y + 19.0,
-                12.0,
-                hex_rect.origin.x + hex_rect.size.x - 8.0,
-            );
-            cx.backend.draw_text(
-                &hex_layout,
-                Point2D::new(hex_text_x, hex_rect.origin.y + 19.0),
-            );
-            if let Some(pos) = edit.caret_at(hex_focus) {
-                let w = text_metrics::measure_chrome(
-                    cx.backend,
-                    &hex_text[..pos.min(hex_text.len())],
-                    12.0,
-                );
-                cx.backend.fill_rect(
-                    Rect {
-                        origin: Point2D::new(hex_text_x + w, hex_rect.origin.y + 6.0),
-                        size: Point2D::new(1.5, hex_rect.size.y - 12.0),
-                    },
-                    theme.foreground,
-                );
-            }
-        }
+            hex_focused,
+            edit.caret_at(hex_focus),
+            edit.select_all_at(hex_focus),
+            edit.input_at(hex_focus),
+            edit.now_ms,
+        );
         let pct_rect = Rect {
             origin: Point2D::new(x + PAD_X + hex_w + 8.0, row_y),
             size: Point2D::new(pct_w, INPUT_HEIGHT),
@@ -368,10 +270,9 @@ pub(crate) fn paint_fill_gradient_body(
         let pct_owned = ((stop.offset * 100.0).round() as i32).to_string();
         let pct_text = edit.value_for(offset_focus, &pct_owned);
         let pct_x = pct_rect.origin.x + 12.0;
-        if !edit.paint_input_view_at(
+        crate::widgets::property_panel_inputs::paint_single_line_input_value(
             cx,
             theme,
-            offset_focus,
             Rect {
                 origin: Point2D::new(pct_x, pct_rect.origin.y),
                 size: Point2D::new(
@@ -379,44 +280,15 @@ pub(crate) fn paint_fill_gradient_body(
                     pct_rect.size.y,
                 ),
             },
+            pct_text,
             12.0,
-            0.0,
             pct_rect.origin.y + 19.0,
-        ) {
-            let pct_layout = TextLayout::single_run(
-                pct_text,
-                "system-ui",
-                12.0,
-                (theme.foreground).to_jian(),
-                Point2D::new(0.0, 0.0),
-            );
-            edit.paint_selection_at(
-                cx,
-                theme,
-                offset_focus,
-                pct_text,
-                pct_x,
-                pct_rect.origin.y + 19.0,
-                12.0,
-                pct_rect.origin.x + pct_rect.size.x - 8.0,
-            );
-            cx.backend
-                .draw_text(&pct_layout, Point2D::new(pct_x, pct_rect.origin.y + 19.0));
-            if let Some(pos) = edit.caret_at(offset_focus) {
-                let w = text_metrics::measure_chrome(
-                    cx.backend,
-                    &pct_text[..pos.min(pct_text.len())],
-                    12.0,
-                );
-                cx.backend.fill_rect(
-                    Rect {
-                        origin: Point2D::new(pct_x + w, pct_rect.origin.y + 6.0),
-                        size: Point2D::new(1.5, pct_rect.size.y - 12.0),
-                    },
-                    theme.foreground,
-                );
-            }
-        }
+            offset_focused,
+            edit.caret_at(offset_focus),
+            edit.select_all_at(offset_focus),
+            edit.input_at(offset_focus),
+            edit.now_ms,
+        );
         let pct_unit = TextLayout::single_run(
             "%",
             "system-ui",

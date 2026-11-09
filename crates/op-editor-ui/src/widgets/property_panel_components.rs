@@ -528,21 +528,16 @@ pub fn paint(
             }
             Row::Input(index, key) => {
                 let focus = PropertyFocus::ComponentDesign(index);
-                let focused = edit.focus == Some(focus);
                 paint_input_with_prefix_focused_state(
                     cx,
                     theme,
                     r,
                     op_i18n::translate(locale, key),
-                    if focused {
-                        edit.draft
-                    } else {
-                        &model.draft.values[index]
-                    },
-                    focused,
-                    Some(edit.caret),
-                    edit.select_all,
-                    Some(edit.input),
+                    edit.value_for(focus, &model.draft.values[index]),
+                    edit.focus == Some(focus),
+                    edit.caret_at(focus),
+                    edit.select_all_at(focus),
+                    edit.input_at(focus),
                     edit.now_ms,
                 );
             }
@@ -556,8 +551,9 @@ pub fn paint(
 
 fn text(cx: &mut PaintCx<'_>, theme: &Theme, rect: Rect, label: &str) {
     let size = 11.0;
+    let fitted = super::text_metrics::fit_chrome(cx.backend, label, rect.size.x - 12.0, size);
     let layout = TextLayout::single_run(
-        label,
+        &fitted,
         "system-ui",
         size,
         theme.foreground.to_jian(),

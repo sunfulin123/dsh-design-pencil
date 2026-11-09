@@ -300,8 +300,10 @@ fn paint_effect_row(
         7.0,
         rects.value.origin.y + 18.0,
     ) {
+        let fitted =
+            text_metrics::fit_chrome(cx.backend, text, (rects.value.size.x - 14.0).max(0.0), 11.0);
         let layout = TextLayout::single_run(
-            text,
+            &fitted,
             "system-ui",
             11.0,
             foreground.to_jian(),

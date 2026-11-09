@@ -104,8 +104,14 @@ fn paint_icon_name_row(cx: &mut PaintCx<'_>, theme: &Theme, rect: Rect, family: 
             1.5,
         );
     }
-    let label = TextLayout::single_run(
+    let fitted_name = crate::widgets::text_metrics::fit_chrome(
+        cx.backend,
         name,
+        (rect.size.x - 60.0).max(16.0),
+        12.0,
+    );
+    let label = TextLayout::single_run(
+        &fitted_name,
         "system-ui",
         12.0,
         (theme.foreground).to_jian(),

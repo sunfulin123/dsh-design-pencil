@@ -13,9 +13,8 @@ use crate::widgets::property_panel_inputs::{
 };
 use crate::widgets::property_panel_mode_popover as mode_popover;
 use crate::widgets::property_panel_sections::{EditContext, PropertyLabels};
-use crate::widgets::text_metrics;
 use crate::widgets::PaintCx;
-use crate::{Point2D, Rect, TextLayout};
+use crate::{Point2D, Rect};
 use op_editor_core::{PaddingEditMode, PropertyFocus};
 
 const SIDE_GRID_TOP_GAP: f32 = 8.0;
@@ -305,62 +304,30 @@ fn paint_stroke_hex_text(
         .as_deref()
         .unwrap_or_else(|| edit.value_for(PropertyFocus::StrokeHex, &hex_owned));
     let hex_x = hex_rect.origin.x + 30.0;
-    let painted_hex = stroke_variable_ref.is_none()
-        && edit.paint_input_view_at(
-            cx,
-            theme,
-            PropertyFocus::StrokeHex,
-            Rect {
-                origin: Point2D::new(hex_x, hex_rect.origin.y),
-                size: Point2D::new(
-                    (hex_rect.origin.x + hex_rect.size.x - 8.0 - hex_x).max(0.0),
-                    hex_rect.size.y,
-                ),
-            },
-            12.0,
-            0.0,
-            hex_rect.origin.y + 19.0,
-        );
-    if painted_hex {
-        return;
-    }
-    let hex_layout = TextLayout::single_run(
+    let editable = stroke_variable_ref.is_none();
+    crate::widgets::property_panel_inputs::paint_single_line_input_value(
+        cx,
+        theme,
+        Rect {
+            origin: Point2D::new(hex_x, hex_rect.origin.y),
+            size: Point2D::new(
+                (hex_rect.origin.x + hex_rect.size.x - 8.0 - hex_x).max(0.0),
+                hex_rect.size.y,
+            ),
+        },
         hex_text,
-        "system-ui",
         12.0,
-        (theme.foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
+        hex_rect.origin.y + 19.0,
+        editable && edit.focus == Some(PropertyFocus::StrokeHex),
+        editable
+            .then(|| edit.caret_at(PropertyFocus::StrokeHex))
+            .flatten(),
+        editable && edit.select_all_at(PropertyFocus::StrokeHex),
+        editable
+            .then(|| edit.input_at(PropertyFocus::StrokeHex))
+            .flatten(),
+        edit.now_ms,
     );
-    if stroke_variable_ref.is_none() {
-        edit.paint_selection_at(
-            cx,
-            theme,
-            PropertyFocus::StrokeHex,
-            hex_text,
-            hex_x,
-            hex_rect.origin.y + 19.0,
-            12.0,
-            hex_rect.origin.x + hex_rect.size.x - 8.0,
-        );
-    }
-    cx.backend
-        .draw_text(&hex_layout, Point2D::new(hex_x, hex_rect.origin.y + 19.0));
-    if stroke_variable_ref.is_none() {
-        if let Some(pos) = edit.caret_at(PropertyFocus::StrokeHex) {
-            let w = text_metrics::measure_chrome(
-                cx.backend,
-                &hex_text[..pos.min(hex_text.len())],
-                12.0,
-            );
-            cx.backend.fill_rect(
-                Rect {
-                    origin: Point2D::new(hex_x + w, hex_rect.origin.y + 6.0),
-                    size: Point2D::new(1.5, hex_rect.size.y - 12.0),
-                },
-                theme.foreground,
-            );
-        }
-    }
 }
 
 fn paint_stroke_side_grid(
