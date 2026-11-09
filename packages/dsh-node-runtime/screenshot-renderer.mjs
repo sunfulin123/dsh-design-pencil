@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 const DEFAULT_MAX_SIZE = 1600
 const HARD_MAX_SIZE = 4096
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-const ARG_KEYS = ['nodeId', 'scale', 'maxSize', 'background']
+const ARG_KEYS = ['nodeId', 'scale', 'maxSize', 'background', 'isolate']
 
 function failure(message) {
   return { isError: true, content: [{ type: 'text', text: message }] }
@@ -34,6 +34,11 @@ export function validateScreenshotArguments(args) {
   if (Object.hasOwn(args, 'background')) {
     if (!['canvas', 'transparent'].includes(args.background)) throw new TypeError('background must be canvas or transparent')
     validated.background = args.background
+  }
+  if (Object.hasOwn(args, 'isolate')) {
+    if (typeof args.isolate !== 'boolean') throw new TypeError('isolate must be a boolean')
+    // Sent only when set, so the default request shape stays unchanged.
+    if (args.isolate) validated.isolate = true
   }
   return validated
 }

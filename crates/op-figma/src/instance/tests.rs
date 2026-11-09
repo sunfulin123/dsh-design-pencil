@@ -65,7 +65,11 @@ pub(super) fn symbol_root(children: Vec<TreeNode>) -> TreeNode {
 
 #[test]
 fn fast_path_scales_subtree_when_no_overrides() {
-    let sym = symbol_root(vec![leaf("a", 1, 10)]);
+    // Only SCALE children follow the instance ratio; MIN (absent) keep size.
+    let mut a = leaf("a", 1, 10);
+    a.figma
+        .set("horizontalConstraint", FigValue::Str("SCALE".into()));
+    let sym = symbol_root(vec![a]);
     let out = apply_instance_overrides(&sym, None, None, Some(FigVec2 { x: 200.0, y: 100.0 }));
     assert_eq!(out.len(), 1);
     let resized = FigVec2::from_value(out[0].figma.get("size").unwrap()).unwrap();
@@ -138,6 +142,11 @@ fn strategy_1_routes_unique_text_style_to_unique_text_node() {
     let mut text = leaf("4.23.3", 179_429, 170_443);
     text.figma.set("type", FigValue::Str("TEXT".into()));
     text.figma.set("size", size(51.0, 22.0));
+    // The label fills its component, so it grows with the instance.
+    text.figma
+        .set("horizontalConstraint", FigValue::Str("STRETCH".into()));
+    text.figma
+        .set("verticalConstraint", FigValue::Str("STRETCH".into()));
     text.figma.set("fontSize", FigValue::Float(14.0));
     text.figma.set(
         "fontName",
@@ -747,4 +756,250 @@ fn gate_fallback_keeps_real_guid_nested_forwarding() {
         .expect("x child present");
     let sz = FigVec2::from_value(x.figma.get("size").unwrap()).unwrap();
     assert!((sz.x - 65.0).abs() < 0.001, "x size mangled: {}", sz.x);
+}
+
+// ── Constraint-aware instance resize ─────────────────────────────
+
+fn placed(
+    name: &str,
+    lid: u32,
+    (x, y, w, h): (f32, f32, f32, f32),
+    extra: Vec<(&str, FigValue)>,
+) -> TreeNode {
+    let mut node = sized_leaf(name, lid, w, h, x);
+    if let Some(mut t) = node.figma.get("transform").cloned() {
+        t.set("m12", FigValue::Float(y));
+        node.figma.set("transform", t);
+    }
+    for (k, v) in extra {
+        node.figma.set(k, v);
+    }
+    node
+}
+
+fn frame_of(node: &TreeNode) -> (f64, f64, f64, f64) {
+    let t = node.figma.get("transform").unwrap();
+    let s = FigVec2::from_value(node.figma.get("size").unwrap()).unwrap();
+    (
+        t.get_f64("m02").unwrap(),
+        t.get_f64("m12").unwrap(),
+        s.x,
+        s.y,
+    )
+}
+
+/// A dock component authored 860 px tall and placed 1040 px tall: Figma
+/// keeps the top-pinned list, moves the bottom-pinned bar, and scales only
+/// SCALE children. A uniform ratio stretched every app tile to 48 px.
+#[test]
+fn resized_instance_children_follow_their_figma_constraints() {
+    let text = |s: &str| FigValue::Str(s.into());
+    let mut tile = placed("tile", 4, (8.0, 12.0, 40.0, 40.0), vec![]);
+    tile.figma.set("guid", guid(1, 4));
+    let mut top = placed("top", 1, (0.0, 0.0, 56.0, 592.0), vec![]);
+    top.children = vec![tile];
+    let sym = TreeNode {
+        figma: obj(vec![
+            ("type", text("SYMBOL")),
+            ("guid", guid(0, 0)),
+            ("size", size(56.0, 860.0)),
+        ]),
+        children: vec![
+            top,
+            placed(
+                "bottom",
+                2,
+                (0.0, 808.0, 56.0, 52.0),
+                vec![("verticalConstraint", text("MAX"))],
+            ),
+            placed(
+                "badge",
+                3,
+                (20.0, 400.0, 16.0, 60.0),
+                vec![("verticalConstraint", text("CENTER"))],
+            ),
+            placed(
+                "rail",
+                5,
+                (0.0, 0.0, 2.0, 860.0),
+                vec![("verticalConstraint", text("STRETCH"))],
+            ),
+            placed(
+                "icon",
+                6,
+                (10.0, 100.0, 20.0, 20.0),
+                vec![
+                    ("horizontalConstraint", text("SCALE")),
+                    ("verticalConstraint", text("SCALE")),
+                ],
+            ),
+        ],
+    };
+    let out = apply_instance_overrides(&sym, None, None, Some(FigVec2 { x: 56.0, y: 1040.0 }));
+    let close = |a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)| {
+        assert!(
+            [a.0 - b.0, a.1 - b.1, a.2 - b.2, a.3 - b.3]
+                .iter()
+                .all(|d| d.abs() < 0.01),
+            "{a:?} != {b:?}"
+        )
+    };
+    close(frame_of(&out[0]), (0.0, 0.0, 56.0, 592.0));
+    close(frame_of(&out[0].children[0]), (8.0, 12.0, 40.0, 40.0));
+    close(frame_of(&out[1]), (0.0, 988.0, 56.0, 52.0));
+    close(frame_of(&out[2]), (20.0, 490.0, 16.0, 60.0));
+    close(frame_of(&out[3]), (0.0, 0.0, 2.0, 1040.0));
+    let s = 1040.0 / 860.0;
+    close(frame_of(&out[4]), (10.0, 100.0 * s, 20.0, 20.0 * s));
+}
+
+/// A 138 px auto-layout button placed at 101 px: its 24 px icon keeps its
+/// size (a uniform ratio shrank it to 17.6 px); only a filling child absorbs
+/// the change, and absolute children still use their constraints.
+#[test]
+fn resized_auto_layout_instance_keeps_fixed_children_and_fills_growers() {
+    let text = |s: &str| FigValue::Str(s.into());
+    let sym = TreeNode {
+        figma: obj(vec![
+            ("type", text("SYMBOL")),
+            ("guid", guid(0, 0)),
+            ("size", size(138.0, 40.0)),
+            ("stackMode", text("HORIZONTAL")),
+        ]),
+        children: vec![
+            placed("icon", 1, (16.0, 8.0, 24.0, 24.0), vec![]),
+            placed(
+                "label",
+                2,
+                (48.0, 10.0, 74.0, 20.0),
+                vec![("stackChildPrimaryGrow", FigValue::Float(1.0))],
+            ),
+            placed(
+                "badge",
+                3,
+                (130.0, 0.0, 8.0, 8.0),
+                vec![
+                    ("stackPositioning", text("ABSOLUTE")),
+                    ("horizontalConstraint", text("MAX")),
+                ],
+            ),
+        ],
+    };
+    let out = apply_instance_overrides(&sym, None, None, Some(FigVec2 { x: 101.0, y: 40.0 }));
+    let close = |a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)| {
+        assert!(
+            [a.0 - b.0, a.1 - b.1, a.2 - b.2, a.3 - b.3]
+                .iter()
+                .all(|d| d.abs() < 0.01),
+            "{a:?} != {b:?}"
+        )
+    };
+    close(frame_of(&out[0]), (16.0, 8.0, 24.0, 24.0));
+    close(frame_of(&out[1]), (48.0, 10.0, 37.0, 20.0));
+    close(frame_of(&out[2]), (93.0, 0.0, 8.0, 8.0));
+}
+
+/// Figma's derived geometry is the resolved layout; an override that also
+/// carries a (component-default) size must not undo it. A "Share" label
+/// kept the 42 px "Button" width instead of its resolved 37 px.
+#[test]
+fn derived_geometry_wins_over_override_size() {
+    let mut label = leaf("Label", 1, 10);
+    label.figma.set("type", FigValue::Str("TEXT".into()));
+    label.figma.set("size", size(42.0, 20.0));
+    let sym = symbol_root(vec![label]);
+    let overrides = vec![ov_with(
+        vec![guid(1, 10)],
+        vec![
+            ("size", size(42.0, 20.0)),
+            ("name", FigValue::Str("Label".into())),
+        ],
+    )];
+    let derived = vec![ov_with(vec![guid(1, 10)], vec![("size", size(37.0, 20.0))])];
+    let out = apply_instance_overrides(&sym, Some(&overrides), Some(&derived), None);
+    let resolved = FigVec2::from_value(out[0].figma.get("size").unwrap()).unwrap();
+    assert!((resolved.x - 37.0).abs() < 0.001, "{}", resolved.x);
+}
+
+/// Figma bakes an instance's resolved vector/boolean outlines into derived
+/// `fillGeometry`; without it a boolean icon fell back to one operand and a
+/// search magnifier rendered as a dot.
+#[test]
+fn derived_vector_geometry_is_applied_to_instance_layers() {
+    let mut icon = leaf("Color", 1, 10);
+    icon.figma
+        .set("type", FigValue::Str("BOOLEAN_OPERATION".into()));
+    let sym = symbol_root(vec![icon]);
+    let geometry = FigValue::Array(vec![obj(vec![("commandsBlob", FigValue::Uint(7))])]);
+    let derived = vec![ov_with(
+        vec![guid(1, 10)],
+        vec![("fillGeometry", geometry.clone())],
+    )];
+    let out = apply_instance_overrides(&sym, None, Some(&derived), None);
+    assert_eq!(out[0].figma.get("fillGeometry"), Some(&geometry));
+}
+
+/// A scaled avatar's label records its resolved box and glyph size only in
+/// `derivedTextData` (24 px / 12 px authored, 28 px / 14 px rendered).
+#[test]
+fn derived_text_layout_size_and_glyph_size_resolve_the_text_box() {
+    let mut label = placed("CO", 10, (0.0, 2.0, 24.0, 24.0), vec![]);
+    label.figma.set("type", FigValue::Str("TEXT".into()));
+    label
+        .figma
+        .set("verticalConstraint", FigValue::Str("CENTER".into()));
+    label.figma.set("fontSize", FigValue::Float(12.0));
+    let sym = symbol_root(vec![label]);
+    let glyph = |x: f32| {
+        obj(vec![
+            ("fontSize", FigValue::Float(14.0)),
+            ("advance", FigValue::Float(x)),
+        ])
+    };
+    let text_data = obj(vec![
+        ("layoutSize", size(28.0, 28.0)),
+        ("glyphs", FigValue::Array(vec![glyph(0.65), glyph(0.69)])),
+    ]);
+    let derived = vec![ov_with(
+        vec![guid(1, 10)],
+        vec![("derivedTextData", text_data)],
+    )];
+    let out = apply_instance_overrides(&sym, None, Some(&derived), None);
+    let resolved = FigVec2::from_value(out[0].figma.get("size").unwrap()).unwrap();
+    assert_eq!((resolved.x, resolved.y), (28.0, 28.0));
+    assert_eq!(out[0].figma.get_f64("fontSize"), Some(14.0));
+    // The centred box keeps its centre as it grows (y 2 → 0).
+    assert_eq!(frame_of(&out[0]).1, 0.0);
+}
+
+/// An outer instance's resolved text box (forwarded `derivedTextData`)
+/// supersedes the nested instance's authored component-time `size`; field
+/// merging kept the stale 24 px box of a 28 px avatar label.
+#[test]
+fn forwarded_text_layout_replaces_a_stale_authored_size() {
+    let mut inst_figma = obj(vec![
+        ("type", FigValue::Str("INSTANCE".into())),
+        ("guid", guid(1, 20)),
+        ("name", FigValue::Str("Avatar".into())),
+    ]);
+    inst_figma.set(
+        "derivedSymbolData",
+        FigValue::Array(vec![derived_with(
+            vec![guid(2, 30)],
+            vec![("size", size(24.0, 24.0))],
+        )]),
+    );
+    let sym = symbol_root(vec![TreeNode {
+        figma: inst_figma,
+        children: vec![],
+    }]);
+    let text = obj(vec![("layoutSize", size(28.0, 28.0))]);
+    let derived = vec![derived_with(
+        vec![guid(1, 20), guid(2, 30)],
+        vec![("derivedTextData", text)],
+    )];
+    let out = apply_instance_overrides(&sym, None, Some(&derived), None);
+    let entry = &out[0].figma.get_array("derivedSymbolData").unwrap()[0];
+    assert!(entry.get("size").is_none(), "{entry:?}");
+    assert!(entry.get("derivedTextData").is_some());
 }

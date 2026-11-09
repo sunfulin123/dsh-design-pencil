@@ -107,8 +107,13 @@ pub(super) fn styled_layout(
             for_each_slice_range(&node.text_runs, range.start, range.end, &mut metrics);
         }
         let height = ascent + descent;
-        let baseline = if node.text_vertical_align == SceneTextVerticalAlign::Middle {
-            height / 2.0 + ink_center_above_baseline(&text[range.clone()], largest)
+        // Latin lines keep their font-metric baseline (Figma / CSS); a CJK
+        // line under `middle` is centred by its ink.
+        let line = &text[range.clone()];
+        let baseline = if node.text_vertical_align == SceneTextVerticalAlign::Middle
+            && line.chars().any(is_cjk_char)
+        {
+            height / 2.0 + ink_center_above_baseline(line, largest)
         } else {
             ascent
         };
@@ -133,6 +138,8 @@ pub(super) fn styled_layout(
             line_starts: ranges.iter().map(|range| range.start).collect(),
             font_size,
             weight,
+            family: family.to_owned(),
+            italic: node.italic,
             line_h: font_size * line_height,
             letter_spacing,
             align_width: wrap_width.unwrap_or(node.bounds.size.x),

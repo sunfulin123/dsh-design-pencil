@@ -10,7 +10,7 @@
 //!   gap-free (e.g. CJK) lines are left-aligned.
 
 use crate::layout_scene::{SceneNode, SceneTextAlign, SceneTextRun, SceneTextVerticalAlign};
-use crate::widgets::canvas_text_edit::text_edit_layout;
+use crate::widgets::canvas_text_edit::{is_cjk_char, text_edit_layout};
 use crate::widgets::canvas_viewport::EditCaret;
 use crate::widgets::PaintCx;
 use crate::{Color, Point2D, Rect, RenderBackend, TextBaselineRequest, TextLayout};
@@ -384,25 +384,33 @@ pub(crate) fn paint_text_node(
     }
     if !text.is_empty() {
         // `textAlignVertical` places the whole text block inside the node
-        // box (`layout.v_offset`). `middle` (the default) additionally
-        // centres each line by its INK rather than by its font ascent /
-        // descent box: Latin metrics put CJK glyphs high in the box and
-        // leave blank space at the bottom. `top` / `bottom` keep the
-        // font-metric baseline. Only authored line boxes opt into shaped
-        // fallback metrics.
-        let baseline_offset = if styled_baselines.is_some() {
-            0.0
-        } else if layout.v_align == SceneTextVerticalAlign::Middle {
-            layout.ink_centered_baseline(0)
-        } else if paint_node.line_height > 0.0 {
-            cx.backend.text_first_baseline(&TextBaselineRequest {
-                text: layout.lines.first().map_or("", String::as_str),
+        // box (`layout.v_offset`). Within its line box a Latin line sits on
+        // its font-metric baseline (half-leading, like Figma and CSS). A CJK
+        // line under `middle` is centred by its INK instead: Latin metrics
+        // put CJK glyphs high in the box and leave blank space at the bottom.
+        let metric_line_height = if paint_node.line_height > 0.0 {
+            paint_node.line_height
+        } else {
+            layout.line_h / font_size.max(f32::EPSILON)
+        };
+        let middle = layout.v_align == SceneTextVerticalAlign::Middle;
+        let metric_baseline = |backend: &mut dyn RenderBackend, line: &str| {
+            backend.text_first_baseline(&TextBaselineRequest {
+                text: line,
                 font_family: family,
                 font_size,
                 font_weight: weight,
                 italic: paint_node.italic,
-                line_height: paint_node.line_height,
+                line_height: metric_line_height,
             })
+        };
+        let first_line = layout.lines.first().map_or("", String::as_str);
+        let baseline_offset = if styled_baselines.is_some() {
+            0.0
+        } else if middle && first_line.chars().any(is_cjk_char) {
+            layout.ink_centered_baseline(0)
+        } else if middle || paint_node.line_height > 0.0 {
+            metric_baseline(cx.backend, first_line)
         } else {
             cx.backend.text_ascent_family(font_size, family, weight)
         };
@@ -445,14 +453,19 @@ pub(crate) fn paint_text_node(
                 };
             let baseline_y = if let Some(baselines) = &styled_baselines {
                 world_rect.origin.y + layout.v_offset + baselines[idx]
-            } else if layout.v_align == SceneTextVerticalAlign::Middle {
-                world_rect.origin.y
-                    + layout.v_offset
-                    + idx as f32 * layout.line_h
-                    + layout.ink_centered_baseline(idx)
+            } else if middle {
+                let in_line = if line.chars().any(is_cjk_char) {
+                    layout.ink_centered_baseline(idx)
+                } else {
+                    metric_baseline(cx.backend, line)
+                };
+                world_rect.origin.y + layout.v_offset + idx as f32 * layout.line_h + in_line
             } else {
                 first_baseline_y + idx as f32 * layout.line_h
             };
+            // Figma puts each baseline on a whole pixel of the text box; a
+            // fractional one lets the rasterizer snap glyphs half a pixel off.
+            let baseline_y = world_rect.origin.y + (baseline_y - world_rect.origin.y).round();
             let mut x = x0;
             for_each_slice_range(
                 &paint_node.text_runs,

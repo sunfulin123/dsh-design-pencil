@@ -447,6 +447,10 @@ impl RenderBackend for BaselineAdjustingBackend<'_> {
         self.inner.push_blur_layer(sigma);
     }
 
+    fn push_drop_shadow_layer(&mut self, dx: f32, dy: f32, blur: f32, color: Color) {
+        self.inner.push_drop_shadow_layer(dx, dy, blur, color);
+    }
+
     fn push_composite_layer(&mut self, bounds: Rect, opacity: f32, mode: ImageBlendMode) {
         self.inner.push_composite_layer(bounds, opacity, mode);
     }

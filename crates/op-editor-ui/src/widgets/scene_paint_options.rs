@@ -9,8 +9,9 @@ use crate::{Point2D, Rect};
 
 /// Options for [`paint_scene_page_with`].
 pub struct PaintSceneOptions<'a> {
-    /// Paint only this page-root subtree (device frame pass 1). `None`
-    /// paints every root, exactly like `paint_scene_page`.
+    /// Paint only this subtree: a page root (device frame pass 1) or a
+    /// nested node (isolated screenshot). `None` paints every root,
+    /// exactly like `paint_scene_page`.
     pub only_root: Option<&'a str>,
     /// Skip one node id (the pinned bottom nav) during the walk.
     pub skip_node: Option<&'a str>,
@@ -50,15 +51,20 @@ pub fn paint_scene_page_with(
         return;
     }
 
-    for child in page.children.iter().rev() {
-        if let Some(root) = options.only_root {
-            if child.id != root {
-                continue;
-            }
-        }
+    let Some(root) = options.only_root else {
+        return;
+    };
+    // A page root wins; otherwise a nested id paints just its own subtree,
+    // like a Figma node export (no ancestor fills, no siblings).
+    let target = page
+        .children
+        .iter()
+        .find(|child| child.id == root)
+        .or_else(|| page.find(root));
+    if let Some(node) = target {
         super::canvas_viewport_paint::paint_node_with_options_hiding_without_video_badge(
             cx,
-            child,
+            node,
             viewport_origin,
             zoom,
             None,
@@ -227,6 +233,31 @@ mod tests {
             be.fill_rects
         );
         assert_eq!(be.fill_rects.len(), 2, "root_a + c1 exactly");
+    }
+
+    #[test]
+    fn only_root_naming_a_nested_node_paints_just_that_subtree() {
+        let page = two_root_page();
+        let mut be = FillCaptureBackend::default();
+        {
+            let mut cx = PaintCx { backend: &mut be };
+            paint_scene_page_with(
+                &mut cx,
+                &page,
+                Point2D::new(0.0, 0.0),
+                1.0,
+                wide_cull(),
+                PaintSceneOptions {
+                    only_root: Some("c1"),
+                    skip_node: None,
+                },
+            );
+        }
+        assert_eq!(
+            be.fill_rects,
+            vec![Rect::xywh(10.0, 10.0, 20.0, 20.0)],
+            "a nested capture must not paint its ancestors or siblings"
+        );
     }
 
     #[test]

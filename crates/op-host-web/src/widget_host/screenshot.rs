@@ -56,9 +56,12 @@ fn visible(nodes: &[SceneNode], id: &str) -> bool {
 /// Resolves the capture region: a node's rendered bounds; without a node,
 /// the first visible board (what an agent just designed); for
 /// [`PAGE_TARGET`], the union of all visible page roots plus a margin.
+/// A nested node normally includes whatever overlaps its bounds; `isolate`
+/// paints only its subtree, like a Figma node export.
 pub(crate) fn capture_target(
     scene: &LayoutScene,
     node_id: Option<&str>,
+    isolate: bool,
 ) -> Result<(Rect, Option<String>), String> {
     let page = scene
         .active_page()
@@ -85,7 +88,7 @@ pub(crate) fn capture_target(
             )
             .ok_or("Screenshot node has no rendered bounds")?;
             let is_root = page.children.iter().any(|node| node.id == id);
-            Ok((bounds, is_root.then(|| id.to_owned())))
+            Ok((bounds, (isolate || is_root).then(|| id.to_owned())))
         }
         None => {
             let roots: Vec<String> = page
@@ -116,6 +119,7 @@ impl WidgetHost {
         node_id: Option<&str>,
         scale: f32,
         max_size: u32,
+        isolate: bool,
     ) -> Result<ScreenshotPlan, String> {
         if self.editor_state.editor_ui.preview.mode {
             return Err("Exit preview mode before capturing the design canvas".into());
@@ -151,7 +155,7 @@ impl WidgetHost {
             ));
         }
         let scene = self.screenshot_scene.as_ref().unwrap_or(&self.layout_scene);
-        let (bounds, only_root) = capture_target(scene, node_id)?;
+        let (bounds, only_root) = capture_target(scene, node_id, isolate)?;
         let target_id = match node_id {
             Some(PAGE_TARGET) => None,
             Some(id) => Some(id.to_owned()),
@@ -251,32 +255,44 @@ mod tests {
     #[test]
     fn root_nodes_capture_in_isolation_and_nested_nodes_use_rendered_bounds() {
         let scene = scene();
-        let (bounds, only_root) = capture_target(&scene, Some("screen")).unwrap();
+        let (bounds, only_root) = capture_target(&scene, Some("screen"), false).unwrap();
         assert_eq!(bounds, Rect::xywh(100.0, 50.0, 400.0, 200.0));
         assert_eq!(only_root.as_deref(), Some("screen"));
-        let (bounds, only_root) = capture_target(&scene, Some("child")).unwrap();
+        let (bounds, only_root) = capture_target(&scene, Some("child"), false).unwrap();
         assert_eq!(bounds, Rect::xywh(110.0, 70.0, 40.0, 30.0));
         assert_eq!(only_root, None);
     }
 
     #[test]
+    fn isolated_nested_captures_paint_only_their_subtree_like_figma_exports() {
+        let (bounds, only_root) = capture_target(&scene(), Some("child"), true).unwrap();
+        assert_eq!(bounds, Rect::xywh(110.0, 70.0, 40.0, 30.0));
+        assert_eq!(only_root.as_deref(), Some("child"));
+        let (_, page) = capture_target(&scene(), Some(PAGE_TARGET), true).unwrap();
+        assert_eq!(
+            page, None,
+            "a page capture has no single subtree to isolate"
+        );
+    }
+
+    #[test]
     fn default_capture_is_the_first_visible_board() {
-        let (bounds, only_root) = capture_target(&scene(), None).unwrap();
+        let (bounds, only_root) = capture_target(&scene(), None, false).unwrap();
         assert_eq!(bounds, Rect::xywh(100.0, 50.0, 400.0, 200.0));
         assert_eq!(only_root.as_deref(), Some("screen"));
     }
 
     #[test]
     fn page_capture_skips_hidden_roots_and_adds_margin() {
-        let (bounds, only_root) = capture_target(&scene(), Some(PAGE_TARGET)).unwrap();
+        let (bounds, only_root) = capture_target(&scene(), Some(PAGE_TARGET), false).unwrap();
         assert_eq!(bounds, Rect::xywh(84.0, 34.0, 432.0, 232.0));
         assert_eq!(only_root, None);
     }
 
     #[test]
     fn hidden_missing_and_empty_targets_fail_explicitly() {
-        assert!(capture_target(&scene(), Some("hidden")).is_err());
-        assert!(capture_target(&scene(), Some("missing")).is_err());
+        assert!(capture_target(&scene(), Some("hidden"), false).is_err());
+        assert!(capture_target(&scene(), Some("missing"), false).is_err());
         let empty = LayoutScene {
             active_page_index: 0,
             pages: vec![ScenePage {
@@ -285,8 +301,8 @@ mod tests {
                 children: vec![],
             }],
         };
-        assert!(capture_target(&empty, None).is_err());
-        assert!(capture_target(&empty, Some(PAGE_TARGET)).is_err());
+        assert!(capture_target(&empty, None, false).is_err());
+        assert!(capture_target(&empty, Some(PAGE_TARGET), false).is_err());
     }
 
     #[test]
@@ -305,7 +321,7 @@ mod tests {
         host.editor_state = op_editor_core::EditorState::from_document(doc);
         host.editor_state_dirty = true;
         let plan = host
-            .prepare_screenshot(Some("far"), 1.0, 1600)
+            .prepare_screenshot(Some("far"), 1.0, 1600, false)
             .expect("off-page capture");
         assert!(plan.off_page);
         assert_eq!(plan.target_id.as_deref(), Some("far"));
@@ -315,10 +331,12 @@ mod tests {
             "the editor stays on its page"
         );
         let default = host
-            .prepare_screenshot(None, 1.0, 1600)
+            .prepare_screenshot(None, 1.0, 1600, false)
             .expect("default capture");
         assert!(!default.off_page);
         assert_eq!(default.target_id.as_deref(), Some("near"));
-        assert!(host.prepare_screenshot(Some("missing"), 1.0, 1600).is_err());
+        assert!(host
+            .prepare_screenshot(Some("missing"), 1.0, 1600, false)
+            .is_err());
     }
 }

@@ -3,7 +3,7 @@
 //! mapping, base-prop assembly, the conversion context, and the
 //! SYMBOL-subtree rescaler.
 
-use crate::figma_types::{BlobOrString, FigMatrix};
+use crate::figma_types::{BlobOrString, FigMatrix, FigVec2};
 use crate::instance::InstanceExpansionCache;
 use crate::kiwi::FigValue;
 use crate::mappers::{map_blend_mode, map_height_sizing, map_width_sizing};
@@ -364,19 +364,135 @@ fn has_command_geometry(figma: &FigValue) -> bool {
     })
 }
 
-/// Rescale one node's own fields in place, without touching children.
-/// Shared by the whole-subtree rescaler and by the override resolver,
-/// which scales node-by-node so a branch can stop inheriting an outer
-/// instance's ratio the moment Figma hands it resolved geometry.
-pub(crate) fn scale_node_fields(figma: &mut FigValue, sx: f64, sy: f64) {
-    let metric_scale = sx.abs().min(sy.abs());
-    if let Some(mut transform) = figma.get("transform").cloned() {
-        let m02 = transform.get_f64("m02").unwrap_or(0.0) * sx;
-        let m12 = transform.get_f64("m12").unwrap_or(0.0) * sy;
-        transform.set("m02", FigValue::Float(m02 as f32));
-        transform.set("m12", FigValue::Float(m12 as f32));
-        figma.set("transform", transform);
+/// A component parent's authored box, as its children see it when an
+/// instance resizes it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct ParentBox {
+    pub w: f64,
+    pub h: f64,
+    /// Auto-layout direction (`true` = horizontal); `None` for a free frame.
+    pub stack: Option<bool>,
+}
+
+/// How an instance's box differs from its component's, as seen by one
+/// level of children. With `frame` each child follows Figma's resize rules:
+/// constraints in a free frame, fixed size (unless it fills) in auto layout.
+/// Without it the ratio applies uniformly. `uniform` marks a Scale-tool
+/// instance (`uniformScaleFactor`), which scales its whole subtree.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct InstanceResize {
+    pub sx: f64,
+    pub sy: f64,
+    pub frame: Option<ParentBox>,
+    pub uniform: bool,
+}
+
+impl InstanceResize {
+    pub(crate) const NONE: Self = Self {
+        sx: 1.0,
+        sy: 1.0,
+        frame: None,
+        uniform: false,
+    };
+
+    /// The resize `parent`'s children see when `parent` grows by `(sx, sy)`.
+    pub(crate) fn of(parent: &FigValue, sx: f64, sy: f64, uniform: bool) -> Self {
+        let frame = authored_frame(parent).filter(|_| !uniform);
+        Self {
+            sx,
+            sy,
+            frame,
+            uniform,
+        }
     }
+
+    /// Same resize mode, re-based on a child that grew by `(sx, sy)`.
+    pub(crate) fn nested(self, parent_frame: Option<ParentBox>, sx: f64, sy: f64) -> Self {
+        let frame = parent_frame.filter(|_| !self.uniform);
+        Self {
+            sx,
+            sy,
+            frame,
+            uniform: self.uniform,
+        }
+    }
+
+    fn is_identity(&self) -> bool {
+        (self.sx - 1.0).abs() < 0.001 && (self.sy - 1.0).abs() < 0.001
+    }
+}
+
+/// The authored box a node presents to its children.
+pub(crate) fn authored_frame(parent: &FigValue) -> Option<ParentBox> {
+    let stack = match parent.get_str("stackMode") {
+        Some("HORIZONTAL") => Some(true),
+        Some("VERTICAL") => Some(false),
+        _ => None,
+    };
+    let size = parent.get("size").and_then(FigVec2::from_value)?;
+    Some(ParentBox {
+        w: size.x,
+        h: size.y,
+        stack,
+    })
+}
+
+/// Constraints a child resizes by. An auto-layout flow child keeps its
+/// position and size (Figma's derived data moves it) unless it fills an
+/// axis; absent constraints are Figma's default MIN (left / top).
+fn resize_constraints<'a>(figma: &'a FigValue, parent: ParentBox) -> [Option<&'a str>; 2] {
+    let flow = figma.get_str("stackPositioning") != Some("ABSOLUTE");
+    match parent.stack.filter(|_| flow) {
+        Some(horizontal) => {
+            let grow = figma.get_f64("stackChildPrimaryGrow") == Some(1.0);
+            let stretch = figma.get_str("stackChildAlignSelf") == Some("STRETCH");
+            let fill = |on: bool| on.then_some("STRETCH");
+            if horizontal {
+                [fill(grow), fill(stretch)]
+            } else {
+                [fill(stretch), fill(grow)]
+            }
+        }
+        None => [
+            figma.get_str("horizontalConstraint"),
+            figma.get_str("verticalConstraint"),
+        ],
+    }
+}
+
+/// New `(position, length)` on one axis when the parent grows by `ratio`.
+fn constrained_axis(
+    constraint: Option<&str>,
+    pos: f64,
+    len: f64,
+    parent: f64,
+    ratio: f64,
+) -> (f64, f64) {
+    let delta = parent * (ratio - 1.0);
+    match constraint {
+        Some("MAX" | "FIXED_MAX") => (pos + delta, len),
+        Some("CENTER") => (pos + delta / 2.0, len),
+        Some("STRETCH") => (pos, len + delta),
+        Some("SCALE") => (pos * ratio, len * ratio),
+        _ => (pos, len),
+    }
+}
+
+fn resize_ratio(new: f64, old: f64) -> f64 {
+    if old.abs() > 0.001 {
+        new / old
+    } else {
+        1.0
+    }
+}
+
+/// Resize one node's own fields in place, without touching children, and
+/// return the ratio its own children inherit. Shared by the whole-subtree
+/// rescaler and by the override resolver, which resizes node-by-node so a
+/// branch can stop inheriting an outer instance's ratio the moment Figma
+/// hands it resolved geometry.
+pub(crate) fn scale_node_fields(figma: &mut FigValue, resize: InstanceResize) -> (f64, f64) {
+    let (sx, sy) = (resize.sx, resize.sy);
     // An auto-growing text box is sized by its content at its authored
     // font size, not by the instance ratio — scaling it squeezes the
     // label (a 0.4-scaled button pinched a 24 px "搜索" box to 9.6 px
@@ -387,15 +503,44 @@ pub(crate) fn scale_node_fields(figma: &mut FigValue, sx: f64, sy: f64) {
         Some("HEIGHT") => (true, false),
         _ => (true, true),
     };
+    let transform = figma.get("transform").cloned();
+    let pos = transform.as_ref().map_or((0.0, 0.0), |t| {
+        (
+            t.get_f64("m02").unwrap_or(0.0),
+            t.get_f64("m12").unwrap_or(0.0),
+        )
+    });
+    let size = figma.get("size").and_then(FigVec2::from_value);
+    let (w, h) = size.map_or((0.0, 0.0), |s| (s.x, s.y));
+    let ((x, mut nw), (y, mut nh)) = match resize.frame {
+        Some(parent) => {
+            let [cx, cy] = resize_constraints(figma, parent);
+            (
+                constrained_axis(cx, pos.0, w, parent.w, sx),
+                constrained_axis(cy, pos.1, h, parent.h, sy),
+            )
+        }
+        None => ((pos.0 * sx, w * sx.abs()), (pos.1 * sy, h * sy.abs())),
+    };
+    if !scale_w {
+        nw = w;
+    }
+    if !scale_h {
+        nh = h;
+    }
+    let (rx, ry) = match resize.frame {
+        Some(_) => (resize_ratio(nw, w), resize_ratio(nh, h)),
+        None => (sx, sy),
+    };
+    let metric_scale = rx.abs().min(ry.abs());
+    if let Some(mut transform) = transform {
+        transform.set("m02", FigValue::Float(x as f32));
+        transform.set("m12", FigValue::Float(y as f32));
+        figma.set("transform", transform);
+    }
     if let Some(mut size) = figma.get("size").cloned() {
-        if scale_w {
-            let x = size.get_f64("x").unwrap_or(0.0) * sx.abs();
-            size.set("x", FigValue::Float(x as f32));
-        }
-        if scale_h {
-            let y = size.get_f64("y").unwrap_or(0.0) * sy.abs();
-            size.set("y", FigValue::Float(y as f32));
-        }
+        size.set("x", FigValue::Float(nw as f32));
+        size.set("y", FigValue::Float(nh as f32));
         figma.set("size", size);
     }
     // Stroke weights and corner radii follow the box: an icon symbol
@@ -421,8 +566,8 @@ pub(crate) fn scale_node_fields(figma: &mut FigValue, sx: f64, sy: f64) {
     }
 
     if has_command_geometry(figma) {
-        let accumulated_x = figma.get_f64(INSTANCE_GEOMETRY_SCALE_X).unwrap_or(1.0) * sx;
-        let accumulated_y = figma.get_f64(INSTANCE_GEOMETRY_SCALE_Y).unwrap_or(1.0) * sy;
+        let accumulated_x = figma.get_f64(INSTANCE_GEOMETRY_SCALE_X).unwrap_or(1.0) * rx;
+        let accumulated_y = figma.get_f64(INSTANCE_GEOMETRY_SCALE_Y).unwrap_or(1.0) * ry;
         figma.set(
             INSTANCE_GEOMETRY_SCALE_X,
             FigValue::Float(accumulated_x as f32),
@@ -432,10 +577,12 @@ pub(crate) fn scale_node_fields(figma: &mut FigValue, sx: f64, sy: f64) {
             FigValue::Float(accumulated_y as f32),
         );
     }
+    (rx, ry)
 }
 
-fn scale_tree_node(mut child: TreeNode, sx: f64, sy: f64) -> TreeNode {
-    scale_node_fields(&mut child.figma, sx, sy);
+fn scale_tree_node(mut child: TreeNode, resize: InstanceResize) -> TreeNode {
+    let frame = authored_frame(&child.figma);
+    let (rx, ry) = scale_node_fields(&mut child.figma, resize);
     // Stop at nested instances. Their own resolution pass rescales
     // their subtree against their (already-scaled) box, and their
     // derived entries are recorded in nested-instance space — letting
@@ -445,28 +592,30 @@ fn scale_tree_node(mut child: TreeNode, sx: f64, sy: f64) -> TreeNode {
     let is_nested_instance =
         child.figma.get_str("type") == Some("INSTANCE") || child.figma.get("symbolData").is_some();
     if !is_nested_instance {
-        child.children = scale_tree_children_owned(child.children, sx, sy);
+        let inner = resize.nested(frame, rx, ry);
+        child.children = scale_tree_children_owned(child.children, inner);
     }
     child
 }
 
-/// Recursively rescale a SYMBOL subtree to fit a differently-sized
-/// instance. Translation, size, vector geometry, stroke width, and
-/// corner radii scale; text metrics and the rotation matrix cells stay
+/// Recursively resize a SYMBOL subtree to fit a differently-sized
+/// instance: children follow their Figma constraints (uniformly under an
+/// auto-layout parent). Translation, size, vector geometry, stroke width
+/// and corner radii follow; text metrics and the rotation matrix cells stay
 /// as authored. Nested calls accumulate the command-geometry scale.
-pub fn scale_tree_children(children: &[TreeNode], sx: f64, sy: f64) -> Vec<TreeNode> {
-    scale_tree_children_owned(children.to_vec(), sx, sy)
+pub fn scale_tree_children(children: &[TreeNode], resize: InstanceResize) -> Vec<TreeNode> {
+    scale_tree_children_owned(children.to_vec(), resize)
 }
 
 /// Owned variant used after derived data has already materialised a
 /// fresh subtree, avoiding a second deep clone for instance-heavy files.
-fn scale_tree_children_owned(children: Vec<TreeNode>, sx: f64, sy: f64) -> Vec<TreeNode> {
-    if (sx - 1.0).abs() < 0.001 && (sy - 1.0).abs() < 0.001 {
+fn scale_tree_children_owned(children: Vec<TreeNode>, resize: InstanceResize) -> Vec<TreeNode> {
+    if resize.is_identity() {
         return children;
     }
     children
         .into_iter()
-        .map(|child| scale_tree_node(child, sx, sy))
+        .map(|child| scale_tree_node(child, resize))
         .collect()
 }
 

@@ -32,6 +32,20 @@ pub(crate) fn filter_swap_stale_derived(
     // them. Exact base-subtree GUIDs are safe to remove, while GUIDs shared
     // with the target remain protected for defensive compatibility.
     let mut filtered = derived.to_vec();
+    // Variants share override keys, so a key the new component also
+    // addresses is current data, never a stale cluster.
+    let mut target_nodes = Vec::new();
+    flatten_dfs(symbol_node, &mut target_nodes);
+    let target_guids: std::collections::HashSet<String> = target_nodes
+        .iter()
+        .flat_map(|node| ["guid", "overrideKey"].map(|key| node.figma.get(key)))
+        .flatten()
+        .filter_map(crate::tree::guid_to_string)
+        .collect();
+    let single_key = |entry: &FigValue| {
+        let guids = entry.get("guidPath")?.get_array("guids")?;
+        (guids.len() == 1).then(|| guids.first().and_then(crate::tree::guid_to_string))?
+    };
     if let Some(base_symbol_node) = base_symbol_node {
         let mut base_nodes = Vec::new();
         flatten_dfs(base_symbol_node, &mut base_nodes);
@@ -39,26 +53,8 @@ pub(crate) fn filter_swap_stale_derived(
             .iter()
             .filter_map(|node| node.figma.get("guid").and_then(crate::tree::guid_to_string))
             .collect();
-        let mut target_nodes = Vec::new();
-        flatten_dfs(symbol_node, &mut target_nodes);
-        let target_guids: std::collections::HashSet<String> = target_nodes
-            .iter()
-            .filter_map(|node| node.figma.get("guid").and_then(crate::tree::guid_to_string))
-            .collect();
         filtered.retain(|entry| {
-            let Some(guids) = entry
-                .get("guidPath")
-                .and_then(|path| path.get_array("guids"))
-            else {
-                return true;
-            };
-            if guids.len() != 1 {
-                return true;
-            }
-            let Some(guid) = guids.first().and_then(crate::tree::guid_to_string) else {
-                return true;
-            };
-            !base_guids.contains(&guid) || target_guids.contains(&guid)
+            single_key(entry).is_none_or(|g| !base_guids.contains(&g) || target_guids.contains(&g))
         });
     }
 
@@ -159,6 +155,7 @@ pub(crate) fn filter_swap_stale_derived(
     let drop_idx: std::collections::HashSet<usize> = singles
         .iter()
         .filter(|s| !keep_lids.contains(&s.lid))
+        .filter(|s| single_key(&filtered[s.idx]).is_none_or(|g| !target_guids.contains(&g)))
         .map(|s| s.idx)
         .collect();
     filtered

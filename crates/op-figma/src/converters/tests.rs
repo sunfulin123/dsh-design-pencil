@@ -784,3 +784,83 @@ fn preserve_plain_frame_keeps_disabled_mask_as_explicit_open_content() {
     };
     assert_eq!(frame.container.clip_content, Some(false));
 }
+
+#[test]
+fn fully_transparent_children_stay_as_editable_layout_participants() {
+    // Figma still lays out an opacity-0 layer (a tab's inactive underline);
+    // dropping it would reflow its stack and lose the layer for editing.
+    let mut ghost = rect_child("underline", 2, "\"");
+    add_fields(&mut ghost, vec![("opacity", FigValue::Float(0.0))]);
+    let tree = auto_layout_frame(vec![ghost, rect_child("label", 1, "!")]);
+    for mode in [FigLayoutMode::OpenPencil, FigLayoutMode::Preserve] {
+        let mut ctx = fresh_ctx();
+        ctx.layout_mode = mode;
+        let node = convert_frame(&tree, None, &mut ctx);
+        let PenNode::Frame(frame) = &node else {
+            unreachable!()
+        };
+        let rect = frame
+            .children
+            .as_deref()
+            .unwrap()
+            .iter()
+            .find_map(|child| match child {
+                PenNode::Rectangle(r) if r.base.name.as_deref() == Some("underline") => Some(r),
+                _ => None,
+            })
+            .expect("the transparent rectangle is kept");
+        assert_eq!(rect.base.opacity, Some(NumberOrExpression::Number(0.0)));
+    }
+}
+
+#[test]
+fn resize_to_fit_frame_converts_as_unclipped_group_with_effects() {
+    // Kiwi encodes a Figma GROUP as type="FRAME" with resizeToFit=true and
+    // frameMaskDisabled=false. Treating it as a clipped Frame both clipped
+    // its drop shadow and cast a rectangular box shadow behind cursor icons.
+    let shadow = obj(vec![
+        ("type", FigValue::Str("DROP_SHADOW".into())),
+        ("visible", FigValue::Bool(true)),
+        (
+            "color",
+            obj(vec![
+                ("r", FigValue::Float(0.0)),
+                ("g", FigValue::Float(0.0)),
+                ("b", FigValue::Float(0.0)),
+                ("a", FigValue::Float(0.5)),
+            ]),
+        ),
+        (
+            "offset",
+            obj(vec![
+                ("x", FigValue::Float(0.0)),
+                ("y", FigValue::Float(1.0)),
+            ]),
+        ),
+        ("radius", FigValue::Float(0.8)),
+    ]);
+    let tree = TreeNode {
+        figma: obj(vec![
+            ("type", FigValue::Str("FRAME".into())),
+            ("name", FigValue::Str("pointing".into())),
+            ("resizeToFit", FigValue::Bool(true)),
+            ("frameMaskDisabled", FigValue::Bool(false)),
+            ("effects", FigValue::Array(vec![shadow])),
+            (
+                "size",
+                obj(vec![
+                    ("x", FigValue::Float(14.4)),
+                    ("y", FigValue::Float(15.3)),
+                ]),
+            ),
+        ]),
+        children: vec![rect_child("hand", 1, "!")],
+    };
+    let mut ctx = fresh_ctx();
+    ctx.layout_mode = FigLayoutMode::Preserve;
+    let Some(PenNode::Group(group)) = convert_node(&tree, None, &mut ctx) else {
+        panic!("resizeToFit FRAME must convert as PenNode::Group");
+    };
+    assert_eq!(group.container.clip_content, None);
+    assert_eq!(group.container.effects.as_ref().map(Vec::len), Some(1));
+}

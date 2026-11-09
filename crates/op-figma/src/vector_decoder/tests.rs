@@ -319,3 +319,33 @@ fn r_strips_trailing_zeros() {
     assert_eq!(r(0.00001), "0");
     assert_eq!(r(-0.0), "0");
 }
+
+/// A fill-override region (Figma's `overrideID`) repeats the default region's
+/// outline. Joined into one even-odd path, the copies cancel and the icon
+/// vanishes (the "Available" presence diamond did).
+#[test]
+fn identical_fill_regions_are_painted_once_instead_of_cancelling() {
+    let mut blob = Vec::new();
+    blob.push(0x01);
+    push_f32(&mut blob, 0.0);
+    push_f32(&mut blob, 0.0);
+    for (x, y) in [(8.0, 0.0), (8.0, 8.0), (0.0, 8.0)] {
+        blob.push(0x02);
+        push_f32(&mut blob, x);
+        push_f32(&mut blob, y);
+    }
+    blob.push(0x00);
+    let region = |idx: u32| {
+        obj(vec![
+            ("commandsBlob", FigValue::Uint(idx)),
+            ("windingRule", FigValue::Str("ODD".into())),
+        ])
+    };
+    let node = obj(vec![(
+        "fillGeometry",
+        FigValue::Array(vec![region(0), region(1)]),
+    )]);
+    let blobs = vec![BlobOrString::Bytes(blob.clone()), BlobOrString::Bytes(blob)];
+    let decoded = decode_figma_vector_path(&node, &blobs).expect("geometry decodes");
+    assert_eq!(decoded.d.matches('M').count(), 1, "{}", decoded.d);
+}

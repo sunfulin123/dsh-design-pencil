@@ -345,21 +345,17 @@ fn paint_node_inner<'a>(
         cx.backend.push_blur_layer(sigma);
     }
 
-    // Drop shadows paint behind the node's own fill. Only kinds
-    // whose silhouette a rounded rect / ellipse can represent
-    // faithfully (Frame / Rect / Ellipse) cast one; Polygon / Line
-    // / Path shadows are deferred until a shape-mask path exists.
-    if !node.effects.is_empty()
+    // Box/oval silhouettes draw a blurred shape directly; other nodes
+    // push an alpha-silhouette drop-shadow save-layer popped below.
+    let shadow_layers = if !node.effects.is_empty()
         && !options.fast_interaction
         && world_rect.size.x > 0.0
         && world_rect.size.y > 0.0
-        && matches!(
-            node.kind,
-            NodeKind::Frame | NodeKind::Rect | NodeKind::Ellipse
-        )
     {
-        paint_drop_shadows(cx, node, world_rect, zoom, dpi_scale);
-    }
+        paint_drop_shadows(cx, node, world_rect, zoom, dpi_scale)
+    } else {
+        0
+    };
 
     match &node.kind {
         NodeKind::Frame => {
@@ -598,76 +594,62 @@ fn paint_node_inner<'a>(
         NodeKind::Path => {
             if let Some(d) = node.svg_path.as_deref() {
                 paint_svg_path_node(cx, node, world_rect, zoom, d);
-                if blur_sigma.is_some() {
-                    cx.backend.restore();
-                }
-                if node_composite_pushed {
-                    cx.backend.restore();
-                }
-                if background_blur_pushed {
-                    cx.backend.restore();
-                    cx.backend.restore();
-                }
-                if transformed {
-                    cx.backend.restore();
-                }
-                if overlay_transformed {
-                    transforms.pop();
-                }
-                return hits;
-            }
-            // Bezier-aware: when the path carries anchors with control
-            // handles, flatten each cubic segment; otherwise fall back
-            // to the straight `points` polyline.
-            let polyline = flatten_path_points(node);
-            let points = polyline.as_slice();
-            // A closed path with a fill paints its enclosed area. Canonical
-            // fill stacks share the same ordering/blend compositor as other
-            // shapes while retaining the polyline's exact silhouette.
-            let world = node
-                .path_closed
-                .then(|| world_path_points(points, viewport_origin, zoom));
-            let layered = world.as_ref().is_some_and(|world| {
-                paint_clipped_fill_layers_with(
-                    cx,
-                    node,
-                    world_rect,
-                    |backend| backend.clip_polygon(world.as_slice()),
-                    |cx, layer| {
-                        if !paint_clipped_shape_rich_fill_layer(cx, node, layer, world_rect, zoom) {
-                            if let Some(fill) = fill_layer_fallback_color(layer) {
-                                // Let the path clip provide the only AA edge.
-                                cx.backend.fill_rect(world_rect, fill);
+            } else {
+                // Bezier-aware: when the path carries anchors with control
+                // handles, flatten each cubic segment; otherwise fall back
+                // to the straight `points` polyline.
+                let polyline = flatten_path_points(node);
+                let points = polyline.as_slice();
+                // A closed path with a fill paints its enclosed area. Canonical
+                // fill stacks share the same ordering/blend compositor as other
+                // shapes while retaining the polyline's exact silhouette.
+                let world = node
+                    .path_closed
+                    .then(|| world_path_points(points, viewport_origin, zoom));
+                let layered = world.as_ref().is_some_and(|world| {
+                    paint_clipped_fill_layers_with(
+                        cx,
+                        node,
+                        world_rect,
+                        |backend| backend.clip_polygon(world.as_slice()),
+                        |cx, layer| {
+                            if !paint_clipped_shape_rich_fill_layer(
+                                cx, node, layer, world_rect, zoom,
+                            ) {
+                                if let Some(fill) = fill_layer_fallback_color(layer) {
+                                    // Let the path clip provide the only AA edge.
+                                    cx.backend.fill_rect(world_rect, fill);
+                                }
                             }
-                        }
-                    },
-                )
-            });
-            let filled = node.path_closed && (layered || node.fill.is_some());
-            if filled && !layered {
-                cx.backend
-                    .fill_polygon(world.as_ref().unwrap().as_slice(), node.fill.unwrap());
-            }
-            // Stroke: an explicit stroke always paints; with no
-            // stroke, only an UNfilled path strokes (so it stays
-            // visible) — a filled path must not draw an implicit
-            // outline.
-            let stroke = match node.stroke {
-                Some(s) => Some((s.color, s.width * zoom)),
-                None if !filled => Some((
-                    node.fill.unwrap_or(crate::Color::BLACK),
-                    (1.5_f32).max(zoom),
-                )),
-                None => None,
-            };
-            if let Some((color, width)) = stroke {
-                for pair in points.windows(2) {
-                    cx.backend.stroke_line(
-                        doc_to_world_point(pair[0], viewport_origin, zoom),
-                        doc_to_world_point(pair[1], viewport_origin, zoom),
-                        color,
-                        width,
-                    );
+                        },
+                    )
+                });
+                let filled = node.path_closed && (layered || node.fill.is_some());
+                if filled && !layered {
+                    cx.backend
+                        .fill_polygon(world.as_ref().unwrap().as_slice(), node.fill.unwrap());
+                }
+                // Stroke: an explicit stroke always paints; with no
+                // stroke, only an UNfilled path strokes (so it stays
+                // visible) — a filled path must not draw an implicit
+                // outline.
+                let stroke = match node.stroke {
+                    Some(s) => Some((s.color, s.width * zoom)),
+                    None if !filled => Some((
+                        node.fill.unwrap_or(crate::Color::BLACK),
+                        (1.5_f32).max(zoom),
+                    )),
+                    None => None,
+                };
+                if let Some((color, width)) = stroke {
+                    for pair in points.windows(2) {
+                        cx.backend.stroke_line(
+                            doc_to_world_point(pair[0], viewport_origin, zoom),
+                            doc_to_world_point(pair[1], viewport_origin, zoom),
+                            color,
+                            width,
+                        );
+                    }
                 }
             }
         }
@@ -696,6 +678,9 @@ fn paint_node_inner<'a>(
         }
     }
 
+    for _ in 0..shadow_layers {
+        cx.backend.restore();
+    }
     if blur_sigma.is_some() {
         cx.backend.restore();
     }

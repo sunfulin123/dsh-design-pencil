@@ -444,3 +444,70 @@ fn reverse_stacking_flag_follows_the_stored_child_order() {
         "flow order already puts the first child on top"
     );
 }
+
+#[test]
+fn transparent_layers_import_while_hidden_layers_are_skipped() {
+    // A tab's inactive underline is opacity 0 yet still sized by its stack.
+    let root = json!({
+        "id": "1:1", "name": "Tab", "type": "FRAME", "layoutMode": "VERTICAL",
+        "absoluteBoundingBox": bbox(0.0, 0.0, 45.0, 36.0),
+        "relativeTransform": rt(0.0, 0.0), "size": {"x": 45.0, "y": 36.0},
+        "children": [
+            {"id": "1:2", "name": "underline", "type": "RECTANGLE", "opacity": 0.0,
+                "fills": [solid(0.1, 0.1, 0.1)], "layoutAlign": "STRETCH",
+                "absoluteBoundingBox": bbox(0.0, 32.0, 45.0, 4.0),
+                "relativeTransform": rt(0.0, 32.0), "size": {"x": 45.0, "y": 4.0}},
+            {"id": "1:3", "name": "Hidden", "type": "RECTANGLE", "visible": false,
+                "absoluteBoundingBox": bbox(0.0, 0.0, 10.0, 10.0),
+                "relativeTransform": rt(0.0, 0.0), "size": {"x": 10.0, "y": 10.0}}
+        ]
+    });
+    let result = convert_rest_nodes(&[root], &RestImportOptions::default());
+    let kids = frame_children(&result.nodes[0]);
+    let underline = find(kids, "underline");
+    assert!(matches!(
+        underline.base().opacity,
+        Some(jian_ops_schema::node::base::NumberOrExpression::Number(o)) if o == 0.0
+    ));
+    assert!(kids
+        .iter()
+        .all(|n| n.base().name.as_deref() != Some("Hidden")));
+}
+
+#[test]
+fn mirrored_group_children_do_not_inherit_a_duplicate_flip() {
+    // Figma REST `relativeTransform` is parent-relative even inside a GROUP.
+    // Treating group children as container-relative flipped them a second time,
+    // inverting the diagonal mask on the 67 donut chart (`1817:36855`).
+    let root = json!({
+        "id": "1:1", "name": "Card", "type": "FRAME",
+        "absoluteBoundingBox": bbox(1656.0, 444.0, 81.5, 81.0),
+        "relativeTransform": rt(1656.0, 444.0), "size": {"x": 81.5, "y": 81.0},
+        "children": [{
+            "id": "1:2", "name": "Group 2", "type": "GROUP",
+            "absoluteBoundingBox": bbox(1656.0, 444.0, 81.5, 81.0),
+            "relativeTransform": [[-1.0, 0.0, 81.5], [0.0, 1.0, 0.0]],
+            "size": {"x": 81.5, "y": 81.0},
+            "children": [
+                {"id": "1:3", "name": "Mask", "type": "RECTANGLE",
+                 "absoluteBoundingBox": bbox(1656.0, 444.0, 81.5, 81.0),
+                 "relativeTransform": rt(0.0, 0.0), "size": {"x": 81.5, "y": 81.0}},
+                {"id": "1:4", "name": "Oval", "type": "ELLIPSE",
+                 "absoluteBoundingBox": bbox(1656.0, 444.0, 163.0, 162.0),
+                 "relativeTransform": rt(-81.5, 0.0), "size": {"x": 163.0, "y": 162.0}}
+            ]
+        }]
+    });
+    let result = convert_rest_nodes(&[root], &RestImportOptions::default());
+    let PenNode::Group(group) = &frame_children(&result.nodes[0])[0] else {
+        panic!("expected group");
+    };
+    assert_eq!(group.base.flip_x, Some(true));
+    let kids = group.children.as_deref().unwrap();
+    let mask = find(kids, "Mask").base();
+    assert_eq!(mask.flip_x, None);
+    close(mask.x.unwrap(), 0.0);
+    let oval = find(kids, "Oval").base();
+    assert_eq!(oval.flip_x, None);
+    close(oval.x.unwrap(), -81.5);
+}

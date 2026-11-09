@@ -142,8 +142,8 @@ fn text_node_paint_honors_horizontal_alignment_and_backend_ascent() {
         "center-aligned text should move away from the left edge"
     );
     assert_eq!(
-        origin.y, 46.8,
-        "middle-aligned text is ink-centred inside the taller box"
+        origin.y, 45.0,
+        "middle-aligned Latin text centres its line box (30) and sits on the backend's font-metric baseline (15)"
     );
 }
 
@@ -179,8 +179,10 @@ fn cjk_text_ink_center_matches_box_center_for_every_vertical_align_default() {
         };
         paint_text_node(&mut cx, &node, node.bounds, 1.0, &None);
         let ink_center = backend.origins[0].y - 0.375 * fs;
+        // Within half a pixel: the baseline snaps to the box's pixel grid.
+        assert_eq!(backend.origins[0].y.fract(), 0.0);
         assert!(
-            (ink_center - h / 2.0).abs() < 0.01,
+            (ink_center - h / 2.0).abs() <= 0.5,
             "ink centre {ink_center} vs box centre {} (h={h}, fs={fs})",
             h / 2.0
         );

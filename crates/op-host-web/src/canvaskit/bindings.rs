@@ -24,13 +24,7 @@ extern "C" {
     #[derive(Clone)]
     pub type OpCk;
     #[wasm_bindgen(method, js_name = registerFontFace)]
-    pub(super) fn register_font_face(
-        this: &OpCk,
-        family: &str,
-        weight: u32,
-        italic: bool,
-        bytes: &[u8],
-    ) -> bool;
+    pub(super) fn register_font_face(this: &OpCk, f: &str, w: u32, i: bool, b: &[u8]) -> bool;
     #[wasm_bindgen(method, js_name = beginFrame)]
     pub(super) fn begin_frame(this: &OpCk);
     #[wasm_bindgen(method, js_name = endFrame)]
@@ -471,20 +465,9 @@ extern "C" {
         tile_scale: f32,
     );
     #[wasm_bindgen(method, js_name = imageDecoded)]
-    pub(super) fn image_decoded(
-        this: &OpCk,
-        image_id_lo: u32,
-        image_id_hi: u32,
-        max_edge_px: u32,
-    ) -> bool;
+    pub(super) fn image_decoded(this: &OpCk, lo: u32, hi: u32, edge: u32) -> bool;
     #[wasm_bindgen(method, js_name = decodeImage)]
-    pub(super) fn decode_image(
-        this: &OpCk,
-        image_id_lo: u32,
-        image_id_hi: u32,
-        encoded: &[u8],
-        max_edge_px: u32,
-    ) -> bool;
+    pub(super) fn decode_image(this: &OpCk, lo: u32, hi: u32, b: &[u8], edge: u32) -> bool;
     #[wasm_bindgen(method, js_name = drawImageThumb)]
     pub(super) fn draw_image_thumb(
         this: &OpCk,
@@ -499,13 +482,7 @@ extern "C" {
     #[wasm_bindgen(method, js_name = measureText)]
     pub(super) fn measure_text(this: &OpCk, t: &str, sz: f32) -> f32;
     #[wasm_bindgen(method, js_name = measureTextStyled)]
-    pub(super) fn measure_text_styled(
-        this: &OpCk,
-        t: &str,
-        sz: f32,
-        weight: i32,
-        italic: bool,
-    ) -> f32;
+    pub(super) fn measure_text_styled(this: &OpCk, t: &str, sz: f32, w: i32, italic: bool) -> f32;
     #[wasm_bindgen(method, js_name = textAscent)]
     pub(super) fn text_ascent(this: &OpCk, family: &str, sz: f32, weight: i32) -> f32;
     #[wasm_bindgen(method, js_name = textFirstBaseline)]
@@ -612,10 +589,10 @@ extern "C" {
         y: f32,
         w: f32,
         h: f32,
-        top_left: f32,
-        top_right: f32,
-        bottom_right: f32,
-        bottom_left: f32,
+        tl: f32,
+        tr: f32,
+        br: f32,
+        bl: f32,
     );
     #[wasm_bindgen(method, js_name = clipOval)]
     pub(super) fn clip_oval(this: &OpCk, x: f32, y: f32, w: f32, h: f32);
@@ -651,6 +628,17 @@ extern "C" {
     pub(super) fn push_backdrop_blur_layer(this: &OpCk, sigma: f32);
     #[wasm_bindgen(method, js_name = pushBlurLayer)]
     pub(super) fn push_blur_layer(this: &OpCk, sigma: f32);
+    #[wasm_bindgen(method, js_name = pushDropShadowLayer)]
+    pub(super) fn push_drop_shadow_layer(
+        this: &OpCk,
+        dx: f32,
+        dy: f32,
+        blur: f32,
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+    );
     #[wasm_bindgen(method)]
     pub(super) fn restore(this: &OpCk);
     #[wasm_bindgen(method)]

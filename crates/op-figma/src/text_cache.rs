@@ -55,12 +55,34 @@ fn compact_instance_text_caches(value: &mut FigValue) {
     }
 }
 
+/// Keep the semantic payload: `characters`, the resolved box
+/// (`layoutSize`), and one glyph carrying the font size when every glyph
+/// shares it (a scaled instance's label records its size only there).
 fn compact_derived_text_data(value: &mut FigValue) {
     let FigValue::Object(fields) = value else {
         return;
     };
-    fields.retain(|(name, _)| name.as_ref() == "characters");
+    let uniform_glyph = fields
+        .iter()
+        .find(|(name, _)| name.as_ref() == "glyphs")
+        .and_then(|(_, glyphs)| uniform_font_size(glyphs));
+    fields.retain(|(name, _)| matches!(name.as_ref(), "characters" | "layoutSize"));
+    if let Some(size) = uniform_glyph {
+        let glyph = FigValue::Object(vec![("fontSize".into(), FigValue::Float(size))]);
+        fields.push(("glyphs".into(), FigValue::Array(vec![glyph])));
+    }
     fields.shrink_to_fit();
+}
+
+fn uniform_font_size(glyphs: &FigValue) -> Option<f32> {
+    let FigValue::Array(glyphs) = glyphs else {
+        return None;
+    };
+    let mut sizes = glyphs.iter().filter_map(|glyph| glyph.get_f64("fontSize"));
+    let first = sizes.next()?;
+    sizes
+        .all(|size| (size - first).abs() < 0.01)
+        .then_some(first as f32)
 }
 
 #[cfg(test)]
@@ -127,7 +149,12 @@ mod tests {
             .get("derivedTextData")
             .expect("text marker survives");
         assert_eq!(compact_text.get_str("characters"), Some("Updated"));
-        assert!(compact_text.get("glyphs").is_none());
+        // One glyph summarises a uniform font size; per-glyph data is dropped.
+        let glyphs = compact_text
+            .get_array("glyphs")
+            .expect("uniform glyph size");
+        assert_eq!(glyphs.len(), 1);
+        assert_eq!(glyphs[0].get_f64("fontSize"), Some(16.0));
         assert!(compact_text.get("fontMetaData").is_none());
         assert!(entries[0].get("legacyDerivedTextData").is_none());
         assert!(entries[1]

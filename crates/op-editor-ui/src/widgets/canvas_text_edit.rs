@@ -30,6 +30,10 @@ pub struct TextEditLayout {
     pub font_size: f32,
     /// Resolved CSS-style weight (painter default applied).
     pub weight: u16,
+    /// Family the painter draws the lines in; every width is measured in
+    /// it so wraps, fits, alignment and carets follow the painted glyphs.
+    pub family: String,
+    pub italic: bool,
     /// Line advance in doc px (`font_size × line-height factor`).
     pub line_h: f32,
     /// Extra tracking between glyphs (doc px).
@@ -132,15 +136,20 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
     } else {
         0.0
     };
+    let family = painted_family(node);
+    let italic = node.italic;
     let lines: Vec<String> = if let Some(doc_wrap_width) = wrap_width_doc {
-        super::canvas_viewport_overlay::wrap_text(
-            backend,
-            text,
-            font_size,
-            doc_wrap_width,
-            weight,
-            letter_spacing,
-        )
+        super::canvas_viewport_overlay::wrap_text(text, doc_wrap_width, &mut |line| {
+            measure_line_width(
+                backend,
+                line,
+                font_size,
+                family,
+                weight,
+                italic,
+                letter_spacing,
+            )
+        })
     } else {
         text.split('\n').map(str::to_string).collect()
     };
@@ -154,7 +163,17 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
     if !node.text_wrap && box_w > 0.0 {
         let widest = lines
             .iter()
-            .map(|l| measure_line_width(backend, l, font_size, weight, letter_spacing))
+            .map(|l| {
+                measure_line_width(
+                    backend,
+                    l,
+                    font_size,
+                    family,
+                    weight,
+                    italic,
+                    letter_spacing,
+                )
+            })
             .fold(0.0_f32, f32::max);
         if widest > box_w {
             // Floor the scale so the text never becomes unreadable.
@@ -174,6 +193,8 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
         line_starts,
         font_size,
         weight,
+        family: family.to_owned(),
+        italic,
         line_h,
         letter_spacing,
         align_width: wrap_width_doc.unwrap_or(node.bounds.size.x),
@@ -190,16 +211,27 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
 /// unreadably small.
 pub(super) const MIN_SHRINK_SCALE: f32 = 0.35;
 
-/// Measure a painted line's full width — substring advance plus
-/// letter-spacing BETWEEN glyphs (mirrors the painter).
+/// Family the canvas painter draws a text node in (`system-ui` when unset).
+pub(crate) fn painted_family(node: &SceneNode) -> &str {
+    if node.font_family.trim().is_empty() {
+        "system-ui"
+    } else {
+        &node.font_family
+    }
+}
+
+/// Measure a painted line's full width in its painted face — substring
+/// advance plus letter-spacing BETWEEN glyphs (mirrors the painter).
 pub fn measure_line_width(
     backend: &mut dyn RenderBackend,
     line: &str,
     font_size: f32,
+    family: &str,
     weight: u16,
+    italic: bool,
     letter_spacing: f32,
 ) -> f32 {
-    let base = backend.measure_text_weighted(line, font_size, weight);
+    let base = backend.measure_text_family_styled(line, font_size, family, weight, italic);
     let extra = line.chars().count().saturating_sub(1) as f32 * letter_spacing;
     base + extra
 }
@@ -231,28 +263,38 @@ impl TextEditLayout {
         idx
     }
 
+    fn line_width(&self, backend: &mut dyn RenderBackend, line: &str) -> f32 {
+        measure_line_width(
+            backend,
+            line,
+            self.font_size,
+            &self.family,
+            self.weight,
+            self.italic,
+            self.letter_spacing,
+        )
+    }
+
+    fn advance(&self, backend: &mut dyn RenderBackend, text: &str) -> f32 {
+        backend.measure_text_family_styled(
+            text,
+            self.font_size,
+            &self.family,
+            self.weight,
+            self.italic,
+        )
+    }
+
     /// Alignment-adjusted left edge of `line` (doc space).
     fn line_x(&self, backend: &mut dyn RenderBackend, line: &str) -> f32 {
         match self.text_align {
             SceneTextAlign::Left | SceneTextAlign::Justify => self.origin.x,
             SceneTextAlign::Center => {
-                let line_w = measure_line_width(
-                    backend,
-                    line,
-                    self.font_size,
-                    self.weight,
-                    self.letter_spacing,
-                );
+                let line_w = self.line_width(backend, line);
                 self.origin.x + (self.align_width - line_w).max(0.0) / 2.0
             }
             SceneTextAlign::Right => {
-                let line_w = measure_line_width(
-                    backend,
-                    line,
-                    self.font_size,
-                    self.weight,
-                    self.letter_spacing,
-                );
+                let line_w = self.line_width(backend, line);
                 self.origin.x + (self.align_width - line_w).max(0.0)
             }
         }
@@ -270,16 +312,12 @@ impl TextEditLayout {
         }
         let prefix = &line[..offset];
         if self.letter_spacing.abs() < f32::EPSILON {
-            backend.measure_text_weighted(prefix, self.font_size, self.weight)
+            self.advance(backend, prefix)
         } else {
             let mut w = 0.0;
             for ch in prefix.chars() {
                 let mut buf = [0u8; 4];
-                w += backend.measure_text_weighted(
-                    ch.encode_utf8(&mut buf),
-                    self.font_size,
-                    self.weight,
-                ) + self.letter_spacing;
+                w += self.advance(backend, ch.encode_utf8(&mut buf)) + self.letter_spacing;
             }
             // Tracking belongs between glyphs. Internal caret boundaries
             // include the following gap; the end boundary stops at the
@@ -663,5 +701,82 @@ mod tests {
         let layout = text_edit_layout(&mut b, &text_node("", 200.0));
         assert_eq!(layout.lines, vec![String::new()]);
         assert_eq!(layout.caret_position(&mut b, 0), (100.0, 50.0));
+    }
+
+    /// The browser's family-blind default face (SF Pro) is 20% wider than
+    /// the imported family (Roboto) the node is painted in.
+    struct FamilyGapBackend;
+
+    impl RenderBackend for FamilyGapBackend {
+        fn begin_frame(&mut self) {}
+        fn end_frame(&mut self) {}
+        fn fill_rect(&mut self, _: Rect, _: Color) {}
+        fn stroke_rect(&mut self, _: Rect, _: Color, _: f32) {}
+        fn draw_text(&mut self, _: &TextLayout, _: Point2D) {}
+        fn clip_rect(&mut self, _: Rect) {}
+        fn save(&mut self) {}
+        fn restore(&mut self) {}
+        fn translate(&mut self, _: Point2D) {}
+        fn stroke_line(&mut self, _: Point2D, _: Point2D, _: Color, _: f32) {}
+        fn fill_round_rect(&mut self, _: Rect, _: f32, _: Color) {}
+        fn stroke_round_rect(&mut self, _: Rect, _: f32, _: Color, _: f32) {}
+        fn stroke_svg_path(&mut self, _: &str, _: Point2D, _: f32, _: Color, _: f32) {}
+        fn resize(&mut self, _: u32, _: u32) {}
+        fn dpi_scale(&self) -> f32 {
+            1.0
+        }
+        fn measure_text_weighted(&mut self, text: &str, _: f32, _: u16) -> f32 {
+            text.chars().count() as f32 * 12.0
+        }
+        fn measure_text_family_styled(
+            &mut self,
+            text: &str,
+            size: f32,
+            family: &str,
+            weight: u16,
+            _: bool,
+        ) -> f32 {
+            if family == "Roboto" {
+                text.chars().count() as f32 * 10.0
+            } else {
+                self.measure_text_weighted(text, size, weight)
+            }
+        }
+    }
+
+    fn roboto_node(content: &str, w: f32) -> SceneNode {
+        let mut node = text_node(content, w);
+        node.font_family = "Roboto".into();
+        node
+    }
+
+    #[test]
+    fn auto_width_text_fits_by_its_painted_family_not_the_default_face() {
+        // Figma hugged "hello" at 50 px in Roboto; the default face is wider.
+        let layout = text_edit_layout(&mut FamilyGapBackend, &roboto_node("hello", 50.0));
+        assert!(
+            (layout.font_size - 20.0).abs() < 0.001,
+            "text that fits in its own family must not shrink, got {}",
+            layout.font_size
+        );
+    }
+
+    #[test]
+    fn wrapped_text_breaks_by_its_painted_family() {
+        let mut node = roboto_node("hello world", 110.0);
+        node.text_wrap = true;
+        let layout = text_edit_layout(&mut FamilyGapBackend, &node);
+        assert_eq!(layout.lines, vec!["hello world"]);
+    }
+
+    #[test]
+    fn centred_lines_and_carets_use_the_painted_family_width() {
+        let mut b = FamilyGapBackend;
+        let mut node = roboto_node("hello", 200.0);
+        node.text_align = SceneTextAlign::Center;
+        let layout = text_edit_layout(&mut b, &node);
+        // Box x 100, width 200, Roboto line 50 → line starts at 175.
+        assert_eq!(layout.caret_position(&mut b, 0), (175.0, 50.0));
+        assert_eq!(layout.caret_position(&mut b, 5), (225.0, 50.0));
     }
 }

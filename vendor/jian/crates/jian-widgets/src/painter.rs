@@ -371,6 +371,16 @@ pub trait Painter {
         self.save();
     }
 
+    /// Begin an alpha-silhouette drop-shadow layer: subsequent draws are
+    /// captured into an offscreen layer and cast a shadow displaced by
+    /// `(dx, dy)` with blur radius `blur` (px) and `color` when the matching
+    /// [`Painter::restore`] pops it. Backends without filter support fall back
+    /// to `save` so callers stay balanced.
+    fn push_drop_shadow_layer(&mut self, dx: f32, dy: f32, blur: f32, color: Color) {
+        let _ = (dx, dy, blur, color);
+        self.save();
+    }
+
     /// Begin a bounded offscreen compositing layer. Draws until the matching
     /// [`Painter::restore`] are first combined in isolation, then land on the
     /// backdrop once with `opacity` and `mode`. Rich backends must create a

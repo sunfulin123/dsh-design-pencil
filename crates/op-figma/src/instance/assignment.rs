@@ -1,5 +1,5 @@
 use super::{fingerprint, flatten_dfs};
-use crate::common::scale_tree_children;
+use crate::common::InstanceResize;
 use crate::figma_types::FigVec2;
 use crate::kiwi::FigValue;
 use crate::tree::{guid_to_string, TreeNode};
@@ -269,38 +269,24 @@ pub fn seed_assignments_from_instances(
     }
 }
 
-/// Ratio between an instance's box and its symbol's, `(1.0, 1.0)`
-/// when either is missing or degenerate.
-pub(super) fn instance_scale(symbol_node: &TreeNode, instance_size: Option<FigVec2>) -> (f64, f64) {
-    if let (Some(size), Some(Some(sym_size))) = (
-        instance_size,
-        symbol_node.figma.get("size").map(FigVec2::from_value),
-    ) {
-        if sym_size.x != 0.0 && sym_size.y != 0.0 {
-            return (size.x / sym_size.x, size.y / sym_size.y);
-        }
-    }
-    (1.0, 1.0)
-}
-
-/// Clone the symbol children rescaled to the instance size: the
-/// no-override fast path, also the fallback when a guessed mapping
-/// fails the confidence gate.
-pub(super) fn rescale_only(
+/// Resize from a symbol's box to its instance's (identity when either size
+/// is missing or degenerate): the fast path, the confidence-gate fallback
+/// and the override resolver all start from it.
+pub(super) fn instance_resize(
     symbol_node: &TreeNode,
     instance_size: Option<FigVec2>,
-) -> Vec<TreeNode> {
-    if let (Some(size), Some(Some(sym_size))) = (
-        instance_size,
-        symbol_node.figma.get("size").map(FigVec2::from_value),
-    ) {
-        if sym_size.x != 0.0 && sym_size.y != 0.0 {
-            let sx = size.x / sym_size.x;
-            let sy = size.y / sym_size.y;
-            return scale_tree_children(&symbol_node.children, sx, sy);
-        }
+    uniform_scale: bool,
+) -> InstanceResize {
+    let symbol_size = symbol_node.figma.get("size").and_then(FigVec2::from_value);
+    match (instance_size, symbol_size) {
+        (Some(size), Some(sym)) if sym.x != 0.0 && sym.y != 0.0 => InstanceResize::of(
+            &symbol_node.figma,
+            size.x / sym.x,
+            size.y / sym.y,
+            uniform_scale,
+        ),
+        _ => InstanceResize::NONE,
     }
-    symbol_node.children.clone()
 }
 
 /// Whether a walk-order-guessed derived-to-node mapping contradicts

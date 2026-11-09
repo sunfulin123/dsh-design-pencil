@@ -4,7 +4,7 @@
 
 use super::style::is_inherited_style_key;
 use super::{guid_path_key, OVERRIDE_SKIP_KEYS};
-use crate::common::{round2, scale_node_fields};
+use crate::common::{authored_frame, round2, scale_node_fields, InstanceResize};
 use crate::figma_types::FigVec2;
 use crate::kiwi::FigValue;
 use crate::tree::{guid_to_string, TreeNode};
@@ -101,6 +101,14 @@ fn merge_entry_lists(
         match slot {
             Some(e) => {
                 if let (FigValue::Object(epairs), FigValue::Object(fpairs)) = (&mut *e, f) {
+                    // A forwarded resolved text box supersedes the
+                    // component-time size recorded beside it.
+                    if forwarded_wins
+                        && f.get("derivedTextData").is_some()
+                        && f.get("size").is_none()
+                    {
+                        epairs.retain(|(k, _)| k.as_ref() != "size");
+                    }
                     for (k, v) in fpairs {
                         if k.as_ref() == "guidPath" {
                             continue;
@@ -185,6 +193,48 @@ fn clear_stale_swap_props(figma: &mut FigValue, override_entry: &FigValue) {
     pairs.retain(|(key, _)| !is_inherited_style_key(key) || override_entry.get(key).is_some());
 }
 
+/// A resized or scaled label may record its resolved box and glyph size only
+/// in `derivedTextData` (`layoutSize`, per-glyph `fontSize`).
+fn apply_derived_text_layout(figma: &mut FigValue, derived: &FigValue, text: &FigValue) {
+    let layout_value = text.get("layoutSize");
+    let layout = layout_value.and_then(FigVec2::from_value);
+    let authored = figma.get("size").and_then(FigVec2::from_value);
+    if let (None, Some(value), Some(layout), Some(authored)) =
+        (derived.get("size"), layout_value, layout, authored)
+    {
+        figma.set("size", value.clone());
+        // Without a resolved position, re-anchor the grown box the way its
+        // constraints would (a centred label keeps its centre).
+        if let (None, Some(mut t)) = (derived.get("transform"), figma.get("transform").cloned()) {
+            let shift = |key: &str, grow: f64| match figma.get_str(key) {
+                Some("CENTER") => -grow / 2.0,
+                Some("MAX" | "FIXED_MAX") => -grow,
+                _ => 0.0,
+            };
+            for (axis, key, grow) in [
+                ("m02", "horizontalConstraint", layout.x - authored.x),
+                ("m12", "verticalConstraint", layout.y - authored.y),
+            ] {
+                let moved = t.get_f64(axis).unwrap_or(0.0) + shift(key, grow);
+                t.set(axis, FigValue::Float(moved as f32));
+            }
+            figma.set("transform", t);
+        }
+    }
+    let mut sizes = text
+        .get_array("glyphs")
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|glyph| glyph.get_f64("fontSize"));
+    if derived.get("fontSize").is_none() {
+        if let Some(first) = sizes.next() {
+            if sizes.all(|size| (size - first).abs() < 0.01) {
+                figma.set("fontSize", FigValue::Float(first as f32));
+            }
+        }
+    }
+}
+
 pub(super) fn apply_to_node(
     node: TreeNode,
     node_override: &HashMap<String, FigValue>,
@@ -192,7 +242,7 @@ pub(super) fn apply_to_node(
     nested_override: &HashMap<String, Vec<FigValue>>,
     nested_derived: &HashMap<String, Vec<FigValue>>,
     derived_branch: &HashSet<String>,
-    scale: (f64, f64),
+    resize: InstanceResize,
 ) -> TreeNode {
     let key = node
         .figma
@@ -220,9 +270,12 @@ pub(super) fn apply_to_node(
     // its own resolved size.
     let scales_here = !derived_branch.contains(&key);
     let authored_size = figma.get("size").and_then(FigVec2::from_value);
-    if scales_here {
-        scale_node_fields(&mut figma, scale.0, scale.1);
-    }
+    let frame = authored_frame(&figma);
+    let own_ratio = if scales_here {
+        scale_node_fields(&mut figma, resize)
+    } else {
+        (1.0, 1.0)
+    };
     // A node Figma resized itself re-bases its children on its own
     // ratio. Inside an instance-space branch the ratio is spent, so
     // children stay put — scaling them anyway left a 102 px row
@@ -231,9 +284,11 @@ pub(super) fn apply_to_node(
         authored_size,
         d.and_then(|d| d.get("size")).and_then(FigVec2::from_value),
     ) {
-        (Some(a), Some(dv)) if a.x.abs() > 0.001 && a.y.abs() > 0.001 => (dv.x / a.x, dv.y / a.y),
-        _ if !scales_here => (1.0, 1.0),
-        _ => scale,
+        (Some(a), Some(dv)) if a.x.abs() > 0.001 && a.y.abs() > 0.001 => {
+            resize.nested(frame, dv.x / a.x, dv.y / a.y)
+        }
+        _ if !scales_here => InstanceResize::NONE,
+        _ => resize.nested(frame, own_ratio.0, own_ratio.1),
     };
 
     if d.is_none() && ov.is_none() && nested_ov.is_none() && nested_d.is_none() {
@@ -284,6 +339,7 @@ pub(super) fn apply_to_node(
             if dtd.get("characters").is_some() {
                 figma.set("textData", dtd.clone());
             }
+            apply_derived_text_layout(&mut figma, d, dtd);
         }
     }
 
@@ -299,6 +355,13 @@ pub(super) fn apply_to_node(
             if !OVERRIDE_SKIP_KEYS.contains(&k.as_ref()) {
                 figma.set(k, v.clone());
             }
+        }
+    }
+    // Derived geometry is Figma's resolved layout and baked outlines; an
+    // override's (component-default) size or position must not undo it.
+    for key in ["size", "transform", "fillGeometry", "strokeGeometry"] {
+        if let Some(value) = d.and_then(|d| d.get(key)) {
+            figma.set(key, value.clone());
         }
     }
 

@@ -6,7 +6,8 @@ agent 按任务查阅相关条目，不要默认加载全部 KB。
 - [当前产品](product.md)：实际产品边界、AI 能力和验收入口。
 - [规范索引](standards.md)：链接单一权威文档，避免规则副本失效。
 - [Runtime 与 MCP 验收边界](runtime-mcp.md)：workspace、feature、真实截图、队列与 WASM script。
-- [CanvasKit 资源与瓦片生命周期](canvas-resources.md)：snapshot surface、context resize、视觉差异验证。
+- [CanvasKit 资源与瓦片生命周期](canvas-resources.md)：snapshot surface、context resize、文本度量与基线、视觉差异验证。
+- [Figma 导入还原不变量](figma-import.md)：实例约束缩放、derived 优先、透明图层与 fidelity 验收口径。
 
 每条知识必须注明：适用范围、结论和原因、源码/测试证据、复验方式。
 变更相关实现时复核条目，失效内容修改或移除；未复验不要继续宣称有效。

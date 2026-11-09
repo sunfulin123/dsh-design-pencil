@@ -26,21 +26,40 @@ dropTile/dispose 应释放配套 image 和 surface。只测“创建成功”捕
 改图片/字体失效或渲染路径时，同时验证视觉一致性、无空白/闪烁和交互分位耗时，
 而非仅看平均 FPS。
 
+## 文本度量与基线（Figma 一致性）
+
+画布文本必须按绘制所用字体测量，并与 Figma 的未 hinting 布局一致：
+
+- [bridge](../../crates/op-host-web/src/op_ck_bridge.js) 的 `textFont` 统一开启 linear metrics、
+  subpixel 并关闭 hinting。默认 CK.Font 把每个字形 advance 取整，Roboto 14px 文本比 Figma
+  宽 1–3px，造成字距不均并触发 auto-width 缩字。
+- [text_edit_layout](../../crates/op-editor-ui/src/widgets/canvas_text_edit.rs) 的换行、
+  auto-width 缩放、对齐和光标都必须用节点字体族测量（`measure_text_family_styled`）；
+  family-blind 测量在浏览器里用系统字体（SF Pro），会让标签缩小、居中偏移、换行错误。
+- [文本绘制](../../crates/op-editor-ui/src/widgets/canvas_viewport_text.rs) 把每行基线取整到
+  文本框内的整像素（Figma 规则）；拉丁文 `middle` 用字体 ascent/descent 居中（Figma/CSS），
+  仅 CJK 行用墨迹居中。小数基线会被光栅化吸附，产生 ±0.5px 偏移。
+
+复验：`node --test crates/op-host-web/tests/op_ck_bridge_text_metrics.test.mjs`；
+`cargo test -p op-editor-ui --lib canvas_text_edit canvas_viewport_text`。
+
 ## Provenance
 
 ```json
 {
   "version": 1,
   "status": "verified",
-  "task_id": "c431c060-64bc-4c0a-b495-5b0f7ef35dba",
-  "verified_at": "2026-11-07T14:24:12.487366+00:00",
+  "task_id": "b3f56376-1e0c-4097-b48b-ce0eadca2f5f",
+  "verified_at": "2026-11-08T17:09:44.043651+00:00",
   "sources": {
-    "crates/op-host-web/src/op_ck_bridge.js": "292b4bd05bf1917bba8fba9477ab0131db505bccc196c6723ea7b76eb3e2789a",
+    "crates/op-host-web/src/op_ck_bridge.js": "0d64f916a1c08d196ac558b290ee92ff753e0989e1030e288bcaeacdfc3452ab",
     "crates/op-host-web/src/widget_host/canvas_tiles.rs": "7d8713b9df109fc2d0f9b91489b46a9057336d7de0bd9cae82963ee7d33faafb",
     "crates/op-host-web/src/widget_host/canvas_tiles_host.rs": "4cd5f6eac913da31300cad53dcde7eebc7b0a91cf8ab652fa0021e95d612acc9",
-    "crates/op-editor-ui/src/widgets/canvas_tiles.rs": "6b90bbe62de6a5ec8068658beb912f1e19ec737a39dfb9c1f5c944e6287f3616"
+    "crates/op-editor-ui/src/widgets/canvas_tiles.rs": "6b90bbe62de6a5ec8068658beb912f1e19ec737a39dfb9c1f5c944e6287f3616",
+    "crates/op-editor-ui/src/widgets/canvas_text_edit.rs": "54132a7a2322ddfdc1efc29c0383fe13429f7de45a110718cea6d792f68d603f",
+    "crates/op-editor-ui/src/widgets/canvas_viewport_text.rs": "0b0b3e7c8494cd1d5644945c0335652290afbb7d281f316ce141fb888e6c7c71"
   },
-  "reason": "Retained bounded lifecycle claims after inspecting endTile, dropTile and resize; no new GPU visibility guarantee was added.",
-  "evidence": "cargo test -p op-host-web --lib --features canvaskit canvas_tiles — 5 passed; bridge lifecycle source inspected. Not run: fresh real-GPU/browser acceptance; existing text explicitly requires it."
+  "reason": "Refreshed op_ck_bridge.js provenance after adding pushDropShadowLayer (MakeDropShadow); text-metric and tile lifecycle invariants remain verified.",
+  "evidence": "node --test crates/op-host-web/tests/*.test.mjs — 14 passed; cargo test -p op-host-web --lib --features canvaskit — 777 passed"
 }
 ```

@@ -20,6 +20,9 @@ pub fn resolve_style_references(node_changes: &mut [FigValue]) {
             // colliding with "session:local" guid strings.
             if let Some(asset_key) = nc.get_str("key") {
                 if !asset_key.is_empty() {
+                    if let Some(version) = nc.get_str("version").filter(|v| !v.is_empty()) {
+                        style_map.insert(format!("key:{asset_key}@{version}"), nc.clone());
+                    }
                     style_map.insert(format!("key:{asset_key}"), nc.clone());
                 }
             }
@@ -50,11 +53,17 @@ fn lookup_style<'a>(
     style_map: &'a HashMap<String, FigValue>,
 ) -> Option<&'a FigValue> {
     let sid = nc.get(field)?;
-    // Local style: guid reference. Library style: assetRef publish key.
+    // Local style: guid reference. Library style: exact publish version, then key.
     if let Some(key) = sid.get("guid").and_then(guid_to_string) {
         return style_map.get(&key);
     }
-    let asset_key = sid.get("assetRef").and_then(|a| a.get_str("key"))?;
+    let asset = sid.get("assetRef")?;
+    let asset_key = asset.get_str("key")?;
+    if let Some(version) = asset.get_str("version").filter(|v| !v.is_empty()) {
+        if let Some(style) = style_map.get(&format!("key:{asset_key}@{version}")) {
+            return Some(style);
+        }
+    }
     style_map.get(&format!("key:{asset_key}"))
 }
 
@@ -183,7 +192,7 @@ fn resolve_on_node(
     }
     // EFFECT.
     if let Some(es) = lookup_style(nc, "styleIdForEffect", style_map) {
-        if non_empty_array(es, "effects") && !non_empty_array(nc, "effects") {
+        if non_empty_array(es, "effects") {
             if let Some(v) = es.get("effects").cloned() {
                 nc.set("effects", v);
             }

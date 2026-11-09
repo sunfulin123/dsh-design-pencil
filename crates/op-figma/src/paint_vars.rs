@@ -307,8 +307,13 @@ impl VariableIndex {
             .or_else(|| self.default_modes.get(set).cloned())
     }
 
-    /// Resolve an alias to `(r, g, b)` in the given scope.
-    fn resolve(&self, alias: &FigValue, scope: &ModeScope, depth: u8) -> Option<(f64, f64, f64)> {
+    /// Resolve an alias to `(r, g, b, a)` in the given scope.
+    fn resolve(
+        &self,
+        alias: &FigValue,
+        scope: &ModeScope,
+        depth: u8,
+    ) -> Option<(f64, f64, f64, f64)> {
         if depth > 16 {
             return None;
         }
@@ -333,6 +338,7 @@ impl VariableIndex {
                 color.get_f64("r")?,
                 color.get_f64("g")?,
                 color.get_f64("b")?,
+                color.get_f64("a").unwrap_or(1.0),
             ));
         }
         self.resolve(value.get("alias")?, scope, depth + 1)
@@ -351,18 +357,21 @@ impl VariableIndex {
                     .and_then(|var| var.get("value"))
                     .and_then(|var| var.get("alias"))
                     .cloned();
-                let rgb = alias
+                let rgba = alias
                     .as_ref()
                     .and_then(|alias| self.resolve(alias, scope, 0));
-                if let (Some(alias), Some(rgb)) = (alias.as_ref(), rgb) {
+                let mut bound_to_doc_var = false;
+                if let (Some(alias), Some((r, g, b, _))) = (alias.as_ref(), rgba) {
                     // A paint citing an older library version can render a
                     // value the document (newest version) cannot; bake it.
                     // Instance expansion re-resolves in another scope, so an
                     // earlier binding is replaced, never kept stale.
                     let theme = self.theme_for(scope);
                     let name = self.bound_name(alias).filter(|name| {
-                        self.document_hex(name, &theme, 0).as_deref() == Some(rgb_hex(rgb).as_str())
+                        self.document_hex(name, &theme, 0).as_deref()
+                            == Some(rgb_hex((r, g, b)).as_str())
                     });
+                    bound_to_doc_var = name.is_some();
                     if name.is_some() || value.get(BOUND_VARIABLE).is_some() {
                         value.set(
                             BOUND_VARIABLE,
@@ -370,20 +379,36 @@ impl VariableIndex {
                         );
                     }
                 }
-                if let Some(rgb) = rgb {
-                    let alpha = value
-                        .get("color")
-                        .and_then(|color| color.get_f64("a"))
-                        .unwrap_or(1.0);
+                if let Some((r, g, b, var_alpha)) = rgba {
+                    let is_paint = value.get_str("type").is_some();
+                    let alpha = if is_paint {
+                        1.0
+                    } else {
+                        value
+                            .get("color")
+                            .and_then(|color| color.get_f64("a"))
+                            .unwrap_or(var_alpha)
+                    };
                     value.set(
                         "color",
                         FigValue::Object(vec![
-                            ("r".into(), FigValue::Float(rgb.0 as f32)),
-                            ("g".into(), FigValue::Float(rgb.1 as f32)),
-                            ("b".into(), FigValue::Float(rgb.2 as f32)),
+                            ("r".into(), FigValue::Float(r as f32)),
+                            ("g".into(), FigValue::Float(g as f32)),
+                            ("b".into(), FigValue::Float(b as f32)),
                             ("a".into(), FigValue::Float(alpha as f32)),
                         ]),
                     );
+                    if is_paint {
+                        // A Figma color variable defines both RGB and alpha for
+                        // the paint. Clear any stale pre-binding `opacity` (or
+                        // duplicate cached variable alpha when bound to `$var`).
+                        if let FigValue::Object(pairs) = value {
+                            pairs.retain(|(k, _)| k.as_ref() != "opacity");
+                        }
+                        if !bound_to_doc_var && (var_alpha - 1.0).abs() > 1e-4 {
+                            value.set("opacity", FigValue::Float(var_alpha as f32));
+                        }
+                    }
                 }
                 if let FigValue::Object(pairs) = value {
                     for (key, child) in pairs.iter_mut() {
@@ -680,5 +705,83 @@ mod tests {
             index.resolve_tree(&mut node, &mut Vec::new());
             assert!((color_of(&node) - want).abs() < 1e-6, "version {version}");
         }
+    }
+
+    #[test]
+    fn variable_bound_paints_replace_stale_paint_opacity_with_variable_alpha() {
+        let mode = obj(vec![
+            ("id", guid(1, 2)),
+            ("name", FigValue::Str("Light".into())),
+        ]);
+        let rgba = |r: f32, g: f32, b: f32, a: f32| {
+            obj(vec![
+                ("r", FigValue::Float(r)),
+                ("g", FigValue::Float(g)),
+                ("b", FigValue::Float(b)),
+                ("a", FigValue::Float(a)),
+            ])
+        };
+        let index = VariableIndex::from_node_changes(&[
+            obj(vec![
+                ("guid", guid(1, 1)),
+                ("type", FigValue::Str("VARIABLE_SET".into())),
+                ("name", FigValue::Str("Colors".into())),
+                ("variableSetModes", FigValue::Array(vec![mode])),
+            ]),
+            obj(vec![
+                ("guid", guid(2, 1)),
+                ("type", FigValue::Str("VARIABLE".into())),
+                ("name", FigValue::Str("Gray4".into())),
+                ("variableResolvedType", FigValue::Str("COLOR".into())),
+                ("variableSetID", obj(vec![("guid", guid(1, 1))])),
+                (
+                    "variableDataValues",
+                    obj(vec![(
+                        "entries",
+                        FigValue::Array(vec![entry(
+                            guid(1, 2),
+                            obj(vec![("colorValue", rgba(0.9, 0.9, 0.9, 1.0))]),
+                        )]),
+                    )]),
+                ),
+            ]),
+            obj(vec![
+                ("guid", guid(2, 2)),
+                ("type", FigValue::Str("VARIABLE".into())),
+                ("name", FigValue::Str("GrayA8".into())),
+                ("variableResolvedType", FigValue::Str("COLOR".into())),
+                ("variableSetID", obj(vec![("guid", guid(1, 1))])),
+                (
+                    "variableDataValues",
+                    obj(vec![(
+                        "entries",
+                        FigValue::Array(vec![entry(
+                            guid(1, 2),
+                            obj(vec![("colorValue", rgba(0.0, 0.1, 0.2, 0.25))]),
+                        )]),
+                    )]),
+                ),
+            ]),
+        ]);
+        // Stale pre-binding opacity (0.6 on Gauge track Ellipse 2) must not
+        // dim an opaque variable ($Gray4), and a translucent variable ($GrayA8)
+        // must not carry a duplicate paint opacity that squares its alpha.
+        let mut stale_opaque = bound_paint(obj(vec![("guid", guid(2, 1))]));
+        stale_opaque.set("opacity", FigValue::Float(0.6));
+        let mut cached_translucent = bound_paint(obj(vec![("guid", guid(2, 2))]));
+        cached_translucent.set("opacity", FigValue::Float(0.25));
+        let mut paints = FigValue::Array(vec![stale_opaque, cached_translucent]);
+        index.resolve_value(&mut paints, &Vec::new());
+        let fills = crate::mappers::map_figma_fills(paints.as_array()).unwrap();
+        let jian_ops_schema::style::PenFill::Solid(first) = &fills[0] else {
+            panic!("solid fill expected");
+        };
+        let jian_ops_schema::style::PenFill::Solid(second) = &fills[1] else {
+            panic!("solid fill expected");
+        };
+        assert_eq!(first.color, "$Gray4");
+        assert_eq!(first.opacity, None);
+        assert_eq!(second.color, "$GrayA8");
+        assert_eq!(second.opacity, None);
     }
 }

@@ -26,13 +26,18 @@ test('invalid screenshot arguments fail without enqueuing renderer work', async 
   context.after(() => renderer.close())
   for (const args of [
     null, [], { unknown: 1 }, { nodeId: '' }, { nodeId: 3 }, { scale: 0.1 }, { scale: 5 },
-    { scale: Number.NaN }, { maxSize: 32 }, { maxSize: 5000 }, { maxSize: 100.5 }, { background: 'white' },
+    { scale: Number.NaN }, { maxSize: 32 }, { maxSize: 5000 }, { maxSize: 100.5 }, { background: 'white' }, { isolate: 'yes' },
   ]) {
     assert.equal((await renderer.capture(args, 0)).isError, true, JSON.stringify(args))
   }
   assert.equal((await renderer.capture({}, -1)).isError, true)
   assert.deepEqual(renderer.pending(), [])
   assert.deepEqual(validateScreenshotArguments({}), { scale: 1, maxSize: 1600, background: 'canvas' })
+  assert.deepEqual(validateScreenshotArguments({ isolate: false }), { scale: 1, maxSize: 1600, background: 'canvas' })
+  assert.deepEqual(
+    validateScreenshotArguments({ nodeId: 'card', isolate: true }),
+    { nodeId: 'card', scale: 1, maxSize: 1600, background: 'canvas', isolate: true },
+  )
 })
 
 test('stale versions, renderer errors and mismatched PNG data never report success', async context => {

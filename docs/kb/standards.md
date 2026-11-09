@@ -29,8 +29,8 @@
 {
   "version": 1,
   "status": "verified",
-  "task_id": "8f1754c3-0ef9-4895-a261-f6c3b8c70674",
-  "verified_at": "2026-11-08T10:17:52.480090+00:00",
+  "task_id": "b3f56376-1e0c-4097-b48b-ce0eadca2f5f",
+  "verified_at": "2026-11-08T15:15:56.538590+00:00",
   "sources": {
     "AGENTS.md": "7da0c473de69169cfb78912511768de09471c37b27dda73ffa5a7c86ba8694ce",
     "CLAUDE.md": "bc7d7d08404221dac202b49a8ae99a6d27852c065739aa56962d38354392b235",
@@ -47,13 +47,13 @@
     "docs/notes/README.md": "4bf1dcfe8e97d610f6c936525b43e07bb50096f17ad5df7722ed2325ea3c7ebb",
     "docs/notes/proposed/_template.md": "785194ea2b7907507c29662772f89ad2bee0a6c8e00c4d78416974d8beb9f459",
     "docs/kb/AGENTS.md": "4afa897d8c621a2cef31c72ae84c964b36df6aff752082663a5009d4d7970353",
-    "docs/kb/README.md": "df094443c5068f5f61b0e826ed5d008d243a327f5d2f7a13cbf22558bf040cf8",
+    "docs/kb/README.md": "71def4b7671ec3e554c5ab9c15def49d06d377859cfe8f4a56a87215a76f690f",
     ".github/prompts/verify-task.prompt.md": "22d283dd060634e6cae7c2f69af29ad6150990097eab69ea5ca78985fea8b5f2",
     ".github/instructions/rust.instructions.md": "249ba9f96f46a7f774388ee789b78fa18ee4c73c305334b63e42f72c80f44291",
     ".github/instructions/javascript.instructions.md": "258739dfde0348a64036ab71cd3a6c956cc4e641e931df8b322304ee3a160c09",
     ".github/workflows/maintenance.yml": "a766085afc8367de20e2b85778d4f1401b072a2ec09516fe317f3e9bd4bb3f0d"
   },
-  "reason": "COMMANDS.md only gained the prototype test command block; coding standards and task/knowledge workflow rules are unchanged",
-  "evidence": "bash tools/check-file-line-cap.sh --baseline-ref 1854f5727614e9efac05c0e6b69d72a2e7bef77e passed"
+  "reason": "README index only gained the new figma-import entry and a canvas-resources summary phrase; standards links remain valid.",
+  "evidence": "Re-read docs/kb/standards.md against docs/kb/README.md"
 }
 ```

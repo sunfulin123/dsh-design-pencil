@@ -14,9 +14,8 @@
 //! virtual-GUID heuristics in the parent module only run for files without it.
 
 use super::apply::{apply_to_node, collect_nested_entries, mark_derived_branches};
-use super::assignment::instance_scale;
 use super::guid_path_key;
-use crate::figma_types::FigVec2;
+use crate::common::InstanceResize;
 use crate::kiwi::FigValue;
 use crate::tree::{guid_to_string, TreeNode};
 use std::cell::Cell;
@@ -220,7 +219,7 @@ pub(super) fn apply_keyed(
     symbol_node: &TreeNode,
     overrides: &[FigValue],
     derived: &[FigValue],
-    instance_size: Option<FigVec2>,
+    scale: InstanceResize,
     index: &KeyedIndex,
 ) -> Vec<TreeNode> {
     let (override_order, override_entries) = keyed_entries(overrides, index);
@@ -303,7 +302,6 @@ pub(super) fn apply_keyed(
         &pk_to_node_guid,
     );
 
-    let scale = instance_scale(symbol_node, instance_size);
     let mut derived_branch: HashSet<String> = HashSet::new();
     mark_derived_branches(symbol_node, &node_derived, &mut derived_branch);
     symbol_node

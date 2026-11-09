@@ -12,24 +12,39 @@ use crate::widgets::canvas_viewport_fill_layers::{
 use crate::widgets::canvas_viewport_overlay::{align_stroke_rect, scaled_non_uniform_corner_radii};
 use crate::widgets::PaintCx;
 use crate::{Point2D, Rect};
-/// Paint every `Effect::DropShadow` on `node` as a blurred shape
-/// behind its fill. The shadow corner radius matches the node
-/// kind — `corner_radius` for Frame / Rect, min-half for an
-/// ellipse silhouette. Offset + blur scale by `zoom` so the
-/// shadow tracks the node across viewport zoom. A shadow whose
-/// blur AND offset are both sub-pixel on screen skips entirely.
+/// Paint every outer `Effect::DropShadow` on `node`.
+///
+/// Nodes with a box/oval silhouette (`Rect`, full `Ellipse`, or a `Frame`
+/// whose own fill/stroke/image or covering box child paints the box) draw a
+/// blurred shape directly behind the fill and return `0`.
+///
+/// All other nodes (`Group`, unfilled `Frame`, `Path`, `Polygon`, `Line`,
+/// `Text`, partial-arc `Ellipse`) cast their shadow from the alpha silhouette
+/// of their painted content by pushing a drop-shadow save-layer per shadow;
+/// the caller pops the returned count when finishing the node.
 pub(super) fn paint_drop_shadows(
     cx: &mut PaintCx<'_>,
     node: &SceneNode,
     world_rect: Rect,
     zoom: f32,
     dpi_scale: f32,
-) {
+) -> usize {
+    let box_silhouette = match node.kind {
+        NodeKind::Rect => true,
+        NodeKind::Ellipse => {
+            let inner = node.arc_inner_radius.unwrap_or(0.0).clamp(0.0, 1.0);
+            let sweep = node.arc_sweep_angle.unwrap_or(360.0);
+            sweep.abs() >= 359.9 && inner <= 0.001
+        }
+        NodeKind::Frame => paints_box(node, node.bounds),
+        _ => false,
+    };
     let radius = if node.kind == NodeKind::Ellipse {
         world_rect.size.x.min(world_rect.size.y) / 2.0
     } else {
         node.corner_radius * zoom
     };
+    let mut pushed = 0;
     for effect in &node.effects {
         let Effect::DropShadow(s) = effect else {
             continue;
@@ -43,16 +58,48 @@ pub(super) fn paint_drop_shadows(
         if footprint * zoom * dpi_scale < MIN_VISIBLE_EFFECT_DEVICE_PX {
             continue;
         }
-        let shadow_rect = Rect {
-            origin: Point2D::new(
-                world_rect.origin.x + s.offset_x * zoom,
-                world_rect.origin.y + s.offset_y * zoom,
-            ),
-            size: world_rect.size,
-        };
-        cx.backend
-            .fill_drop_shadow(shadow_rect, radius, s.blur * zoom, s.color);
+        if box_silhouette {
+            let shadow_rect = Rect {
+                origin: Point2D::new(
+                    world_rect.origin.x + s.offset_x * zoom,
+                    world_rect.origin.y + s.offset_y * zoom,
+                ),
+                size: world_rect.size,
+            };
+            cx.backend
+                .fill_drop_shadow(shadow_rect, radius, s.blur * zoom, s.color);
+        } else {
+            cx.backend.push_drop_shadow_layer(
+                s.offset_x * zoom,
+                s.offset_y * zoom,
+                s.blur * zoom,
+                s.color,
+            );
+            pushed += 1;
+        }
     }
+    pushed
+}
+
+/// Whether `node`, or a rectangular child covering `bounds`, paints the whole box.
+fn paints_box(node: &SceneNode, bounds: Rect) -> bool {
+    let covers = |n: &SceneNode| {
+        let b = n.bounds;
+        b.origin.x <= bounds.origin.x + 0.5
+            && b.origin.y <= bounds.origin.y + 0.5
+            && b.origin.x + b.size.x >= bounds.origin.x + bounds.size.x - 0.5
+            && b.origin.y + b.size.y >= bounds.origin.y + bounds.size.y - 0.5
+    };
+    let painted = matches!(node.kind, NodeKind::Frame | NodeKind::Rect)
+        && (node.fill.is_some_and(|c| c.a > 0.0)
+            || !node.fill_layers.is_empty()
+            || node.stroke.is_some()
+            || node.image_src.is_some());
+    painted
+        || node
+            .children
+            .iter()
+            .any(|child| !child.hidden && covers(child) && paints_box(child, bounds))
 }
 
 /// Tessellate an ellipse arc / pie / donut-sector into a closed

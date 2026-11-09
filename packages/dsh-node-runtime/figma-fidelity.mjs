@@ -61,6 +61,35 @@ function documentIndex(document) {
   return { size: byId.size, get: resolve }
 }
 
+/**
+ * Rendered box of a layout node. snapshot_layout reports boxes before
+ * transforms, while Figma's absoluteBoundingBox is taken after them: apply the
+ * node's own rotation, then each ancestor's rotation and mirroring about that
+ * ancestor's box centre (the canvas applies flips outside rotation).
+ */
+function renderedBox(node, ancestors, docIndex) {
+  let points = [[node.x, node.y], [node.x + node.width, node.y],
+    [node.x, node.y + node.height], [node.x + node.width, node.y + node.height]]
+  for (const owner of [node, ...ancestors]) {
+    const doc = docIndex.get(owner.id)
+    const cx = owner.x + owner.width / 2
+    const cy = owner.y + owner.height / 2
+    const radians = (Number(doc?.rotation) || 0) * Math.PI / 180
+    if (radians) {
+      const cos = Math.cos(radians)
+      const sin = Math.sin(radians)
+      points = points.map(([x, y]) => [cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos])
+    }
+    if (owner !== node && doc?.flipX) points = points.map(([x, y]) => [2 * cx - x, y])
+    if (owner !== node && doc?.flipY) points = points.map(([x, y]) => [x, 2 * cy - y])
+  }
+  const xs = points.map(p => p[0])
+  const ys = points.map(p => p[1])
+  const x = Math.min(...xs)
+  const y = Math.min(...ys)
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }
+}
+
 /** Multiset difference of visible source texts against imported texts. */
 function textParity(sourceTexts, importedTexts) {
   const counts = new Map()
@@ -107,9 +136,16 @@ export async function compareFigmaFidelity(args, { capture, layout, version, doc
   const root = nodes.find(n => n.id === args.nodeId)
   if (!root) throw new FigmaApiError('ENGINE_REJECTED', 'Imported node is not on the active page')
   const subtree = []
-  const flatten = n => { subtree.push(n); for (const child of n.children ?? []) flatten(child) }
-  flatten(root)
+  const ancestorsOf = new Map()
+  const flatten = (n, ancestors) => {
+    subtree.push(n)
+    ancestorsOf.set(n, ancestors)
+    for (const child of n.children ?? []) flatten(child, [n, ...ancestors])
+  }
+  flatten(root, [])
   const docIndex = documentIndex(document?.())
+  const rendered = n => renderedBox(n, ancestorsOf.get(n) ?? [], docIndex)
+  const rootBoxRendered = rendered(root)
   const byFigmaId = new Map()
   for (const n of subtree) {
     const figmaId = docIndex.get(n.id)?.figmaNodeId
@@ -133,9 +169,12 @@ export async function compareFigmaFidelity(args, { capture, layout, version, doc
       const expected = line
         ? [b.x - rootBox.x, b.y - rootBox.y, Math.max(b.width, b.height)]
         : [b.x - rootBox.x, b.y - rootBox.y, b.width, b.height]
+      const seen = rendered(mapped)
+      const ox = seen.x - rootBoxRendered.x
+      const oy = seen.y - rootBoxRendered.y
       const observed = line
-        ? [mapped.x - root.x, mapped.y - root.y, Math.max(mapped.width || 0, mapped.height || 0)]
-        : [mapped.x - root.x, mapped.y - root.y, mapped.width, mapped.height]
+        ? [ox, oy, Math.max(seen.width || 0, seen.height || 0)]
+        : [ox, oy, seen.width, seen.height]
       if (expected.some((value, i) => !Number.isFinite(observed[i]) || Math.abs(value - observed[i]) > 0.5)) {
         structural.push({ sourceNodeId: node.id, nodeId: mapped.id, name: node.name, expected, observed })
       }
@@ -157,7 +196,7 @@ export async function compareFigmaFidelity(args, { capture, layout, version, doc
   collectTexts(root)
   const text = docIndex.size ? textParity(sourceTexts, importedTexts) : null
   let visual
-  const screenshot = await capture({ nodeId: args.nodeId, scale, maxSize: 4096, background: 'transparent' }, before)
+  const screenshot = await capture({ nodeId: args.nodeId, scale, maxSize: 4096, background: 'transparent', isolate: true }, before)
   if (screenshot.isError) {
     visual = { comparable: false, reason: screenshot.content?.[0]?.text ?? 'Editor screenshot unavailable' }
   } else {

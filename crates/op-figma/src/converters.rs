@@ -61,16 +61,15 @@ fn is_string_sizing(s: &SizingBehavior) -> bool {
     )
 }
 
-/// Convert a parent's children, skipping invisible / transparent nodes.
+/// Convert a parent's children, skipping hidden nodes. Fully transparent
+/// nodes are kept: Figma still lays them out, so dropping them would reflow
+/// their stack and lose an editable layer.
 pub fn convert_children(parent: &TreeNode, ctx: &mut ConversionContext<'_>) -> Vec<PenNode> {
     let parent_stack_mode = parent.figma.get_str("stackMode").map(str::to_string);
     let mut result = Vec::new();
     for child in &parent.children {
         let hidden = child.figma.get_bool("visible") == Some(false);
         if hidden && !ctx.keep_hidden {
-            continue;
-        }
-        if child.figma.get_f64("opacity").map(|o| o <= 0.0) == Some(true) {
             continue;
         }
         if let Some(mut node) = convert_node(child, parent_stack_mode.as_deref(), ctx) {
@@ -97,8 +96,12 @@ pub fn convert_node(
     let variables = ctx.variables.clone();
     let pushed_modes = variables.push_modes(&tree.figma, &mut ctx.mode_scope);
     let mut node = match ty {
-        "FRAME" | "SECTION" => convert_frame(tree, sizing_parent, ctx),
         "GROUP" => convert_group(tree, sizing_parent, ctx),
+        // Kiwi encodes a Figma GROUP as a FRAME with `resizeToFit = true`.
+        "FRAME" if tree.figma.get_bool("resizeToFit") == Some(true) => {
+            convert_group(tree, sizing_parent, ctx)
+        }
+        "FRAME" | "SECTION" => convert_frame(tree, sizing_parent, ctx),
         "SYMBOL" => convert_component(tree, sizing_parent, ctx),
         "INSTANCE" => convert_instance(tree, sizing_parent, ctx),
         "RECTANGLE" | "ROUNDED_RECTANGLE" => convert_rectangle(tree, sizing_parent, ctx),
@@ -205,11 +208,7 @@ fn convert_frame(
     frame_node(
         base,
         container,
-        if ordered.is_empty() {
-            None
-        } else {
-            Some(ordered)
-        },
+        (!ordered.is_empty()).then_some(ordered),
         None,
     )
 }
@@ -252,11 +251,7 @@ fn convert_component(
     frame_node(
         base,
         container,
-        if ordered.is_empty() {
-            None
-        } else {
-            Some(ordered)
-        },
+        (!ordered.is_empty()).then_some(ordered),
         Some(true),
     )
 }
@@ -272,18 +267,11 @@ fn convert_group(
     let container = ContainerProps {
         width: Some(resolve_width(figma, parent_stack_mode, ctx)),
         height: Some(resolve_height(figma, parent_stack_mode, ctx)),
+        effects: map_figma_effects(figma.get_array("effects")),
         ..ContainerProps::default()
     };
     let base = common_props(figma, id);
-    group_node(
-        base,
-        container,
-        if children.is_empty() {
-            None
-        } else {
-            Some(children)
-        },
-    )
+    group_node(base, container, (!children.is_empty()).then_some(children))
 }
 
 use crate::fig_prototype::has_visual_overrides;
@@ -350,6 +338,8 @@ fn convert_instance(
                     overrides,
                     derived,
                     instance_size,
+                    // Scale-tool instances scale their whole subtree.
+                    figma.get("uniformScaleFactor").is_some(),
                     &mut ctx.instance_assignments,
                 );
                 let mut children = children;

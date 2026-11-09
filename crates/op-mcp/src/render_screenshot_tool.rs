@@ -13,7 +13,7 @@ pub struct GetScreenshot;
 pub fn schema() -> Value {
     json!({
         "name": "get_screenshot",
-        "description": "Render the actual CanvasKit design output as a PNG image so you can visually verify a design (overlap, clipping, contrast, alignment, hierarchy). Omit nodeId to capture the first visible board on the active page, pass a screen/frame/node id (on any page) to capture its rendered bounds (siblings overlapping that region are included), or pass \"page\" for the whole active page. Excludes editor chrome, grid and selection; changes no document state. The Node host renders in a hidden headless browser when no editor is open; structuredContent.renderer reports canvaskit-headless, canvaskit-editor or approximate (no browser available: text shaping and effects are simplified). If it errors, fall back to snapshot_layout and get_design_quality instead of guessing.",
+        "description": "Render the actual CanvasKit design output as a PNG image so you can visually verify a design (overlap, clipping, contrast, alignment, hierarchy). Omit nodeId to capture the first visible board on the active page, pass a screen/frame/node id (on any page) to capture its rendered bounds (siblings overlapping that region are included unless isolate is true, which paints only that node's subtree like a Figma export), or pass \"page\" for the whole active page. Excludes editor chrome, grid and selection; changes no document state. The Node host renders in a hidden headless browser when no editor is open; structuredContent.renderer reports canvaskit-headless, canvaskit-editor or approximate (no browser available: text shaping and effects are simplified). If it errors, fall back to snapshot_layout and get_design_quality instead of guessing.",
         "inputSchema": {
             "type": "object",
             "additionalProperties": false,
@@ -22,7 +22,8 @@ pub fn schema() -> Value {
                 "nodeId": {"type": "string", "minLength": 1},
                 "scale": {"type": "number", "minimum": 0.25, "maximum": 4, "default": 1},
                 "maxSize": {"type": "integer", "minimum": 64, "maximum": HARD_MAX_SIZE, "default": DEFAULT_MAX_SIZE},
-                "background": {"type": "string", "enum": ["canvas", "transparent"], "default": "canvas"}
+                "background": {"type": "string", "enum": ["canvas", "transparent"], "default": "canvas"},
+                "isolate": {"type": "boolean", "default": false}
             }
         }
     })

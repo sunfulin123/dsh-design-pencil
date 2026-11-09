@@ -67,13 +67,10 @@ pub struct RestImportResult {
     pub node_count: usize,
 }
 
+/// Hidden layers are skipped. Fully transparent ones are kept: Figma still
+/// lays them out, and they stay editable.
 fn is_visible(node: &Value) -> bool {
     node.get("visible").and_then(Value::as_bool) != Some(false)
-        && f64_of(node, "opacity").is_none_or(|o| o > 0.0)
-}
-
-fn is_group_like(ty: Option<&str>) -> bool {
-    matches!(ty, Some("GROUP" | "BOOLEAN_OPERATION"))
 }
 
 fn kiwi_type(rest: &str) -> &str {
@@ -139,7 +136,6 @@ impl Builder {
         node: &Value,
         parent: Option<&Value>,
         parent_abs: Affine,
-        container_linear: Affine,
     ) -> Option<TreeNode> {
         if !is_visible(node) {
             return None;
@@ -158,13 +154,7 @@ impl Builder {
             ));
         }
         self.count += 1;
-        let parent_type = parent.and_then(|p| str_of(p, "type"));
-        let base_linear = if is_group_like(parent_type) {
-            container_linear
-        } else {
-            parent_abs.linear()
-        };
-        let abs = absolute_transform(node, base_linear, parent_abs, self.shift);
+        let abs = absolute_transform(node, parent_abs.linear(), parent_abs, self.shift);
         let local = parent_abs
             .inverse()
             .unwrap_or(Affine::IDENTITY)
@@ -218,11 +208,6 @@ impl Builder {
             _ => {}
         }
 
-        let child_container = if is_group_like(Some(rest_type)) {
-            container_linear
-        } else {
-            abs.linear()
-        };
         // REST lists children bottom-most first; the binary tree (and the
         // canonical document) keeps the topmost layer first.
         let children = node
@@ -231,7 +216,7 @@ impl Builder {
             .map(|kids| {
                 kids.iter()
                     .rev()
-                    .filter_map(|c| self.build(c, Some(node), abs, child_container))
+                    .filter_map(|c| self.build(c, Some(node), abs))
                     .collect()
             })
             .unwrap_or_default();
@@ -280,7 +265,7 @@ pub fn convert_rest_nodes(roots: &[Value], options: &RestImportOptions) -> RestI
     let trees: Vec<TreeNode> = flattened
         .iter()
         .rev()
-        .filter_map(|n| builder.build(n, None, Affine::IDENTITY, Affine::IDENTITY))
+        .filter_map(|n| builder.build(n, None, Affine::IDENTITY))
         .collect();
 
     let mut component_map: HashMap<String, String> = HashMap::new();

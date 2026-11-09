@@ -66,6 +66,17 @@ test('real CanvasKit paints blurred layers and shadows without contaminating lat
       });
       assert.equal(pixel(35, 60)[0], sharp);
     }
+    // Alpha-silhouette drop shadow on a non-rectangular SVG path (a hand
+    // cursor icon): casts shadow under the painted contour while keeping
+    // the uninked upper-right corner of the bounding box white.
+    frame(() => {
+      renderer.pushDropShadowLayer(0, 4, 2, 0, 0, 0, 0.5);
+      renderer.fillSvgPath('M0 0 L20 20 L0 20 Z', 20, 10, 1, false, 1, 1, 1, 1);
+      renderer.restore();
+    });
+    assert.ok(pixel(25, 33)[0] < 220, 'shadow lands below the painted triangle');
+    assert.deepEqual(pixel(36, 14), [255, 255, 255, 255], 'uninked bbox corner has no box shadow');
+    assert.deepEqual(pixel(36, 18), [255, 255, 255, 255], 'shifted uninked bbox corner has no box shadow');
   } finally {
     for (const [key, descriptor] of Object.entries(original)) {
       if (descriptor) Object.defineProperty(globalThis, key, descriptor);

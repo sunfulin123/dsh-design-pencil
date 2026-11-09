@@ -381,14 +381,15 @@ pub fn decode_figma_vector_path(
     };
 
     let mut path_parts: Vec<String> = Vec::new();
-    for geom in geometries {
-        let Some(idx) = geom.get_f64("commandsBlob") else {
-            continue;
-        };
-        if let Some(BlobOrString::Bytes(bytes)) = blobs.get(idx as usize) {
-            if let Some(decoded) = decode_figma_path_blob(bytes) {
-                path_parts.push(decoded);
-            }
+    let decoded = geometries
+        .iter()
+        .filter_map(|geom| blobs.get(geom.get_f64("commandsBlob")? as usize))
+        .filter_map(|blob| decode_figma_path_blob(blob.as_bytes()?));
+    for part in decoded {
+        // Fill-override regions repeat the default outline; joined under
+        // even-odd the copies would cancel out.
+        if !path_parts.contains(&part) {
+            path_parts.push(part);
         }
     }
 

@@ -96,8 +96,14 @@ fn assignment_cache_shares_evidence_across_instances() {
             obj(vec![("characters", FigValue::Str("1,250".into()))]),
         )],
     )];
-    let out_a =
-        apply_instance_overrides_cached(&sym, Some(&over_a), Some(&derived_a), None, &mut cache);
+    let out_a = apply_instance_overrides_cached(
+        &sym,
+        Some(&over_a),
+        Some(&derived_a),
+        None,
+        false,
+        &mut cache,
+    );
     let a_value_chars = out_a
         .iter()
         .find(|n| n.figma.get_str("name") == Some("value"))
@@ -117,8 +123,14 @@ fn assignment_cache_shares_evidence_across_instances() {
         vec![guid(9, 51)],
         vec![("visible", FigValue::Bool(false))],
     )];
-    let out_b =
-        apply_instance_overrides_cached(&sym_b, Some(&over_b), Some(&derived_b), None, &mut cache);
+    let out_b = apply_instance_overrides_cached(
+        &sym_b,
+        Some(&over_b),
+        Some(&derived_b),
+        None,
+        false,
+        &mut cache,
+    );
     let vis_of = |name: &str| {
         out_b
             .iter()
@@ -317,8 +329,14 @@ fn geometry_seeding_pins_from_rich_sibling_instance() {
         guid_path(vec![guid(9, 52)]),
         guid_path(vec![guid(9, 53)]),
     ];
-    let out_b =
-        apply_instance_overrides_cached(&sym_b, Some(&over_b), Some(&derived_b), None, &mut cache);
+    let out_b = apply_instance_overrides_cached(
+        &sym_b,
+        Some(&over_b),
+        Some(&derived_b),
+        None,
+        false,
+        &mut cache,
+    );
     let has_fill = |name: &str| {
         out_b
             .iter()

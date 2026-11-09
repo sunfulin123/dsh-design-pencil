@@ -18,6 +18,8 @@ struct ScreenshotArgs {
     scale: f32,
     max_size: u32,
     background: String,
+    #[serde(default)]
+    isolate: bool,
 }
 
 fn js_error(error: wasm_bindgen::JsValue) -> String {
@@ -41,9 +43,12 @@ impl CkInner {
         if !(0.25..=4.0).contains(&args.scale) || !(64..=4096).contains(&args.max_size) {
             return Err("Screenshot scale or maxSize is out of range".into());
         }
-        let plan =
-            self.host
-                .prepare_screenshot(args.node_id.as_deref(), args.scale, args.max_size)?;
+        let plan = self.host.prepare_screenshot(
+            args.node_id.as_deref(),
+            args.scale,
+            args.max_size,
+            args.isolate,
+        )?;
         self.backend
             .ck
             .begin_offscreen(plan.width, plan.height)

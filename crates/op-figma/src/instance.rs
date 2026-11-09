@@ -14,6 +14,7 @@
 //! exact addressing ([`keyed`]); the strategies above remain only for older
 //! files without override keys.
 
+use crate::common::scale_tree_children;
 use crate::figma_types::FigVec2;
 use crate::kiwi::FigValue;
 use crate::tree::{guid_to_string, TreeNode};
@@ -43,9 +44,7 @@ use apply::{
     strip_first_guid, virtual_guid_base, walk_virtual,
 };
 pub use assignment::seed_assignments_from_instances;
-use assignment::{
-    guessed_mapping_is_implausible, instance_scale, rescale_only, reserve_direct_identities,
-};
+use assignment::{guessed_mapping_is_implausible, instance_resize, reserve_direct_identities};
 pub(crate) use bindings::{own_assignments, with_property_bindings};
 pub(crate) use cache::{apply_instance_overrides_memoized, InstanceExpansionCache};
 pub(crate) use keyed::{
@@ -99,7 +98,14 @@ pub(crate) fn apply_instance_overrides(
     instance_size: Option<FigVec2>,
 ) -> Vec<TreeNode> {
     let mut cache = HashMap::new();
-    apply_instance_overrides_cached(symbol_node, overrides, derived, instance_size, &mut cache)
+    apply_instance_overrides_cached(
+        symbol_node,
+        overrides,
+        derived,
+        instance_size,
+        false,
+        &mut cache,
+    )
 }
 
 /// Apply overrides with a cross-instance assignment cache. Instances
@@ -113,21 +119,23 @@ pub fn apply_instance_overrides_cached(
     overrides: Option<&[FigValue]>,
     derived: Option<&[FigValue]>,
     instance_size: Option<FigVec2>,
+    uniform_scale: bool,
     assignment_cache: &mut HashMap<String, String>,
 ) -> Vec<TreeNode> {
     let overrides = overrides.unwrap_or(&[]);
     let derived = derived.unwrap_or(&[]);
+    let resize = instance_resize(symbol_node, instance_size, uniform_scale);
 
     // Fast path — nothing to apply: just rescale to the instance size.
     if derived.is_empty() && overrides.is_empty() {
-        return rescale_only(symbol_node, instance_size);
+        return scale_tree_children(&symbol_node.children, resize);
     }
 
     // Modern files address overrides by `overrideKey`: resolve them exactly
     // and never fall back to positional guesses (see `keyed`).
     let keyed_index = keyed::KeyedIndex::build(symbol_node);
     if keyed_index.uses_override_keys {
-        return keyed::apply_keyed(symbol_node, overrides, derived, instance_size, &keyed_index);
+        return keyed::apply_keyed(symbol_node, overrides, derived, resize, &keyed_index);
     }
 
     // ── Index inputs ─────────────────────────────────────────────────
@@ -718,7 +726,7 @@ pub fn apply_instance_overrides_cached(
             .into_iter()
             .filter(|(guid, _)| reserved_node_guids.contains(guid))
             .collect::<HashMap<_, _>>();
-        let rescaled = rescale_only(symbol_node, instance_size);
+        let rescaled = scale_tree_children(&symbol_node.children, resize);
         if safe_node_override.is_empty()
             && safe_node_derived.is_empty()
             && safe_nested_override.is_empty()
@@ -740,7 +748,7 @@ pub fn apply_instance_overrides_cached(
                     &safe_nested_override,
                     &safe_nested_derived,
                     &safe_derived_branch,
-                    (1.0, 1.0),
+                    crate::common::InstanceResize::NONE,
                 )
             })
             .collect();
@@ -756,7 +764,6 @@ pub fn apply_instance_overrides_cached(
     // pre-scaling the whole subtree: it scales branch by branch and
     // drops the ratio wherever Figma's derived data already supplies
     // instance-space geometry.
-    let scale = instance_scale(symbol_node, instance_size);
     let mut derived_branch: HashSet<String> = HashSet::new();
     mark_derived_branches(symbol_node, &node_derived, &mut derived_branch);
     symbol_node
@@ -771,7 +778,7 @@ pub fn apply_instance_overrides_cached(
                 &nested_override,
                 &nested_derived,
                 &derived_branch,
-                scale,
+                resize,
             )
         })
         .collect()

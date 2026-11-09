@@ -29,6 +29,9 @@ impl RenderBackend for EffectCaptureBackend {
     fn push_blur_layer(&mut self, _: f32) {
         self.ops.push("blur");
     }
+    fn push_drop_shadow_layer(&mut self, _: f32, _: f32, _: f32, _: Color) {
+        self.ops.push("shadow_layer");
+    }
     fn push_backdrop_blur_layer(&mut self, _: f32) {
         self.ops.push("backdrop");
     }
@@ -188,4 +191,61 @@ fn visible_offset_keeps_the_shadow_even_with_tiny_blur() {
         inner: false,
     })]);
     assert!(ops_at_zoom(&node, 0.05).contains(&"shadow"));
+}
+
+/// A frame with no fill, stroke or image has no box silhouette: Figma casts
+/// its shadow from the content (a cursor icon's hand). Painting a box-shaped
+/// shadow put a grey square behind the icon.
+#[test]
+fn unfilled_frame_casts_no_box_shadow_but_a_filled_frame_does() {
+    let shadow = Effect::DropShadow(DropShadow {
+        offset_x: 0.0,
+        offset_y: 1.0,
+        blur: 0.8,
+        color: Color::BLACK,
+        inner: false,
+    });
+    let mut frame = effect_node(vec![shadow]);
+    frame.kind = NodeKind::Frame;
+    frame.fill = None;
+    // A full-bounds vector Path child (the cursor hand icon inside `pointing`)
+    // is freeform artwork, not a rectangular card background: it must cast an
+    // alpha-silhouette shadow layer, never a grey box shadow.
+    let mut hand = SceneNode::leaf("hand", NodeKind::Path);
+    hand.bounds = frame.bounds;
+    hand.svg_path = Some("M0 0 L20 10 L10 20 Z".into());
+    hand.fill = Some(Color::WHITE);
+    frame.children.push(hand.clone());
+    let ops = ops_at_zoom(&frame, 1.0);
+    assert!(
+        !ops.contains(&"shadow"),
+        "must not paint a box shadow: {ops:?}"
+    );
+    assert!(
+        ops.contains(&"shadow_layer"),
+        "must cast a content shadow: {ops:?}"
+    );
+
+    // Same for a Group with a DropShadow (Figma's `pointing` group).
+    let mut group = frame.clone();
+    group.kind = NodeKind::Group;
+    let group_ops = ops_at_zoom(&group, 1.0);
+    assert!(!group_ops.contains(&"shadow"));
+    assert!(group_ops.contains(&"shadow_layer"));
+
+    frame.fill = Some(Color::BLACK);
+    let filled_ops = ops_at_zoom(&frame, 1.0);
+    assert!(filled_ops.contains(&"shadow"));
+    assert!(!filled_ops.contains(&"shadow_layer"));
+    // A card whose background is a full-size (nested) child casts the
+    // same box shadow from its content.
+    frame.fill = None;
+    let mut background = SceneNode::leaf("bg", NodeKind::Rect);
+    background.bounds = frame.bounds;
+    background.fill = Some(Color::WHITE);
+    let mut wrapper = SceneNode::leaf("wrapper", NodeKind::Frame);
+    wrapper.bounds = frame.bounds;
+    wrapper.children.push(background);
+    frame.children.push(wrapper);
+    assert!(ops_at_zoom(&frame, 1.0).contains(&"shadow"));
 }

@@ -38,6 +38,7 @@ struct InstanceExpansionKey {
     overrides: Vec<FigValue>,
     derived: Vec<FigValue>,
     size: Option<ExactSize>,
+    uniform_scale: bool,
     global_assignment_epoch: u64,
     assignment_epoch: u64,
 }
@@ -48,6 +49,7 @@ impl InstanceExpansionKey {
         overrides: Vec<FigValue>,
         derived: Vec<FigValue>,
         size: Option<FigVec2>,
+        uniform_scale: bool,
         global_assignment_epoch: u64,
         assignment_epoch: u64,
     ) -> Self {
@@ -56,6 +58,7 @@ impl InstanceExpansionKey {
             overrides,
             derived,
             size: size.map(ExactSize::from),
+            uniform_scale,
             global_assignment_epoch,
             assignment_epoch,
         }
@@ -297,6 +300,7 @@ pub(crate) fn apply_instance_overrides_memoized(
     overrides: Option<Vec<FigValue>>,
     derived: Option<Vec<FigValue>>,
     instance_size: Option<FigVec2>,
+    uniform_scale: bool,
     assignment_cache: &mut HashMap<String, String>,
 ) -> Vec<TreeNode> {
     let mut key = InstanceExpansionKey::new(
@@ -304,6 +308,7 @@ pub(crate) fn apply_instance_overrides_memoized(
         overrides.unwrap_or_default(),
         derived.unwrap_or_default(),
         instance_size,
+        uniform_scale,
         cache.global_assignment_epoch,
         cache.assignment_epoch(component_guid),
     );
@@ -317,6 +322,7 @@ pub(crate) fn apply_instance_overrides_memoized(
         Some(&key.overrides),
         Some(&key.derived),
         instance_size,
+        uniform_scale,
         assignment_cache,
     );
     // `apply_instance_overrides_cached` inserts only for an unpinned key, so a
@@ -406,6 +412,7 @@ mod tests {
             vec![override_value(1, 10, name)],
             vec![path(1, 10)],
             size,
+            false,
             epoch,
             epoch,
         )
@@ -422,6 +429,7 @@ mod tests {
             Some(&overrides),
             Some(&derived),
             None,
+            false,
             &mut HashMap::new(),
         );
         let mut cache = InstanceExpansionCache::default();
@@ -432,6 +440,7 @@ mod tests {
             Some(overrides.clone()),
             Some(derived.clone()),
             None,
+            false,
             &mut assignments,
         );
         assert_trees_equal(&first, &expected);
@@ -443,6 +452,7 @@ mod tests {
             Some(overrides),
             Some(derived),
             None,
+            false,
             &mut assignments,
         );
         assert_eq!(cache.hits, 1);

@@ -221,7 +221,7 @@ export class FigmaImportJobs {
     let incoming = 0
     while (pending.length) {
       const node = pending.pop()
-      if (node.visible === false || node.opacity === 0) continue
+      if (node.visible === false) continue
       incoming++
       pending.push(...(node.children ?? []))
     }

@@ -114,33 +114,25 @@ fn subtree_visual_bounds(
         visual = union_results(Ok(visual), subtree_visual_bounds(child, true, hidden_id))?;
     }
 
-    // The painter currently casts outer shadows only for shapes whose
-    // silhouette can be represented by its rounded-rect/ellipse primitive.
-    if matches!(
-        node.kind,
-        NodeKind::Frame | NodeKind::Rect | NodeKind::Ellipse
-    ) {
-        if let Some(own) = own_bounds {
-            for effect in &node.effects {
-                let Effect::DropShadow(shadow) = effect else {
-                    continue;
-                };
-                if shadow.inner {
-                    continue;
-                }
-                if !shadow.offset_x.is_finite()
-                    || !shadow.offset_y.is_finite()
-                    || !shadow.blur.is_finite()
-                {
-                    return Err(());
-                }
-                let mut shadow_bounds = translate_rect(own, shadow.offset_x, shadow.offset_y)?;
-                if shadow.blur > 0.0 {
-                    shadow_bounds =
-                        outset_rect(shadow_bounds, shadow.blur * FILTER_OUTSET_PER_RADIUS)?;
-                }
-                visual = union_options(visual, Some(shadow_bounds))?;
+    if let Some(base_bounds) = visual.or(own_bounds) {
+        for effect in &node.effects {
+            let Effect::DropShadow(shadow) = effect else {
+                continue;
+            };
+            if shadow.inner {
+                continue;
             }
+            if !shadow.offset_x.is_finite()
+                || !shadow.offset_y.is_finite()
+                || !shadow.blur.is_finite()
+            {
+                return Err(());
+            }
+            let mut shadow_bounds = translate_rect(base_bounds, shadow.offset_x, shadow.offset_y)?;
+            if shadow.blur > 0.0 {
+                shadow_bounds = outset_rect(shadow_bounds, shadow.blur * FILTER_OUTSET_PER_RADIUS)?;
+            }
+            visual = union_options(visual, Some(shadow_bounds))?;
         }
     }
 

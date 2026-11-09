@@ -23,13 +23,19 @@ test('fidelity comparison measures actual PNG differences and never passes unava
   process.env.DSH_FIGMA_API_BASE = `http://127.0.0.1:${server.address().port}`
   t.after(() => { server.closeAllConnections(); server.close(); delete process.env.DSH_FIGMA_API_BASE })
   const args = { url: 'https://www.figma.com/design/KEY/x?node-id=1-1', nodeId: 'n1', figmaToken: 'mock' }
+  const captured = []
   const helpers = {
-    capture: async () => ({ isError: false, content: [{ type: 'image', data: png.toString('base64') }] }),
+    capture: async request => {
+      captured.push(request)
+      return { isError: false, content: [{ type: 'image', data: png.toString('base64') }] }
+    },
     layout: () => ({ structuredContent: { layout: [{ id: 'n1', name: 'Root', x: 0, y: 0, width: 8, height: 8 }] } }),
     version: () => 10,
   }
   const result = await compareFigmaFidelity(args, helpers)
   assert.equal(result.structuredContent.visual.ratio, 0)
+  // Figma renders a node without its ancestors or siblings; so must we.
+  assert.equal(captured[0].isolate, true)
   assert.equal(result.structuredContent.verified, true)
   const unavailable = await compareFigmaFidelity(args, {
     ...helpers, capture: async () => ({ isError: true, content: [{ type: 'text', text: 'Editor is closed' }] }),
@@ -143,4 +149,56 @@ test('fidelity resolves linked component instances to their Figma layers and tex
   assert.deepEqual(result.structural, [])
   assert.equal(result.text.missingCount, 0, 'override text (with Figma textCase applied), not the component default, is compared')
   assert.equal(result.verified, true)
+})
+
+test('structural boxes compare after rotation and ancestor mirroring, like Figma bounds', async t => {
+  const png = solidPng(200, 60)
+  const box = (x, y, w, h) => ({ x: 1000 + x, y: 500 + y, width: w, height: h })
+  const server = createServer((req, res) => {
+    if (req.url.startsWith('/v1/files/')) {
+      return res.end(JSON.stringify({ nodes: { '1:1': { document: {
+        id: '1:1', name: 'Root', type: 'FRAME', absoluteBoundingBox: box(0, 0, 200, 60),
+        children: [
+          // A mirrored half-donut group: the oval sits left of the group origin
+          // in local space and lands to its right once the group is mirrored.
+          { id: '2:1', name: 'Group 2', type: 'GROUP', absoluteBoundingBox: box(10, 0, 40, 40), children: [
+            { id: '2:2', name: 'Oval', type: 'ELLIPSE', absoluteBoundingBox: box(10, 0, 80, 40) },
+          ] },
+          // A divider authored as a 40 px line rotated -90° inside its stack.
+          { id: '3:1', name: 'Line', type: 'LINE', absoluteBoundingBox: box(150, 10, 0, 40) },
+        ],
+      } } } }))
+    }
+    if (req.url.startsWith('/v1/images/')) return res.end(JSON.stringify({ images: {
+      '1:1': `http://127.0.0.1:${server.address().port}/image.png`,
+    } }))
+    res.end(png)
+  })
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  process.env.DSH_FIGMA_API_BASE = `http://127.0.0.1:${server.address().port}`
+  t.after(() => { server.closeAllConnections(); server.close(); delete process.env.DSH_FIGMA_API_BASE })
+  // snapshot_layout reports pre-transform boxes.
+  const layout = [{ id: 'n1', name: 'Root', x: 0, y: 0, width: 200, height: 60, children: [
+    { id: 'g', name: 'Group 2', x: 10, y: 0, width: 40, height: 40, children: [
+      { id: 'o', name: 'Oval', x: -30, y: 0, width: 80, height: 40 },
+    ] },
+    { id: 'l', name: 'Line', x: 130, y: 30, width: 40, height: 0 },
+  ] }]
+  const document = { children: [{ id: 'n1', type: 'frame', figmaNodeId: '1:1', children: [
+    { id: 'g', type: 'group', flipX: true, figmaNodeId: '2:1', children: [
+      { id: 'o', type: 'ellipse', flipX: true, figmaNodeId: '2:2' },
+    ] },
+    { id: 'l', type: 'line', rotation: -90, figmaNodeId: '3:1' },
+  ] }] }
+  const result = (await compareFigmaFidelity(
+    { url: 'https://www.figma.com/design/KEY/x?node-id=1-1', nodeId: 'n1', figmaToken: 'mock' },
+    {
+      capture: async () => ({ isError: false, content: [{ type: 'image', data: png.toString('base64') }] }),
+      layout: () => ({ structuredContent: { layout } }),
+      version: () => 1,
+      document: () => document,
+    },
+  )).structuredContent
+  assert.deepEqual(result.structural, [])
 })

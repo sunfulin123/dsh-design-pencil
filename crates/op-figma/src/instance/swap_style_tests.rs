@@ -344,3 +344,37 @@ fn strategy_3_pairs_remaining_entries_after_exact_identity_reservation() {
     assert_eq!(out[1].figma.get_str("name"), Some("b"));
     assert_eq!(out[2].figma.get_str("name"), Some("exact-c"));
 }
+
+/// Variants share override keys: after swapping a "Button" to its "Toggle"
+/// variant, Figma's derived entry for the label is addressed by the label's
+/// `overrideKey`, which the old variant also carries. It is current data for
+/// the new variant and must survive (the "Share" label kept 42 px instead
+/// of its resolved 37 px).
+#[test]
+fn derived_entries_addressed_by_a_shared_variant_override_key_survive_a_swap() {
+    let label = |node_guid: FigValue| TreeNode {
+        figma: obj(vec![
+            ("type", FigValue::Str("TEXT".into())),
+            ("guid", node_guid),
+            ("overrideKey", guid(1168, 304318)),
+            ("size", size(42.0, 20.0)),
+        ]),
+        children: Vec::new(),
+    };
+    let mut base = symbol_root(vec![label(guid(1168, 304318))]);
+    base.figma.set("guid", guid(1168, 1));
+    let mut target = symbol_root(vec![label(guid(2786, 119879))]);
+    target.figma.set("guid", guid(2786, 2));
+    let derived = vec![derived_with(
+        vec![guid(1168, 304318)],
+        vec![("size", size(37.0, 20.0))],
+    )];
+    let filtered = filter_swap_stale_derived(&derived, Some(&base), &target, None);
+    assert_eq!(
+        filtered
+            .iter()
+            .filter_map(guid_path_key)
+            .collect::<Vec<_>>(),
+        ["1168:304318"]
+    );
+}

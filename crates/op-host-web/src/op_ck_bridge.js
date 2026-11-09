@@ -933,6 +933,16 @@ export function opCkCreateBridge(CK, initialSurface, el, {
     return null;
   };
   const tfFor = (t, emojiRun) => systemTypefaceFor(t, emojiRun) || CK.Typeface.GetDefault();
+  // Figma lays text out unhinted with fractional advances. A default Font
+  // rounds every advance to a whole pixel, which widens text, spaces glyphs
+  // unevenly and makes auto-width text shrink to fit its imported box.
+  const textFont = (tf, sz, italic = false) => {
+    const f = new CK.Font(tf, sz, 1, italic ? -0.25 : 0);
+    f.setLinearMetrics(true);
+    f.setSubpixel(true);
+    f.setHinting(CK.FontHinting.None);
+    return f;
+  };
   const runWidth = (f, s) => { const ids = f.getGlyphIDs(s); return f.getGlyphWidths(ids).reduce((a, v) => a + v, 0); };
   // Normalize the primary family for imported-font registry mutations. Text
   // lookup itself uses every authored candidate via `familyTypefaceEntry`.
@@ -946,6 +956,23 @@ export function opCkCreateBridge(CK, initialSurface, el, {
   // candidates intentionally return null and continue through browser text.
   const familyTypefaceEntry = (family, weight = 400, italic = false) => {
     return opCkResolveRegisteredTypeface(family, importedTypefaces, systemTypefacesByFamily, bundledTypefaces, weight, italic, downloadedTypefaces);
+  };
+  // Every named-face registry parses the same way; once a face lands, drop
+  // coverage and font caches that may now resolve to it.
+  const registerFace = (family, bytes, store) => {
+    const key = primaryFamilyKey(family);
+    if (!key) return false;
+    const tf = CK.Typeface.MakeFreeTypeFaceFromData(copyBytes(bytes));
+    if (!tf) return false;
+    store(key, tf);
+    coverageCache.clear();
+    clearRegisteredFontCaches();
+    return true;
+  };
+  // Replace any prior face under the same key, freeing its wasm-heap tf.
+  const replaceFace = (registry, family) => (key, tf) => {
+    registry.get(key)?.tf?.delete?.();
+    registry.set(key, { tf, family: String(family || '') });
   };
   // Shared "typeface + font for (family, sz)" so the family-aware draw and
   // measure paths build the SAME CK.Font and agree to sub-pixel. Cached per
@@ -963,7 +990,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
     const cacheKey = key + '\n' + sz;
     let f = registeredFamilyFontCache.get(cacheKey);
     if (!f) {
-      f = new CK.Font(tf, sz);
+      f = textFont(tf, sz);
       if (registeredFamilyFontCache.size >= REGISTERED_FONT_CACHE_CAP) {
         for (const v of registeredFamilyFontCache.values()) v.delete();
         registeredFamilyFontCache.clear();
@@ -1051,8 +1078,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
         cx += drawBrowserText(seg.text, cx, y, sz, weight, italic, r, g, b, a, seg.emoji);
         continue;
       }
-      const f = new CK.Font(tfFor(seg.text, seg.emoji), sz);
-      if (italic && !seg.emoji) f.setSkewX(-0.25);
+      const f = textFont(tfFor(seg.text, seg.emoji), sz, italic && !seg.emoji);
       canvas.drawText(seg.text, cx, y, p, f);
       cx += runWidth(f, seg.text);
       f.delete();
@@ -1757,7 +1783,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
     },
     textAscent(family, sz, weight) {
       const familyEntry = familyTypefaceEntry(family, weight);
-      const font = new CK.Font(familyEntry ? familyEntry.tf : tfFor('M', false), sz);
+      const font = textFont(familyEntry ? familyEntry.tf : tfFor('M', false), sz);
       let ascent = sz * 0.8;
       if (font.getMetrics) {
         const metrics = font.getMetrics();
@@ -1805,7 +1831,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       const includeFallback = (text) => {
         for (const seg of segments(text)) {
           if (includeBrowserMetrics(seg.text)) continue;
-          const font = new CK.Font(tfFor(seg.text, seg.emoji), sz);
+          const font = textFont(tfFor(seg.text, seg.emoji), sz);
           includeFontMetrics(font);
           font.delete();
         }
@@ -1854,8 +1880,7 @@ export function opCkCreateBridge(CK, initialSurface, el, {
           w += browserTextMeasure(seg.text, sz, weight, italic);
           continue;
         }
-        const f = new CK.Font(tfFor(seg.text, seg.emoji), sz);
-        if (italic && !seg.emoji) f.setSkewX(-0.25);
+        const f = textFont(tfFor(seg.text, seg.emoji), sz, italic && !seg.emoji);
         w += runWidth(f, seg.text);
         f.delete();
       }
@@ -2045,59 +2070,35 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       return true;
     },
     registerImportedFont(family, bytes) {
-      const key = primaryFamilyKey(family);
-      if (!key) return false;
-      const tf = CK.Typeface.MakeFreeTypeFaceFromData(copyBytes(bytes));
-      if (!tf) return false;
-      // Replace any prior face under the same key, freeing its wasm-heap tf.
-      const prev = importedTypefaces.get(key);
-      if (prev && prev.tf && prev.tf.delete) prev.tf.delete();
-      importedTypefaces.set(key, { tf, family: String(family || '') });
-      coverageCache.clear();
-      clearRegisteredFontCaches();
-      return true;
+      return registerFace(family, bytes, replaceFace(importedTypefaces, family));
     },
     registerFontFace(family, weight, italic, bytes) {
-      const key = primaryFamilyKey(family);
-      if (!key) return false;
-      const tf = CK.Typeface.MakeFreeTypeFaceFromData(copyBytes(bytes));
-      if (!tf) return false;
-      const faces = downloadedTypefaces.get(key) || [];
-      const previous = faces.findIndex(face => face.weight === weight && face.italic === italic);
-      const entry = { family, weight, italic, tf };
-      if (previous >= 0) {
-        faces[previous].tf.delete();
-        faces[previous] = entry;
-      } else {
-        faces.push(entry);
-      }
-      downloadedTypefaces.set(key, faces);
-      if (typeof FontFace === 'function' && typeof document !== 'undefined') {
-        const browserFace = new FontFace(family, copyBytes(bytes), {
-          weight: String(weight), style: italic ? 'italic' : 'normal',
-        });
-        browserFace.load().then(face => document.fonts.add(face), error => {
-          console.warn(`Imported browser font ${family} ${weight} failed`, error);
-        });
-      }
-      coverageCache.clear();
-      clearRegisteredFontCaches();
-      return true;
+      return registerFace(family, bytes, (key, tf) => {
+        const faces = downloadedTypefaces.get(key) || [];
+        const previous = faces.findIndex(face => face.weight === weight && face.italic === italic);
+        const entry = { family, weight, italic, tf };
+        if (previous >= 0) {
+          faces[previous].tf.delete();
+          faces[previous] = entry;
+        } else {
+          faces.push(entry);
+        }
+        downloadedTypefaces.set(key, faces);
+        if (typeof FontFace === 'function' && typeof document !== 'undefined') {
+          const browserFace = new FontFace(family, copyBytes(bytes), {
+            weight: String(weight), style: italic ? 'italic' : 'normal',
+          });
+          browserFace.load().then(face => document.fonts.add(face), error => {
+            console.warn(`Imported browser font ${family} ${weight} failed`, error);
+          });
+        }
+      });
     },
     // Register an app-bundled design face. Same replace-on-same-key discipline
     // as `registerImportedFont`; only the registry (and therefore the lookup
     // rank) differs.
     registerBundledFont(family, bytes) {
-      const key = primaryFamilyKey(family);
-      if (!key) return false;
-      const tf = CK.Typeface.MakeFreeTypeFaceFromData(copyBytes(bytes));
-      if (!tf) return false;
-      const prev = bundledTypefaces.get(key);
-      if (prev && prev.tf && prev.tf.delete) prev.tf.delete();
-      bundledTypefaces.set(key, { tf, family: String(family || '') });
-      coverageCache.clear();
-      clearRegisteredFontCaches();
-      return true;
+      return registerFace(family, bytes, replaceFace(bundledTypefaces, family));
     },
     // (Fresh browser imports parse the family name in Rust via `ttf-parser` —
     // the vendored CanvasKit build exposes no family-name API — then register
@@ -2189,33 +2190,25 @@ export function opCkCreateBridge(CK, initialSurface, el, {
       paint.delete();
     },
     pushBlurLayer(sigma) {
-      if (!Number.isFinite(sigma) || !(sigma > 0)) {
-        canvas.save();
-        return;
-      }
-      const filter = CK.ImageFilter.MakeBlur(sigma, sigma, CK.TileMode.Decal, null);
+      const f = Number.isFinite(sigma) && sigma > 0 ? CK.ImageFilter.MakeBlur(sigma, sigma, CK.TileMode.Decal, null) : null;
+      if (!f) { canvas.save(); return; }
       const paint = new CK.Paint();
-      try {
-        paint.setAntiAlias(true);
-        if (filter) paint.setImageFilter(filter);
-        canvas.saveLayer(paint);
-      } finally {
-        paint.delete();
-        if (filter) filter.delete();
-      }
+      try { paint.setAntiAlias(true); paint.setImageFilter(f); canvas.saveLayer(paint); }
+      finally { paint.delete(); f.delete?.(); }
+    },
+    pushDropShadowLayer(dx, dy, blur, r, g, b, a) {
+      const s = Number.isFinite(blur) && blur > 0 ? blur * 0.5 : 0;
+      const f = a > 0 && CK.ImageFilter?.MakeDropShadow ? CK.ImageFilter.MakeDropShadow(dx, dy, s, s, CK.Color4f(r, g, b, a), null) : null;
+      if (!f) { canvas.save(); return; }
+      const paint = new CK.Paint();
+      try { paint.setAntiAlias(true); paint.setImageFilter(f); canvas.saveLayer(paint); }
+      finally { paint.delete(); f.delete?.(); }
     },
     pushBackdropBlurLayer(sigma) {
-      if (!(sigma > 0) || !CK.ImageFilter || !CK.ImageFilter.MakeBlur) {
-        canvas.save();
-        return;
-      }
-      const filter = CK.ImageFilter.MakeBlur(sigma, sigma, CK.TileMode.Clamp, null);
-      if (!filter) {
-        canvas.save();
-        return;
-      }
+      const filter = sigma > 0 && CK.ImageFilter?.MakeBlur ? CK.ImageFilter.MakeBlur(sigma, sigma, CK.TileMode.Clamp, null) : null;
+      if (!filter) { canvas.save(); return; }
       canvas.saveLayer(null, null, filter, 0, CK.TileMode.Clamp);
-      if (filter.delete) filter.delete();
+      filter.delete?.();
     },
     restore() { canvas.restore(); },
     translate(x, y) { canvas.translate(x, y); },

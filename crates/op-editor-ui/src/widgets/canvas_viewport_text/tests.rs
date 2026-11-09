@@ -89,6 +89,8 @@ struct CaptureBackend {
     fill_rects: Vec<Rect>,
     round_rects: Vec<Rect>,
     requested_baseline: Option<f32>,
+    /// Font-metric first baseline returned for every request, when set.
+    metric_baseline: Option<f32>,
     responsive_metrics: bool,
 }
 
@@ -149,6 +151,9 @@ impl RenderBackend for CaptureBackend {
         self.measure_text_weighted(text, size, weight) * factor
     }
     fn text_first_baseline(&mut self, request: &TextBaselineRequest<'_>) -> f32 {
+        if let Some(baseline) = self.metric_baseline {
+            return baseline;
+        }
         if let Some(baseline) = self.requested_baseline {
             assert_eq!(request.text, "🧥 new");
             assert_eq!(request.font_family, "Inter, system-ui, sans-serif");
@@ -399,7 +404,53 @@ fn authored_line_height_requests_a_text_aware_first_baseline() {
 
     paint_text_node(&mut cx, &node, node.bounds, 1.0, &None);
 
-    assert_eq!(backend.origins[0].y, 19.25);
+    // Figma rounds the font-metric baseline (19.25) to a whole pixel.
+    assert_eq!(backend.origins[0].y, 19.0);
+}
+
+/// Figma puts every line's baseline on a whole pixel of its text box; a
+/// fractional baseline lets the rasterizer snap glyphs up to half a pixel off.
+#[test]
+fn line_baselines_land_on_whole_pixels_of_the_text_box() {
+    // Top aligned: 14 px × 0.8 = 11.2 → 11, measured from a half-pixel box.
+    let mut node = text_node("Settings\nFilters");
+    node.bounds = Rect::xywh(0.0, 10.5, 200.0, 80.0);
+    node.font_size = 14.0;
+    node.line_height = 1.42;
+    node.text_vertical_align = SceneTextVerticalAlign::Top;
+    let mut backend = CaptureBackend::default();
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        1.0,
+        &None,
+    );
+    // Second line: 11.2 + 19.88 = 31.08 → 31.
+    let ys: Vec<f32> = backend.origins.iter().map(|p| p.y).collect();
+    assert_eq!(ys, vec![21.5, 41.5]);
+
+    // Middle alignment, font-metric baseline 23.57 in a 28 px line → 24.
+    let mut node = text_node("Dashboard Example");
+    node.bounds = Rect::xywh(0.0, 0.0, 300.0, 28.0);
+    node.font_size = 28.0;
+    node.text_vertical_align = SceneTextVerticalAlign::Middle;
+    let mut backend = CaptureBackend {
+        metric_baseline: Some(23.57),
+        ..CaptureBackend::default()
+    };
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        1.0,
+        &None,
+    );
+    assert_eq!(backend.origins[0].y, 24.0);
 }
 
 #[test]
@@ -502,4 +553,31 @@ fn segment_boundary_maps_onto_wrapped_lines() {
     assert_eq!(backend.weights, vec![400, 400, 700]);
     // "rld" starts after "wo"'s 2-glyph advance on line 1.
     assert_eq!(backend.origins[2].x, 20.0);
+}
+
+/// Figma and CSS centre a Latin line by its font's ascent/descent; a fixed
+/// ink ratio only matched Roboto (Roboto Mono's "K" landed a pixel high).
+#[test]
+fn middle_aligned_latin_uses_the_font_metric_baseline_like_figma() {
+    let mut node = text_node("K");
+    node.font_family = "Roboto Mono".into();
+    node.bounds = Rect::xywh(0.0, 0.0, 20.0, 16.0);
+    node.font_size = 12.0;
+    node.line_height = 1.33;
+    node.text_vertical_align = SceneTextVerticalAlign::Middle;
+    let mut backend = CaptureBackend {
+        metric_baseline: Some(12.9),
+        ..CaptureBackend::default()
+    };
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        1.0,
+        &None,
+    );
+    // (16 - 15.96) / 2 + 12.9 = 12.92 → 13; the ink ratio gave 12.08 → 12.
+    assert_eq!(backend.origins[0].y, 13.0);
 }

@@ -774,4 +774,52 @@ mod tests {
             "assetRef key must resolve through the publish-key namespace, got b={blue}"
         );
     }
+
+    #[test]
+    fn effect_style_replaces_stale_cached_effects_on_node() {
+        let effect = |radius: f32| {
+            FigValue::Array(vec![obj(vec![
+                ("type", FigValue::Str("DROP_SHADOW".into())),
+                ("visible", FigValue::Bool(true)),
+                ("radius", FigValue::Float(radius)),
+            ])])
+        };
+        let style_node = obj(vec![
+            ("styleType", FigValue::Str("EFFECT".into())),
+            (
+                "guid",
+                obj(vec![
+                    ("sessionID", FigValue::Uint(766)),
+                    ("localID", FigValue::Uint(146743)),
+                ]),
+            ),
+            ("effects", effect(3.0)),
+        ]);
+        let node = obj(vec![
+            ("type", FigValue::Str("FRAME".into())),
+            // Stale default shadow (radius 4) that the linked style must replace.
+            ("effects", effect(4.0)),
+            (
+                "styleIdForEffect",
+                obj(vec![(
+                    "guid",
+                    obj(vec![
+                        ("sessionID", FigValue::Uint(766)),
+                        ("localID", FigValue::Uint(146743)),
+                    ]),
+                )]),
+            ),
+        ]);
+        let mut changes = vec![style_node, node];
+        resolve_style_references(&mut changes);
+        let radius = changes[1]
+            .get_array("effects")
+            .and_then(|a| a.first())
+            .and_then(|e| e.get_f64("radius"))
+            .unwrap_or(-1.0);
+        assert!(
+            (radius - 3.0).abs() < 0.001,
+            "effect style must replace stale cached effects, got radius={radius}"
+        );
+    }
 }
