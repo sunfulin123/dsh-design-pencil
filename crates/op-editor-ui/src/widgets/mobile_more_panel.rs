@@ -55,7 +55,6 @@ pub enum MobileMoreEntry {
     SaveFile,
     /// Save a copy under a new name and switch the document to it.
     SaveAsFile,
-    Templates,
     Assets,
     Ai,
     /// Selection-independent generated-code inspector (tablet only).
@@ -70,26 +69,6 @@ pub enum MobileMoreEntry {
 }
 
 impl MobileMoreEntry {
-    /// Exhaustive semantic entries. Paint and hit-test use [`Self::visible`]
-    /// because Sign in and Account are mutually exclusive states of one tile.
-    pub const ALL: [MobileMoreEntry; 15] = [
-        MobileMoreEntry::NewFile,
-        MobileMoreEntry::OpenFile,
-        MobileMoreEntry::SaveFile,
-        MobileMoreEntry::SaveAsFile,
-        MobileMoreEntry::Templates,
-        MobileMoreEntry::Assets,
-        MobileMoreEntry::Ai,
-        MobileMoreEntry::Code,
-        MobileMoreEntry::SignIn,
-        MobileMoreEntry::Account,
-        MobileMoreEntry::Collaboration,
-        MobileMoreEntry::Language,
-        MobileMoreEntry::Settings,
-        MobileMoreEntry::Variables,
-        MobileMoreEntry::Export,
-    ];
-
     /// Entries visible for the current account state. This is the canonical
     /// list for layout, paint and hit-testing so a signed-in account cannot
     /// leave an invisible Sign-in target behind (or vice versa).
@@ -103,7 +82,6 @@ impl MobileMoreEntry {
             MobileMoreEntry::OpenFile,
             MobileMoreEntry::SaveFile,
             MobileMoreEntry::SaveAsFile,
-            MobileMoreEntry::Templates,
             MobileMoreEntry::Assets,
             MobileMoreEntry::Ai,
         ];
@@ -134,7 +112,6 @@ impl MobileMoreEntry {
             MobileMoreEntry::OpenFile => "fileMenu.openFile",
             MobileMoreEntry::SaveFile => "fileMenu.save",
             MobileMoreEntry::SaveAsFile => "fileMenu.saveAs",
-            MobileMoreEntry::Templates => "sceneTemplate.title",
             MobileMoreEntry::Assets => "assetCenter.title",
             MobileMoreEntry::Ai => "a11y.aiChat",
             MobileMoreEntry::Code => "rightPanel.code",
@@ -163,7 +140,6 @@ impl MobileMoreEntry {
             MobileMoreEntry::OpenFile => Icon::from_name("folder-open").unwrap_or(Icon::FolderOpen),
             MobileMoreEntry::SaveFile => Icon::from_name("save").unwrap_or(Icon::Save),
             MobileMoreEntry::SaveAsFile => Icon::from_name("copy").unwrap_or(Icon::Copy),
-            MobileMoreEntry::Templates => Icon::LayoutDashboard,
             MobileMoreEntry::Assets => Icon::Palette,
             MobileMoreEntry::Ai => Icon::from_name("sparkles").unwrap_or(Icon::Sparkles),
             MobileMoreEntry::Code => Icon::from_name("code").unwrap_or(Icon::Braces),
@@ -307,12 +283,12 @@ fn phone_portrait_entry_rect(state: &EditorState, panel: Rect, index: usize) -> 
         MobileMoreEntry::Code => {
             unreachable!("Code is not visible in the Compact portrait More sheet")
         }
-        MobileMoreEntry::Templates => {
-            phone_pair_rect(panel, PHONE_CREATIVE_TOP, PHONE_CREATIVE_HEIGHT, 0)
-        }
-        MobileMoreEntry::Assets => {
-            phone_pair_rect(panel, PHONE_CREATIVE_TOP, PHONE_CREATIVE_HEIGHT, 1)
-        }
+        MobileMoreEntry::Assets => Rect::xywh(
+            panel.origin.x + PHONE_SIDE_PADDING,
+            panel.origin.y + PHONE_CREATIVE_TOP,
+            content_w,
+            PHONE_CREATIVE_HEIGHT,
+        ),
         MobileMoreEntry::Collaboration => {
             phone_pair_rect(panel, PHONE_UTILITY_TOP, PHONE_UTILITY_HEIGHT, 0)
         }
@@ -557,7 +533,7 @@ fn paint_phone_portrait_entries(
                     prominent: true,
                 },
             ),
-            MobileMoreEntry::Templates | MobileMoreEntry::Assets => paint_phone_horizontal_entry(
+            MobileMoreEntry::Assets => paint_phone_horizontal_entry(
                 cx,
                 state,
                 theme,

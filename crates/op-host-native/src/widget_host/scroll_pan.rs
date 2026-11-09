@@ -53,7 +53,7 @@ impl WidgetHostNative {
         // Trackpad pans arrive here rather than through `apply_wheel_inner`;
         // a panel wired into only one of the two ladders still lets the
         // canvas move under a two-finger scroll (reported 2026-08-02).
-        if self.try_scroll_scene_template_center(x, y, dy, viewport_width, viewport_height) {
+        if self.try_scroll_asset_center(x, y, dy, viewport_width, viewport_height) {
             return true;
         }
         if self.try_scroll_prompt_center(x, y, dy, viewport_width, viewport_height) {

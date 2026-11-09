@@ -156,56 +156,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "Cursor von {{name}}",
         "icon.catalogLoading" => "Symbolkatalog wird geladen…",
-        "sceneTemplate.documentUnavailable" => "Das Dokument dieser Vorlage konnte nicht geladen werden. Bitte erneut versuchen.",
+
         "sceneTemplate.deleteFailed" => "Diese Vorlage konnte nicht gelöscht werden. Bitte erneut versuchen.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "Seekarte · Strategie-Deck",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "Kartenpapierweiß mit Stahl- und Tintenblau: Jede Seite beginnt mit der Aussage und belegt sie mit genau einem Messwert samt Quelle. Tiefenprofilbalken und ein Kurslinien-Inhaltsverzeichnis tragen sieben Seiten, für Beratungsergebnisse und Strategiereviews.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "Tidenschiefer · Daten-Review-Deck",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "Auf Schiefergrau: Überblickskacheln, Trendlinie, Detailtabelle, Risikoliste und eine Roadmap in Swimlanes. Sieben Seiten für einen vollständigen Datenreview, für Quartalsrückblicke und Kennzahlenrunden.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "Satzspiegel und Linien · Deck für chinesischen Satz",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "Auf der klassischen chinesischen Seite gebaut: Satzspiegel, Kolumnenlinien, Kopfnoten und Fischschwanz-Kolumnentitel. Textzeilen bleiben unter dreißig Zeichen, mit Gegenspalten und Zitatseite, für Vorlesungen und Seminare.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "Karogrid Graphit · Deck für die Verteidigung",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "Graphitschrift auf Karopapier: Problem und Lücke, Methode, zwei Ergebnisseiten, Grenzen, Fazit und Quellen. Acht Seiten in der Reihenfolge einer Verteidigung, für Exposés und Disputationen.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "Leinen-Dossier · Memo-Deck",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "Ein Dossier auf Leinenpapier, vom Deckblatt über Hintergrund, aktuelle Daten, Analyse und Optionsvergleich bis zum Beschluss. Acht Seiten, die sich als eigenständiges Memo lesen, für Entscheidungsvorlagen.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "Kontobuchraster · Wettbewerbsmatrix-Deck",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "Bewertungsmaßstab, Hauptmatrix, Quantilsskalen und die Gegenüberstellung von Lücke und Stärke auf Kontobuchlinien. Sieben Seiten, die einen Wettbewerbsvergleich wie eine prüfbare Rechnung erzählen, für Auswahlentscheidungen und Marktanalysen.",
-        "sceneTemplate.item.brandConceptSheet.title" => "Markenkonzept-Board",
-        "sceneTemplate.item.brandConceptSheet.summary" => "Ein horizontales Prüfboard mit primärem Logo-Lockup, Konstruktionslogik, Schwarzweiß-Umkehrungen und Mindestgrößenprobe — für die erste Konzeptübergabe.",
-        "sceneTemplate.item.logoQaBoard.title" => "QA-Board zur Logo-Fusion",
-        "sceneTemplate.item.logoQaBoard.summary" => "Vier Prüffelder testen gemeinsame Bedeutungsarbeit, strukturelle Abhängigkeit, eine geschlossene Silhouette und eine Nebenlesart, die entdeckt statt angefügt wirkt.",
-        "sceneTemplate.item.eventInvitationCard.title" => "Einladung zum Tech-Salon",
-        "sceneTemplate.item.eventInvitationCard.summary" => "Eine 4:5-Veranstaltungseinladung mit großem Thementitel, zwei Karten für Zeit und Ort, drei Gästen, Anmelde-QR-Code und Veranstalter-Logozeile in tiefem Blauviolett.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "Livestream-Teaser",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "Eine 4:5-Livestream-Ankündigung mit starkem Thema, drei Countdown-Kacheln, zwei Vortragenden, Plattform-Pille und Reservierungs-QR-Karte auf dunklem Verlauf.",
-        "sceneTemplate.item.hiringPosterCard.title" => "Recruiting-Poster",
-        "sceneTemplate.item.hiringPosterCard.summary" => "Ein 4:5-Recruiting-Poster mit übergroßem Stellentitel, Platzhalter für ein Teamfoto, Anforderungen, Gehalt und Bewerbungs-QR-Code auf hellem Grund.",
-        "sceneTemplate.item.courseEnrollCard.title" => "Kursanmeldung",
-        "sceneTemplate.item.courseEnrollCard.summary" => "Eine warme 4:5-Kurskarte mit Kurstitel, Leiste mit Startinformationen, vier Highlight-Kacheln, Dozent, Frühbucherpreis und Anmelde-QR-Code.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "Konferenzagenda",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "Eine 4:5-Konferenzagenda mit Veranstaltungsnamen, Zeitachse aus fünf Stationen, Kaffeepause und orangefarbener Sponsoren-Logozeile auf Schwarz.",
-        "sceneTemplate.item.productLaunchCard.title" => "Produktlaunch",
-        "sceneTemplate.item.productLaunchCard.summary" => "Eine minimalistische weiße 4:5-Launchkarte mit Produktplatzhalter, drei Verkaufsargumenten, Preis, Einführungsangebot und Kauf-QR-Code.",
-        "sceneTemplate.item.annualReportCard.title" => "Jahresdatenbericht",
-        "sceneTemplate.item.annualReportCard.summary" => "Eine 4:5-Jahresberichtskarte mit vier Kennzahlen, einem Jahresfazit, einem Top-3-Ranking und QR-Code auf violettem Verlauf.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "Musikfestival-Poster",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "Ein 3:4-Festivalposter mit großer Überschrift, Datum und Ort, Line-up für drei Bühnen, drei Ticketstufen, Ticket-QR-Code und besonderer Unterstützung in Neonkontrast.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "Einladung zum Buchclub",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "Eine papierfarbene 4:5-Buchclub-Einladung mit Titel und Autor, Coverplatzhalter, Moderation, Zeit und Ort, drei Gesprächsthemen und Anmelde-QR-Code.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "KI-Support-Pitch-Deck",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "Ein zehnseitiges Startup-Pitch-Deck in tiefem Blau und Weiß: Themen-Cover, große Zahlen zum Kostenvergleich, ein Fazit mit drei Kurven, eine Fünf-Schritte-Schleife und drei Kennzahlen für die ersten 90 Tage, für SaaS-Finanzierungsrunden und Produktlaunches.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "Quartals-Review-Deck",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "Ein helles, blau getöntes Review mit elf Seiten: Agenda, je eine KPI-Dreierkarte für vier Geschäftsbereiche samt Wachstumsmotor und Verbesserungen, abgeschlossen mit Zielen für das nächste Quartal, für Betriebsreviews und Quartalsberichte.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "Quicksort-Lehrdeck",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "Ein siebenseitiger Kurs auf warmweißem Papier mit Tintengrün: Lernziele, zwei Schritte für Partitionierung und Rekursion, zwei Partitionierungsdemos mit Array-Zellen und hervorgehobenem Pivot sowie eine Komplexitätstabelle, für Algorithmus- und Programmierunterricht.",
-        "sceneTemplate.item.compoundEffectCard.title" => "Wissenskarte zum Zinseszinseffekt",
-        "sceneTemplate.item.compoundEffectCard.summary" => "Eine warme orangefarbene 4:5-Wissenskarte mit nummeriertem Auftakt, großem Titel, Definition, drei nummerierten Punkten und Fußzeile mit Konto und QR-Code, für Wissensserien.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "Karte zum Teilen von Analytics-Kennzahlen",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "Eine dunkle Datenkarte im Format 1200×630 mit großer Hauptkennzahl und Monatsvergleichs-Badge, horizontalen Balken rechts und drei Nebenkennzahlen unten, für Social Sharing und Wochenberichte.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP-Tokens",
-        "menu.saveAsTemplate" => "Als Vorlage sichern…",
-        "menu.saveAsTemplate.saved" => "Als Vorlage gespeichert",
-        "menu.saveAsTemplate.failed" => "Vorlage konnte nicht gespeichert werden",
+
+
+
         "assetCenter.template.mine" => "Meine Vorlagen",
         "assetCenter.template.builtIn" => "Eingebaute Vorlagen",
         "ai.designProgress.detail.failureReason" => "Grund: {{reason}}",

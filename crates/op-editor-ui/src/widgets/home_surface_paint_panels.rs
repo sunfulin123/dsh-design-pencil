@@ -4,9 +4,7 @@ use super::super::copy::{self, SANS};
 use super::super::fade;
 use super::super::paint::art::paint_app_art;
 use super::super::paint::art_phase;
-use super::super::paint::cards::{
-    paint_sticker, paint_template_paper, preview_template_for, text, text_weighted,
-};
+use super::super::paint::cards::{paint_design_paper, paint_sticker, text, text_weighted};
 use super::super::{HomeLayout, HomeSurface, StudioPalette};
 use crate::widgets::brand_icons::paint_figma_logo;
 use crate::widgets::icons::{draw_icon, Icon};
@@ -14,7 +12,7 @@ use crate::widgets::PaintCx;
 use crate::{Color, Point2D, Rect, RenderBackend};
 use jian_widgets::components::text_area::TextArea;
 use jian_widgets::Tokens;
-use op_editor_core::{HomeFamily, HomeHit, InfoKind, SlideRatio};
+use op_editor_core::{HomeFamily, HomeHit, SlideRatio};
 
 /// Input text metrics (prototype 14 px / 1.75 line-height; jian's text
 /// area uses 1.35 — the composer honors the component's own advance).
@@ -511,23 +509,9 @@ pub(super) fn paint_preview(
                 SlideRatio::Wide169 => Some(16.0 / 9.0),
                 SlideRatio::Classic43 => Some(4.0 / 3.0),
             };
-            paint_template_switched(
-                cx,
-                art,
-                preview_template_for(HomeFamily::Presentation, InfoKind::Data),
-                palette,
-                aspect,
-                phase,
-            );
+            paint_design_switched(cx, art, palette, aspect, phase);
         }
-        family => paint_template_switched(
-            cx,
-            art,
-            preview_template_for(family, draft.info_kind),
-            palette,
-            None,
-            phase,
-        ),
+        family => paint_design_switched(cx, art, palette, None, phase),
     }
 
     // Footer: pages text left, 使用这个示例 / 回到工作区 link right.
@@ -607,12 +591,9 @@ fn shift(rect: Rect, dy: f32) -> Rect {
     Rect::xywh(rect.origin.x, rect.origin.y + dy, rect.size.x, rect.size.y)
 }
 
-/// A template preview under the art-in switch motion: rise 8 px and
-/// scale .985→1 around the art centre, image opacity .2→1.
-fn paint_template_switched(
+fn paint_design_switched(
     cx: &mut PaintCx<'_>,
     art: Rect,
-    template_id: &str,
     palette: StudioPalette,
     crop_aspect: Option<f32>,
     phase: f32,
@@ -628,7 +609,7 @@ fn paint_template_switched(
             art.origin.y + art.size.y / 2.0,
         ),
     );
-    paint_template_paper(cx, art, template_id, palette, crop_aspect, alpha);
+    paint_design_paper(cx, art, palette, crop_aspect, alpha);
     cx.backend.restore();
 }
 

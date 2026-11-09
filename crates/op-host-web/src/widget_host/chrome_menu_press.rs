@@ -43,20 +43,8 @@ impl WidgetHost {
                 // Opening the centre is not a file action: it shows a panel,
                 // and the document is replaced later by whichever card the
                 // user picks.
-                if choice == FileMenuChoice::NewFromTemplate {
-                    self.editor_state
-                        .editor_ui
-                        .open_scene_template_center(self.now_ms);
-                    self.editor_state.editor_ui.file_menu_open = false;
-                    self.editor_state.editor_ui.file_menu.hover = None;
-                    self.mark_dirty();
-                    return;
-                }
-                if choice == FileMenuChoice::SaveAsTemplate {
-                    self.editor_state
-                        .editor_ui
-                        .scene_template_center
-                        .request_save_current();
+                if choice == FileMenuChoice::OpenAssetCenter {
+                    self.editor_state.editor_ui.open_asset_center(self.now_ms);
                     self.editor_state.editor_ui.file_menu_open = false;
                     self.editor_state.editor_ui.file_menu.hover = None;
                     self.mark_dirty();
@@ -75,9 +63,7 @@ impl WidgetHost {
                     FileMenuChoice::OpenRecent(i) => FileAction::OpenRecent(i),
                     FileMenuChoice::ClearRecent => FileAction::ClearRecent,
                     // Handled above — it opens a panel, not a file action.
-                    FileMenuChoice::NewFromTemplate
-                    | FileMenuChoice::SaveAsTemplate
-                    | FileMenuChoice::RecoverDrafts => return,
+                    FileMenuChoice::OpenAssetCenter | FileMenuChoice::RecoverDrafts => return,
                 });
                 self.editor_state.editor_ui.file_menu_open = false;
                 self.editor_state.editor_ui.file_menu.hover = None;

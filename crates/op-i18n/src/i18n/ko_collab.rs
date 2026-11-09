@@ -170,58 +170,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "{{name}}의 커서",
         "icon.catalogLoading" => "아이콘 카탈로그를 불러오는 중…",
-        "sceneTemplate.documentUnavailable" => {
-            "이 템플릿의 문서를 불러오지 못했습니다. 다시 시도하세요."
-        }
+
         "sceneTemplate.deleteFailed" => "해당 템플릿을 삭제하지 못했습니다. 다시 시도해 주세요.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "수심도 · 전략 제안 덱",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "해도의 따뜻한 백색에 강청색과 먹빛 남색. 각 장은 결론으로 시작하고 출처가 붙은 수치 하나로 뒷받침한다. 수심 단면 막대와 항적 목차가 일곱 장을 관통하는, 컨설팅 산출물과 전략 보고용.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "조수 자국 슬레이트 · 데이터 리뷰 덱",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "슬레이트 회색 바탕의 전경 타일, 추세선, 명세표, 위험 목록, 스윔레인 로드맵. 일곱 장으로 데이터 리뷰를 한 바퀴 도는, 분기 회고와 지표 정례 회의용.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "판심과 계선 · 중국어 조판 덱",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "판심, 계선, 두주 주석, 어미 쪽번호로 세운 중국어 본문 조판. 본문은 한 줄 서른 자를 넘기지 않고 두 단 대조와 인용 쪽이 읽기 좋은, 강의와 세미나용.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "모눈 그래파이트 · 학술 발표 덱",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "모눈종이 바탕에 흑연빛 글자. 문제와 공백, 방법, 그림과 표로 나눈 결과 두 장, 한계, 결론, 참고문헌까지 여덟 장을 심사 순서대로 배치한, 착수 발표와 논문 심사용.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "리넨 도시에 · 문서 메모 덱",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "리넨 종이 서류철의 질감으로 표지, 배경, 현황 데이터, 분석, 안 비교에서 결의까지. 그 자체로 읽히는 메모로 쓴 여덟 장, 의사결정 검토용.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "장부 눈금 · 경쟁 매트릭스 덱",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "장부 괘선 위의 평가 기준, 주 매트릭스, 분위 눈금, 격차와 강점 대조. 일곱 장으로 경쟁 비교를 대조 가능한 장부처럼 풀어내는, 제품 선정과 시장 분석용.",
-        "sceneTemplate.item.brandConceptSheet.title" => "브랜드 콘셉트 시트",
-        "sceneTemplate.item.brandConceptSheet.summary" => "주 로크업, 구성 논리, 흑백 반전, 최소 크기 생존 여부를 한 번에 검토하는 가로형 보드. 첫 콘셉트 전달용.",
-        "sceneTemplate.item.logoQaBoard.title" => "로고 융합 QA 보드",
-        "sceneTemplate.item.logoQaBoard.summary" => "네 칸에서 의미의 공동 부담, 구조적 의존, 실루엣의 통일, 보조 해석이 덧붙인 것이 아니라 발견한 것처럼 보이는지를 확인합니다.",
-        "sceneTemplate.item.eventInvitationCard.title" => "테크 살롱 초대장",
-        "sceneTemplate.item.eventInvitationCard.summary" => "4:5 행사 초대 카드: 큰 주제 제목, 시간·장소 이중 카드, 세 명의 게스트, 등록 QR 코드와 주최 로고 행을 딥 블루 바이올렛으로 구성합니다.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "라이브 스트리밍 예고 카드",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "4:5 라이브 스트리밍 예고: 주제 제목, 카운트다운 세 칸, 두 명의 발표자, 플랫폼 캡슐, 예약 QR 카드를 어두운 그라데이션 위에 배치합니다.",
-        "sceneTemplate.item.hiringPosterCard.title" => "채용 포스터",
-        "sceneTemplate.item.hiringPosterCard.summary" => "4:5 채용 포스터: 큰 직무명, 팀 사진 자리표시자, 지원 요건, 급여와 지원 QR 코드를 밝은 화면에 담습니다.",
-        "sceneTemplate.item.courseEnrollCard.title" => "강좌 모집 카드",
-        "sceneTemplate.item.courseEnrollCard.summary" => "따뜻한 색의 4:5 강좌 모집 카드: 강좌명, 개강 정보 바, 네 가지 핵심 포인트, 강사, 얼리버드 가격과 등록 QR 코드를 제공합니다.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "컨퍼런스 아젠다 카드",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "4:5 컨퍼런스 아젠다: 행사명, 다섯 구간 타임라인, 휴식 시간과 후원사 로고 행을 검은 바탕에 주황색으로 구성합니다.",
-        "sceneTemplate.item.productLaunchCard.title" => "신제품 출시 카드",
-        "sceneTemplate.item.productLaunchCard.summary" => "미니멀한 흰색 4:5 출시 카드: 제품 자리표시자, 세 가지 판매 포인트, 가격, 출시 혜택과 구매 QR 코드를 담습니다.",
-        "sceneTemplate.item.annualReportCard.title" => "연간 데이터 리포트 카드",
-        "sceneTemplate.item.annualReportCard.summary" => "4:5 연간 리포트 카드: 네 가지 핵심 수치, 올해의 한마디, Top 3 순위와 QR 코드를 보라색 그라데이션에 배치합니다.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "뮤직 페스티벌 포스터",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "3:4 음악 축제 포스터: 메인 헤드라인, 날짜와 장소, 세 무대 라인업, 세 가지 티켓 등급, 티켓 QR 코드와 특별 지원을 네온 대비로 보여 줍니다.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "북클럽 초대 카드",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "종이색 4:5 독서 모임 초대 카드: 책 제목과 저자, 표지 자리표시자, 진행자, 시간과 장소, 세 가지 토론 주제와 등록 QR 코드를 담습니다.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "AI 고객지원 피치 덱",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "짙은 파랑과 흰색으로 구성한 10장 스타트업 피치 덱입니다. 주제 표지, 비용 비교 대수치, 세 곡선 결론, 5단계 루프, 출시 후 90일의 세 지표를 담아 SaaS 투자 유치와 제품 발표에 적합합니다.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "분기 사업 리뷰 덱",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "밝은 파랑 계열의 11장 리뷰 덱입니다. 아젠다, 네 사업 라인별 KPI 3연 카드와 성장 엔진·개선 과제, 다음 분기 목표로 구성해 경영 리뷰와 분기 보고에 적합합니다.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "퀵정렬 강의 덱",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "미색 종이와 잉크 그린을 사용한 7장 강의 자료입니다. 학습 목표, 분할과 재귀의 두 단계, 배열 칸과 피벗을 강조한 분할 시연 두 장, 복잡도 비교표를 담아 알고리즘과 프로그래밍 교육에 적합합니다.",
-        "sceneTemplate.item.compoundEffectCard.title" => "복리 효과 지식 카드",
-        "sceneTemplate.item.compoundEffectCard.summary" => "따뜻한 오렌지색 4:5 지식 카드입니다. 번호가 붙은 상단 라벨, 큰 제목, 정의, 번호 원형 아이콘이 붙은 세 가지 요점, 계정과 QR 푸터로 구성해 지식 계정 시리즈에 적합합니다.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "분석 지표 공유 카드",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "어두운 1200×630 데이터 카드입니다. 주요 지표의 큰 숫자와 전월 대비 배지, 오른쪽 가로 막대 그래프, 하단 세 가지 보조 지표를 담아 소셜 공유와 주간 보고서에 적합합니다.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP 토큰",
-        "menu.saveAsTemplate" => "템플릿으로 저장…",
-        "menu.saveAsTemplate.saved" => "템플릿으로 저장됨",
-        "menu.saveAsTemplate.failed" => "템플릿을 저장할 수 없음",
+
+
+
         "assetCenter.template.mine" => "내 템플릿",
         "assetCenter.template.builtIn" => "기본 템플릿",
         "ai.designProgress.detail.failureReason" => "실패 원인: {{reason}}",

@@ -12,7 +12,7 @@ use op_editor_ui::widgets::{host_canvas_geometry, AIChatPlaceholder};
 use op_editor_ui::{Point2D, Rect};
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 const VIEWPORT_W: f32 = 390.0;
 const VIEWPORT_H: f32 = 844.0;

@@ -396,7 +396,7 @@ impl WidgetHostNative {
         true
     }
 
-    pub(in crate::widget_host) fn try_scroll_scene_template_center(
+    pub(in crate::widget_host) fn try_scroll_asset_center(
         &mut self,
         x: f32,
         y: f32,
@@ -404,11 +404,11 @@ impl WidgetHostNative {
         viewport_width: f32,
         viewport_height: f32,
     ) -> bool {
-        let Some(panel_rect) = self.scene_template_panel_rect(viewport_width, viewport_height)
+        let Some(panel_rect) = self.asset_center_panel_rect(viewport_width, viewport_height)
         else {
             return false;
         };
-        let Some(dirty) = press_flow::scroll_scene_template_center(
+        let Some(dirty) = press_flow::scroll_asset_center(
             &mut self.editor_state,
             panel_rect,
             Point2D::new(x, y),
@@ -534,7 +534,7 @@ impl WidgetHostNative {
         if self.try_scroll_icon_picker(x, y, delta_y, viewport_width, viewport_height) {
             return true;
         }
-        if self.try_scroll_scene_template_center(x, y, delta_y, viewport_width, viewport_height) {
+        if self.try_scroll_asset_center(x, y, delta_y, viewport_width, viewport_height) {
             return true;
         }
         if self.try_scroll_prompt_center(x, y, delta_y, viewport_width, viewport_height) {

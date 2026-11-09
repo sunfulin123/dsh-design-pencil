@@ -22,7 +22,7 @@ use op_host_services::design_agent_tools::{
     design_tool_defs, root_seed_prompt_is_continuation, root_seed_prompt_is_mobile,
 };
 
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 use super::clear_fresh_starter_frame_for_design;
 use super::providers::selected_builtin_agent_config;
@@ -175,10 +175,10 @@ pub(super) fn design_agent_loop_enabled(state: &op_editor_core::EditorState, pro
 /// ordinary.
 ///
 /// Pure so the policy is testable without a host or a model.
-pub(crate) fn design_turn_scenario(prompt: &str, page_was_empty: bool) -> Option<TemplateScene> {
+pub(crate) fn design_turn_scenario(prompt: &str, page_was_empty: bool) -> Option<DesignScene> {
     (page_was_empty
         && op_orchestrator::detect_design_type(prompt).type_ == op_orchestrator::DesignType::Slides)
-        .then_some(TemplateScene::Slides)
+        .then_some(DesignScene::Slides)
 }
 
 /// Apply [`design_turn_scenario`] before the turn touches the canvas.
@@ -458,7 +458,7 @@ mod tests {
         for deck_prompt in ["a pitch deck for our seed round", "做一个季度汇报 PPT"] {
             assert_eq!(
                 design_turn_scenario(deck_prompt, true),
-                Some(TemplateScene::Slides),
+                Some(DesignScene::Slides),
                 "{deck_prompt}"
             );
             // The same ask against existing work adds slides to someone's
@@ -487,7 +487,7 @@ mod tests {
         // A pristine starter canvas is empty as far as authored content goes.
         let mut starter = op_editor_core::EditorState::starter();
         stamp_design_turn_scenario(&mut starter, "build me a 6-slide pitch deck");
-        assert_eq!(starter.editor_ui.scenario, Some(TemplateScene::Slides));
+        assert_eq!(starter.editor_ui.scenario, Some(DesignScene::Slides));
 
         // A canvas with the user's own work keeps its identity, tag or none.
         let mut working = op_editor_core::EditorState::starter();
@@ -505,9 +505,9 @@ mod tests {
 
         // A turn that establishes nothing never clears an existing tag.
         let mut tagged = op_editor_core::EditorState::starter();
-        tagged.editor_ui.scenario = Some(TemplateScene::Carousel);
+        tagged.editor_ui.scenario = Some(DesignScene::Carousel);
         stamp_design_turn_scenario(&mut tagged, "design an admin analytics dashboard");
-        assert_eq!(tagged.editor_ui.scenario, Some(TemplateScene::Carousel));
+        assert_eq!(tagged.editor_ui.scenario, Some(DesignScene::Carousel));
     }
 
     // ── prompt-aware design-loop routing ───────────────────────────

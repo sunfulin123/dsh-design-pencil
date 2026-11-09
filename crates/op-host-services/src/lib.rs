@@ -115,7 +115,7 @@ pub(crate) mod test_support;
 // re-exports keep every `op_host_services::settings_io*` import stable.
 pub use op_editor_host_core::settings_io;
 pub use op_editor_host_core::settings_io_error;
-pub mod user_scene_template_store;
+
 pub mod validation_providers;
 #[cfg(feature = "standalone-services")]
 pub(crate) mod web_auth;

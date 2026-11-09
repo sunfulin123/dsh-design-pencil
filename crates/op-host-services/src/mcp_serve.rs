@@ -707,8 +707,8 @@ pub(crate) mod export_deck_tool;
 use export_deck_tool::export_deck_snapshot;
 pub(crate) mod export_frames_tool;
 use export_frames_tool::{export_frames_snapshot, get_deck_boards_snapshot};
-pub(crate) mod scene_template_tools;
-use scene_template_tools::{list_scene_templates_snapshot, use_scene_template_snapshot};
+
+
 
 pub(crate) mod finalize_tool;
 use finalize_tool::finalize_design_snapshot;

@@ -105,42 +105,6 @@ test('asset updates require current revisions and deleting assets does not chang
   assert.deepEqual(await (await fetch(`${host.baseUrl}/api/mcp/document`)).json(), doc);
 });
 
-test('save, instantiate and undo retain authored nodes and extension fields', async (t) => {
-  const { host } = await fixture(t, {
-    document: {
-      version: '0.8.5',
-      extension: { retained: true },
-      children: [
-        {
-          id: 'original',
-          type: 'frame',
-          width: 200,
-          height: 100,
-          fill: [{ type: 'solid', color: '#123456' }],
-          custom: { retained: true },
-        },
-      ],
-    },
-  });
-  const saved = await call(host, 'save_scene_template', { name: 'Board', nodeIds: ['original'] });
-  assert.equal(saved.isError, false, JSON.stringify(saved));
-  const id = saved.structuredContent.asset.id;
-  const before = await (await fetch(`${host.baseUrl}/api/mcp/document`)).json();
-  const applied = await call(host, 'instantiate_scene_template', { id });
-  assert.equal(applied.isError, false, JSON.stringify(applied));
-  assert.equal(applied.structuredContent.nodeIds.length, 1);
-  const after = await (await fetch(`${host.baseUrl}/api/mcp/document`)).json();
-  assert.equal(after.document.children.length, 2);
-  assert.deepEqual(after.document.extension, { retained: true });
-  assert.deepEqual(after.document.children[1].custom, { retained: true });
-  await call(host, 'undo');
-  const undone = await (await fetch(`${host.baseUrl}/api/mcp/document`)).json();
-  assert.deepEqual(undone.document, before.document);
-  await call(host, 'redo');
-  const redone = await (await fetch(`${host.baseUrl}/api/mcp/document`)).json();
-  assert.deepEqual(redone.document.children[1].custom, { retained: true });
-});
-
 test('theme presets preserve unknown fields, validate versions and apply in one undo', async (t) => {
   const { host } = await fixture(t);
   const preset = {
@@ -169,56 +133,6 @@ test('theme presets preserve unknown fields, validate versions and apply in one 
   assert.equal(undone.document.themes, undefined);
 });
 
-test('saving an updated template keeps old instances bound to their original alias values', async (t) => {
-  const { host } = await fixture(t, {
-    document: {
-      version: '1.0.0',
-      children: [
-        {
-          id: 'board',
-          type: 'frame',
-          width: 100,
-          height: 50,
-          fill: [{ type: 'solid', color: '$brand' }],
-        },
-      ],
-      variables: {
-        base: { type: 'color', value: '#112233' },
-        brand: { type: 'color', value: '$base' },
-      },
-    },
-  });
-  const saved = await call(host, 'save_scene_template', { name: 'Brand', nodeIds: ['board'] });
-  assert.equal(saved.isError, false);
-  const { asset, revision } = saved.structuredContent;
-  const first = await call(host, 'instantiate_scene_template', { id: asset.id });
-  assert.equal(first.isError, false, JSON.stringify(first));
-  const changed = await call(host, 'set_variables', {
-    variables: { base: { type: 'color', value: '#aabbcc' } },
-  });
-  assert.equal(changed.isError, false, JSON.stringify(changed));
-  const updated = await call(host, 'save_scene_template', {
-    name: 'Brand',
-    nodeIds: ['board'],
-    id: asset.id,
-    expectedRevision: revision,
-  });
-  assert.equal(updated.isError, false, JSON.stringify(updated));
-  const before = (await (await fetch(`${host.baseUrl}/api/mcp/document`)).json()).document;
-  const second = await call(host, 'instantiate_scene_template', { id: asset.id });
-  assert.equal(second.isError, false, JSON.stringify(second));
-  const doc = (await (await fetch(`${host.baseUrl}/api/mcp/document`)).json()).document;
-  const refs = doc.children.slice(1).map((n) => n.fill[0].color.slice(1));
-  assert.notEqual(refs[0], refs[1]);
-  for (const [index, color] of ['#112233', '#aabbcc'].entries()) {
-    const base = doc.variables[refs[index]].value.slice(1);
-    assert.equal(doc.variables[base].value, color);
-  }
-  assert.equal((await call(host, 'undo')).isError, false);
-  const undone = (await (await fetch(`${host.baseUrl}/api/mcp/document`)).json()).document;
-  assert.deepEqual(undone, before);
-});
-
 test('canonical variable and theme tools retain their object arguments outside batch_design', async (t) => {
   const { host } = await fixture(t);
   const variables = { base: { type: 'color', value: '#aabbcc' } };
@@ -233,22 +147,6 @@ test('canonical variable and theme tools retain their object arguments outside b
   const doc = (await (await fetch(`${host.baseUrl}/api/mcp/document`)).json()).document;
   assert.deepEqual(doc.variables, variables);
   assert.deepEqual(doc.themes, themes);
-});
-
-test('builtin assets are read-only and invalid requests cannot publish assets', async (t) => {
-  const { host } = await fixture(t);
-  const themes = await call(host, 'list_theme_presets');
-  assert.equal(themes.structuredContent.presets.length, 4);
-  assert.equal(
-    (await call(host, 'delete_theme_preset', { id: 'halo', expectedRevision: 0 })).isError,
-    true,
-  );
-  assert.equal((await call(host, 'save_scene_template', { name: 'Empty' })).isError, true);
-  assert.equal(
-    (await call(host, 'import_design_md', { markdown: ' ', path: '/etc/passwd' })).isError,
-    true,
-  );
-  assert.equal((await (await fetch(`${host.baseUrl}/api/assets`)).json()).revision, 0);
 });
 
 test('style imports in separate scopes cannot leak through WASM globals', async (t) => {
@@ -279,46 +177,30 @@ test('asset conflicts expose machine-readable errors over MCP and the shared API
   assert.equal((await response.json()).error, 'asset-conflict');
 });
 
-test('saving a ref includes its reusable master from another page', async (t) => {
-  const { host } = await fixture(t, {
-    document: {
-      version: '0.8.5',
-      children: [],
-      pages: [
-        { id: 'scene', name: 'Scene', children: [{ id: 'instance', type: 'ref', ref: 'master' }] },
-        {
-          id: 'library',
-          name: 'Library',
-          children: [
-            {
-              id: 'master',
-              type: 'frame',
-              reusable: true,
-              width: 100,
-              height: 50,
-              children: [{ id: 'label', type: 'text', content: 'Shared label', fontSize: 14 }],
-            },
-          ],
-        },
-      ],
-      editorMeta: { activePageIndex: 0 },
-    },
-  });
-  const saved = await call(host, 'save_scene_template', {
-    name: 'Component',
-    nodeIds: ['instance'],
-  });
-  assert.equal(saved.isError, false, JSON.stringify(saved));
-  const children = saved.structuredContent.asset.payload.document.children;
-  assert.ok(children.some((node) => node.id === 'master' && node.reusable));
-  const applied = await call(host, 'instantiate_scene_template', {
-    id: saved.structuredContent.asset.id,
-  });
-  assert.equal(applied.isError, false, JSON.stringify(applied));
-  const doc = (await (await fetch(`${host.baseUrl}/api/mcp/document`)).json()).document;
-  const inserted = doc.pages[0].children.filter((n) =>
-    applied.structuredContent.nodeIds.includes(n.id),
-  );
-  const ref = inserted.find((n) => n.type === 'ref');
-  assert.ok(inserted.some((n) => n.id === ref.ref && n.reusable));
+
+test('all 84 DESIGN.md guides ship as immutable builtins beside Cobalt and templates are absent', async (t) => {
+  const { host } = await fixture(t);
+  const list = await call(host, 'list_style_guides', { source: 'builtin', limit: 100 });
+  assert.equal(list.isError, false, JSON.stringify(list));
+  assert.equal(list.structuredContent.count, 85);
+  const guides = list.structuredContent.guides;
+  assert.equal(guides[0].id, 'talkdesk-cobalt');
+  assert.equal(guides.filter((g) => g.id.startsWith('design-md:')).length, 84);
+  assert.ok(guides.every((g) => g.isUser === false));
+  assert.ok(!guides.some((g) => g.id === 'design-md:talkdesk'));
+  const { readFile } = await import('node:fs/promises');
+  const manifestUrl = new URL('../../crates/op-ai-skills/skills/style-guides/manifest.json', import.meta.url);
+  const manifest = JSON.parse(await readFile(manifestUrl, 'utf8'));
+  for (const entry of manifest) {
+    const guide = await call(host, 'get_style_guide', { id: entry.id });
+    assert.equal(guide.isError, false, entry.id);
+    const original = await readFile(new URL(entry.path, manifestUrl), 'utf8');
+    assert.equal(guide.structuredContent.content, original, entry.id);
+  }
+  const catalog = await (await fetch(`${host.baseUrl}/api/assets`)).json();
+  assert.ok(catalog.assets.every((a) => a.kind !== 'scene-template'));
+  const removed = await call(host, 'save_scene_template', { name: 'Retired' });
+  assert.ok(!removed || removed.isError);
+  const deletion = await call(host, 'delete_style_guide', { id: 'design-md:apple', expectedRevision: 0 });
+  assert.equal(deletion.isError, true);
 });

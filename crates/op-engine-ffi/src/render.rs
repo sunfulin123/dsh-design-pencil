@@ -319,7 +319,7 @@ mod editor_viewport_tests {
     use crate::desc::{Callbacks, CreateOptions};
 
     const SAMPLE_DOC: &str =
-        include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+        include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
     #[test]
     fn keyboard_occlusion_does_not_resize_the_editor_frame() {

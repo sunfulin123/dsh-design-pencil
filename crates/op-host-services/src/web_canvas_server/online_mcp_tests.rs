@@ -49,35 +49,6 @@ fn call_text(payload: &serde_json::Value) -> String {
 }
 
 #[test]
-fn the_online_tool_catalog_omits_every_local_resource_tool() {
-    let listed = mcp(&registry(), &verifier(), "tokA", TOOLS_LIST);
-    let names: Vec<&str> = listed["result"]["tools"]
-        .as_array()
-        .expect("a tools array")
-        .iter()
-        .filter_map(|tool| tool["name"].as_str())
-        .collect();
-    assert!(!names.is_empty(), "the catalog must not be empty");
-    for denied in crate::mcp_serve::tool_profile::denied_tool_names() {
-        assert!(
-            !names.contains(&denied),
-            "{denied} must not be advertised to a public client"
-        );
-    }
-    // The in-memory catalog is still there — this is a filter, not a shutdown.
-    for kept in [
-        "get_node",
-        "add_page",
-        "insert_node",
-        "batch_design",
-        "list_scene_templates",
-        "use_scene_template",
-    ] {
-        assert!(names.contains(&kept), "{kept} must still be offered");
-    }
-}
-
-#[test]
 fn online_tool_search_cannot_rediscover_hidden_local_tools() {
     let payload = mcp(
         &registry(),

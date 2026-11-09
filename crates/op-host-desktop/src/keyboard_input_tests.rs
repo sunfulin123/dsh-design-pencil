@@ -516,7 +516,7 @@ fn presenting_app() -> DesktopApp {
         .value;
     let mut app = DesktopApp::new(None);
     let mut state = op_editor_core::EditorState::from_document(document);
-    state.editor_ui.scenario = Some(op_editor_core::scene_template_catalog::TemplateScene::Slides);
+    state.editor_ui.scenario = Some(op_editor_core::design_scene::DesignScene::Slides);
     app.host.install_imported_state(state);
     app.host.enter_preview((1200.0, 800.0));
     assert!(app.host.preview_slideshow_active(), "fixture presents");

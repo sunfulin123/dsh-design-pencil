@@ -8,7 +8,7 @@
 
 use super::WidgetHostNative;
 use op_editor_core::preview_slideshow::active_page_boards;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::size_class::{EditorSizeClass, MobileSheetKind};
 use op_editor_core::{EditorState, LeftPanelTab, SlidesPanelTarget};
 use op_editor_ui::Point2D;
@@ -39,7 +39,7 @@ const THREE_BOARD_DECK: &str = r##"{
     ]
 }"##;
 
-fn host_with(scenario: Option<TemplateScene>) -> WidgetHostNative {
+fn host_with(scenario: Option<DesignScene>) -> WidgetHostNative {
     let document = jian_ops_schema::load_str(THREE_BOARD_DECK)
         .expect("parse deck fixture")
         .value;
@@ -85,7 +85,7 @@ fn board_geometry(host: &WidgetHostNative) -> std::collections::BTreeMap<String,
 #[test]
 fn any_document_with_boards_gets_the_slides_tab() {
     let _guard = test_lock();
-    let mut deck = host_with(Some(TemplateScene::Slides));
+    let mut deck = host_with(Some(DesignScene::Slides));
     let slides = deck
         .slides_panel_frame(VW, VH)
         .expect("a deck shows the slides tab");
@@ -187,7 +187,7 @@ fn a_mixed_page_lists_every_board_at_the_same_row_height() {
 #[test]
 fn a_collapsed_sidebar_has_no_slides_tab_at_all() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     host.editor_state.editor_ui.sidebar_open = false;
     assert!(host.slides_panel_frame(VW, VH).is_none());
     assert!(host.slides_tab_row(VW, VH).is_none());
@@ -196,7 +196,7 @@ fn a_collapsed_sidebar_has_no_slides_tab_at_all() {
 #[test]
 fn presenting_hides_the_rail_and_it_eats_no_clicks() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let point = row_centre(&mut host, 1);
     assert!(host.enter_preview((VW, VH)), "the deck presents");
     assert!(host.preview_slideshow_active());
@@ -225,7 +225,7 @@ fn presenting_hides_the_rail_and_it_eats_no_clicks() {
 #[test]
 fn clicking_a_row_frames_that_board() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let point = row_centre(&mut host, 2);
     let before = host.editor_state.viewport;
 
@@ -252,7 +252,7 @@ fn clicking_a_row_frames_that_board() {
 #[test]
 fn dragging_a_row_reorders_the_deck_without_moving_any_board() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let geometry_before = board_geometry(&host);
     assert_eq!(
         active_page_boards(&host.editor_state),
@@ -287,7 +287,7 @@ fn dragging_a_row_reorders_the_deck_without_moving_any_board() {
 #[test]
 fn the_footer_button_starts_the_presentation() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let button = {
         let slides = host.slides_panel_frame(VW, VH).expect("slides tab");
         Point2D::new(
@@ -306,7 +306,7 @@ fn the_footer_button_starts_the_presentation() {
 #[test]
 fn the_tab_row_switches_the_rail_both_ways() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let tabs = host.slides_tab_row(VW, VH).expect("tab row");
     let layers_tab = Point2D::new(
         tabs.layers.origin.x + tabs.layers.size.x / 2.0,
@@ -341,7 +341,7 @@ fn the_tab_row_switches_the_rail_both_ways() {
 #[test]
 fn the_layer_tree_starts_below_the_tab_row() {
     let _guard = test_lock();
-    let mut deck = host_with(Some(TemplateScene::Slides));
+    let mut deck = host_with(Some(DesignScene::Slides));
     deck.editor_state.editor_ui.slides_panel.tab = LeftPanelTab::Layers;
     let tabs = deck.slides_tab_row(VW, VH).expect("tab row");
     let content = deck.layers_content_rect(VW, VH);
@@ -355,7 +355,7 @@ fn touch_layers_sheet_uses_one_visible_rect_for_tabs_layout_and_input() {
         (EditorSizeClass::Compact, 390.0, 844.0),
         (EditorSizeClass::Medium, 834.0, 1_112.0),
     ] {
-        let mut host = host_with(Some(TemplateScene::Slides));
+        let mut host = host_with(Some(DesignScene::Slides));
         {
             let ui = &mut host.editor_state.editor_ui;
             ui.touch = true;
@@ -445,7 +445,7 @@ fn touch_layers_sheet_uses_one_visible_rect_for_tabs_layout_and_input() {
 #[test]
 fn hovering_a_row_washes_it_and_leaving_the_rail_clears_it() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let point = row_centre(&mut host, 1);
     host.apply_cursor_move(point.x, point.y);
     assert_eq!(
@@ -459,7 +459,7 @@ fn hovering_a_row_washes_it_and_leaving_the_rail_clears_it() {
 #[test]
 fn the_wheel_over_the_rail_scrolls_the_list_and_not_the_canvas() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     // A three-slide deck fits, so nothing scrolls but the event is still
     // the panel's — the canvas must not zoom under the rail.
     let point = row_centre(&mut host, 0);
@@ -481,7 +481,7 @@ fn the_rail_resize_gutter_drags_narrower_as_well_as_wider() {
     let _guard = test_lock();
     let y = op_editor_ui::widgets::TOP_BAR_HEIGHT + 200.0;
 
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     // Start wide of the 240 px floor so the drag arithmetic is visible:
     // the rail now clamps to 240–440, and a 40 px narrowing from the
     // default 240 would simply sit on the clamp.
@@ -501,7 +501,7 @@ fn the_rail_resize_gutter_drags_narrower_as_well_as_wider() {
     host.apply_release_with_viewport(VW, VH);
     assert!(!host.is_resizing_panel());
 
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     host.editor_state.editor_ui.layer_panel_width = start;
     host.apply_press(start, y, VW, VH);
     host.apply_cursor_move(start + 40.0, y);
@@ -518,7 +518,7 @@ fn the_rail_resize_gutter_drags_narrower_as_well_as_wider() {
 #[test]
 fn the_inner_half_of_the_gutter_starts_a_resize_too() {
     let _guard = test_lock();
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     // Same reason as above: start wide of the 240 px floor.
     host.editor_state.editor_ui.layer_panel_width = 320.0;
     let start = 320.0_f32;

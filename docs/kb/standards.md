@@ -29,12 +29,12 @@
 {
   "version": 1,
   "status": "verified",
-  "task_id": "74996489-c9be-4d1b-a26b-a81deaeef88f",
-  "verified_at": "2026-11-09T03:58:23.888958+00:00",
+  "task_id": "d7c48a9d-87cc-4072-bf2b-1bee9de13b7c",
+  "verified_at": "2026-11-09T10:04:39.535617+00:00",
   "sources": {
     "AGENTS.md": "7da0c473de69169cfb78912511768de09471c37b27dda73ffa5a7c86ba8694ce",
     "CLAUDE.md": "bc7d7d08404221dac202b49a8ae99a6d27852c065739aa56962d38354392b235",
-    "COMMANDS.md": "671f5ed61fb91516b89ec63042c2ac167d9cfadeff1c2da0e42fadf52061dae1",
+    "COMMANDS.md": "b61536e66d1ce87d818a48e69e104329603101e3f70ec481cbb28c034fae11f4",
     "CODING_STANDARDS.md": "ffcd96889725001358ffcddc9dd58ace062c20b286823677b25a3c28bbb5f78d",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
     "REVIEW.md": "27935d6e64cb4ed95272e396530c1aed3d1ea16f156e78b8ca8d31fc404488b4",
@@ -53,7 +53,7 @@
     ".github/instructions/javascript.instructions.md": "258739dfde0348a64036ab71cd3a6c956cc4e641e931df8b322304ee3a160c09",
     ".github/workflows/maintenance.yml": "a766085afc8367de20e2b85778d4f1401b072a2ec09516fe317f3e9bd4bb3f0d"
   },
-  "reason": "COMMANDS.md only gained an HTML import validation section; the standards entry links authoritative docs and its rules are unaffected.",
-  "evidence": "Reviewed COMMANDS.md diff: one new section, no changed gates or rules"
+  "reason": "COMMANDS.md removed retired template tools and documents the 85 builtin styles; lint and task lifecycle rules are unchanged.",
+  "evidence": "Reviewed COMMANDS.md diff; line cap ratcheted downward; cargo clippy --workspace --all-targets passed with warnings visible."
 }
 ```

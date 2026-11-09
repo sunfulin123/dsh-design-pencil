@@ -56,19 +56,23 @@ pub use workspace_surface::{
     family_has_strip, family_views, layout_for as workspace_layout_for, workspace_enter,
     WorkspaceLayout, WorkspaceSurface,
 };
+pub mod asset_center_panel;
 pub(crate) mod prompt_center_previews;
-pub mod scene_template_panel;
-pub use scene_template_panel::{
-    SceneTemplateHit, SceneTemplatePanel, SCENE_TEMPLATE_CLOSE_HOVER, SCENE_TEMPLATE_CONTENT_MAX_W,
-    SCENE_TEMPLATE_GALLERY_INSET, SCENE_TEMPLATE_SCRIM,
+pub use asset_center_panel::{
+    AssetCenterHit, AssetCenterPanel, ASSET_CENTER_CLOSE_HOVER, ASSET_CENTER_CONTENT_MAX_W,
+    ASSET_CENTER_GALLERY_INSET, ASSET_CENTER_SCRIM,
 };
+mod asset_center_caret;
+mod asset_center_hit;
+mod asset_center_panel_paint;
 pub mod asset_center_style_cards;
+mod asset_center_style_geometry;
+mod asset_center_style_import;
 #[cfg(test)]
 mod asset_center_style_import_tests;
 mod asset_center_style_layout;
-#[cfg(test)]
-mod asset_center_tab_tests;
-mod asset_center_template_cards;
+mod asset_center_style_paint;
+mod asset_center_touch_density;
 mod panel_control_metrics;
 mod panel_controls;
 #[cfg(test)]
@@ -160,19 +164,6 @@ mod property_panel_wash_tests;
 pub mod property_panel_widget;
 #[cfg(test)]
 mod property_panel_widget_tests;
-mod scene_template_card_actions;
-mod scene_template_card_paint;
-mod scene_template_caret;
-mod scene_template_hit;
-mod scene_template_panel_paint;
-pub(crate) mod scene_template_previews;
-mod scene_template_style_geometry;
-mod scene_template_style_import;
-mod scene_template_style_paint;
-mod scene_template_touch_density;
-#[cfg(test)]
-mod scene_template_touch_tests;
-mod scene_template_user_layout;
 pub mod text_input;
 pub(crate) mod text_input_backend;
 pub mod text_metrics;
@@ -229,6 +220,7 @@ pub mod screen_switcher_pills;
 pub mod editor_state_ext;
 
 // Host-shared press/click dispatch flows (native + web widget hosts).
+mod asset_center_press_flow;
 pub mod chat_click_flow;
 mod collab_avatar_paint;
 pub mod collab_panel;
@@ -244,7 +236,6 @@ pub mod image_popover_input_flow;
 mod layer_context_flow;
 pub mod press_flow;
 mod prompt_center_press_flow;
-mod scene_template_press_flow;
 pub mod scroll_flow;
 
 // Step 4 — icon glyph drawer for editor chrome (lucide-flavored line art).

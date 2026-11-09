@@ -10,7 +10,7 @@ fn gallery_state(layer_panel_width: f32) -> EditorState {
     let mut state = EditorState::default();
     state.editor_ui.sidebar_open = true;
     state.editor_ui.layer_panel_width = layer_panel_width;
-    state.editor_ui.scene_template_center.open = true;
+    state.editor_ui.asset_center.open = true;
     state
 }
 
@@ -23,7 +23,7 @@ fn the_asset_center_is_centred_on_the_whole_viewport() {
     for width in [180.0_f32, 240.0, 480.0] {
         let state = gallery_state(width);
         let rect =
-            scene_template_panel_rect(&state, VIEWPORT_W, VIEWPORT_H).expect("the gallery is open");
+            asset_center_panel_rect(&state, VIEWPORT_W, VIEWPORT_H).expect("the gallery is open");
         let left = rect.origin.x;
         let right = VIEWPORT_W - (rect.origin.x + rect.size.x);
         assert!(
@@ -39,9 +39,9 @@ fn the_asset_center_is_centred_on_the_whole_viewport() {
 fn the_asset_center_spans_its_scrim_and_clears_the_top_bar() {
     let state = gallery_state(240.0);
     let rect =
-        scene_template_panel_rect(&state, VIEWPORT_W, VIEWPORT_H).expect("the gallery is open");
+        asset_center_panel_rect(&state, VIEWPORT_W, VIEWPORT_H).expect("the gallery is open");
     let scrim =
-        scene_template_scrim_rect(&state, VIEWPORT_W, VIEWPORT_H).expect("the scrim is painted");
+        asset_center_scrim_rect(&state, VIEWPORT_W, VIEWPORT_H).expect("the scrim is painted");
     assert_eq!(scrim.origin.x, 0.0);
     assert_eq!(scrim.size.x, VIEWPORT_W);
     assert!(
@@ -73,14 +73,14 @@ fn the_touch_asset_center_uses_the_full_safe_viewport() {
         state.editor_ui.touch = true;
         state.editor_ui.size_class = size_class;
         let rect =
-            scene_template_panel_rect(&state, viewport_w, viewport_h).expect("the gallery is open");
+            asset_center_panel_rect(&state, viewport_w, viewport_h).expect("the gallery is open");
         let inset = rect.origin.x;
         assert_eq!(rect.origin.y, inset);
         assert!((viewport_h - (rect.origin.y + rect.size.y) - inset).abs() < 0.01);
         assert!(rect.origin.y < TOP_BAR_HEIGHT);
 
-        let scrim = scene_template_scrim_rect(&state, viewport_w, viewport_h)
-            .expect("the scrim is painted");
+        let scrim =
+            asset_center_scrim_rect(&state, viewport_w, viewport_h).expect("the scrim is painted");
         assert_eq!(scrim, Rect::xywh(0.0, 0.0, viewport_w, viewport_h));
     }
 }
@@ -90,7 +90,7 @@ fn the_touch_asset_center_uses_the_full_safe_viewport() {
 #[test]
 fn a_tiny_viewport_shrinks_the_margin_instead_of_going_negative() {
     let state = gallery_state(240.0);
-    let rect = scene_template_panel_rect(&state, 120.0, 90.0).expect("the gallery is open");
+    let rect = asset_center_panel_rect(&state, 120.0, 90.0).expect("the gallery is open");
     assert!(rect.size.x > 0.0 && rect.size.y > 0.0);
     assert!(rect.origin.x >= 0.0);
     assert!(rect.origin.x + rect.size.x <= 120.0 + 0.01);
@@ -101,9 +101,9 @@ fn a_tiny_viewport_shrinks_the_margin_instead_of_going_negative() {
 #[test]
 fn a_closed_asset_center_has_neither_panel_nor_scrim() {
     let mut state = gallery_state(240.0);
-    state.editor_ui.scene_template_center.open = false;
-    assert!(scene_template_panel_rect(&state, VIEWPORT_W, VIEWPORT_H).is_none());
-    assert!(scene_template_scrim_rect(&state, VIEWPORT_W, VIEWPORT_H).is_none());
+    state.editor_ui.asset_center.open = false;
+    assert!(asset_center_panel_rect(&state, VIEWPORT_W, VIEWPORT_H).is_none());
+    assert!(asset_center_scrim_rect(&state, VIEWPORT_W, VIEWPORT_H).is_none());
 }
 
 fn prompt_center_state() -> EditorState {

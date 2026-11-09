@@ -1,14 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import {
   defaultAssetDirectory,
-  legacyAssetDirectory,
-  mergeLegacyAssets,
+  documentAssetDirectory,
 } from './asset-directory.mjs';
-import { AssetStore } from './asset-store.mjs';
 import { startNodeHost } from './node-host.mjs';
 
 async function root(context) {
@@ -37,10 +35,10 @@ test('default asset directory is user-level, platform specific and overridable',
     '/data/dsh-design-pencil/assets',
   );
   assert.equal(
-    legacyAssetDirectory('/work/a/design.op'),
+    documentAssetDirectory('/work/a/design.op'),
     '/work/a/.dsh-design/assets',
   );
-  assert.equal(legacyAssetDirectory(undefined), undefined);
+  assert.equal(documentAssetDirectory(undefined), undefined);
 });
 
 test('styles saved from one draft survive restarts and are visible to other documents', async (context) => {
@@ -53,7 +51,7 @@ test('styles saved from one draft survive restarts and are visible to other docu
       document: { version: '0.8.5', children: [] },
       sourcePath: join(draft, 'draft.op'),
       assetDirectory: shared,
-      legacyAssetDirectory: legacyAssetDirectory(join(draft, 'draft.op')),
+      documentAssetDirectory: documentAssetDirectory(join(draft, 'draft.op')),
     });
   };
   const first = await start('draft-a');
@@ -64,26 +62,4 @@ test('styles saved from one draft survive restarts and are visible to other docu
   context.after(() => second.close());
   const guide = await call(second, 'get_style_guide', { id: saved.structuredContent.asset.id });
   assert.equal(guide.structuredContent.content, '# Shared brand\nAccent #123456.');
-});
-
-test('legacy per-document libraries merge once without modification or resurrection', async (context) => {
-  const base = await root(context);
-  const legacyDirectory = join(base, 'doc', '.dsh-design', 'assets');
-  const legacy = await AssetStore.open({ directory: legacyDirectory });
-  const old = await legacy.put('style-guide', { name: 'Old', markdown: '# Old style' });
-  legacy.close();
-  const before = await stat(join(legacyDirectory, 'assets.sqlite'));
-
-  const target = await AssetStore.open({ directory: join(base, 'shared') });
-  context.after(() => target.close());
-  assert.equal(await mergeLegacyAssets(target, legacyDirectory), 1);
-  const merged = await target.get('style-guide', old.asset.id);
-  assert.equal(merged.payload.markdown, '# Old style');
-  assert.equal((await stat(join(legacyDirectory, 'assets.sqlite'))).mtimeMs, before.mtimeMs);
-  const marker = JSON.parse(await readFile(join(legacyDirectory, 'migrated.json'), 'utf8'));
-  assert.equal(marker.target, target.directory);
-
-  await target.remove('style-guide', old.asset.id, { expectedRevision: target.revision() });
-  assert.equal(await mergeLegacyAssets(target, legacyDirectory), 0);
-  await assert.rejects(target.get('style-guide', old.asset.id), { code: 'asset-not-found' });
 });

@@ -9,8 +9,6 @@
 # script exists only for the web deployment.
 #
 # The layout under the destination MUST match the route literals in
-# `prompt_center_previews.rs`, `scene_template_previews.rs`,
-# `scene_template_catalog.rs`, `icon_catalog.rs`, `bundled_fonts_web.rs` and
 # `op_i18n::catalog_route` — those are `concat!`ed / formatted at compile time,
 # so a mismatch is a silent 404 per asset rather than a build error. The Rust
 # side pins its half with route tests (the font manifest additionally asserts
@@ -58,9 +56,6 @@ copy_file() {
 
 mkdir -p "${DEST}"
 copy_dir "${UI_ASSETS}/prompt_center_previews" "prompt_center_previews"
-copy_dir "${UI_ASSETS}/scene_template_previews" "scene_template_previews"
-# Scene-template `.op` documents — fetched when a template is instantiated.
-copy_dir "${CORE_ASSETS}/scene_templates" "scene_templates"
 # Core (lucide + feather) icon catalog — fetched when the icon panel opens.
 copy_file "${UI_ASSETS}/iconify-catalog-core.json" "iconify-catalog-core.json"
 # The OFL design fonts the desktop binary embeds with `include_bytes!`. The
@@ -94,3 +89,6 @@ fi
 
 staged="$(du -sk "${DEST}" | cut -f1)"
 printf '  ✓ staged runtime assets into %s (%s KiB)\n' "${DEST}" "${staged}"
+
+# Remove retired template output from incremental builds.
+rm -rf "${DEST}/scene_templates" "${DEST}/scene_template_previews"

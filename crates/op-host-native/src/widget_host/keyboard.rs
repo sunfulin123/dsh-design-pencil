@@ -44,7 +44,7 @@ impl WidgetHostNative {
             }
             return true;
         }
-        if let Some(changed) = shared::scene_template_text(&mut self.editor_state, c, self.now_ms) {
+        if let Some(changed) = shared::asset_center_text(&mut self.editor_state, c, self.now_ms) {
             if changed {
                 self.mark_dirty();
             }

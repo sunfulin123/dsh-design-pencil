@@ -13,7 +13,7 @@
 //! was given, so one layout serves a laptop and a 32" display.
 //!
 //! The chrome metrics (padding, header, rows, chips, card gap and preview
-//! aspect) are *imported* from [`super::scene_template_panel`] rather than
+//! aspect) are *imported* from [`super::asset_center_panel`] rather than
 //! re-declared, because the two panels are meant to read as one surface
 //! family and a second copy of each number is how they would drift apart.
 
@@ -22,10 +22,10 @@ use std::borrow::Cow;
 use op_editor_core::prompt_center_catalog::{prompt_catalogue, PromptCategory};
 use op_editor_core::{ButtonPressTarget, EditorState, Locale, PromptFilter};
 
-use super::scene_template_panel::{
-    card_width, grid_columns, preview_height, CARD_GAP, CARD_PREVIEW_ASPECT, CARD_PREVIEW_INSET,
-    CHIP_H, CHIP_LABEL_SIZE, CLOSE_BTN, FILTER_ROW_H, HEADER_H, PAD, SCENE_TEMPLATE_CONTENT_MAX_W,
-    SEARCH_PAD_X, SEARCH_ROW_H, SEARCH_TEXT_SIZE, TITLE_SIZE,
+use super::asset_center_panel::{
+    card_width, grid_columns, preview_height, ASSET_CENTER_CONTENT_MAX_W, CARD_GAP,
+    CARD_PREVIEW_ASPECT, CARD_PREVIEW_INSET, CHIP_H, CHIP_LABEL_SIZE, CLOSE_BTN, FILTER_ROW_H,
+    HEADER_H, PAD, SEARCH_PAD_X, SEARCH_ROW_H, SEARCH_TEXT_SIZE, TITLE_SIZE,
 };
 use crate::theme::Theme;
 use crate::widgets::editor_state_ext::theme_for;
@@ -350,7 +350,7 @@ impl<'a> PromptCenterPanel<'a> {
     ///
     /// The panel grows with the window; its contents do not grow without
     /// limit. Everything from the title to the card grid lives in a column
-    /// capped at [`SCENE_TEMPLATE_CONTENT_MAX_W`] — the Asset Center's cap,
+    /// capped at [`ASSET_CENTER_CONTENT_MAX_W`] — the Asset Center's cap,
     /// shared so the two galleries line up when both have been opened — while
     /// only the backdrop, the header rule, and the save form's band run edge
     /// to edge.
@@ -358,7 +358,7 @@ impl<'a> PromptCenterPanel<'a> {
     /// Every rect below derives its x from here, so paint and hit-testing
     /// move together by construction.
     pub fn content_rect(panel: Rect) -> Rect {
-        let width = (panel.size.x - PAD * 2.0).clamp(0.0, SCENE_TEMPLATE_CONTENT_MAX_W);
+        let width = (panel.size.x - PAD * 2.0).clamp(0.0, ASSET_CENTER_CONTENT_MAX_W);
         Rect::xywh(
             panel.origin.x + ((panel.size.x - width) / 2.0).max(0.0),
             panel.origin.y,

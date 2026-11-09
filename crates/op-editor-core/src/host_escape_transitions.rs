@@ -96,20 +96,20 @@ impl EditorUiState {
     /// second press closes the panel. The alternative — closing outright —
     /// throws away a typed topic on the keystroke people reach for to undo a
     /// mis-click into the field.
-    pub fn escape_scene_template_center(&mut self) -> bool {
-        if !self.scene_template_center.open {
+    pub fn escape_asset_center(&mut self) -> bool {
+        if !self.asset_center.open {
             return false;
         }
         // The paste box is the topmost layer inside the panel, so it is the
         // first thing Escape takes back.
-        if self.close_scene_template_style_import() {
+        if self.close_asset_center_style_import() {
             return true;
         }
-        if self.scene_template_center.focus == crate::SceneTemplateFocus::Generate {
-            self.scene_template_center.focus = crate::SceneTemplateFocus::Search;
+        if self.asset_center.focus == crate::AssetCenterFocus::Generate {
+            self.asset_center.focus = crate::AssetCenterFocus::Search;
             return true;
         }
-        self.close_scene_template_center()
+        self.close_asset_center()
     }
 
     pub fn escape_prompt_center(&mut self) -> bool {
@@ -307,10 +307,10 @@ impl EditorUiState {
         self.prompt_center.close();
         self.prompt_center.save_title.set_text("");
         self.prompt_center.search.reset_transient();
-        self.scene_template_center.close();
-        self.scene_template_center.search.reset_transient();
-        self.scene_template_center.generate.reset_transient();
-        self.scene_template_center.import.text.reset_transient();
+        self.asset_center.close();
+        self.asset_center.search.reset_transient();
+        self.asset_center.generate.reset_transient();
+        self.asset_center.import.text.reset_transient();
         self.component_browser_open = false;
         self.component_browser_kit_picker_open = false;
         self.component_browser_hover = None;
@@ -492,8 +492,8 @@ mod tests {
         ui.save_name_dialog.open_with("draft", false, 1);
         ui.prompt_center.open = false;
         ui.prompt_center.save_open = true;
-        ui.scene_template_center.open = false;
-        ui.scene_template_center.import.open = true;
+        ui.asset_center.open = false;
+        ui.asset_center.import.open = true;
         ui.shape_picker.hover = Some(1);
         ui.shape_picker.pressed = Some(1);
         ui.hovered_layer_id = Some(crate::NodeId::new("n1"));
@@ -522,7 +522,7 @@ mod tests {
         assert!(!ui.figma_import_in_progress && ui.figma_import_pages.is_empty());
         assert!(!ui.file_drop_active && ui.file_drop_target.is_none());
         assert!(!ui.save_name_dialog.open);
-        assert!(!ui.prompt_center.save_open && !ui.scene_template_center.import.open);
+        assert!(!ui.prompt_center.save_open && !ui.asset_center.import.open);
         assert!(ui.shape_picker.hover.is_none() && ui.shape_picker.pressed.is_none());
         assert!(ui.hovered_layer_id.is_none() && ui.pressed_button.is_none());
         assert!(!ui.variables_panel_open && ui.ime_preedit.is_none());
@@ -544,7 +544,7 @@ mod tests {
         ui.locale = crate::Locale::Ja;
         ui.pinned_style_guide = Some("editorial-dark".to_string());
         ui.account = crate::AccountState::dev_fake_signed_in();
-        ui.scenario = Some(crate::scene_template_catalog::TemplateScene::Slides);
+        ui.scenario = Some(crate::design_scene::DesignScene::Slides);
         ui.pending_file_action = Some(crate::FileAction::Save);
         ui.preview.mode = true;
         ui.preview.warnings = vec!["keep".into()];
@@ -572,9 +572,6 @@ mod tests {
         assert_eq!(ui.pending_file_action, Some(crate::FileAction::Save));
         assert_eq!(ui.preview, preview);
         assert_eq!(state.ui.variables, variables);
-        assert_eq!(
-            ui.scenario,
-            Some(crate::scene_template_catalog::TemplateScene::Slides)
-        );
+        assert_eq!(ui.scenario, Some(crate::design_scene::DesignScene::Slides));
     }
 }

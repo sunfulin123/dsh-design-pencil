@@ -33,9 +33,9 @@ fn an_import_becomes_findable_by_id_and_by_name() {
 #[test]
 fn the_corpus_still_answers_its_own_names() {
     let _guard = exclusive();
-    let builtin = find_style_guide("zen-paper-light").expect("the corpus ships this guide");
+    let builtin = find_style_guide("talkdesk-cobalt").expect("the corpus ships this guide");
     assert!(!builtin.is_user());
-    assert_eq!(builtin.id(), "zen-paper-light");
+    assert_eq!(builtin.id(), "talkdesk-cobalt");
     assert!(find_style_guide("zzz-no-such-style").is_none());
     assert!(find_style_guide("   ").is_none());
 }
@@ -45,15 +45,15 @@ fn the_corpus_still_answers_its_own_names() {
 #[test]
 fn a_user_guide_cannot_shadow_a_corpus_name() {
     let _guard = exclusive();
-    import_design_md("---\nname: zen-paper-light\n---\n\nMy own take.\n", "x").expect("imports");
+    import_design_md("---\nname: talkdesk-cobalt\n---\n\nMy own take.\n", "x").expect("imports");
 
-    let resolved = find_style_guide("zen-paper-light").expect("resolves");
+    let resolved = find_style_guide("talkdesk-cobalt").expect("resolves");
     assert!(
         !resolved.is_user(),
         "the bare corpus name must still reach the corpus guide"
     );
     // The import is reachable, just under its own id.
-    assert!(find_style_guide("user:zen-paper-light")
+    assert!(find_style_guide("user:talkdesk-cobalt")
         .expect("the import is still there")
         .is_user());
 }

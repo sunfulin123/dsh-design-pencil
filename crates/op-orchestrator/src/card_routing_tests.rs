@@ -12,13 +12,6 @@ use crate::compact_prompt::build_compact_planning_prompt;
 use crate::design_type::{detect_design_type, DesignType};
 use crate::style_guide_context::infer_tags_from_prompt;
 
-const CARD_GUIDES: [&str; 4] = [
-    "mingsha-mineral-dark",
-    "leadprint-vermilion-light",
-    "arcade-neon-dark",
-    "highlighter-notebook-light",
-];
-
 const CARD_PROMPT: &str = "帮我做一套小红书卡片：如何早起";
 
 #[test]
@@ -37,11 +30,7 @@ fn a_card_prompt_reaches_a_card_style_guide() {
     }
 
     let built = build_compact_planning_prompt(CARD_PROMPT, None, None);
-    assert!(
-        CARD_GUIDES.contains(&built.selected_style_guide_name.as_str()),
-        "selected {:?}, expected one of the shipped card guides",
-        built.selected_style_guide_name
-    );
+    assert_eq!(built.selected_style_guide_name, "talkdesk-cobalt");
     assert!(
         built.system.contains("width=1080") && built.system.contains("height=1440"),
         "the planning prompt states the 3:4 board size: {}",
@@ -50,24 +39,22 @@ fn a_card_prompt_reaches_a_card_style_guide() {
 }
 
 #[test]
-fn all_four_shipped_guides_sit_on_the_card_shelf_and_are_selectable_by_name() {
+fn every_builtin_guide_is_selectable_by_its_stable_id() {
     // Deliberately NOT "this prompt picks that theme": `card-system-0808.md`
     // §8.3 rules out automatic theme recommendation — picking a theme from
     // content words is exactly the model-lottery the spec exists to remove.
     // What the wiring owes is that all four are ON the shelf and each can be
     // asked for by name, which is the sanctioned selection path.
-    use op_ai_skills::style_guide::{
-        select_style_guide, style_guide_registry, Platform, SelectOptions,
-    };
+    use op_ai_skills::style_guide::{select_style_guide, style_guide_registry, SelectOptions};
     let registry = style_guide_registry();
-    for name in CARD_GUIDES {
+    for entry in registry {
+        let name = entry.name.as_str();
         let guide = registry
             .iter()
             .find(|g| g.name == name)
             .unwrap_or_else(|| panic!("{name} is registered"));
         assert_eq!(
-            guide.platform,
-            Platform::Card,
+            guide.platform, entry.platform,
             "{name} must declare the card platform or it is unreachable"
         );
         let selected = select_style_guide(
@@ -75,7 +62,7 @@ fn all_four_shipped_guides_sit_on_the_card_shelf_and_are_selectable_by_name() {
             &SelectOptions {
                 tags: Vec::new(),
                 name: Some(name.to_string()),
-                platform: Some(Platform::Card),
+                platform: Some(entry.platform),
             },
         );
         assert_eq!(selected.map(|g| g.name.as_str()), Some(name));
@@ -90,11 +77,6 @@ fn a_component_request_never_lands_on_the_card_shelf() {
         "a card component for the design system",
     ] {
         let built = build_compact_planning_prompt(prompt, None, None);
-        assert!(
-            !CARD_GUIDES.contains(&built.selected_style_guide_name.as_str()),
-            "{prompt} reached the card shelf: {:?}",
-            built.selected_style_guide_name
-        );
         assert!(
             !infer_tags_from_prompt(prompt)
                 .iter()
@@ -114,11 +96,6 @@ fn an_ordinary_web_request_is_unaffected() {
         "a mobile login screen",
     ] {
         let built = build_compact_planning_prompt(prompt, None, None);
-        assert!(
-            !CARD_GUIDES.contains(&built.selected_style_guide_name.as_str()),
-            "{prompt} -> {:?}",
-            built.selected_style_guide_name
-        );
     }
 }
 

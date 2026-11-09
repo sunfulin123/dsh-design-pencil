@@ -9,7 +9,6 @@ fn managed_asset_cards_are_state_scoped_and_never_publish_to_global_registries()
     b.editor_ui.managed_assets = Some(Default::default());
     a.editor_ui.managed_assets.as_mut().unwrap().install(1, vec![
         json!({"id":"user:guide","kind":"style-guide","name":"Scoped style","tags":["warm"],"platform":"webapp","swatches":["#123456"]}),
-        json!({"id":"user:template","kind":"scene-template","name":"Scoped board","frames":1}),
     ]).unwrap();
     assert_eq!(
         op_editor_ui::widgets::asset_center_style_cards::cards_for_editor(&a, "Scoped").len(),
@@ -20,11 +19,11 @@ fn managed_asset_cards_are_state_scoped_and_never_publish_to_global_registries()
         0
     );
     assert_eq!(
-        a.editor_ui.managed_assets.as_ref().unwrap().templates.len(),
+        a.editor_ui.managed_assets.as_ref().unwrap().entries.len(),
         1
     );
     assert_eq!(
-        b.editor_ui.managed_assets.as_ref().unwrap().templates.len(),
+        b.editor_ui.managed_assets.as_ref().unwrap().entries.len(),
         0
     );
     assert_eq!(

@@ -29,11 +29,10 @@ fn t(ui: &EditorUiState, key: &str) -> &'static str {
     let full = match key {
         "home" => "fileMenu.home",
         "new" => "fileMenu.newFile",
-        "newFromTemplate" => "fileMenu.newFromTemplate",
+        "assets" => "assetCenter.title",
         "open" => "fileMenu.openFile",
         "save" => "fileMenu.save",
         "saveAs" => "fileMenu.saveAs",
-        "saveAsTemplate" => "menu.saveAsTemplate",
         "exportImage" => "fileMenu.exportImage",
         "exportAllFrames" => "fileMenu.exportAllFrames",
         "exportSlideshowHtml" => "fileMenu.exportSlideshowHtml",
@@ -49,7 +48,7 @@ fn t(ui: &EditorUiState, key: &str) -> &'static str {
         // A key that is not in the catalogue yet must not surface as
         // "fileMenu.newFromTemplate" in the menu.
         return match key {
-            "newFromTemplate" => "从模板新建",
+            "assets" => "资产中心",
             _ => "",
         };
     }
@@ -81,12 +80,11 @@ pub enum FileMenuChoice {
     Home,
     NewFile,
     /// Open the Scene Template Center to start from a finished document.
-    NewFromTemplate,
+    OpenAssetCenter,
     OpenFile,
     Save,
     SaveAs,
     /// Persist the current document into the desktop user's template library.
-    SaveAsTemplate,
     ExportImage,
     /// Export every top-level frame of the active page (or just the
     /// selected frames) as one PNG each. Only offered by hosts that set
@@ -169,10 +167,6 @@ impl<'a> FileMenu<'a> {
         export_menu_rows::batch_frame_export_available(self.ui)
     }
 
-    fn has_save_as_template_row(&self) -> bool {
-        self.ui.scene_template_center.save_current_supported
-    }
-
     /// Whether the deck-export rows are offered — same predicate the
     /// TopBar quick menu gates its deck rows on.
     fn has_deck_export_rows(&self) -> bool {
@@ -189,7 +183,7 @@ impl<'a> FileMenu<'a> {
     /// export rows precede it. Only meaningful when
     /// [`FileMenu::has_deck_export_rows`] holds.
     fn deck_html_row(&self) -> usize {
-        7 + usize::from(self.has_save_as_template_row()) + usize::from(self.has_export_all_row())
+        7 + usize::from(self.has_export_all_row())
     }
 
     /// Row index of the PowerPoint row, directly under the slideshow one.
@@ -200,7 +194,7 @@ impl<'a> FileMenu<'a> {
     /// Row index of the first recent-file entry. Everything after the
     /// export section shifts with [`FileMenu::export_rows`].
     fn recent_row_start(&self) -> usize {
-        6 + usize::from(self.has_save_as_template_row()) + self.export_rows()
+        6 + self.export_rows()
     }
 
     fn recovery_row(&self) -> usize {
@@ -226,7 +220,7 @@ impl<'a> FileMenu<'a> {
         let mut h = PAD_Y;
         h += ROW_HEIGHT * 4.0; // Home + New + New from template + Open
         h += DIVIDER_GAP * 2.0 + 1.0; // divider
-        h += ROW_HEIGHT * (2 + usize::from(self.has_save_as_template_row())) as f32;
+        h += ROW_HEIGHT * (2) as f32;
         h += DIVIDER_GAP * 2.0 + 1.0;
         h += ROW_HEIGHT * self.export_rows() as f32; // Export image (+ all frames)
         h += DIVIDER_GAP * 2.0 + 1.0;
@@ -268,19 +262,12 @@ impl<'a> FileMenu<'a> {
             }
             0 => Some(FileMenuChoice::Home),
             1 => Some(FileMenuChoice::NewFile),
-            2 => Some(FileMenuChoice::NewFromTemplate),
+            2 => Some(FileMenuChoice::OpenAssetCenter),
             3 => Some(FileMenuChoice::OpenFile),
             4 => Some(FileMenuChoice::Save),
             5 => Some(FileMenuChoice::SaveAs),
-            6 if self.has_save_as_template_row() => Some(FileMenuChoice::SaveAsTemplate),
-            row if row == 6 + usize::from(self.has_save_as_template_row()) => {
-                Some(FileMenuChoice::ExportImage)
-            }
-            row if self.has_export_all_row()
-                && row == 7 + usize::from(self.has_save_as_template_row()) =>
-            {
-                Some(FileMenuChoice::ExportAllFrames)
-            }
+            row if row == 6 => Some(FileMenuChoice::ExportImage),
+            row if self.has_export_all_row() && row == 7 => Some(FileMenuChoice::ExportAllFrames),
             row if self.has_deck_export_rows() && row == self.deck_html_row() => {
                 Some(FileMenuChoice::ExportSlideshowHtml)
             }
@@ -311,7 +298,7 @@ impl<'a> FileMenu<'a> {
             row += 1;
         }
         y += DIVIDER_GAP * 2.0 + 1.0;
-        for _ in 0..2 + usize::from(self.has_save_as_template_row()) {
+        for _ in 0..2 {
             if row_hit(panel.origin.x, y, point) {
                 return MenuHit::Row(row);
             }

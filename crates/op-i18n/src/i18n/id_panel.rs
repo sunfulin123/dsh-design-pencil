@@ -115,159 +115,143 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "promptCenter.item.componentFormLab.title" => "Form Lab · Sistem komponen formulir",
         "promptCenter.item.modifyPolishCurrent.title" => "Sempurnakan layar saat ini",
         "promptCenter.item.modifyCompleteStates.title" => "Lengkapi status komponen",
-        "sceneTemplate.title" => "Templat Adegan",
-        "sceneTemplate.searchPlaceholder" => "Cari adegan atau templat…",
-        "sceneTemplate.empty" => "Tidak ada templat yang cocok",
-        "sceneTemplate.frames" => "{{count}} halaman",
-        "sceneTemplate.generate.placeholder" => "Jelaskan topik, AI membuat seluruh presentasi",
-        "sceneTemplate.generate.button" => "Buat",
-        "sceneTemplate.generate.hint" => "Dokumen baru, dibuat dari topik Anda sebagai presentasi lengkap.",
-        "sceneTemplate.generate.promptTemplate" => "Buatkan presentasi (PPT) untuk topik berikut: {{topic}}",
-        "sceneTemplate.card.addToCanvas" => "Tambahkan ke kanvas",
-        "sceneTemplate.card.generateFrom" => "Buat dari ini",
-        "sceneTemplate.generate.basis" => "Berdasarkan: ",
-        "sceneTemplate.filter.all" => "Semua",
-        "sceneTemplate.scene.tutorial" => "Tutorial",
-        "sceneTemplate.scene.comparison" => "Perbandingan",
-        "sceneTemplate.scene.carousel" => "Karusel",
-        "sceneTemplate.scene.slides" => "Slide",
-        "sceneTemplate.scene.card" => "Kartu",
-        "sceneTemplate.scene.web" => "Halaman web",
-        "sceneTemplate.generate.webPromptTemplate" => "Rancang sebuah halaman arahan web dengan beberapa bagian untuk topik berikut: {{topic}}",
-        "sceneTemplate.item.saasLandingOrange.title" => "Halaman Arahan SaaS · Oranye",
-        "sceneTemplate.item.saasLandingOrange.summary" => "Halaman pemasaran terang yang dibangun di atas panel nyaris hitam dan satu oranye: navigasi, hero dengan tangkapan layar produk, tiga kartu kemampuan, peragaan alur kerja, testimoni, dan footer berlangganan. Ganti teksnya dan ia sudah jadi situs.",
-        "sceneTemplate.item.productLandingLight.title" => "Halaman Arahan Produk · Terang",
-        "sceneTemplate.item.productLandingLight.summary" => "Halaman produk seputih kertas bergaya surat kabar: demo hero yang interaktif, kolom kemampuan, papan analitik, perbandingan cara lama dan baru, serta tiga tingkat harga. Untuk situs SaaS dan peluncuran produk.",
-        "sceneTemplate.item.screenshotTutorial.title" => {
-            "Kartu tutorial tangkapan layar 3 langkah"
-        }
-        "sceneTemplate.item.screenshotTutorial.summary" => {
-            "Berisi sampul, tiga langkah panduan, dan ajakan bertindak di bagian akhir. Ganti tangkapan layar serta penjelasannya, lalu siap diterbitkan."
-        }
-        "sceneTemplate.item.knowledgeCarousel.title" => "Karusel pengetahuan dan wawasan",
-        "sceneTemplate.item.knowledgeCarousel.summary" => {
-            "Berisi sampul, tiga poin utama, dan halaman rangkuman, cocok untuk memecah satu gagasan menjadi rangkaian kartu yang dapat digeser."
-        }
-        "sceneTemplate.item.beforeAfter.title" => "Perbandingan sebelum dan sesudah desain ulang",
-        "sceneTemplate.item.beforeAfter.summary" => {
-            "Tampilan sebelum dan sesudah diletakkan berdampingan, dilengkapi catatan perubahan; cocok untuk retrospektif dan portofolio."
-        }
-        "sceneTemplate.item.slideDeck.title" => "Presentasi · 6 slide",
-        "sceneTemplate.item.slideDeck.summary" => {
-            "Berisi sampul, agenda, poin utama, data, grafik, dan penutup dalam rasio presentasi 16:9. Cukup ganti teksnya, lalu siap dipresentasikan."
-        }
-        "sceneTemplate.item.knowledgeCardVertical.title" => "Kartu pengetahuan · Potret",
-        "sceneTemplate.item.knowledgeCardVertical.summary" => "Satu kartu 3:4 dengan judul, empat poin utama, dan baris nama. Ganti teksnya lalu terbitkan.",
-        "sceneTemplate.item.knowledgeCardSquare.title" => "Kartu pengetahuan · Persegi",
-        "sceneTemplate.item.knowledgeCardSquare.summary" => "Kartu 1:1 dengan tata letak yang sama, cukup ringkas untuk gambar sampul atau unggahan sosial.",
-        "sceneTemplate.item.pitchDeckDark.title" => "Pitch deck · Gelap",
-        "sceneTemplate.item.pitchDeckDark.summary" => "Sampul, masalah, solusi, angka, peta jalan, dan halaman kontak. Huruf besar di latar gelap, untuk penggalangan dana dan peluncuran.",
-        "sceneTemplate.item.lectureDeckLight.title" => "Slide kuliah · Terang",
-        "sceneTemplate.item.lectureDeckLight.summary" => "Sampul kursus, tujuan belajar, penjelasan konsep, contoh soal, tabel perbandingan, dan rangkuman. Latar putih kertas, nyaman sepanjang kelas.",
-        "sceneTemplate.item.minimalKeynote.title" => "Keynote minimalis",
-        "sceneTemplate.item.minimalKeynote.summary" => "Ruang kosong luas, tipografi besar, satu kalimat rata tengah per halaman — sembilan halaman tanpa satu pun kartu, daftar isi hanya garis tipis dan angka. Untuk peluncuran dan keynote.",
-        "sceneTemplate.item.gradientTech.title" => "Tech gradien",
-        "sceneTemplate.item.gradientTech.summary" => "Latar gradien gelap dengan kartu kaca buram: arsitektur, perbandingan performa, dan dinding klien. Untuk peluncuran produk developer.",
-        "sceneTemplate.scene.infographic" => "Infografik",
-        "sceneTemplate.item.punchQuoteCard.title" => "Kartu Kutipan · Poster",
-        "sceneTemplate.item.punchQuoteCard.summary" => "Kartu 3:4 berlatar nyaris hitam: dua baris raksasa di atas satu pita kuning. Satu kalimat saja, untuk opini dan kutipan.",
-        "sceneTemplate.item.journalChecklistCard.title" => {
-            "Kartu Checklist · Gaya Basis Pengetahuan"
-        }
-        "sceneTemplate.item.journalChecklistCard.summary" => "Satu kartu putih di atas latar abu muda: lima tugas untuk dicentang, satu label, dan satu blok kutipan. Untuk rencana mingguan.",
-        "sceneTemplate.item.dataReportInfographic.title" => "Infografik Data",
-        "sceneTemplate.item.dataReportInfographic.summary" => "Gambar panjang untuk digulir: kepala gelap, tiga angka besar, perbandingan batang, komposisi, dan tiga kesimpulan. Ganti angkanya lalu unggah.",
-        "sceneTemplate.item.stepsFlowInfographic.title" => "Infografik Langkah demi Langkah",
-        "sceneTemplate.item.stepsFlowInfographic.summary" => "Gambar panjang untuk digulir: lima kartu langkah bernomor dirangkai jadi satu alur, masing-masing dengan perkiraan waktu, plus dua tips. Untuk tutorial.",
-        "sceneTemplate.item.eventPosterDeck.title" => "Deck Acara · Poster",
-        "sceneTemplate.item.eventPosterDeck.summary" => "Sampul, sorotan, jadwal, rute, tiket, dan penutup. Latar putih galeri dengan blok merah dan biru, tanpa sudut membulat dan tanpa gradasi — untuk pasar kreatif, acara komunitas, dan pembukaan.",
-        "sceneTemplate.item.pitfallListInfographic.title" => "Infografik Daftar Kesalahan Umum",
-        "sceneTemplate.item.pitfallListInfographic.summary" => "Gambar panjang untuk digulir: enam kesalahan diurutkan menurut seberapa sering terjadi, masing-masing dengan letak salahnya dan gantinya, plus empat baris pemeriksaan sebelum unggah. Hanya hitam, putih, dan abu-abu.",
-        "sceneTemplate.item.spineCultureCard.title" => "Kartu Judul Vertikal · Pigmen Mineral",
-        "sceneTemplate.item.spineCultureCard.summary" => "Kartu 3:4 berlatar tanah oker gelap: judul Tionghoa tersusun tegak, plester mengelupas, dan butiran pigmen. Untuk budaya, tulisan panjang, dan sampul personal.",
-        "sceneTemplate.item.metricSingleCard.title" => "Kartu Angka Tunggal · Grid Hanzi",
-        "sceneTemplate.item.metricSingleCard.summary" => "Kartu 1:1: satu angka raksasa di atas putih murni, grid Swiss yang ketat, dan sebuah kotak merah sinyal. Untuk kesimpulan dan capaian.",
-        "sceneTemplate.item.quoteFrameCard.title" => "Kartu Kutipan · Sutra Biru-Hijau",
-        "sceneTemplate.item.quoteFrameCard.summary" => "Kartu 4:5 berlatar sutra menguning: satu kalimat berbingkai, dengan pegunungan azurit dan malasit di kakinya. Untuk kutipan dan wawancara.",
-        "sceneTemplate.item.dailySignCard.title" => "Kartu Harian · Jendela Taman",
-        "sceneTemplate.item.dailySignCard.summary" => "Kartu 3:4 berlatar dinding kapur dengan jendela kisi segi enam; di dalamnya tanggal dan satu baris. Ruang kosong adalah hiasannya.",
-        "sceneTemplate.item.priceTierCard.title" => "Kartu Daftar Harga · Neon Arkade",
-        "sceneTemplate.item.priceTierCard.summary" => "Kartu 1:1 berlatar malam biru tinta: daftar harga tiga tingkat, garis tabung neon, dan pendar cahayanya. Untuk toko, acara, dan paket.",
-        "sceneTemplate.item.noticeBoardCard.title" => "Kartu Pengumuman · Huruf Timah",
-        "sceneTemplate.item.noticeBoardCard.summary" => "Kartu 4:5 berlatar kertas koran: garis kepala dengan pelat merah bergeser, pasal bernomor, dan cap seri. Untuk pengumuman dan tata tertib.",
-        "sceneTemplate.item.milestoneTimelineInfographic.title" => "Infografik Garis Waktu",
-        "sceneTemplate.item.milestoneTimelineInfographic.summary" => "Gambar panjang untuk digulir: satu sumbu sepanjang tinggi gambar, penanda tahun di samping kartu tonggak, ditutup dengan langkah berikutnya. Untuk retrospektif, sejarah merek, dan perjalanan proyek.",
-        "sceneTemplate.item.conceptContrastInfographic.title" => "Infografik Kontras Konsep",
-        "sceneTemplate.item.conceptContrastInfographic.summary" => "Gambar panjang untuk digulir: kesimpulan lebih dulu, lalu kartu definisi tiap konsep, uraian dua kolom per aspek, dan terakhir dasar memilih.",
-        "sceneTemplate.item.rankingBoardInfographic.title" => "Infografik Peringkat Top N",
-        "sceneTemplate.item.rankingBoardInfographic.summary" => "Gambar panjang untuk digulir: papan rekomendasi emas di atas tinta — lencana besar untuk tiga teratas, lencana garis untuk empat sampai delapan, lengkap dengan kapan dan seberapa sering.",
-        "sceneTemplate.item.faqThreadInfographic.title" => "Infografik Tanya Jawab",
-        "sceneTemplate.item.faqThreadInfographic.summary" => "Gambar panjang untuk digulir: enam pasang tanya jawab, T pejal dan J bergaris. Tanpa nomor dan tanpa urutan — satu pasang pun berdiri sendiri.",
-        "sceneTemplate.item.dataStoryInfographic.title" => "Infografik Cerita Data",
-        "sceneTemplate.item.dataStoryInfographic.summary" => "Gambar panjang untuk digulir: empat angka dirangkai jadi satu garis sebab-akibat, tiap tahap ditampilkan sebagai kisi sepuluh kotak, ditutup kesimpulan yang bisa langsung dipakai.",
-        "sceneTemplate.item.challengeTrackerInfographic.title" => "Infografik Tantangan 30 Hari",
-        "sceneTemplate.item.challengeTrackerInfographic.summary" => "Gambar panjang untuk digulir: kisi tiga puluh kotak, enam kali lima, dengan tonggak hanya di hari 7, 15, dan 30. Simpan lalu coret satu kotak sehari.",
-        "sceneTemplate.item.ecosystemMapInfographic.title" => "Infografik Peta Ekosistem",
-        "sceneTemplate.item.ecosystemMapInfographic.summary" => "Gambar panjang untuk digulir: empat posisi pada satu rantai disusun dua kali dua, tiga pemain di tiap kotak, dan celahnya ditandai. Kartu putih di atas latar batu tulis.",
-        "sceneTemplate.item.doDontComparison.title" => "Dua Kolom Benar / Salah",
-        "sceneTemplate.item.doDontComparison.summary" => "Kartu 3:4: dua cara mengerjakan hal yang sama berdampingan, dibedakan lewat tekstur dan ikon alih-alih merah versus hijau, sehingga pembaca buta warna pun bisa membacanya.",
-        "sceneTemplate.item.mythTruthComparison.title" => "Mitos dan Fakta",
-        "sceneTemplate.item.mythTruthComparison.summary" => "Gambar tinggi: lima pasang “kata orang / kenyataannya”, mitos sempit dan pucat di kiri, fakta lebar dan gelap di kanan.",
-        "sceneTemplate.item.pricingTiersComparison.title" => "Perbandingan Tingkat Harga",
-        "sceneTemplate.item.pricingTiersComparison.summary" => "Kartu 3:4: Gratis, Pro, dan Tim berdampingan, harga sebagai jangkar, tiap kolom memuat kolom sebelumnya. Untuk halaman harga.",
-        "sceneTemplate.item.scenarioGuideComparison.title" => "Panduan Pilihan per Situasi",
-        "sceneTemplate.item.scenarioGuideComparison.summary" => "Gambar tinggi: tanpa spesifikasi, hanya tujuh situasi, masing-masing dengan label putusan. Pembaca cukup menemukan barisnya.",
-        "sceneTemplate.item.specTableComparison.title" => "Tabel Perbandingan Spesifikasi",
-        "sceneTemplate.item.specTableComparison.summary" => "Gambar tinggi: dua kandidat dalam satu tabel sungguhan, baris demi baris, sel pemenang diangkat dengan latar gelap.",
-        "sceneTemplate.item.threeWayComparison.title" => "Perbandingan Tiga Opsi",
-        "sceneTemplate.item.threeWayComparison.summary" => "Gambar tinggi: tiga opsi berdampingan dengan rekomendasi di tengah; tiap kolom dibuka oleh sebuah situasi, bukan sebuah nama.",
-        "sceneTemplate.item.timeShiftComparison.title" => "Setahun Lalu dan Sekarang",
-        "sceneTemplate.item.timeShiftComparison.summary" => "Kartu 3:4: tulang punggung label di tengah, setahun lalu di kiri dan sekarang di kanan, dua nilai satu butir jatuh pada baris yang sama.",
-        "sceneTemplate.item.tradeoffScaleComparison.title" => "Timbangan Untung Rugi",
-        "sceneTemplate.item.tradeoffScaleComparison.summary" => "Kartu 1:1: satu palang dua piringan — kiri yang didapat, kanan yang dibayar, tiap baris didahului kotak centang kosong.",
-        "sceneTemplate.item.versionDiffComparison.title" => "Perubahan Antarversi",
-        "sceneTemplate.item.versionDiffComparison.summary" => "Kartu 1:1: tanpa dua kolom — tiap baris menuntaskan sendiri “lama → baru”, cukup digulir.",
-        "sceneTemplate.item.appOnboardingTriptych.title" => "Triptik Onboarding Aplikasi",
-        "sceneTemplate.item.appOnboardingTriptych.summary" => "Kartu 3:4: tiga ponsel berjajar dengan slot gambar kosong. Masukkan tiga layar onboarding Anda, tambahkan teks, siap untuk ditinjau atau diunggah.",
-        "sceneTemplate.item.diyBlueprintGuide.title" => "Panduan DIY Bergambar",
-        "sceneTemplate.item.diyBlueprintGuide.summary" => "Gambar tinggi dengan tabel bahan dan ukuran seluas bagian langkah — DIY gagal di persiapan, bukan di tangan.",
-        "sceneTemplate.item.photoCompositionTutorial.title" => "Komposisi Foto dengan Ponsel",
-        "sceneTemplate.item.photoCompositionTutorial.summary" => "3:4, lima bingkai: masing-masing sebuah jendela bidik gelap dengan garis panduan menyala di atas slot foto.",
-        "sceneTemplate.item.recipeFourStep.title" => "Kartu Resep Empat Langkah",
-        "sceneTemplate.item.recipeFourStep.summary" => "Kartu 4:5 pola 2×2: keempat langkah dalam satu kartu. Tangkap layar lalu masak — di depan kompor membalik halaman itu merepotkan.",
-        "sceneTemplate.item.skincareRoutineCards.title" => "Kartu Rutinitas Perawatan Kulit",
-        "sceneTemplate.item.skincareRoutineCards.summary" => "4:5, enam bingkai: tiap langkah menetapkan tiga angka — takaran, waktu tunggu, pagi atau malam.",
-        "sceneTemplate.item.softwareStepTutorial.title" => {
-            "Kartu Langkah Penggunaan Perangkat Lunak"
-        }
-        "sceneTemplate.item.softwareStepTutorial.summary" => "Kartu 4:5, satu-satunya bernuansa gelap di seri tutorial: slot tangkapan layar dengan instruksi bernomor.",
-        "sceneTemplate.item.storageMakeoverSteps.title" => "Langkah Perombakan Penyimpanan",
-        "sceneTemplate.item.storageMakeoverSteps.summary" => "3:4, enam bingkai: selain tindakan dan slot gambar, tiap langkah menetapkan syarat selesai dan anggaran waktu.",
-        "sceneTemplate.item.weeklyReportLesson.title" => "Pelajaran Laporan Mingguan",
-        "sceneTemplate.item.weeklyReportLesson.summary" => "Gambar tinggi: setelah menjelaskan struktur empat bagian, langsung memberi kerangka berisi garis isian.",
-        "sceneTemplate.item.workoutBreakdownGuide.title" => "Panduan Uraian Gerakan Latihan",
-        "sceneTemplate.item.workoutBreakdownGuide.summary" => "Gambar tinggi: tiap gerakan membawa bilah tetap berisi set, repetisi, dan waktu istirahat.",
-        "sceneTemplate.item.bookreviewSilkCarousel.title" => "Karusel Bedah Ulasan Buku / Film",
-        "sceneTemplate.item.bookreviewSilkCarousel.summary" => "3:4, lima papan: kail, kutipan beranotasi, tiga wawasan, satu kalimat layak kutip, penutup. Membedah karya menjadi bagian yang bisa dibawa pulang, bukan menceritakan ulang alur.",
-        "sceneTemplate.item.cityguideFilmCarousel.title" => "Karusel Panduan Kota",
-        "sceneTemplate.item.cityguideFilmCarousel.summary" => "3:4, tujuh papan: tempat dan rute berselang — papan tempat untuk yang bermimpi, rute sehari dan tabel makan-menginap untuk yang merencanakan.",
-        "sceneTemplate.item.datareportGridCarousel.title" => "Karusel Laporan Data",
-        "sceneTemplate.item.datareportGridCarousel.summary" => "3:4, enam papan: setiap papan data disusul papan non-data, supaya tak ada yang berhenti di grafik ketiga.",
-        "sceneTemplate.item.opinionLongformCarousel.title" => "Karusel Opini Panjang",
-        "sceneTemplate.item.opinionLongformCarousel.summary" => "3:4, enam papan: satu master visual ketat sepanjang set, nomor halaman dan judul selalu di tempat yang sama.",
-        "sceneTemplate.item.qaChalkboardCarousel.title" => "Karusel Tanya Jawab",
-        "sceneTemplate.item.qaChalkboardCarousel.summary" => "3:4, enam papan: satu pertanyaan per papan, dengan nomor tanda tanya tulisan tangan di sudut.",
-        "sceneTemplate.item.storyNightCarousel.title" => "Karusel Cerita",
-        "sceneTemplate.item.storyNightCarousel.summary" => "3:4, tujuh papan: refleksi pengalaman pribadi di atas kerangka waktu — garis waktu di papan kelima adalah dinding penopangnya.",
-        "sceneTemplate.item.toolkitNotebookCarousel.title" => "Karusel Kumpulan Perkakas",
-        "sceneTemplate.item.toolkitNotebookCarousel.summary" => "3:4, enam papan: enam perkakas satu per papan, papan terakhir mendaftar semuanya lengkap dengan nomor halaman.",
-        "sceneTemplate.item.tutorialJournalCarousel.title" => "Karusel Tutorial",
-        "sceneTemplate.item.tutorialJournalCarousel.summary" => {
-            "3:4, enam papan: satu langkah per papan, jari adalah bilah kemajuannya."
-        }
-        "sceneTemplate.item.yearreviewMineralCarousel.title" => "Karusel Rekap Tahunan",
-        "sceneTemplate.item.yearreviewMineralCarousel.summary" => "3:4, delapan papan: papan angka bernuansa dingin, papan renungan bernuansa hangat, berselang-seling.",
-        "fileMenu.newFromTemplate" => "Buat dari templat",
+
+
+
+
+        "assetCenter.generate.placeholder" => "Jelaskan topik, AI membuat seluruh presentasi",
+        "assetCenter.generate.button" => "Buat",
+        "assetCenter.generate.hint" => "Dokumen baru, dibuat dari topik Anda sebagai presentasi lengkap.",
+        "assetCenter.generate.promptTemplate" => "Buatkan presentasi (PPT) untuk topik berikut: {{topic}}",
+
+
+        "assetCenter.generate.basis" => "Berdasarkan: ",
+
+        "designScene.tutorial" => "Tutorial",
+        "designScene.comparison" => "Perbandingan",
+        "designScene.carousel" => "Karusel",
+        "designScene.slides" => "Slide",
+        "designScene.card" => "Kartu",
+        "designScene.web" => "Halaman web",
+        "assetCenter.generate.webPromptTemplate" => "Rancang sebuah halaman arahan web dengan beberapa bagian untuk topik berikut: {{topic}}",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "designScene.infographic" => "Infografik",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "collab.ownerConfirm.title" => "Konfirmasi siapa yang Anda ikuti",
         "collab.ownerConfirm.hint" => "Belum ada apa pun dari sesi ini yang dimuat.",
         "collab.ownerConfirm.account" => "Akun terverifikasi",
@@ -673,7 +657,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "settings.agents.acpPresetAdd" => "Tambah",
         "settings.agents.acpNotInstalled" => "Belum terpasang",
         "assetCenter.title" => "Pusat Aset",
-        "assetCenter.tab.templates" => "Templat",
+
         "assetCenter.tab.styles" => "Gaya",
         "assetCenter.style.empty" => "Tidak ada gaya yang cocok",
         "assetCenter.style.pinned" => "Disematkan",

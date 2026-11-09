@@ -209,7 +209,7 @@ impl WidgetHost {
         if self.try_scroll_icon_picker(x, y, delta_y, viewport_width, viewport_height) {
             return true;
         }
-        if self.try_scroll_scene_template_center(x, y, delta_y, viewport_width, viewport_height) {
+        if self.try_scroll_asset_center(x, y, delta_y, viewport_width, viewport_height) {
             return true;
         }
         if self.try_scroll_prompt_center(x, y, delta_y, viewport_width, viewport_height) {
@@ -297,7 +297,7 @@ impl WidgetHost {
         if self.try_scroll_icon_picker(x, y, dy, viewport_width, viewport_height) {
             return true;
         }
-        if self.try_scroll_scene_template_center(x, y, dy, viewport_width, viewport_height) {
+        if self.try_scroll_asset_center(x, y, dy, viewport_width, viewport_height) {
             return true;
         }
         if self.try_scroll_prompt_center(x, y, dy, viewport_width, viewport_height) {

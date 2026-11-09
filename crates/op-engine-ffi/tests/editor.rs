@@ -16,7 +16,7 @@ use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 const TWO_PAGE_DOC: &str =
     include_str!("../../../packaging/android/app/src/main/assets/two-page.op");
 

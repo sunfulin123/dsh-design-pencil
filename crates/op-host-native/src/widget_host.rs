@@ -227,13 +227,12 @@ mod release_feedback;
 mod responsive_geometry;
 mod scene_state;
 #[cfg(test)]
-mod scene_template_host_tests;
+mod asset_center_host_tests;
 #[cfg(test)]
-mod scene_template_ime_tests;
-mod scene_template_install;
-mod scene_template_press;
+mod asset_center_ime_tests;
+mod asset_center_press;
 #[cfg(test)]
-mod scene_template_touch_tests;
+mod asset_center_touch_tests;
 mod screen_switcher;
 #[cfg(all(test, not(target_os = "windows")))]
 mod screen_switcher_tests;

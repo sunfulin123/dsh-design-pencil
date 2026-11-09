@@ -55,10 +55,6 @@ impl CkInner {
         // directly). Bounded per frame; empty and cheap outside a session. The
         // self-account avatar is NOT handled here — `web_auth_sync` owns it.
         crate::collab_avatar_fetch::drain_pending();
-        // A template clicked before its document arrived is instantiated here,
-        // the frame after the fetch lands. No-op on every other frame and on
-        // native, where the document was already in the binary.
-        self.host.retry_pending_scene_template();
         let (w, h) = self.backend.logical_size();
         self.refresh_eyedropper();
         if let Err(error) = self.sync_eyedropper_cursor() {

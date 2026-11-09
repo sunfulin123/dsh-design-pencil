@@ -38,7 +38,7 @@ fn a_known_guide_reads_its_own_palette() {
     let _guard = exclusive_user_styles();
     let card = style_guide_cards()
         .into_iter()
-        .find(|c| c.name == "nordic-frost-light")
+        .find(|c| c.id == "design-md:apple")
         .expect("the corpus ships this guide");
     assert_eq!(card.platform, Platform::Webapp);
     // The background swatch is the first entry, and a light guide's
@@ -54,11 +54,11 @@ fn a_known_guide_reads_its_own_palette() {
 #[test]
 fn search_matches_names_and_tags() {
     let _guard = exclusive_user_styles();
-    assert!(filtered_style_guide_cards("terminal")
+    assert!(filtered_style_guide_cards("apple")
         .iter()
-        .any(|c| c.name == "developer-terminal-dark"));
+        .any(|c| c.id == "design-md:apple"));
     // Tag-only match: "brutalist" is a tag, not a substring of the name.
-    assert!(!filtered_style_guide_cards("brutalist").is_empty());
+    assert!(!filtered_style_guide_cards("cobalt").is_empty());
     assert_eq!(
         filtered_style_guide_cards("").len(),
         style_guide_registry().len(),
@@ -72,9 +72,9 @@ fn pinning_matches_by_exact_name() {
     let _guard = exclusive_user_styles();
     let card = style_guide_cards()
         .into_iter()
-        .find(|c| c.name == "zen-paper-light")
+        .find(|c| c.name == "talkdesk-cobalt")
         .expect("the corpus ships this guide");
-    assert!(card.is_pinned(Some("zen-paper-light")));
+    assert!(card.is_pinned(Some("talkdesk-cobalt")));
     assert!(!card.is_pinned(Some("zen-paper")));
     assert!(!card.is_pinned(None));
 }
@@ -144,7 +144,7 @@ fn search_spans_both_halves_of_the_catalogue() {
 
     // A query that only the corpus answers still finds it with an import
     // sitting above it in the list.
-    assert!(filtered_style_guide_cards("terminal")
+    assert!(filtered_style_guide_cards("apple")
         .iter()
         .any(|c| !c.is_user));
 }

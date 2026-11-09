@@ -75,7 +75,7 @@ fn compact_portrait_uses_a_short_hierarchical_touch_layout() {
     assert!(
         panel.size.y
             < panel_height(
-                MobileMoreEntry::visible(&state).len(),
+                13, // The former five-row layout included the removed template entry.
                 PORTRAIT_COLUMN_COUNT,
                 PHONE_BOTTOM_PADDING,
             ),
@@ -117,11 +117,8 @@ fn compact_portrait_uses_a_short_hierarchical_touch_layout() {
     }
 
     let ai = rect_for_entry(&state, panel, MobileMoreEntry::Ai);
-    let templates = rect_for_entry(&state, panel, MobileMoreEntry::Templates);
     let assets = rect_for_entry(&state, panel, MobileMoreEntry::Assets);
-    assert!(ai.size.x > templates.size.x * 2.0);
-    assert_eq!(templates.origin.y, assets.origin.y);
-    assert_eq!(templates.size, assets.size);
+    assert_eq!(ai.size.x, assets.size.x);
 
     for (left, right) in [
         (MobileMoreEntry::Collaboration, MobileMoreEntry::SignIn),
@@ -189,7 +186,7 @@ fn code_entry_is_visible_only_on_touch_tablets() {
     for class in [EditorSizeClass::Medium, EditorSizeClass::Expanded] {
         let state = touch_state(class);
         let entries = MobileMoreEntry::visible(&state);
-        assert_eq!(entries.len(), 14);
+        assert_eq!(entries.len(), 13);
         assert!(entries.contains(&MobileMoreEntry::Code));
     }
 
@@ -202,17 +199,11 @@ fn code_entry_is_visible_only_on_touch_tablets() {
 #[test]
 fn restored_entries_reuse_localized_labels_and_desktop_icons() {
     let mut state = EditorState::starter();
-    assert_eq!(MobileMoreEntry::ALL.len(), 15);
-    assert_eq!(MobileMoreEntry::visible(&state).len(), 13);
-    assert_eq!(MobileMoreEntry::ALL[0], MobileMoreEntry::NewFile);
-    assert_eq!(MobileMoreEntry::ALL[1], MobileMoreEntry::OpenFile);
-    assert_eq!(MobileMoreEntry::ALL[2], MobileMoreEntry::SaveFile);
-    assert_eq!(MobileMoreEntry::ALL[3], MobileMoreEntry::SaveAsFile);
+    assert_eq!(MobileMoreEntry::visible(&state).len(), 12);
     assert_eq!(MobileMoreEntry::NewFile.icon(), Icon::FilePlus);
     assert_eq!(MobileMoreEntry::OpenFile.icon(), Icon::FolderOpen);
     assert_eq!(MobileMoreEntry::SaveFile.icon(), Icon::Save);
     assert_eq!(MobileMoreEntry::SaveAsFile.icon(), Icon::Copy);
-    assert_eq!(MobileMoreEntry::Templates.icon(), Icon::LayoutDashboard);
     assert_eq!(MobileMoreEntry::Assets.icon(), Icon::Palette);
     assert_eq!(MobileMoreEntry::Code.icon(), Icon::Braces);
 
@@ -234,10 +225,6 @@ fn restored_entries_reuse_localized_labels_and_desktop_icons() {
         assert!(!save_as.ends_with('.'));
         assert!(!save_as.ends_with('…'));
         assert_ne!(save_as, "fileMenu.saveAs");
-        assert_ne!(
-            MobileMoreEntry::Templates.label(&state.editor_ui),
-            "sceneTemplate.title"
-        );
         assert_ne!(
             MobileMoreEntry::Assets.label(&state.editor_ui),
             "assetCenter.title"
@@ -263,10 +250,10 @@ fn run_preview_is_not_offered_on_touch() {
 fn account_state_swaps_one_tile_without_moving_collaboration_or_changing_count() {
     let mut state = touch_state(EditorSizeClass::Compact);
     let anonymous = MobileMoreEntry::visible(&state);
-    assert_eq!(anonymous.len(), 13);
+    assert_eq!(anonymous.len(), 12);
     assert!(anonymous.contains(&MobileMoreEntry::SignIn));
     assert!(!anonymous.contains(&MobileMoreEntry::Account));
-    assert_eq!(anonymous[7], MobileMoreEntry::Collaboration);
+    assert_eq!(anonymous[6], MobileMoreEntry::Collaboration);
     assert_eq!(MobileMoreEntry::SignIn.icon(), Icon::User);
     assert_eq!(MobileMoreEntry::Collaboration.icon(), Icon::Users);
     assert_ne!(
@@ -286,7 +273,7 @@ fn account_state_swaps_one_tile_without_moving_collaboration_or_changing_count()
     assert_eq!(signed_in.len(), anonymous.len());
     assert!(!signed_in.contains(&MobileMoreEntry::SignIn));
     assert!(signed_in.contains(&MobileMoreEntry::Account));
-    assert_eq!(signed_in[7], MobileMoreEntry::Collaboration);
+    assert_eq!(signed_in[6], MobileMoreEntry::Collaboration);
     assert_eq!(
         signed_in
             .iter()

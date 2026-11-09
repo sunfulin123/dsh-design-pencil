@@ -196,56 +196,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "{{name}}'s cursor",
         "icon.catalogLoading" => "Icon catalog is still loading…",
-        "sceneTemplate.documentUnavailable" => "That template's document could not be loaded. Try again.",
+
         "sceneTemplate.deleteFailed" => "That template could not be deleted. Try again.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "Sounding Chart · Strategy Deck",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "Chart-paper white against steel and ink blue: every slide leads with a conclusion and backs it with one sourced reading. Depth-profile bars and a sounding-track agenda carry all seven pages, for consulting deliverables and strategy reviews.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "Tidemark Slate · Data Review Deck",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "Overview tiles, a trend line, a detail table, a risk list and a swimlane roadmap on slate grey — seven pages that walk one full data review, for quarterly retrospectives and metric meetings.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "Banxin Rule · Chinese Typography Deck",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "Built on the classical Chinese page: type block, column rules, marginal notes and a fishtail folio. Body lines stay under thirty characters, with facing columns and a quotation page that reward reading, for lectures and seminars.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "Graphite Grid · Academic Defence Deck",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "Graphite type on grid paper: problem and gap, method, two pages of results, limitations, conclusion and references — eight pages in defence order, for proposals and thesis defences.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "Linen Dossier · Memo Deck",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "A linen-paper dossier from cover sheet through background, current data, analysis and option comparison to the resolution — eight pages that read as a standalone memo, for decision reviews.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "Ledger Tick · Competitive Matrix Deck",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "Scoring criteria, the main matrix, quantile scales and a gap-versus-strength read-out on ledger ruling — seven pages that tell a competitive comparison like a balanced account, for vendor selection and market analysis.",
-        "sceneTemplate.item.brandConceptSheet.title" => "Brand Concept Sheet",
-        "sceneTemplate.item.brandConceptSheet.summary" => "One horizontal review board for the primary lockup, construction rationale, monochrome reversals and minimum-size survival — built for first-round concept handoff.",
-        "sceneTemplate.item.logoQaBoard.title" => "Logo Fusion QA Board",
-        "sceneTemplate.item.logoQaBoard.summary" => "Four review cells check shared semantic load, structural dependence, silhouette unity and whether the secondary reading feels discovered rather than attached.",
-        "sceneTemplate.item.eventInvitationCard.title" => "Tech Salon Invitation",
-        "sceneTemplate.item.eventInvitationCard.summary" => "A 4:5 event invitation with a large topic title, paired time-and-place cards, three guests, a registration QR code and a host-logo row in deep blue-violet.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "Livestream Teaser",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "A 4:5 livestream announcement with a bold topic, three countdown tiles, two speakers, a platform pill and a reservation QR card over a dark gradient.",
-        "sceneTemplate.item.hiringPosterCard.title" => "Hiring Poster",
-        "sceneTemplate.item.hiringPosterCard.summary" => "A 4:5 hiring poster with an oversized role title, team-photo placeholder, requirements, salary and an application QR code on a light canvas.",
-        "sceneTemplate.item.courseEnrollCard.title" => "Course Enrollment",
-        "sceneTemplate.item.courseEnrollCard.summary" => "A warm 4:5 course recruitment card with a course title, launch-info bar, four highlight tiles, instructor, early-bird price and registration QR code.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "Conference Agenda",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "A 4:5 conference agenda with the event name, five-stop timeline, coffee break and sponsor-logo row in orange on black.",
-        "sceneTemplate.item.productLaunchCard.title" => "Product Launch",
-        "sceneTemplate.item.productLaunchCard.summary" => "A minimal white 4:5 launch card with a product placeholder, three selling points, price, launch offer and purchase QR code.",
-        "sceneTemplate.item.annualReportCard.title" => "Annual Data Report",
-        "sceneTemplate.item.annualReportCard.summary" => "A 4:5 annual report card with four headline numbers, a yearly takeaway, a Top 3 ranking and a QR code on a purple gradient.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "Music Festival Poster",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "A 3:4 festival poster with a bold headline, date and venue, three-stage line-up, three ticket tiers, ticket QR code and special support in neon contrast.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "Book Club Invitation",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "A paper-toned 4:5 book-club invite with title and author, cover placeholder, host, time and place, three discussion topics and a registration QR code.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "AI Support Pitch Deck",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "A ten-slide startup pitch deck in deep blue and white: a theme cover, big cost-comparison figures, a three-curve conclusion, a five-step loop and three metrics for the first 90 days, for SaaS fundraising pitches and product launches.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "Quarterly Business Review Deck",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "An eleven-slide light, blue-toned review: an agenda, one KPI trio card for each of four business lines plus a growth engine and improvements, ending with next-quarter goals, for operating reviews and quarterly reporting.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "Quicksort Lecture Deck",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "A seven-slide off-white lesson in ink green: learning goals, two steps for partitioning and recursion, two partition demos with array cells and pivot highlights, and a complexity comparison table, for algorithms and programming teaching.",
-        "sceneTemplate.item.compoundEffectCard.title" => "Compound Effect Knowledge Card",
-        "sceneTemplate.item.compoundEffectCard.summary" => "A warm-orange 4:5 knowledge card with a numbered eyebrow, oversized title, definition, three numbered points and an account-and-QR footer, for a knowledge creator's series.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "Analytics Metric Sharing Card",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "A dark 1200×630 data card with a large headline metric and month-over-month badge, horizontal bars on the right and three secondary metrics along the bottom, for social sharing and weekly reports.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP Tokens",
-        "menu.saveAsTemplate" => "Save As Template…",
-        "menu.saveAsTemplate.saved" => "Saved as a template",
-        "menu.saveAsTemplate.failed" => "Could not save the template",
+
+
+
         "assetCenter.template.mine" => "My templates",
         "assetCenter.template.builtIn" => "Built-in templates",
         "ai.designProgress.detail.failureReason" => "Reason: {{reason}}",

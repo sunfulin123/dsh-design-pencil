@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::color::contrast::{on_color, scan_pairs, ContrastReport};
 use crate::color::palettes::{palette_anchors, palette_names, PaletteAnchors, PaletteMode};
 
-pub const STYLE_COUNT: usize = 7;
+pub const STYLE_COUNT: usize = 85;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Fonts {
@@ -117,50 +117,29 @@ pub fn style_names() -> Vec<String> {
 }
 
 fn style_catalog_entries() -> Vec<StyleCatalogEntry> {
-    let mut entries: Vec<StyleCatalogEntry> = crate::STYLE_CATALOG
-        .files()
-        .filter(|file| {
-            file.path()
-                .extension()
-                .map(|ext| ext == "md")
-                .unwrap_or(false)
+    static ENTRIES: std::sync::OnceLock<Vec<StyleCatalogEntry>> = std::sync::OnceLock::new();
+    ENTRIES
+        .get_or_init(|| {
+            crate::style_guide::style_guide_registry()
+                .iter()
+                .map(|guide| {
+                    let values = crate::style_guide::extract_style_guide_values(&guide.content);
+                    StyleCatalogEntry {
+                        name: guide.name.clone(),
+                        prose: guide.content.clone(),
+                        roundness: "medium".into(),
+                        elevation: "flat".into(),
+                        fonts: Fonts {
+                            headings: values.typography.display_font.unwrap_or_default(),
+                            body: values.typography.body_font.clone().unwrap_or_default(),
+                            captions: values.typography.body_font.unwrap_or_default(),
+                            data: values.typography.data_font.unwrap_or_default(),
+                        },
+                    }
+                })
+                .collect()
         })
-        .filter_map(|file| file.contents_utf8())
-        .filter_map(parse_style_catalog_entry)
-        .collect();
-    entries.sort_by(|a, b| a.name.cmp(&b.name));
-    entries
-}
-
-fn parse_style_catalog_entry(text: &str) -> Option<StyleCatalogEntry> {
-    let rest = text.strip_prefix("---\n")?;
-    let (frontmatter, prose) = rest.split_once("\n---\n")?;
-    let meta = parse_frontmatter(frontmatter);
-    Some(StyleCatalogEntry {
-        name: meta.get("name")?.to_string(),
-        prose: prose.trim().to_string(),
-        roundness: meta.get("roundness")?.to_string(),
-        elevation: meta.get("elevation")?.to_string(),
-        fonts: Fonts {
-            headings: meta.get("headings")?.to_string(),
-            body: meta.get("body")?.to_string(),
-            captions: meta.get("captions")?.to_string(),
-            data: meta.get("data")?.to_string(),
-        },
-    })
-}
-
-fn parse_frontmatter(frontmatter: &str) -> BTreeMap<String, String> {
-    frontmatter
-        .lines()
-        .filter_map(|line| {
-            let (key, value) = line.split_once(':')?;
-            Some((
-                key.trim().to_string(),
-                value.trim().trim_matches('"').to_string(),
-            ))
-        })
-        .collect()
+        .clone()
 }
 
 fn effective_choice(default: &str, requested: &str) -> String {
@@ -560,7 +539,6 @@ mod tests {
     #[test]
     fn style_catalog_not_scanned_as_skill() {
         let names = style_names();
-        assert_eq!(crate::count_md(&crate::STYLE_CATALOG), STYLE_COUNT);
         assert_eq!(names.len(), STYLE_COUNT);
         assert_eq!(palette_names().len(), crate::color::palettes::PALETTE_COUNT);
 

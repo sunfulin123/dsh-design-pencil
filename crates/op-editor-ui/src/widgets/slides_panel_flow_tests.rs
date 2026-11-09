@@ -5,7 +5,7 @@
 use super::*;
 use crate::widgets::slides_panel::DRAG_THRESHOLD_PX;
 use crate::widgets::slides_panel_actions::ACTION_BAR_HEIGHT;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 const THREE_BOARDS: &str = r#"{"version":"1.0.0","children":[
     {"type":"frame","id":"slide-1","name":"Cover","x":0,"y":0,"width":1920,"height":1080},
@@ -23,7 +23,7 @@ fn deck_state(source: &str) -> EditorState {
         .expect("fixture parses")
         .value;
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     state.editor_ui.slides_panel.tab = LeftPanelTab::Slides;
     state
 }
@@ -79,14 +79,14 @@ fn any_document_with_boards_gets_a_tab_row() {
     assert_eq!(slides_tab_label_key(&ordinary), "slidesPanel.tabSlides");
 
     let mut carousel = deck_state(THREE_BOARDS);
-    carousel.editor_ui.scenario = Some(TemplateScene::Carousel);
+    carousel.editor_ui.scenario = Some(DesignScene::Carousel);
     assert!(tab_row_visible(&carousel));
 }
 
 #[test]
 fn the_scenario_names_the_tab_without_gating_it() {
     let mut cards = deck_state(THREE_BOARDS);
-    cards.editor_ui.scenario = Some(TemplateScene::Card);
+    cards.editor_ui.scenario = Some(DesignScene::Card);
     assert!(tab_row_visible(&cards));
     assert_eq!(slides_tab_label_key(&cards), "slidesPanel.tabCards");
 }
@@ -412,7 +412,7 @@ fn the_tab_row_mode_follows_the_documents_own_labels() {
 #[test]
 fn the_scenario_label_is_the_one_the_row_is_measured_against() {
     let mut cards = deck_state(THREE_BOARDS);
-    cards.editor_ui.scenario = Some(TemplateScene::Card);
+    cards.editor_ui.scenario = Some(DesignScene::Card);
     let (_, _, slides) = tab_labels(&cards);
     assert_eq!(
         slides,

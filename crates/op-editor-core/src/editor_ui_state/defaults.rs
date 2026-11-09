@@ -4,10 +4,10 @@
 //! Split out of the `editor_ui_state` spine (800-line file ceiling).
 
 use super::{
-    DesignMdPanelState, EditorUiState, EmbedHost, EntrySurface, ExportFormat, FlexLayout,
-    GitPanelState, HomeState, Locale, PencilCursorStyle, PreviewState, PromptCenterState,
-    PropertyTab, SaveNameDialogState, SceneTemplateCenterState, SizeToggleState, ThemeMode,
-    UpdateStatus, WorkspaceState,
+    AssetCenterState, DesignMdPanelState, EditorUiState, EmbedHost, EntrySurface, ExportFormat,
+    FlexLayout, GitPanelState, HomeState, Locale, PencilCursorStyle, PreviewState,
+    PromptCenterState, PropertyTab, SaveNameDialogState, SizeToggleState, ThemeMode, UpdateStatus,
+    WorkspaceState,
 };
 use crate::tool::Tool;
 use std::collections::HashSet;
@@ -167,7 +167,7 @@ impl Default for EditorUiState {
             diagram_import_supported: false,
             deck_html_export_supported: false,
             slide_thumbnails_supported: false,
-            scene_template_generate_supported: false,
+            asset_center_generate_supported: false,
             style_import_file_picker_supported: false,
             property_color_variable_picker_scroll: Default::default(),
             property_color_variable_picker_hover: None,
@@ -230,7 +230,7 @@ impl Default for EditorUiState {
             git_panel: GitPanelState::default(),
             design_md_panel: DesignMdPanelState::default(),
             prompt_center: PromptCenterState::default(),
-            scene_template_center: SceneTemplateCenterState::default(),
+            asset_center: AssetCenterState::default(),
             pinned_style_guide: None,
             component_browser_open: false,
             canvas_hover_node: None,

@@ -123,157 +123,143 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.action.confirmOwner" => "이 세션에 참여",
         "collab.action.rejectOwner" => "참여 안 함",
         "collab.error.ownerNotConfirmed" => "호스트를 확인하지 않아 아무것도 불러오지 않았습니다.",
-        "sceneTemplate.title" => "장면 템플릿",
-        "sceneTemplate.searchPlaceholder" => "장면 또는 템플릿 검색…",
-        "sceneTemplate.empty" => "일치하는 템플릿이 없습니다",
-        "sceneTemplate.frames" => "{{count}}페이지",
-        "sceneTemplate.generate.placeholder" => "주제를 입력하면 AI가 슬라이드 전체를 생성합니다",
-        "sceneTemplate.generate.button" => "생성",
-        "sceneTemplate.generate.hint" => "새 문서를 만들고 주제에 맞춰 슬라이드 전체를 생성합니다.",
-        "sceneTemplate.generate.promptTemplate" => "다음 주제로 프레젠테이션(PPT)을 만들어 주세요: {{topic}}",
-        "sceneTemplate.card.addToCanvas" => "캔버스에 추가",
-        "sceneTemplate.card.generateFrom" => "이걸로 생성",
-        "sceneTemplate.generate.basis" => "기준: ",
-        "sceneTemplate.filter.all" => "전체",
-        "sceneTemplate.scene.tutorial" => "튜토리얼",
-        "sceneTemplate.scene.comparison" => "비교",
-        "sceneTemplate.scene.carousel" => "캐러셀",
-        "sceneTemplate.scene.slides" => "슬라이드",
-        "sceneTemplate.scene.card" => "카드",
-        "sceneTemplate.scene.web" => "웹 페이지",
-        "sceneTemplate.generate.webPromptTemplate" => "다음 주제로 여러 섹션으로 구성된 웹 랜딩 페이지를 디자인해 주세요: {{topic}}",
-        "sceneTemplate.item.saasLandingOrange.title" => "SaaS 랜딩 페이지 · 오렌지",
-        "sceneTemplate.item.saasLandingOrange.summary" => "밝은 바탕에 검은 패널을 얹고 주황색을 주색으로 쓴 마케팅 페이지. 내비게이션, 제품 화면이 있는 히어로, 기능 카드 3장, 워크플로 소개, 고객 후기, 구독 푸터까지. 문구만 바꾸면 바로 사이트가 됩니다.",
-        "sceneTemplate.item.productLandingLight.title" => "제품 랜딩 페이지 · 라이트",
-        "sceneTemplate.item.productLandingLight.summary" => "종이처럼 흰 신문 스타일의 제품 페이지. 조작 가능한 히어로 데모, 기능 단 구성, 분석 보드, 기존 방식과의 비교, 3단계 요금제. SaaS 사이트와 제품 발표용입니다.",
-        "sceneTemplate.item.screenshotTutorial.title" => "3단계 스크린샷 튜토리얼 카드",
-        "sceneTemplate.item.screenshotTutorial.summary" => {
-            "표지, 3단계 작업, 마지막 CTA로 구성되어 있어 스크린샷과 설명만 바꾸면 바로 게시할 수 있습니다."
-        }
-        "sceneTemplate.item.knowledgeCarousel.title" => "지식·인사이트 캐러셀",
-        "sceneTemplate.item.knowledgeCarousel.summary" => {
-            "표지, 세 가지 논점, 요약 페이지로 구성되어 있어 하나의 관점을 넘겨 보는 연속 카드로 풀어내기에 적합합니다."
-        }
-        "sceneTemplate.item.beforeAfter.title" => "개편 전후 비교",
-        "sceneTemplate.item.beforeAfter.summary" => {
-            "전후 화면을 좌우로 나란히 배치하고 변경 설명을 더해, 회고나 작업물 소개에 적합합니다."
-        }
-        "sceneTemplate.item.slideDeck.title" => "프레젠테이션 · 6페이지",
-        "sceneTemplate.item.slideDeck.summary" => {
-            "표지, 목차, 핵심 내용, 데이터, 차트, 마무리로 구성된 16:9 발표 자료로, 문구만 바꾸면 바로 발표할 수 있습니다."
-        }
-        "sceneTemplate.item.knowledgeCardVertical.title" => "지식 카드 · 세로형",
-        "sceneTemplate.item.knowledgeCardVertical.summary" => "제목, 네 가지 핵심, 서명란을 담은 3:4 단일 카드입니다. 문구만 바꾸면 바로 게시할 수 있습니다.",
-        "sceneTemplate.item.knowledgeCardSquare.title" => "지식 카드 · 정사각형",
-        "sceneTemplate.item.knowledgeCardSquare.summary" => "같은 레이아웃의 1:1 카드로, 게시글 헤더나 SNS 공유에 알맞은 밀도입니다.",
-        "sceneTemplate.item.pitchDeckDark.title" => "피치덱 · 다크",
-        "sceneTemplate.item.pitchDeckDark.summary" => "표지, 문제, 해법, 지표, 로드맵, 연락처까지 6장. 어두운 바탕에 큰 글씨로, 투자 유치와 발표에 맞췄습니다.",
-        "sceneTemplate.item.lectureDeckLight.title" => "강의 자료 · 라이트",
-        "sceneTemplate.item.lectureDeckLight.summary" => "강의 표지, 학습 목표, 개념 설명, 예제, 비교표, 정리와 과제. 종이 같은 흰 바탕이라 오래 봐도 편합니다.",
-        "sceneTemplate.item.minimalKeynote.title" => "미니멀 키노트",
-        "sceneTemplate.item.minimalKeynote.summary" => "여백과 초대형 타이포로 한 장에 한 문장씩 가운데 정렬. 아홉 장 내내 카드가 없고 목차는 가는 선과 숫자뿐입니다. 신제품 발표와 기조연설용.",
-        "sceneTemplate.item.gradientTech.title" => "그라데이션 테크",
-        "sceneTemplate.item.gradientTech.summary" => "어두운 그라데이션 바탕에 글래스 카드. 아키텍처·성능 비교·고객사 월까지 갖춘 개발자 제품 발표용.",
-        "sceneTemplate.scene.infographic" => "인포그래픽",
-        "sceneTemplate.item.punchQuoteCard.title" => "한 문장 카드 · 대자보",
-        "sceneTemplate.item.punchQuoteCard.summary" => "3:4 먹빛 카드. 두 줄의 초대형 제목과 노란 하이라이트 한 줄로 한 문장만 전한다. 관점과 인용구용.",
-        "sceneTemplate.item.journalChecklistCard.title" => "체크리스트 카드 · 노트 앱 스타일",
-        "sceneTemplate.item.journalChecklistCard.summary" => "옅은 회색 바탕에 흰 체크리스트 카드 한 장. 체크할 항목 다섯 개와 태그, 인용 블록. 주간 계획과 기록 글에.",
-        "sceneTemplate.item.dataReportInfographic.title" => "데이터 결론 인포그래픽",
-        "sceneTemplate.item.dataReportInfographic.summary" => "세로로 긴 스크롤 이미지. 어두운 헤더, 큰 숫자 셋, 가로 막대 비교, 구성 비율, 결론 세 줄. 숫자만 바꾸면 된다.",
-        "sceneTemplate.item.stepsFlowInfographic.title" => "단계 흐름 인포그래픽",
-        "sceneTemplate.item.stepsFlowInfographic.summary" => "세로로 긴 스크롤 이미지. 번호가 붙은 다섯 단계 카드를 한 흐름으로 잇고 소요 시간과 팁 두 줄을 더했다. 튜토리얼용.",
-        "sceneTemplate.item.eventPosterDeck.title" => "행사 기획 deck · 공고 포스터",
-        "sceneTemplate.item.eventPosterDeck.summary" => "표지, 하이라이트, 일정, 오시는 길, 티켓, 마무리. 전시장 벽 같은 흰 바탕에 빨강과 파랑 색면, 둥근 모서리도 그러데이션도 없다. 마켓·동아리 행사·개업 안내에.",
-        "sceneTemplate.item.pitfallListInfographic.title" => "함정 체크리스트 인포그래픽",
-        "sceneTemplate.item.pitfallListInfographic.summary" => "세로로 긴 스크롤 이미지. 자주 하는 실수 여섯 가지를 빈도순으로, 각각 무엇이 잘못인지와 어떻게 고칠지를 함께. 마지막에 네 줄짜리 발행 전 점검표. 색은 흑백과 회색뿐.",
-        "sceneTemplate.item.spineCultureCard.title" => "세로 제목 카드 · 광물 안료",
-        "sceneTemplate.item.spineCultureCard.summary" => "황토빛 어두운 바탕에 세로쓰기 큰 제목, 벗겨진 벽면과 안료 알갱이. 3:4. 문화·긴 글·개인 브랜드 표지에.",
-        "sceneTemplate.item.metricSingleCard.title" => "단일 지표 카드 · 그리드 한자",
-        "sceneTemplate.item.metricSingleCard.summary" => "순백 위에 커다란 숫자 하나. 엄격한 스위스 그리드와 빨간 신호 사각형 하나. 1:1. 결론과 성과에.",
-        "sceneTemplate.item.quoteFrameCard.title" => "인용 카드 · 비단 청록",
-        "sceneTemplate.item.quoteFrameCard.summary" => "누런 비단 바탕에 틀로 감싼 한 문장, 아래에는 석청과 석록의 산. 4:5. 발췌·인터뷰·인용에.",
-        "sceneTemplate.item.dailySignCard.title" => "데일리 카드 · 정원의 창",
-        "sceneTemplate.item.dailySignCard.summary" => "회벽 바탕에 육각 창 하나, 그 안에 날짜와 한 줄. 여백이 곧 장식. 3:4. 데일리 포스트와 브랜드 문구에.",
-        "sceneTemplate.item.priceTierCard.title" => "가격표 카드 · 아케이드 네온",
-        "sceneTemplate.item.priceTierCard.summary" => "먹빛 푸른 밤 바탕에 세 등급 가격표, 네온관 윤곽과 번지는 빛. 1:1. 매장·행사·패키지 가격에.",
-        "sceneTemplate.item.noticeBoardCard.title" => "공지 카드 · 활자 인쇄",
-        "sceneTemplate.item.noticeBoardCard.summary" => "신문지 바탕에 제호 이중선과 번호 붙은 조항, 인쇄 어긋남과 일련번호까지. 4:5. 공지·안내·규정에.",
-        "sceneTemplate.item.milestoneTimelineInfographic.title" => "연표 인포그래픽",
-        "sceneTemplate.item.milestoneTimelineInfographic.summary" => "세로로 긴 스크롤 이미지. 전체를 관통하는 축에 연도 눈금과 사건 카드를 붙이고, 마지막은 다음 걸음으로 닫는다. 회고·브랜드사·프로젝트 이력에.",
-        "sceneTemplate.item.conceptContrastInfographic.title" => "개념 비교 인포그래픽",
-        "sceneTemplate.item.conceptContrastInfographic.summary" => "세로로 긴 스크롤 이미지. 결론이 먼저, 그다음 두 개념의 정의 카드, 이어서 항목별 두 단 비교, 마지막에 고르는 기준.",
-        "sceneTemplate.item.rankingBoardInfographic.title" => "TOP N 랭킹 인포그래픽",
-        "sceneTemplate.item.rankingBoardInfographic.summary" => "세로로 긴 스크롤 이미지. 먹빛에 금색 추천 보드. 1~3위는 큰 배지, 4~8위는 선 배지. 각각 쓸 때와 빈도까지.",
-        "sceneTemplate.item.faqThreadInfographic.title" => "FAQ 인포그래픽",
-        "sceneTemplate.item.faqThreadInfographic.summary" => "세로로 긴 스크롤 이미지. 여섯 쌍의 질문과 답, Q는 채우고 A는 선으로. 번호도 순서도 없어 한 쌍만 읽어도 된다.",
-        "sceneTemplate.item.dataStoryInfographic.title" => "데이터 스토리 인포그래픽",
-        "sceneTemplate.item.dataStoryInfographic.summary" => "세로로 긴 스크롤 이미지. 네 숫자를 하나의 인과선으로 잇고, 각 단계는 열 칸 배열로 비율을 보이며, 끝은 바로 쓸 결론.",
-        "sceneTemplate.item.challengeTrackerInfographic.title" => "30일 챌린지 인포그래픽",
-        "sceneTemplate.item.challengeTrackerInfographic.summary" => "세로로 긴 스크롤 이미지. 여섯 열 다섯 행의 서른 칸. 이정표는 7·15·30일에만. 저장해 두고 하루 한 칸씩 지운다.",
-        "sceneTemplate.item.ecosystemMapInfographic.title" => "산업 지도 인포그래픽",
-        "sceneTemplate.item.ecosystemMapInfographic.summary" => "세로로 긴 스크롤 이미지. 한 사슬의 네 자리를 2×2로 펼치고 칸마다 셋씩, 빈자리도 표시. 슬레이트 바탕에 흰 카드.",
-        "sceneTemplate.item.doDontComparison.title" => "좋은 예·나쁜 예 2단",
-        "sceneTemplate.item.doDontComparison.summary" => "3:4 카드. 같은 일의 두 가지 방식을 좌우로 놓고, 빨강·초록이 아니라 질감과 아이콘으로 구분한다. 색각 이상 독자도 읽힌다.",
-        "sceneTemplate.item.mythTruthComparison.title" => "오해와 사실",
-        "sceneTemplate.item.mythTruthComparison.summary" => "세로로 긴 이미지. “다들 이렇게 말한다 / 사실은 이렇다” 다섯 쌍, 오해는 좁고 옅게 왼쪽, 사실은 넓고 짙게 오른쪽. 한 쌍씩 읽는다.",
-        "sceneTemplate.item.pricingTiersComparison.title" => "요금제 비교",
-        "sceneTemplate.item.pricingTiersComparison.summary" => "3:4 카드. 무료·프로·팀 세 등급을 나란히. 가격을 기준점 삼아 내려 읽고, 오른쪽 열은 왼쪽 열을 포함한다.",
-        "sceneTemplate.item.scenarioGuideComparison.title" => "상황별 선택 가이드",
-        "sceneTemplate.item.scenarioGuideComparison.summary" => "세로로 긴 이미지. 사양 대신 일곱 가지 상황을 놓고 각각에 판정 태그를 붙인다. 자기 줄만 찾으면 된다.",
-        "sceneTemplate.item.specTableComparison.title" => "사양 비교표",
-        "sceneTemplate.item.specTableComparison.summary" => "세로로 긴 이미지. 두 후보를 한 표에 넣고 줄마다 비교, 이긴 칸은 짙은 바탕으로 들어올린다. 어디서 이기는지 한눈에.",
-        "sceneTemplate.item.threeWayComparison.title" => "세 가지 안 비교",
-        "sceneTemplate.item.threeWayComparison.summary" => "세로로 긴 이미지. 세 안을 나란히 놓고 가운데가 추천. 각 열의 첫 줄은 이름이 아니라 상황이다.",
-        "sceneTemplate.item.timeShiftComparison.title" => "1년 전과 지금",
-        "sceneTemplate.item.timeShiftComparison.summary" => "3:4 카드. 가운데에 라벨 축을 세우고 왼쪽은 1년 전, 오른쪽은 지금. 같은 항목의 두 값이 같은 줄에 놓인다.",
-        "sceneTemplate.item.tradeoffScaleComparison.title" => "장단점 저울",
-        "sceneTemplate.item.tradeoffScaleComparison.summary" => "1:1 카드. 하나의 대와 두 접시, 왼쪽은 가치 오른쪽은 대가, 각 줄 앞에 빈 체크박스. 결론은 독자가 단다.",
-        "sceneTemplate.item.versionDiffComparison.title" => "버전 변경 사항",
-        "sceneTemplate.item.versionDiffComparison.summary" => "1:1 카드. 좌우로 나누지 않고 각 줄이 스스로 “이전 → 이후”를 완성한다. 아래로 훑기만 하면 된다.",
-        "sceneTemplate.item.appOnboardingTriptych.title" => "앱 온보딩 3화면",
-        "sceneTemplate.item.appOnboardingTriptych.summary" => "3:4 카드. 나란한 세 대의 휴대폰과 빈 이미지 자리. 자기 온보딩 화면 세 장을 넣고 문구를 붙이면 그대로 리뷰용·게시용이 된다.",
-        "sceneTemplate.item.diyBlueprintGuide.title" => "DIY 도해 가이드",
-        "sceneTemplate.item.diyBlueprintGuide.summary" => "세로로 긴 이미지. 재료와 규격표가 단계만큼의 지면을 차지한다. DIY는 손이 아니라 준비에서 어긋난다.",
-        "sceneTemplate.item.photoCompositionTutorial.title" => "휴대폰 사진 구도 수업",
-        "sceneTemplate.item.photoCompositionTutorial.summary" => "3:4 다섯 장. 각 장은 어두운 뷰파인더에 형광 가이드선이 사진 자리 위로 얹힌다. 구도는 프레임 위에 그려야 설명된다.",
-        "sceneTemplate.item.recipeFourStep.title" => "네 단계 레시피 카드",
-        "sceneTemplate.item.recipeFourStep.summary" => "4:5 카드 2×2. 네 단계를 한 장에. 캡처해 두고 보면서 만든다 — 가스레인지 앞에서 넘기기는 부담이다.",
-        "sceneTemplate.item.skincareRoutineCards.title" => "스킨케어 단계 카드",
-        "sceneTemplate.item.skincareRoutineCards.summary" => "4:5 여섯 장. 단계마다 양·기다리는 시간·아침저녁 세 숫자를 고정한다. 실패는 순서가 아니라 양과 간격에서 난다.",
-        "sceneTemplate.item.softwareStepTutorial.title" => "소프트웨어 조작 단계 카드",
-        "sceneTemplate.item.softwareStepTutorial.summary" => "4:5 카드. 튜토리얼 중 유일한 다크. 화면 캡처 자리와 번호 매긴 조작 설명. 도구·기능 소개에.",
-        "sceneTemplate.item.storageMakeoverSteps.title" => "수납 정리 단계",
-        "sceneTemplate.item.storageMakeoverSteps.summary" => "3:4 여섯 장. 동작과 이미지 자리 외에 완료 조건과 소요 시간을 고정으로 준다. 그 상태가 되면 다음으로.",
-        "sceneTemplate.item.weeklyReportLesson.title" => "주간 보고서 수업",
-        "sceneTemplate.item.weeklyReportLesson.summary" => "세로로 긴 이미지. 네 단락 구조를 설명한 뒤 밑줄 빈칸이 있는 보고서 뼈대를 준다. 캡처해서 채우면 된다.",
-        "sceneTemplate.item.workoutBreakdownGuide.title" => "운동 동작 분해 가이드",
-        "sceneTemplate.item.workoutBreakdownGuide.summary" => "세로로 긴 이미지. 동작마다 이미지 자리와 요령 외에 세트·횟수·휴식의 고정 형식 바가 붙는다.",
-        "sceneTemplate.item.bookreviewSilkCarousel.title" => "서평·영화평 해체 캐러셀",
-        "sceneTemplate.item.bookreviewSilkCarousel.summary" => "3:4 다섯 장: 훅, 주석 달린 인용, 세 가지 통찰, 인용할 한 줄, 마무리. 줄거리 요약이 아니라 가져갈 조각으로 해체한다.",
-        "sceneTemplate.item.cityguideFilmCarousel.title" => "도시 가이드 캐러셀",
-        "sceneTemplate.item.cityguideFilmCarousel.summary" => "3:4 일곱 장: 장소와 동선을 번갈아 — 장소 판은 꿈꾸는 독자에게, 하루 동선과 먹고 자는 대조표는 계획하는 독자에게.",
-        "sceneTemplate.item.datareportGridCarousel.title" => "데이터 리포트 캐러셀",
-        "sceneTemplate.item.datareportGridCarousel.summary" => "3:4 여섯 장: 데이터 판 사이에 반드시 비데이터 판을 끼워, 세 번째 차트에서 넘겨버리지 않게 한다.",
-        "sceneTemplate.item.opinionLongformCarousel.title" => "관점 장문 캐러셀",
-        "sceneTemplate.item.opinionLongformCarousel.summary" => "3:4 여섯 장: 엄격한 비주얼 마스터가 전편을 관통해 쪽 번호와 제목이 늘 같은 자리에. 넘긴 판은 돌아오지 않는다.",
-        "sceneTemplate.item.qaChalkboardCarousel.title" => "문답 캐러셀",
-        "sceneTemplate.item.qaChalkboardCarousel.summary" => "3:4 여섯 장: 한 판에 한 질문, 모서리마다 손글씨 물음표 번호. 질문 자체가 넘길 이유가 된다.",
-        "sceneTemplate.item.storyNightCarousel.title" => "이야기 캐러셀",
-        "sceneTemplate.item.storyNightCarousel.summary" => {
-            "3:4 일곱 장: 시간을 뼈대로 한 개인 경험 회고. 다섯째 판의 연표가 전체의 내력벽이다."
-        }
-        "sceneTemplate.item.toolkitNotebookCarousel.title" => "자료 모음 캐러셀",
-        "sceneTemplate.item.toolkitNotebookCarousel.summary" => "3:4 여섯 장: 도구 여섯 개를 한 판씩 펼치고 마지막 판에 쪽 번호까지 붙인 목차. 모음 독자의 목적은 저장뿐.",
-        "sceneTemplate.item.tutorialJournalCarousel.title" => "튜토리얼 캐러셀",
-        "sceneTemplate.item.tutorialJournalCarousel.summary" => {
-            "3:4 여섯 장: 한 판에 한 단계, 손가락이 곧 진행 막대. 수공예·소프트웨어·생활 팁에."
-        }
-        "sceneTemplate.item.yearreviewMineralCarousel.title" => "연말 결산 캐러셀",
-        "sceneTemplate.item.yearreviewMineralCarousel.summary" => {
-            "3:4 여덟 장: 숫자 판은 차갑게, 소회 판은 따뜻하게 번갈아. 연말 결산과 개인 회고에."
-        }
-        "fileMenu.newFromTemplate" => "템플릿에서 새로 만들기",
+
+
+
+
+        "assetCenter.generate.placeholder" => "주제를 입력하면 AI가 슬라이드 전체를 생성합니다",
+        "assetCenter.generate.button" => "생성",
+        "assetCenter.generate.hint" => "새 문서를 만들고 주제에 맞춰 슬라이드 전체를 생성합니다.",
+        "assetCenter.generate.promptTemplate" => "다음 주제로 프레젠테이션(PPT)을 만들어 주세요: {{topic}}",
+
+
+        "assetCenter.generate.basis" => "기준: ",
+
+        "designScene.tutorial" => "튜토리얼",
+        "designScene.comparison" => "비교",
+        "designScene.carousel" => "캐러셀",
+        "designScene.slides" => "슬라이드",
+        "designScene.card" => "카드",
+        "designScene.web" => "웹 페이지",
+        "assetCenter.generate.webPromptTemplate" => "다음 주제로 여러 섹션으로 구성된 웹 랜딩 페이지를 디자인해 주세요: {{topic}}",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "designScene.infographic" => "인포그래픽",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "fileMenu.exportSlideshowHtml" => "슬라이드쇼 HTML 내보내기...",
         "fileMenu.exportPptx" => "PowerPoint 내보내기...",
         "dialog.slideshowHtmlTitle" => "슬라이드쇼 내보내기",
@@ -557,7 +543,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "settings.agents.acpPresetAdd" => "추가",
         "settings.agents.acpNotInstalled" => "설치되지 않음",
         "assetCenter.title" => "에셋 센터",
-        "assetCenter.tab.templates" => "템플릿",
+
         "assetCenter.tab.styles" => "스타일",
         "assetCenter.style.empty" => "일치하는 스타일이 없습니다",
         "assetCenter.style.pinned" => "고정됨",

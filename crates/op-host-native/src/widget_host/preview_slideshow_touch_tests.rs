@@ -2,7 +2,7 @@
 
 use super::super::WidgetHostNative;
 use op_editor_core::preview_slideshow::SlideshowToolbarButton;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::size_class::EditorSizeClass;
 use op_editor_core::{EditorState, LoginFlowStatus};
 use op_editor_ui::widgets::{MobileAppBar, SlideshowToolbar};
@@ -16,7 +16,7 @@ const DECK: &str = r#"{"version":"1.0.0","children":[
 fn presenting_touch_host(class: EditorSizeClass, width: f32, height: f32) -> WidgetHostNative {
     let document = jian_ops_schema::load_str(DECK).expect("parse deck").value;
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     let mut host = WidgetHostNative::new();
     host.install_imported_state(state);
     host.editor_state.editor_ui.touch = true;
@@ -66,7 +66,7 @@ fn entering_a_touch_deck_releases_account_and_collaboration_overlays() {
     let (width, height) = (390.0, 763.0);
     let document = jian_ops_schema::load_str(DECK).expect("parse deck").value;
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     state.editor_ui.touch = true;
     state.editor_ui.size_class = EditorSizeClass::Compact;
     state.editor_ui.mobile_sheet = Some(op_editor_core::size_class::MobileSheetKind::More);

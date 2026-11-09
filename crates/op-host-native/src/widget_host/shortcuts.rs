@@ -21,7 +21,7 @@ impl WidgetHostNative {
             || editor_ui.preset_name_input_active()
             || editor_ui.icon_picker.open
             || editor_ui.prompt_center.open
-            || editor_ui.scene_template_center.input_active()
+            || editor_ui.asset_center.input_active()
             || editor_ui.component_browser_open
             // `active_text_input()` resolves chat before Git. Visible Git /
             // clone inputs must therefore claim ownership before the pointer

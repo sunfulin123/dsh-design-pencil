@@ -68,7 +68,7 @@ impl WidgetHostNative {
             // makes the desktop shell call `set_ime_allowed(false)`, so the
             // platform never opens a composition session and pinyin produced
             // nothing at all while ASCII still went through `apply_text`.
-            || self.editor_state.editor_ui.scene_template_center.input_active()
+            || self.editor_state.editor_ui.asset_center.input_active()
             || self.editor_state.editor_ui.chat_model_picker.open
             || self.editor_state.editor_ui.component_browser_open
             || self.editor_state.chat.focused

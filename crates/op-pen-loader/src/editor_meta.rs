@@ -11,7 +11,7 @@
 //! content, dirty revision, or undo history.
 
 use crate::editor_meta_error::EditorMetaWriteError;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 /// Editor state that affects how a canonical document is reopened.
 ///
@@ -36,7 +36,7 @@ pub struct EditorMeta {
         with = "scenario_serde",
         skip_serializing_if = "Option::is_none"
     )]
-    pub scenario: Option<TemplateScene>,
+    pub scenario: Option<DesignScene>,
     /// Style guide pinned in the Asset Center — see
     /// `EditorUiState::pinned_style_guide`. Written as the guide's `name`;
     /// anything that is not a non-empty string reads back as `None` for the
@@ -84,12 +84,12 @@ impl EditorMeta {
 /// `None`. Absent stays absent — the field is omitted when unset rather than
 /// written as `null`, keeping old readers and byte-comparison tests unchanged.
 mod scenario_serde {
-    use super::TemplateScene;
+    use super::DesignScene;
     use serde::{Deserialize, Deserializer, Serializer};
     use std::str::FromStr;
 
     pub(super) fn serialize<S: Serializer>(
-        value: &Option<TemplateScene>,
+        value: &Option<DesignScene>,
         serializer: S,
     ) -> Result<S::Ok, S::Error> {
         match value {
@@ -100,11 +100,11 @@ mod scenario_serde {
 
     pub(super) fn deserialize<'de, D: Deserializer<'de>>(
         deserializer: D,
-    ) -> Result<Option<TemplateScene>, D::Error> {
+    ) -> Result<Option<DesignScene>, D::Error> {
         // Any JSON at all parses into `Value`, so the only error this can
         // propagate is a malformed document the caller must fail on anyway.
         Ok(match serde_json::Value::deserialize(deserializer)? {
-            serde_json::Value::String(name) => TemplateScene::from_str(&name).ok(),
+            serde_json::Value::String(name) => DesignScene::from_str(&name).ok(),
             _ => None,
         })
     }
@@ -148,7 +148,7 @@ struct WireEditorMeta {
     #[serde(default, alias = "preserve_authored_geometry")]
     preserve_authored_geometry: Option<bool>,
     #[serde(default, with = "scenario_serde")]
-    scenario: Option<TemplateScene>,
+    scenario: Option<DesignScene>,
     #[serde(default, with = "pinned_style_guide_serde")]
     pinned_style_guide: Option<String>,
     #[serde(

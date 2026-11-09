@@ -13,7 +13,7 @@
 //! drag). Deciding on release is what lets a click with a shaky hand
 //! still navigate.
 
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::{EditorState, LeftPanelTab, NodeId, SlidesDrag, SlidesPanelTarget};
 
 use crate::layout_scene::LayoutScene;
@@ -76,7 +76,7 @@ pub enum SlidesRelease {
 /// page are to a navigator.
 pub fn slides_tab_label_key(state: &EditorState) -> &'static str {
     match state.editor_ui.scenario {
-        Some(TemplateScene::Card) => "slidesPanel.tabCards",
+        Some(DesignScene::Card) => "slidesPanel.tabCards",
         _ => "slidesPanel.tabSlides",
     }
 }

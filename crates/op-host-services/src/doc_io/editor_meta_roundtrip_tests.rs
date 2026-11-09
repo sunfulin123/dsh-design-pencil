@@ -56,7 +56,7 @@ fn authored_geometry_mode_survives_save_load_and_source_round_trips() {
 
 #[test]
 fn scenario_survives_save_load_and_ignores_an_unknown_tag() {
-    use op_editor_core::scene_template_catalog::TemplateScene;
+    use op_editor_core::design_scene::DesignScene;
 
     let mut state = EditorState::from_document(
         jian_ops_schema::load_str(
@@ -65,7 +65,7 @@ fn scenario_survives_save_load_and_ignores_an_unknown_tag() {
         .expect("fixture parses")
         .value,
     );
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     let path = temp_op_path();
 
     save_to_path(&state, &path).expect("save succeeds");
@@ -82,7 +82,7 @@ fn scenario_survives_save_load_and_ignores_an_unknown_tag() {
         load_editor_state_from_source(&source, op_editor_core::Locale::EnUs)
             .expect("source load succeeds"),
     ] {
-        assert_eq!(reopened.editor_ui.scenario, Some(TemplateScene::Slides));
+        assert_eq!(reopened.editor_ui.scenario, Some(DesignScene::Slides));
     }
 
     // A tag from a future build, a hand edit, or the wrong type must cost the

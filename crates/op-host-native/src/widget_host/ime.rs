@@ -74,7 +74,7 @@ impl WidgetHostNative {
         if self
             .editor_state
             .editor_ui
-            .scene_template_center
+            .asset_center
             .input_active()
         {
             if had {
@@ -169,7 +169,7 @@ impl WidgetHostNative {
         if self
             .editor_state
             .editor_ui
-            .scene_template_center
+            .asset_center
             .input_active()
         {
             let mut consumed = false;
@@ -260,8 +260,8 @@ impl WidgetHostNative {
             return Some(panel.focused_input_caret_rect(rect));
         }
         if let (Some(panel), Some(rect)) = (
-            op_editor_ui::widgets::SceneTemplatePanel::for_editor(&self.editor_state),
-            self.scene_template_panel_rect(viewport_w, viewport_h),
+            op_editor_ui::widgets::AssetCenterPanel::for_editor(&self.editor_state),
+            self.asset_center_panel_rect(viewport_w, viewport_h),
         ) {
             return Some(panel.focused_input_caret_rect(rect));
         }

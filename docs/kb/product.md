@@ -22,16 +22,12 @@ AI 通过 Node host 调用 WASM 引擎；浏览器 CanvasKit 展示设计并提�
 
 ## AI 可复用设计资产
 
-managed host 已接模板配置/实例化/保存、风格库与 DESIGN.md 导入、文档主题预设
-导入/导出/应用，以及独立的编辑器亮暗主题确认工具，具体名称见
-[命令入口](../../COMMANDS.md#mcp-设计资产)。
-CLI 默认持久化到用户级资产目录（`DSH_ASSET_DIR` / `--asset-dir` 可覆盖），因此 DSH
-每次用临时草稿启动也能保留自定义风格和预设；旧文档旁资产库启动时一次性合并。
-UI 与 MCP 查询同一来源。
-模板包含 reusable component 依赖；主题预设应用和模板插入均可一次 undo。
-删除库资产不删除已插入节点，不把资产 revision 当作文档版本。
-库模板更新只影响后续插入；已有实例保留原变量值。变量及主题轴按插入隔离，
-源主题默认选择和节点覆盖仍有效，不重新染色目标文档已有设计。
+managed host 已接风格库与 DESIGN.md 导入、文档主题预设导入/导出/应用，
+以及独立的编辑器亮暗主题确认工具，具体名称见 [命令入口](../../COMMANDS.md#mcp-设计资产)。
+内置风格为 Talkdesk Cobalt 加 84 份社区 DESIGN.md（原文随 Rust/WASM 打包），
+空目录跳过，旧的其他内置风格已删除。模板功能及模板工具、文档、预览和生成器已删除。
+不支持历史资产迁移。CLI 默认持久化用户风格和预设到用户级资产目录，UI 与 MCP 查询同一来源。
+预设应用可一次 undo；删除库资产不删除已有文档内容，资产 revision 与文档版本独立。
 
 DESIGN.md 可导入共享风格库或当前文档规范。绑定共享风格会将规范/变量应用到设计，
 供后续 AI 使用；单独保存或改名库资产不会隐式修改当前设计。
@@ -71,15 +67,15 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "74996489-c9be-4d1b-a26b-a81deaeef88f",
-  "verified_at": "2026-11-09T03:58:23.329253+00:00",
+  "task_id": "d7c48a9d-87cc-4072-bf2b-1bee9de13b7c",
+  "verified_at": "2026-11-09T10:04:22.500177+00:00",
   "sources": {
-    "ARCHITECTURE.md": "68cf6ca0c98a3c1c7b0cede4d6878490c4259adf5c15ae2d03aaecc735a3f0d6",
+    "ARCHITECTURE.md": "4edf1855543cb6dc5960e6f9240a79e24d604e74c00715e82869920db72491a7",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
-    "COMMANDS.md": "671f5ed61fb91516b89ec63042c2ac167d9cfadeff1c2da0e42fadf52061dae1",
+    "COMMANDS.md": "b61536e66d1ce87d818a48e69e104329603101e3f70ec481cbb28c034fae11f4",
     "crates/op-dsh-engine/src/tool_catalog.rs": "fee753c0cc498cee0b8b504862b6347c9cf6e6cb95a2af444d79af493c38e53a"
   },
-  "reason": "Product now imports web pages through a real browser render with multi-viewport boards and a compare_html_fidelity acceptance tool; architecture gained an HTML import section.",
-  "evidence": "tools/list shows new import_html/import_html_url args and compare_html_fidelity (html-fidelity.test.mjs); real MCP import of aether-store passed compare_html_fidelity at 1440"
+  "reason": "Replaced shipped styles with 84 verbatim DESIGN.md guides plus Cobalt and removed template capabilities and legacy migration.",
+  "evidence": "cargo test -p op-ai-skills: 217 passed; asset-tools.test.mjs verifies all 84 raw bodies and 85 builtin ids; isolated browser displayed the style-only gallery and bound Apple with primary #0066CC."
 }
 ```

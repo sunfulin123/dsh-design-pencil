@@ -555,7 +555,7 @@ impl Session {
         self.advance_global_clock(now_ms);
         self.pump_editor_preview();
         #[cfg(feature = "editor")]
-        crate::editor_template::drain_pending_scene_template(self)?;
+        crate::editor_template::drain_pending_asset_center(self)?;
         #[cfg(feature = "editor")]
         let auth_wake = crate::editor_auth::pump(self);
         #[cfg(feature = "editor")]
@@ -649,7 +649,7 @@ impl Session {
         self.advance_global_clock(now_ms);
         self.pump_editor_preview();
         #[cfg(feature = "editor")]
-        crate::editor_template::drain_pending_scene_template(self)?;
+        crate::editor_template::drain_pending_asset_center(self)?;
         #[cfg(feature = "editor")]
         let auth_wake = crate::editor_auth::pump(self);
         #[cfg(feature = "editor")]

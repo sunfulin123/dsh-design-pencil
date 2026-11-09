@@ -11,7 +11,7 @@
 use super::*;
 use crate::test_support::{ScriptResponse, ScriptedLlm};
 
-const PINNED: &str = "zen-paper-light";
+const PINNED: &str = "design-md:apple";
 
 fn pinned_req(pinned: Option<&str>) -> DesignRequest {
     DesignRequest {
@@ -74,7 +74,7 @@ fn a_rich_plan_that_names_no_guide_still_gets_the_pin() {
 /// does not overrule the user.
 #[test]
 fn a_pin_overrides_the_guide_the_model_chose() {
-    let plan = plan_for(Some(PINNED), Some("developer-terminal-dark"));
+    let plan = plan_for(Some(PINNED), Some("design-md:linear.app"));
     assert_eq!(plan.style_guide_name.as_deref(), Some(PINNED));
 }
 
@@ -153,22 +153,19 @@ fn design_md_still_outranks_a_pin() {
 /// than forcing a name nothing can resolve.
 #[test]
 fn a_stale_pin_leaves_the_models_choice_alone() {
-    let plan = plan_for(
-        Some("user:deleted-last-week"),
-        Some("developer-terminal-dark"),
-    );
+    let plan = plan_for(Some("user:deleted-last-week"), Some("design-md:linear.app"));
     assert_eq!(
         plan.style_guide_name.as_deref(),
-        Some("developer-terminal-dark")
+        Some("design-md:linear.app")
     );
 }
 
 /// Without a pin nothing is forced — the model still chooses.
 #[test]
 fn no_pin_changes_nothing() {
-    let plan = plan_for(None, Some("developer-terminal-dark"));
+    let plan = plan_for(None, Some("design-md:linear.app"));
     assert_eq!(
         plan.style_guide_name.as_deref(),
-        Some("developer-terminal-dark")
+        Some("design-md:linear.app")
     );
 }

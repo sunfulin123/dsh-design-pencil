@@ -5,8 +5,8 @@
 //! covered.
 
 use super::WidgetHost;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::preview_slideshow::active_page_boards;
-use op_editor_core::scene_template_catalog::TemplateScene;
 use op_editor_core::{LeftPanelTab, SlidesPanelTarget};
 use op_editor_ui::Point2D;
 
@@ -28,7 +28,7 @@ const THREE_BOARD_DECK: &str = r##"{
     ]
 }"##;
 
-fn host_with(scenario: Option<TemplateScene>) -> WidgetHost {
+fn host_with(scenario: Option<DesignScene>) -> WidgetHost {
     let document = jian_ops_schema::load_str(THREE_BOARD_DECK)
         .expect("parse deck fixture")
         .value;
@@ -55,7 +55,7 @@ fn row_centre(host: &mut WidgetHost, index: usize) -> Point2D {
 
 #[test]
 fn any_document_with_boards_gets_the_slides_tab() {
-    let mut deck = host_with(Some(TemplateScene::Slides));
+    let mut deck = host_with(Some(DesignScene::Slides));
     let slides = deck
         .slides_panel_frame(VW, VH)
         .expect("a deck shows the slides tab");
@@ -105,7 +105,7 @@ fn the_browser_states_it_cannot_render_thumbnails() {
     // A declared capability, not a silent gap — the rows still list,
     // navigate and reorder; only the picture is missing, and the widget
     // fills the box with the slide number instead.
-    let host = host_with(Some(TemplateScene::Slides));
+    let host = host_with(Some(DesignScene::Slides));
     assert!(
         !host.editor_state.editor_ui.slide_thumbnails_supported,
         "the browser has no local board renderer to declare"
@@ -114,7 +114,7 @@ fn the_browser_states_it_cannot_render_thumbnails() {
 
 #[test]
 fn clicking_a_row_frames_that_board() {
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let point = row_centre(&mut host, 2);
     let before = host.editor_state.viewport;
     host.apply_press(point.x, point.y, VW, VH);
@@ -128,7 +128,7 @@ fn clicking_a_row_frames_that_board() {
 
 #[test]
 fn dragging_a_row_reorders_the_deck() {
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     assert_eq!(
         active_page_boards(&host.editor_state),
         ["slide-1", "slide-2", "slide-3"]
@@ -146,7 +146,7 @@ fn dragging_a_row_reorders_the_deck() {
 
 #[test]
 fn the_tab_row_switches_the_rail_both_ways() {
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let tabs = host.slides_tab_row(VH).expect("tab row");
     let centre = |rect: op_editor_ui::Rect| {
         Point2D::new(
@@ -176,7 +176,7 @@ fn the_tab_row_switches_the_rail_both_ways() {
 
 #[test]
 fn the_layer_tree_starts_below_the_tab_row() {
-    let mut deck = host_with(Some(TemplateScene::Slides));
+    let mut deck = host_with(Some(DesignScene::Slides));
     deck.editor_state.editor_ui.slides_panel.tab = LeftPanelTab::Layers;
     let tabs = deck.slides_tab_row(VH).expect("tab row");
     assert_eq!(
@@ -187,7 +187,7 @@ fn the_layer_tree_starts_below_the_tab_row() {
 
 #[test]
 fn hovering_a_row_washes_it_and_leaving_the_rail_clears_it() {
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let point = row_centre(&mut host, 1);
     host.apply_cursor_move(point.x, point.y);
     assert_eq!(
@@ -200,7 +200,7 @@ fn hovering_a_row_washes_it_and_leaving_the_rail_clears_it() {
 
 #[test]
 fn the_footer_button_enters_preview() {
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     host.editor_state.editor_ui.login_modal_open = true;
     host.editor_state.editor_ui.prompt_center.open = true;
     host.editor_state.editor_ui.prompt_center.save_open = true;
@@ -251,7 +251,7 @@ fn the_footer_button_enters_preview() {
 /// that keeps the two hosts' z-order agreeing.
 #[test]
 fn the_tab_row_yields_the_cursor_to_an_open_model_picker() {
-    let mut host = host_with(Some(TemplateScene::Slides));
+    let mut host = host_with(Some(DesignScene::Slides));
     let tabs = host.slides_tab_row(VH).expect("tab row");
     let on_the_row = Point2D::new(
         tabs.row.origin.x + 20.0,

@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::{EditorState, ExportFormat};
 
 use crate::pdf::{render_deck_pdf_boards_bytes, render_deck_pdf_bytes, render_pdf_bytes};
@@ -78,7 +78,7 @@ fn render_configured(state: &EditorState) -> Result<(&'static str, Vec<u8>), Exp
         return Err(ExportError::UnsupportedFormat { format: "WEBP" });
     }
     if format == ExportFormat::Pdf {
-        let bytes = if state.editor_ui.scenario == Some(TemplateScene::Slides) {
+        let bytes = if state.editor_ui.scenario == Some(DesignScene::Slides) {
             render_deck_pdf_bytes(state)?
         } else {
             let scene = op_pen_loader::editor_state_to_layout_scene(state);

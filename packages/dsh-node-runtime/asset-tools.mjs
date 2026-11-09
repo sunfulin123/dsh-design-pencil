@@ -1,9 +1,6 @@
-import { readFile, realpath } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
 import { AssetStoreError as AssetError } from './asset-store.mjs';
 
 const KINDS = {
-  scene_template: 'scene-template',
   style_guide: 'style-guide',
   theme_preset: 'theme-preset',
 };
@@ -64,42 +61,6 @@ function metadata(asset) {
   };
 }
 
-function includeComponentDependencies(children, document) {
-  const nodes = new Map();
-  const index = (list) => {
-    for (const n of list) {
-      nodes.set(n.id, n);
-      if (n.children) index(n.children);
-    }
-  };
-  index(document.children);
-  for (const page of document.pages ?? []) index(page.children);
-  const included = new Set();
-  const mark = (list) => {
-    for (const n of list) {
-      included.add(n.id);
-      if (n.children) mark(n.children);
-    }
-  };
-  const result = [...children];
-  mark(result);
-  const references = (list) => {
-    for (const node of list) {
-      if (node.type === 'ref' && !included.has(node.ref)) {
-        const master = nodes.get(node.ref);
-        if (!master?.reusable)
-          throw new AssetError('asset-invalid', `Missing reusable component: ${node.ref}`);
-        result.push(master);
-        mark([master]);
-        references([master]);
-      }
-      if (node.children) references(node.children);
-    }
-  };
-  references(children);
-  return result;
-}
-
 export class AssetTools {
   constructor(session, { store, webRoot, editorControl } = {}) {
     this.session = session;
@@ -109,10 +70,6 @@ export class AssetTools {
     this.schemas = new Map(session.listTools().map((s) => [s.name, s]));
     this.names = new Set([
       ...Object.keys(KINDS).flatMap((k) => ['rename', 'delete'].map((verb) => `${verb}_${k}`)),
-      'list_scene_templates',
-      'get_scene_template',
-      'instantiate_scene_template',
-      'save_scene_template',
       'import_design_md',
       'list_theme_presets',
       'get_theme_preset',
@@ -185,28 +142,6 @@ export class AssetTools {
     if (id.startsWith('user:')) return this.requireStore().get(kind, id);
     const builtin = this.session.builtinAssets(kind).find((a) => a.id === id);
     if (!builtin) throw new AssetError('asset-not-found', `Unknown ${kind}: ${id}`);
-    if (kind === 'scene-template') {
-      if (
-        !this.webRoot ||
-        !/^\/pkg\/assets\/scene_templates\/[a-z0-9_-]+\.op$/.test(builtin.documentRoute ?? '')
-      ) {
-        throw new AssetError(
-          'asset-storage',
-          'Builtin template document is unavailable in this host bundle',
-        );
-      }
-      const root = await realpath(this.webRoot);
-      const file = await realpath(join(root, builtin.documentRoute.slice('/pkg/'.length)));
-      if (relative(root, file).startsWith('..') || resolve(file) === root) {
-        throw new AssetError('asset-invalid', 'Builtin template route escaped its bundle');
-      }
-      return {
-        id,
-        kind,
-        name: builtin.name,
-        payload: { ...builtin, document: JSON.parse(await readFile(file, 'utf8')) },
-      };
-    }
     return {
       id,
       kind,
@@ -236,7 +171,7 @@ export class AssetTools {
       revision,
       count: filtered.length,
       nextOffset: offset + limit < filtered.length ? offset + limit : null,
-      [kind === 'style-guide' ? 'guides' : kind === 'theme-preset' ? 'presets' : 'templates']:
+      [kind === 'style-guide' ? 'guides' : 'presets']:
         filtered.slice(offset, offset + limit),
     };
   }
@@ -262,9 +197,7 @@ export class AssetTools {
           : await this.requireStore().remove(kind, args.id, args),
       );
     }
-    let kind = name.includes('scene_template')
-      ? 'scene-template'
-      : name.includes('theme_preset')
+    const kind = name.includes('theme_preset')
         ? 'theme-preset'
         : 'style-guide';
     if (name.startsWith('list_') && !args.id) return assetReply(await this.list(kind, args));
@@ -285,7 +218,7 @@ export class AssetTools {
       if (kind === 'style-guide') value.content = asset.payload.markdown;
       return assetReply(name === 'list_style_guides' ? { guides: [value] } : value);
     }
-    if (name === 'instantiate_scene_template' || name === 'load_theme_preset') {
+    if (name === 'load_theme_preset') {
       const asset = await this.get(kind, args.id);
       const result = this.session.applyAsset(kind, asset.payload, args);
       if (!result.isError) {
@@ -314,33 +247,7 @@ export class AssetTools {
             variables: document.variables ?? {},
           },
         };
-      } else {
-        const page = document.pages?.[document.editorMeta?.activePageIndex ?? 0];
-        let children = page?.children ?? document.children;
-        if (args.nodeIds) {
-          const roots = new Map();
-          const walk = (nodes) => {
-            for (const n of nodes) {
-              roots.set(n.id, n);
-              if (n.children) walk(n.children);
-            }
-          };
-          walk(children);
-          children = args.nodeIds.map((id) => {
-            if (!roots.has(id)) throw new AssetError('asset-not-found', `Unknown node: ${id}`);
-            return roots.get(id);
-          });
-        }
-        children = includeComponentDependencies(children, document);
-        payload = {
-          name: args.name,
-          document: {
-            ...document,
-            children,
-            pages: undefined,
-            editorMeta: { ...document.editorMeta, activePageIndex: 0 },
-          },
-        };
+
       }
     }
     payload = this.session.validateAsset(kind, payload);

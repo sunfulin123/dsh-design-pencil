@@ -394,10 +394,6 @@ pub fn phase_corpus_dir() -> Option<&'static Dir<'static>> {
     }
 }
 
-/// The embedded P2 style catalog. This is deliberately separate from
-/// [`SKILLS`] so catalog entries cannot be parsed as phase skills.
-pub static STYLE_CATALOG: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/style_catalog");
-
 /// Recursively count `.md` files in an embedded directory.
 #[cfg(test)]
 pub(crate) fn count_md(dir: &Dir) -> usize {

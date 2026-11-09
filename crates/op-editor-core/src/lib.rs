@@ -92,6 +92,8 @@ pub mod text_design;
 pub mod text_design_command;
 pub mod text_inspector_draft;
 // Runtime-fetched product assets for the browser bundle (native embeds them).
+pub mod asset_center_keyboard;
+pub mod design_scene;
 pub mod editor_ui_state;
 pub mod export_batch;
 pub mod export_dialog_state;
@@ -157,11 +159,6 @@ pub mod rename;
 pub mod render_backend;
 pub mod request_snapshot;
 pub mod save_name_keyboard;
-pub mod scene_template_append;
-pub mod scene_template_catalog;
-pub mod scene_template_keyboard;
-pub mod scene_template_palette;
-pub mod scene_template_prompt;
 pub mod scene_vars;
 pub mod selection;
 pub mod selection_resolve;
@@ -172,7 +169,6 @@ pub mod svg_import;
 pub mod svg_path_bounds;
 mod svg_path_data;
 pub mod sync_gate;
-pub mod user_scene_templates;
 pub mod video_node_props;
 pub mod web_assets;
 
@@ -374,18 +370,17 @@ pub use editor_ui_state::workspace::{
     WORKSPACE_ENTER_MS, WORKSPACE_HEADER_H, WORKSPACE_TOOLBAR_H,
 };
 pub use editor_ui_state::{
-    AssetCenterTab, BooleanOp, CloneField, CloneFormState, CommitDiffPatch, CommitDiffSummary,
-    CommitDiffView, CompositingPickerTarget, CustomPrompt, DesignMdPanelState, DesignMdRequest,
-    EditorUiState, EmbedHost, EntrySurface, ExportFormat, FileAction, FillType, FlexLayout,
-    FontPickerPurpose, GitBranchPickerMode, GitCandidateFile, GitCommitSummary, GitDiffTarget,
-    GitDiffView, GitFileEntry, GitOverflowView, GitPanelAction, GitPanelState, HomeDevice,
-    HomeFamily, HomeHit, HomeState, ImageAdjustmentField, ImageFillMode, InfoKind,
-    LayerContextMenuState, LeftPanelTab, Locale, MergeConflictRow, MergeResolveFile,
+    AssetCenterFocus, AssetCenterState, AssetCenterTab, BooleanOp, CloneField, CloneFormState,
+    CommitDiffPatch, CommitDiffSummary, CommitDiffView, CompositingPickerTarget, CustomPrompt,
+    DesignMdPanelState, DesignMdRequest, EditorUiState, EmbedHost, EntrySurface, ExportFormat,
+    FileAction, FillType, FlexLayout, FontPickerPurpose, GitBranchPickerMode, GitCandidateFile,
+    GitCommitSummary, GitDiffTarget, GitDiffView, GitFileEntry, GitOverflowView, GitPanelAction,
+    GitPanelState, HomeDevice, HomeFamily, HomeHit, HomeState, ImageAdjustmentField, ImageFillMode,
+    InfoKind, LayerContextMenuState, LeftPanelTab, Locale, MergeConflictRow, MergeResolveFile,
     MergeResolveState, MissingFontSurface, PaddingEditMode, PageRenameState, PencilCursorStyle,
     PreviewDeviceKind, PromptCenterFocus, PromptCenterState, PromptFilter, PropertyTab, RecentFile,
-    SceneFilter, SceneTemplateCenterState, SceneTemplateFocus, SizeToggleState, SlideRatio,
-    SlidesDrag, SlidesPanelState, SlidesPanelTarget, StyleImportState, TaskDraft, ThemeMode,
-    UpdateStatus, VariableRowFocus, WindowControlRequest, CHAT_TAB_MIN_WIDTH,
+    SizeToggleState, SlideRatio, SlidesDrag, SlidesPanelState, SlidesPanelTarget, StyleImportState,
+    TaskDraft, ThemeMode, UpdateStatus, VariableRowFocus, WindowControlRequest, CHAT_TAB_MIN_WIDTH,
     LAYER_PANEL_MAX_WIDTH, LAYER_PANEL_MIN_WIDTH,
 };
 pub use export_dialog_state::ExportDialogButton;

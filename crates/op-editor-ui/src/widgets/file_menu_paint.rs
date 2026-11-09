@@ -77,7 +77,7 @@ impl<'a> Widget for FileMenu<'a> {
             rect.origin.x,
             y,
             Icon::LayoutDashboard,
-            t(self.ui, "newFromTemplate"),
+            t(self.ui, "assets"),
             "",
             h(2),
         );
@@ -116,21 +116,8 @@ impl<'a> Widget for FileMenu<'a> {
             h(5),
         );
         y += ROW_HEIGHT;
-        if self.has_save_as_template_row() {
-            paint_row(
-                cx,
-                &self.theme,
-                rect.origin.x,
-                y,
-                Icon::Package,
-                t(self.ui, "saveAsTemplate"),
-                "",
-                h(6),
-            );
-            y += ROW_HEIGHT;
-        }
         y = paint_divider(cx, &self.theme, rect, y);
-        let export_image_row = 6 + usize::from(self.has_save_as_template_row());
+        let export_image_row = 6;
         paint_row(
             cx,
             &self.theme,

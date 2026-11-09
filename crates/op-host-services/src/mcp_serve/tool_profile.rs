@@ -95,10 +95,6 @@ pub enum ToolRefusal {
     /// The tool reaches a host or process-global resource that a shared
     /// deployment cannot partition between accounts.
     LocalResourceDenied,
-    /// `use_scene_template` was asked to resolve a process-global user-saved
-    /// template. Shipped templates remain safe and available online.
-    UserTemplateDenied,
-    /// The caller's credential does not carry the scope this tool needs.
     ScopeInsufficient,
 }
 
@@ -108,7 +104,6 @@ impl ToolRefusal {
     pub const fn code(self) -> &'static str {
         match self {
             Self::LocalResourceDenied => "tool-not-available",
-            Self::UserTemplateDenied => "user-template-not-available",
             Self::ScopeInsufficient => "scope-insufficient",
         }
     }
@@ -118,10 +113,6 @@ impl ToolRefusal {
         match self {
             Self::LocalResourceDenied => format!(
                 "{}: the tool '{tool}' is not available on this deployment",
-                self.code()
-            ),
-            Self::UserTemplateDenied => format!(
-                "{}: user-saved scene templates are not available on this deployment",
                 self.code()
             ),
             Self::ScopeInsufficient => format!(
@@ -137,9 +128,6 @@ impl std::fmt::Display for ToolRefusal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::LocalResourceDenied => "tool is not available on this deployment",
-            Self::UserTemplateDenied => {
-                "user-saved scene templates are not available on this deployment"
-            }
             Self::ScopeInsufficient => "credential lacks the required scope",
         })
     }
@@ -274,34 +262,14 @@ impl McpAccessProfile {
         None
     }
 
-    /// Why one concrete tool invocation may not run.
-    ///
-    /// Most capability decisions depend only on the tool name and are handled
-    /// by [`Self::refuse`]. `use_scene_template` is intentionally mixed: bare
-    /// ids resolve immutable shipped assets, while `user:` ids resolve the
-    /// process-global saved-template registry. Shared deployments may keep the
-    /// shipped half without exposing that unpartitioned user state.
     pub fn refuse_call(
         &self,
         tool: &str,
-        arguments: &std::collections::BTreeMap<String, String>,
+        _arguments: &std::collections::BTreeMap<String, String>,
     ) -> Option<ToolRefusal> {
-        if self.deny_unshareable_tools
-            && tool == "use_scene_template"
-            && arguments
-                .get("templateId")
-                .is_some_and(|id| id.trim().starts_with("user:"))
-        {
-            return Some(ToolRefusal::UserTemplateDenied);
-        }
         self.refuse(tool)
     }
 
-    /// Whether `list_scene_templates` may include the process-global saved
-    /// half in addition to the immutable shipped catalogue.
-    pub const fn includes_user_scene_templates(self) -> bool {
-        !self.deny_unshareable_tools
-    }
 }
 
 impl Default for McpAccessProfile {
@@ -462,16 +430,6 @@ pub const TOOL_PROFILES: &[ToolProfile] = &[
     // registry construction injects whether the local-only, process-global
     // saved half may be included. The profile-aware snapshot is what keeps the
     // online result in-memory instead of hiding the whole discovery tool.
-    ToolProfile::new(
-        "list_scene_templates",
-        ToolAccess::Read,
-        ToolSurface::InMemory,
-    ),
-    ToolProfile::new(
-        "use_scene_template",
-        ToolAccess::Write,
-        ToolSurface::InMemory,
-    ),
     ToolProfile::new("export_item", ToolAccess::Read, ToolSurface::InMemory),
     ToolProfile::new("export_nodes", ToolAccess::Read, ToolSurface::InMemory),
     ToolProfile::new("find_empty_space", ToolAccess::Read, ToolSurface::InMemory),

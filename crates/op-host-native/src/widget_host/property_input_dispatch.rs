@@ -199,7 +199,6 @@ impl WidgetHostNative {
                     }
                     FileMenuChoice::Save => op_editor_core::CollabGateAction::SaveShared,
                     FileMenuChoice::SaveAs => op_editor_core::CollabGateAction::SaveFork,
-                    FileMenuChoice::SaveAsTemplate => op_editor_core::CollabGateAction::LocalUi,
                     FileMenuChoice::ExportImage
                     | FileMenuChoice::ExportAllFrames
                     | FileMenuChoice::ExportSlideshowHtml
@@ -208,7 +207,7 @@ impl WidgetHostNative {
                     | FileMenuChoice::RecoverDrafts
                     // Opening the centre only shows a panel; the document is
                     // replaced later, and that step re-runs the gate itself.
-                    | FileMenuChoice::NewFromTemplate => op_editor_core::CollabGateAction::LocalUi,
+                    | FileMenuChoice::OpenAssetCenter => op_editor_core::CollabGateAction::LocalUi,
                 };
                 if !self.collab_allows_user_action(gate_action) {
                     self.editor_state.editor_ui.file_menu_open = false;
@@ -226,20 +225,10 @@ impl WidgetHostNative {
                     self.mark_dirty();
                     return;
                 }
-                if choice == FileMenuChoice::NewFromTemplate {
+                if choice == FileMenuChoice::OpenAssetCenter {
                     self.editor_state
                         .editor_ui
-                        .open_scene_template_center(self.now_ms);
-                    self.editor_state.editor_ui.file_menu_open = false;
-                    self.editor_state.editor_ui.file_menu.hover = None;
-                    self.mark_dirty();
-                    return;
-                }
-                if choice == FileMenuChoice::SaveAsTemplate {
-                    self.editor_state
-                        .editor_ui
-                        .scene_template_center
-                        .request_save_current();
+                        .open_asset_center(self.now_ms);
                     self.editor_state.editor_ui.file_menu_open = false;
                     self.editor_state.editor_ui.file_menu.hover = None;
                     self.mark_dirty();
@@ -259,7 +248,7 @@ impl WidgetHostNative {
                     FileMenuChoice::ClearRecent => FileAction::ClearRecent,
                     // Handled above — it opens a panel rather than queuing a
                     // file action.
-                    FileMenuChoice::NewFromTemplate | FileMenuChoice::SaveAsTemplate | FileMenuChoice::RecoverDrafts => return,
+                    FileMenuChoice::OpenAssetCenter | FileMenuChoice::RecoverDrafts => return,
                 });
                 self.editor_state.editor_ui.file_menu_open = false;
                 self.editor_state.editor_ui.file_menu.hover = None;

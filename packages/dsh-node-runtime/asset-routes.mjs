@@ -13,7 +13,7 @@ export async function assetRoute(request, url, body, assets) {
     }
     return assets.call(body.name, body.arguments);
   }
-  const match = /^\/api\/assets\/(scene-template|style-guide|theme-preset)\/([^/]+)$/.exec(
+  const match = /^\/api\/assets\/(style-guide|theme-preset)\/([^/]+)$/.exec(
     url.pathname,
   );
   if (request.method === 'GET' && match) return assets.get(match[1], decodeURIComponent(match[2]));

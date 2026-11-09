@@ -39,7 +39,7 @@ impl WidgetHost {
             // Desktop opens with search active; touch waits for an explicit
             // field tap so the hidden DOM input cannot raise the software
             // keyboard over the gallery on entry.
-            || self.editor_state.editor_ui.scene_template_center.input_active()
+            || self.editor_state.editor_ui.asset_center.input_active()
             || self.editor_state.editor_ui.chat_model_picker.open
             || self.editor_state.editor_ui.component_browser_open
             || self.editor_state.chat.focused
@@ -64,7 +64,7 @@ impl WidgetHost {
             || editor_ui.preset_name_input_active()
             || editor_ui.icon_picker.open
             || editor_ui.prompt_center.open
-            || editor_ui.scene_template_center.input_active()
+            || editor_ui.asset_center.input_active()
             || editor_ui.component_browser_open
             || self.git_commit_focus_active()
             || self.git_remote_focus_active()
@@ -164,10 +164,10 @@ impl WidgetHost {
             };
             return slice(input);
         }
-        if eui.scene_template_center.input_active() {
+        if eui.asset_center.input_active() {
             // Copying from the gallery's own fields, not from whatever the
             // canvas had selected behind it.
-            return op_editor_core::scene_template_keyboard::selected_text(&self.editor_state)
+            return op_editor_core::asset_center_keyboard::selected_text(&self.editor_state)
                 .map(str::to_string);
         }
         if eui.agent_settings.focus.is_some() {

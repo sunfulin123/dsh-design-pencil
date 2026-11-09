@@ -165,7 +165,7 @@ pub(super) fn build_pdf_download(body: &str, fallback: &EditorState) -> Result<V
     if let Some(boards) = boards {
         crate::export_pdf::export_deck_pdf_boards(&editor, &tmp, &boards)?;
     } else if editor.editor_ui.scenario
-        == Some(op_editor_core::scene_template_catalog::TemplateScene::Slides)
+        == Some(op_editor_core::design_scene::DesignScene::Slides)
     {
         // The scenario tag survives the round-trip through `editorMeta`, so a
         // deck posted from the browser must get the same slide-per-page file

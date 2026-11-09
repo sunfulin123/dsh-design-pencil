@@ -175,3 +175,15 @@ mod tests {
         assert!(STYLE_GUIDE_TAGS.len() > 50);
     }
 }
+
+impl ParsedStyleGuide {
+    pub fn display_name(&self) -> String {
+        if self.name.starts_with("design-md:") {
+            super::parse_design_md(&self.content, &self.name)
+                .map(|g| g.name)
+                .unwrap_or_else(|_| self.name.clone())
+        } else {
+            self.name.clone()
+        }
+    }
+}

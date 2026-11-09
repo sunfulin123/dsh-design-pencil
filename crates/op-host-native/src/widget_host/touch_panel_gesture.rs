@@ -155,14 +155,14 @@ impl WidgetHostNative {
             self.cancel_touch_panel_gesture();
             return true;
         }
-        let Some(rect) = self.scene_template_panel_rect(viewport_w, viewport_h) else {
+        let Some(rect) = self.asset_center_panel_rect(viewport_w, viewport_h) else {
             return false;
         };
         let point = Point2D::new(x, y);
         if !rect.contains(point) {
             return false;
         }
-        let Some(panel) = op_editor_ui::widgets::SceneTemplatePanel::for_editor_at(
+        let Some(panel) = op_editor_ui::widgets::AssetCenterPanel::for_editor_at(
             &self.editor_state,
             self.now_ms,
         ) else {
@@ -171,8 +171,8 @@ impl WidgetHostNative {
         if matches!(
             panel.hit_test(rect, point),
             Some(
-                op_editor_ui::widgets::SceneTemplateHit::Close
-                    | op_editor_ui::widgets::SceneTemplateHit::SelectTab(_)
+                op_editor_ui::widgets::AssetCenterHit::Close
+                    | op_editor_ui::widgets::AssetCenterHit::SelectTab(_)
             )
         ) {
             return false;
@@ -381,7 +381,7 @@ impl WidgetHostNative {
                 self.note_viewport_gesture();
                 true
             }
-            TouchPanelTarget::AssetCenter => self.try_scroll_scene_template_center(
+            TouchPanelTarget::AssetCenter => self.try_scroll_asset_center(
                 gesture.start.x,
                 gesture.start.y,
                 scroll_dy,
@@ -675,7 +675,7 @@ impl WidgetHostNative {
         }
         match target {
             TouchPanelTarget::Canvas => !self.mobile_sheet_is_modal(),
-            TouchPanelTarget::AssetCenter => ui.scene_template_center.open,
+            TouchPanelTarget::AssetCenter => ui.asset_center.open,
             TouchPanelTarget::Property => {
                 (ui.mobile_sheet == Some(MobileSheetKind::Properties)
                     || (ui.expanded_touch_layout() && !self.mobile_sheet_is_modal()))

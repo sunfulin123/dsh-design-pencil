@@ -4,7 +4,7 @@ use super::WidgetHostNative;
 use crate::backend::NativeFrameBackend;
 use op_editor_ui::widgets::{
     ComponentBrowserPanel, DesignMdPanel, IconPickerPanel, PaintCx, PromptCenterPanel,
-    SceneTemplatePanel, SCENE_TEMPLATE_SCRIM,
+    AssetCenterPanel, ASSET_CENTER_SCRIM,
 };
 use op_editor_ui::RenderBackend;
 
@@ -42,14 +42,14 @@ impl WidgetHostNative {
         // Asset Center gallery — a dimming scrim across the whole viewport,
         // then the panel over it. The scrim is what turns a floating dialog
         // into an immersive gallery, and it is also the surface that takes a
-        // dismiss press (routed in `scene_template_press.rs`), so paint and
+        // dismiss press (routed in `asset_center_press.rs`), so paint and
         // hit-test must agree that it covers everything.
         if let (Some(panel), Some(rect)) = (
-            SceneTemplatePanel::for_editor_at(&self.editor_state, self.now_ms),
-            self.scene_template_panel_rect(viewport_width, viewport_height),
+            AssetCenterPanel::for_editor_at(&self.editor_state, self.now_ms),
+            self.asset_center_panel_rect(viewport_width, viewport_height),
         ) {
-            if let Some(scrim) = self.scene_template_scrim_rect(viewport_width, viewport_height) {
-                frame.fill_rect(scrim, SCENE_TEMPLATE_SCRIM);
+            if let Some(scrim) = self.asset_center_scrim_rect(viewport_width, viewport_height) {
+                frame.fill_rect(scrim, ASSET_CENTER_SCRIM);
             }
             panel.paint(
                 &mut PaintCx {

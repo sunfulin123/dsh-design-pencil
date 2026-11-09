@@ -168,56 +168,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "Con trỏ của {{name}}",
         "icon.catalogLoading" => "Đang tải danh mục biểu tượng…",
-        "sceneTemplate.documentUnavailable" => "Không tải được tài liệu của mẫu này. Hãy thử lại.",
+
         "sceneTemplate.deleteFailed" => "Không thể xóa mẫu đó. Hãy thử lại.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "Hải đồ đo sâu · deck chiến lược",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "Trắng ấm của giấy hải đồ đi cùng xanh thép và xanh mực: mỗi trang mở bằng kết luận và chống đỡ bằng đúng một số đo có nguồn. Thanh mặt cắt độ sâu và mục lục dạng vệt đo chạy suốt bảy trang, hợp cho sản phẩm tư vấn và họp chiến lược.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "Đá phiến vệt triều · deck rà soát dữ liệu",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "Trên nền xám đá phiến: ô toàn cảnh, đường xu hướng, bảng chi tiết, danh sách rủi ro và lộ trình theo làn. Bảy trang đi hết một vòng rà soát dữ liệu, hợp cho tổng kết quý và họp chỉ số.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "Khuôn chữ và đường kẻ · deck dàn trang tiếng Trung",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "Dựng trên trang sách Trung Hoa cổ điển: khuôn chữ, đường kẻ cột, chú ở lề trên và số trang đuôi cá. Dòng chính văn giữ dưới ba mươi chữ, kèm hai cột đối chiếu và trang trích dẫn, hợp cho bài giảng và hội thảo.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "Giấy ô ly than chì · deck bảo vệ luận văn",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "Chữ màu than chì trên giấy ô ly: vấn đề và khoảng trống, phương pháp, hai trang kết quả, hạn chế, kết luận và tài liệu tham khảo. Tám trang xếp đúng thứ tự buổi bảo vệ, hợp cho đề cương và bảo vệ luận văn.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "Hồ sơ vải lanh · deck bản ghi nhớ",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "Chất giấy lanh của một tập hồ sơ, từ trang bìa, bối cảnh, số liệu hiện trạng, phân tích, so sánh phương án đến nghị quyết. Tám trang đọc trọn như một bản ghi nhớ độc lập, hợp cho họp ra quyết định.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "Kẻ ô sổ cái · deck ma trận đối thủ",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "Trên đường kẻ sổ cái là tiêu chí đánh giá, ma trận chính, thang phân vị và đối chiếu khoảng cách với thế mạnh. Bảy trang kể việc so sánh đối thủ như một khoản sổ có thể đối chiếu, hợp cho chọn nhà cung cấp và phân tích thị trường.",
-        "sceneTemplate.item.brandConceptSheet.title" => "Bảng ý tưởng thương hiệu",
-        "sceneTemplate.item.brandConceptSheet.summary" => "Bảng ngang để duyệt lockup chính, logic cấu tạo, bản đơn sắc đảo màu và khả năng tồn tại ở kích thước tối thiểu; dành cho lần bàn giao ý tưởng đầu tiên.",
-        "sceneTemplate.item.logoQaBoard.title" => "Bảng QA hòa nghĩa logo",
-        "sceneTemplate.item.logoQaBoard.summary" => "Bốn ô kiểm tra tải nghĩa chung, sự phụ thuộc cấu trúc, tính thống nhất của bóng dáng và liệu cách đọc phụ trông như được khám phá thay vì gắn thêm.",
-        "sceneTemplate.item.eventInvitationCard.title" => "Thiệp mời tọa đàm công nghệ",
-        "sceneTemplate.item.eventInvitationCard.summary" => "Thiệp mời sự kiện 4:5 với tiêu đề chủ đề lớn, hai thẻ thời gian và địa điểm, ba khách mời, QR đăng ký và hàng logo ban tổ chức màu xanh tím đậm.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "Thẻ giới thiệu livestream",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "Thông báo livestream 4:5 với chủ đề nổi bật, ba ô đếm ngược, hai diễn giả, viên nang nền tảng và thẻ QR đặt chỗ trên nền chuyển sắc tối.",
-        "sceneTemplate.item.hiringPosterCard.title" => "Poster tuyển dụng",
-        "sceneTemplate.item.hiringPosterCard.summary" => "Poster tuyển dụng 4:5 với tên vị trí cỡ lớn, khung ảnh đội ngũ, yêu cầu, mức lương và QR ứng tuyển trên nền sáng.",
-        "sceneTemplate.item.courseEnrollCard.title" => "Thẻ tuyển sinh khóa học",
-        "sceneTemplate.item.courseEnrollCard.summary" => "Thẻ tuyển sinh khóa học 4:5 tông ấm với tên khóa, thanh thông tin khai giảng, bốn ô điểm nổi bật, giảng viên, giá ưu đãi sớm và QR đăng ký.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "Thẻ chương trình hội nghị",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "Chương trình hội nghị 4:5 với tên sự kiện, dòng thời gian năm chặng, giờ giải lao và hàng logo nhà tài trợ màu cam trên nền đen.",
-        "sceneTemplate.item.productLaunchCard.title" => "Thẻ ra mắt sản phẩm",
-        "sceneTemplate.item.productLaunchCard.summary" => "Thẻ ra mắt 4:5 trắng tối giản với khung sản phẩm, ba điểm bán hàng, giá, ưu đãi ra mắt và QR mua hàng.",
-        "sceneTemplate.item.annualReportCard.title" => "Thẻ báo cáo dữ liệu thường niên",
-        "sceneTemplate.item.annualReportCard.summary" => "Thẻ báo cáo thường niên 4:5 với bốn con số chính, một câu tổng kết năm, bảng xếp hạng Top 3 và QR trên nền chuyển sắc tím.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "Poster lễ hội âm nhạc",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "Poster lễ hội 3:4 với tiêu đề lớn, ngày và địa điểm, đội hình ba sân khấu, ba hạng vé, QR mua vé và hỗ trợ đặc biệt trong tương phản neon.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "Thiệp mời câu lạc bộ sách",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "Thiệp mời câu lạc bộ sách 4:5 tông giấy với tên sách và tác giả, khung bìa, người dẫn đọc, thời gian và địa điểm, ba chủ đề thảo luận và QR đăng ký.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "Deck pitch hỗ trợ AI",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "Deck pitch startup 10 trang với nền xanh đậm và chữ trắng: bìa theo chủ đề, các con số lớn so sánh chi phí, kết luận từ ba đường cong, vòng lặp năm bước và ba chỉ số trong 90 ngày đầu; hợp cho pitch gọi vốn SaaS và ra mắt sản phẩm.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "Deck rà soát kinh doanh theo quý",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "Bộ rà soát 11 trang tông sáng và xanh: agenda, một thẻ ba KPI cho mỗi trong bốn tuyến kinh doanh, động cơ tăng trưởng và phần cần cải thiện, kết bằng mục tiêu quý tới; hợp cho rà soát vận hành và báo cáo quý.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "Deck bài giảng Quicksort",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "Bài giảng 7 trang trên nền giấy trắng ngà với xanh mực: mục tiêu học tập, hai bước phân hoạch và đệ quy, hai trang minh họa phân hoạch có ô mảng và pivot được nhấn, cùng bảng so sánh độ phức tạp; hợp cho dạy thuật toán và lập trình.",
-        "sceneTemplate.item.compoundEffectCard.title" => "Thẻ kiến thức về hiệu ứng lãi kép",
-        "sceneTemplate.item.compoundEffectCard.summary" => "Thẻ kiến thức 4:5 tông cam ấm với nhãn đầu mục đánh số, tiêu đề lớn, định nghĩa, ba ý chính có vòng tròn số và chân thẻ chứa tài khoản cùng QR; hợp cho chuỗi bài của tài khoản kiến thức.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "Thẻ chia sẻ chỉ số phân tích",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "Thẻ dữ liệu tối màu 1200×630 với con số chỉ số chính cỡ lớn và huy hiệu so với tháng trước, biểu đồ thanh ngang bên phải và ba chỉ số phụ ở cuối; hợp để chia sẻ trên mạng xã hội và minh họa báo cáo tuần.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "Token MCP",
-        "menu.saveAsTemplate" => "Lưu làm mẫu…",
-        "menu.saveAsTemplate.saved" => "Đã lưu làm mẫu",
-        "menu.saveAsTemplate.failed" => "Không thể lưu mẫu",
+
+
+
         "assetCenter.template.mine" => "Mẫu của tôi",
         "assetCenter.template.builtIn" => "Mẫu tích hợp",
         "ai.designProgress.detail.failureReason" => "Lý do: {{reason}}",

@@ -12,7 +12,7 @@
 
 #![cfg(all(feature = "gl-host", not(target_os = "windows")))]
 
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::{EditorState, LeftPanelTab};
 use op_host_native::backend::{NativeBackend, NativeFrameBackend};
 use op_host_native::WidgetHostNative;
@@ -20,7 +20,7 @@ use op_host_native::WidgetHostNative;
 const VW: i32 = 1_400;
 const VH: i32 = 900;
 const TEMPLATE: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/pitch-deck-dark.op");
+    include_str!("../../op-editor-core/assets/asset_centers/pitch-deck-dark.op");
 
 #[test]
 fn a_real_deck_fills_the_rail_with_rendered_thumbnails() {
@@ -29,7 +29,7 @@ fn a_real_deck_fills_the_rail_with_rendered_thumbnails() {
         .value;
     let mut host = WidgetHostNative::new();
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     host.install_imported_state(state);
     host.editor_state_mut().editor_ui.slides_panel.tab = LeftPanelTab::Slides;
     host.editor_state_mut().editor_ui.slide_thumbnails_supported = true;

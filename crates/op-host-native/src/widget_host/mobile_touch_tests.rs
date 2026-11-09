@@ -298,33 +298,10 @@ fn more_file_actions_do_not_queue_when_collaboration_blocks_replacement() {
 }
 
 #[test]
-fn more_templates_opens_the_asset_center_on_templates_and_closes_more() {
-    let mut host = touch_host(EditorSizeClass::Medium);
-    let (width, height) = (834.0, 1112.0);
-    host.editor_state_mut().editor_ui.scene_template_center.tab = AssetCenterTab::Styles;
-    host.editor_state_mut().chat.focused = true;
-
-    assert!(press_more_entry(
-        &mut host,
-        MobileMoreEntry::Templates,
-        width,
-        height
-    ));
-    let state = host.editor_state();
-    assert_eq!(state.editor_ui.mobile_sheet, None);
-    assert!(state.editor_ui.scene_template_center.open);
-    assert_eq!(
-        state.editor_ui.scene_template_center.tab,
-        AssetCenterTab::Templates
-    );
-    assert!(!state.chat.focused);
-}
-
-#[test]
 fn more_assets_opens_the_asset_center_on_styles_and_closes_more() {
     let mut host = touch_host(EditorSizeClass::Compact);
     let (width, height) = (390.0, 844.0);
-    host.editor_state_mut().editor_ui.scene_template_center.tab = AssetCenterTab::Templates;
+    host.editor_state_mut().editor_ui.asset_center.tab = AssetCenterTab::Styles;
     host.editor_state_mut().chat.focused = true;
 
     assert!(press_more_entry(
@@ -335,9 +312,9 @@ fn more_assets_opens_the_asset_center_on_styles_and_closes_more() {
     ));
     let state = host.editor_state();
     assert_eq!(state.editor_ui.mobile_sheet, None);
-    assert!(state.editor_ui.scene_template_center.open);
+    assert!(state.editor_ui.asset_center.open);
     assert_eq!(
-        state.editor_ui.scene_template_center.tab,
+        state.editor_ui.asset_center.tab,
         AssetCenterTab::Styles
     );
     assert!(!state.chat.focused);

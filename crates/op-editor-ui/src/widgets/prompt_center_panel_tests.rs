@@ -195,7 +195,7 @@ fn content_column_stops_widening_at_the_shared_cap() {
     );
     assert_eq!(
         content.size.x,
-        crate::widgets::SCENE_TEMPLATE_CONTENT_MAX_W,
+        crate::widgets::ASSET_CENTER_CONTENT_MAX_W,
         "the Prompt Center shares the Asset Center content cap"
     );
     let centre = wide.origin.x + wide.size.x / 2.0;

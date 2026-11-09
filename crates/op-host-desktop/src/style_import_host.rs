@@ -39,7 +39,7 @@ fn drain_pending_file_pick(app: &mut DesktopApp) -> bool {
         .host
         .editor_state_mut()
         .editor_ui
-        .scene_template_center
+        .asset_center
         .take_pending_style_import_file()
     {
         return false;
@@ -92,7 +92,7 @@ fn drain_pending_persist(host: &mut WidgetHostNative) -> bool {
     let ids = host
         .editor_state_mut()
         .editor_ui
-        .scene_template_center
+        .asset_center
         .take_pending_style_persist();
     if ids.is_empty() {
         return false;
@@ -113,7 +113,7 @@ fn drain_pending_delete(host: &mut WidgetHostNative) -> bool {
     let ids = host
         .editor_state_mut()
         .editor_ui
-        .scene_template_center
+        .asset_center
         .take_pending_style_delete();
     if ids.is_empty() {
         return false;

@@ -88,7 +88,6 @@ pub(crate) fn note_version_probe<C: RepaintContext + 'static>(
             return;
         }
         assets.catalog_pending = true;
-        state.editor_ui.scene_template_center.save_current_supported = true;
     }
     let inner2 = inner.clone();
     let base2 = base.to_string();
@@ -352,28 +351,6 @@ fn drain_action<C: RepaintContext + 'static>(
         let mut context = inner.borrow_mut();
         let state = context.host_mut().editor_state_mut();
         let generation = state.document_generation();
-        if state
-            .editor_ui
-            .scene_template_center
-            .take_pending_save_current()
-        {
-            let name = state
-                .doc
-                .pages
-                .as_ref()
-                .and_then(|pages| pages.get(state.ui.active_page_index))
-                .map(|p| p.name.clone())
-                .or_else(|| {
-                    state
-                        .active_children()
-                        .first()
-                        .and_then(|n| n.base().name.clone())
-                })
-                .unwrap_or_else(|| "Template".into());
-            if let Some(a) = state.editor_ui.managed_assets.as_mut() {
-                a.queue("save_scene_template", json!({"name":name}));
-            }
-        }
         let pair = (generation, state.revision);
         let Some(assets) = state.editor_ui.managed_assets.as_mut() else {
             return;
@@ -384,13 +361,7 @@ fn drain_action<C: RepaintContext + 'static>(
         let Some((name, args)) = assets.pending.pop_front() else {
             return;
         };
-        if [
-            "save_scene_template",
-            "instantiate_scene_template",
-            "save_theme_preset",
-            "load_theme_preset",
-        ]
-        .contains(&name.as_str())
+        if ["save_theme_preset", "load_theme_preset"].contains(&name.as_str())
             && !sync.borrow().gate.is_synced(pair)
         {
             assets.error =
@@ -434,16 +405,11 @@ fn drain_action<C: RepaintContext + 'static>(
                     state.doc.design_md = Some(spec);
                     state.history_push_past(snap);
                     state.editor_ui.pinned_style_guide = id.map(str::to_owned);
-                    state.editor_ui.close_scene_template_style_import();
+                    state.editor_ui.close_asset_center_style_import();
                 } else if name == "delete_style_guide"
                     && state.editor_ui.pinned_style_guide.as_deref() == args["id"].as_str()
                 {
                     state.editor_ui.clear_pinned_style_guide();
-                }
-                if name == "save_scene_template" {
-                    state
-                        .editor_ui
-                        .open_scene_template_center(js_sys::Date::now() as u64);
                 }
                 context.host_mut().mark_editor_state_dirty();
                 context.repaint().map_err(|e| format!("{e:?}"))?;

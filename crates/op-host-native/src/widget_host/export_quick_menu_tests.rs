@@ -4,7 +4,7 @@
 
 use super::WidgetHostNative;
 use op_editor_core::editor_ui_state::{ExportFormat, FileAction};
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::{EditorState, ExportQuickRow};
 use op_editor_ui::widgets::{ExportQuickMenu, TopBar, TOP_BAR_HEIGHT};
 use op_editor_ui::{Point2D, Rect};
@@ -33,12 +33,12 @@ fn deck_host() -> WidgetHostNative {
         .value;
     let mut host = WidgetHostNative::new();
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     host.install_imported_state(state);
     // Capability flags are host-owned, so they are set on the live host
     // rather than on the document state being installed.
     let ui = &mut host.editor_state_mut().editor_ui;
-    ui.scenario = Some(TemplateScene::Slides);
+    ui.scenario = Some(DesignScene::Slides);
     ui.deck_html_export_supported = true;
     ui.batch_frame_export_supported = true;
     host

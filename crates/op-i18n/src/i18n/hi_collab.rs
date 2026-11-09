@@ -160,56 +160,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "{{name}} का कर्सर",
         "icon.catalogLoading" => "आइकन कैटलॉग लोड हो रहा है…",
-        "sceneTemplate.documentUnavailable" => "इस टेम्पलेट का दस्तावेज़ लोड नहीं हो सका। फिर से कोशिश करें।",
+
         "sceneTemplate.deleteFailed" => "उस टेम्पलेट को हटाया नहीं जा सका। फिर से कोशिश करें।",
-        "sceneTemplate.item.soundingNavyDeck.title" => "गहराई मानचित्र · रणनीति प्रस्तुति",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "समुद्री मानचित्र का गर्म सफ़ेद, इस्पाती और स्याही नीले के साथ: हर पृष्ठ निष्कर्ष से शुरू होता है और स्रोत सहित एक ही माप से उसे टिकाता है। गहराई की पट्टियाँ और मार्ग-रेखा वाली सूची सातों पृष्ठों में चलती हैं — परामर्श सामग्री और रणनीति समीक्षा के लिए।",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "ज्वार स्लेट · डेटा समीक्षा प्रस्तुति",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "स्लेटी पृष्ठभूमि पर सारांश टाइलें, प्रवृत्ति रेखा, विस्तृत तालिका, जोखिम सूची और लेन-वार रोडमैप। सात पृष्ठ एक पूरी डेटा समीक्षा पूरी करते हैं — तिमाही समीक्षा और मापदंड बैठकों के लिए।",
-        "sceneTemplate.item.banxinRuleDeck.title" => "मुद्रण क्षेत्र और रेखाएँ · चीनी टाइपोग्राफी प्रस्तुति",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "शास्त्रीय चीनी पृष्ठ पर बना: मुद्रण क्षेत्र, स्तंभ रेखाएँ, ऊपरी हाशिये की टिप्पणियाँ और मछली-पूँछ पृष्ठांक। मुख्य पाठ की पंक्तियाँ तीस अक्षरों से कम रहती हैं, आमने-सामने स्तंभ और उद्धरण पृष्ठ के साथ — व्याख्यान और संगोष्ठी के लिए।",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "ग्राफ़ कागज़ ग्रेफ़ाइट · शैक्षणिक प्रस्तुति",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "ग्राफ़ कागज़ पर ग्रेफ़ाइट अक्षर: समस्या और अंतराल, विधि, परिणाम के दो पृष्ठ, सीमाएँ, निष्कर्ष और संदर्भ। आठ पृष्ठ मौखिक परीक्षा के क्रम में — शोध प्रस्ताव और थीसिस बचाव के लिए।",
-        "sceneTemplate.item.dossierLinenDeck.title" => "लिनन दस्तावेज़ · ज्ञापन प्रस्तुति",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "लिनन कागज़ की फ़ाइल: आवरण पृष्ठ, पृष्ठभूमि, वर्तमान आँकड़े, विश्लेषण, विकल्पों की तुलना और निर्णय। आठ पृष्ठ अपने आप में पूरा ज्ञापन बनते हैं — निर्णय समीक्षा के लिए।",
-        "sceneTemplate.item.ledgerTickDeck.title" => "बहीखाता रेखा · प्रतिस्पर्धी मैट्रिक्स प्रस्तुति",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "बहीखाते की रेखाओं पर मूल्यांकन मानक, मुख्य मैट्रिक्स, चतुर्थक पैमाने और अंतर बनाम ताकत का मिलान। सात पृष्ठ प्रतिस्पर्धी तुलना को जाँचे जा सकने वाले खाते की तरह कहते हैं — विक्रेता चयन और बाज़ार विश्लेषण के लिए।",
-        "sceneTemplate.item.brandConceptSheet.title" => "ब्रांड अवधारणा शीट",
-        "sceneTemplate.item.brandConceptSheet.summary" => "प्राथमिक लॉकअप, निर्माण तर्क, श्वेत-श्याम उलटाव और न्यूनतम आकार पर टिकाव की जाँच वाला क्षैतिज बोर्ड — पहले अवधारणा हस्तांतरण के लिए।",
-        "sceneTemplate.item.logoQaBoard.title" => "लोगो संलयन QA बोर्ड",
-        "sceneTemplate.item.logoQaBoard.summary" => "चार खाने साझा अर्थ-भार, संरचनात्मक निर्भरता, एकीकृत छाया-आकृति और यह जाँचते हैं कि द्वितीयक अर्थ चिपकाया नहीं बल्कि खोजा हुआ लगे।",
-        "sceneTemplate.item.eventInvitationCard.title" => "टेक सैलून आमंत्रण",
-        "sceneTemplate.item.eventInvitationCard.summary" => "4:5 कार्यक्रम आमंत्रण: बड़ा विषय शीर्षक, समय और स्थान के दो कार्ड, तीन अतिथि, पंजीकरण QR कोड और गहरे नीले-बैंगनी रंग में आयोजक लोगो पंक्ति।",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "लाइवस्ट्रीम टीज़र",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "4:5 लाइवस्ट्रीम घोषणा: प्रमुख विषय, तीन उलटी गिनती खाँचे, दो वक्ता, प्लेटफ़ॉर्म कैप्सूल और गहरे ग्रेडिएंट पर आरक्षण QR कार्ड।",
-        "sceneTemplate.item.hiringPosterCard.title" => "भर्ती पोस्टर",
-        "sceneTemplate.item.hiringPosterCard.summary" => "4:5 भर्ती पोस्टर: बड़े अक्षरों में पद, टीम फ़ोटो का स्थान, आवश्यकताएँ, वेतन और हल्के कैनवास पर आवेदन QR कोड।",
-        "sceneTemplate.item.courseEnrollCard.title" => "कोर्स में नामांकन",
-        "sceneTemplate.item.courseEnrollCard.summary" => "गर्म रंगों का 4:5 कोर्स भर्ती कार्ड: कोर्स नाम, आरंभ सूचना पट्टी, चार मुख्य बिंदु, प्रशिक्षक, अर्ली-बर्ड कीमत और पंजीकरण QR कोड।",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "सम्मेलन कार्यक्रम",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "4:5 सम्मेलन कार्यक्रम: आयोजन नाम, पाँच पड़ावों की समयरेखा, चाय-विराम और काले पर नारंगी प्रायोजक लोगो पंक्ति।",
-        "sceneTemplate.item.productLaunchCard.title" => "उत्पाद लॉन्च",
-        "sceneTemplate.item.productLaunchCard.summary" => "न्यूनतम सफ़ेद 4:5 लॉन्च कार्ड: उत्पाद का स्थान, तीन बिक्री बिंदु, कीमत, लॉन्च ऑफ़र और खरीदारी QR कोड।",
-        "sceneTemplate.item.annualReportCard.title" => "वार्षिक डेटा रिपोर्ट",
-        "sceneTemplate.item.annualReportCard.summary" => "4:5 वार्षिक रिपोर्ट कार्ड: चार प्रमुख आँकड़े, वर्ष का निष्कर्ष, Top 3 रैंकिंग और बैंगनी ग्रेडिएंट पर QR कोड।",
-        "sceneTemplate.item.musicFestPosterCard.title" => "संगीत महोत्सव पोस्टर",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "3:4 महोत्सव पोस्टर: मुख्य शीर्षक, तारीख और स्थल, तीन मंचों की सूची, तीन टिकट श्रेणियाँ, टिकट QR कोड और नीयॉन कंट्रास्ट में विशेष सहयोग।",
-        "sceneTemplate.item.bookClubInviteCard.title" => "बुक क्लब आमंत्रण",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "कागज़ी रंग का 4:5 बुक-क्लब आमंत्रण: शीर्षक और लेखक, कवर का स्थान, संचालक, समय और स्थान, तीन चर्चा विषय और पंजीकरण QR कोड।",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "AI सपोर्ट पिच डेक",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "गहरे नीले और सफेद रंग में स्टार्टअप के लिए दस स्लाइड का पिच डेक: थीम कवर, लागत तुलना के बड़े आंकड़े, तीन कर्व का निष्कर्ष, पाँच चरणों का लूप और शुरुआती 90 दिनों के तीन मेट्रिक; SaaS फंडिंग पिच और प्रोडक्ट लॉन्च के लिए।",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "तिमाही व्यवसाय समीक्षा डेक",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "हल्के नीले रंगों में ग्यारह स्लाइड की समीक्षा: एजेंडा, चार बिज़नेस लाइनों में हर एक के लिए तीन KPI की कार्ड, ग्रोथ इंजन और सुधार, और अंत में अगली तिमाही के लक्ष्य; संचालन समीक्षा और तिमाही रिपोर्ट के लिए।",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "क्विकसॉर्ट व्याख्यान डेक",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "ऑफ-व्हाइट कागज़ और इंक-ग्रीन रंगों वाली सात स्लाइड की कक्षा सामग्री: सीखने के लक्ष्य, पार्टिशन और रिकर्शन के दो चरण, ऐरे सेल और हाइलाइट किए गए पिवट वाली दो पार्टिशन डेमो, और जटिलता तुलना तालिका; एल्गोरिद्म व प्रोग्रामिंग सिखाने के लिए।",
-        "sceneTemplate.item.compoundEffectCard.title" => "चक्रवृद्धि प्रभाव ज्ञान कार्ड",
-        "sceneTemplate.item.compoundEffectCard.summary" => "गर्म नारंगी 4:5 ज्ञान कार्ड: क्रमांकित शीर्ष लेबल, बड़ा शीर्षक, परिभाषा, क्रमांकित गोल चिह्नों वाली तीन बातें, और खाते व QR वाला फुटर; ज्ञान-केंद्रित अकाउंट की श्रृंखला के लिए।",
-        "sceneTemplate.item.analyticsMetricCard.title" => "एनालिटिक्स मीट्रिक शेयर कार्ड",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "गहरे रंग का 1200×630 डेटा कार्ड: मुख्य मीट्रिक का बड़ा अंक और माह-दर-माह बैज, दाईं ओर क्षैतिज बार और नीचे तीन सहायक मीट्रिक; सोशल शेयर और साप्ताहिक रिपोर्ट के लिए।",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP टोकन",
-        "menu.saveAsTemplate" => "टेम्पलेट के रूप में सहेजें…",
-        "menu.saveAsTemplate.saved" => "टेम्पलेट के रूप में सहेजा गया",
-        "menu.saveAsTemplate.failed" => "टेम्पलेट सहेजा नहीं जा सका",
+
+
+
         "assetCenter.template.mine" => "मेरे टेम्पलेट",
         "assetCenter.template.builtIn" => "अंतर्निहित टेम्पलेट",
         "ai.designProgress.detail.failureReason" => "विफलता का कारण: {{reason}}",

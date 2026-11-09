@@ -83,7 +83,7 @@ mod tests {
     use crate::lifecycle::{OpEngine, Session};
 
     const SAMPLE_DOC: &str =
-        include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+        include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
     fn engine(editor_mode: bool) -> OpEngine {
         #[cfg(not(feature = "editor"))]

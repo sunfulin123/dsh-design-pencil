@@ -31,10 +31,10 @@ pub use crate::prompt_center_keyboard::{
     text as prompt_center_text,
 };
 
-pub use crate::scene_template_keyboard::{
-    backspace as scene_template_backspace, delete_forward as scene_template_delete_forward,
-    move_caret as scene_template_caret, paste as scene_template_paste,
-    select_all as scene_template_select_all, text as scene_template_text,
+pub use crate::asset_center_keyboard::{
+    backspace as asset_center_backspace, delete_forward as asset_center_delete_forward,
+    move_caret as asset_center_caret, paste as asset_center_paste,
+    select_all as asset_center_select_all, text as asset_center_text,
 };
 
 // ─── Legacy draft mirrors ──────────────────────────────────────────────

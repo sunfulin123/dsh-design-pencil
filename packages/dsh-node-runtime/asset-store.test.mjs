@@ -108,29 +108,6 @@ test('invalid kinds and empty payloads never advance the asset revision', async 
   assert.equal((await store.snapshot()).revision, 0);
 });
 
-test('saved template quota is enforced without rejecting updates to existing entries', async (t) => {
-  const { store } = await fixture(t);
-  let first;
-  for (let index = 0; index < 50; index++) {
-    const saved = await store.put('scene-template', {
-      name: `Template ${index}`,
-      document: { version: '0.8.5', children: [] },
-    });
-    first ??= saved.asset;
-  }
-  await assert.rejects(
-    store.put('scene-template', { name: 'Too many', document: { children: [] } }),
-    (error) => error.code === 'asset-quota',
-  );
-  const updated = await store.put(
-    'scene-template',
-    { name: 'Updated', document: { children: [] } },
-    { id: first.id, expectedRevision: 50 },
-  );
-  assert.equal(updated.revision, 51);
-  assert.equal((await store.snapshot()).assets.length, 50);
-});
-
 test('invalid update and missing version cannot overwrite a valid entry', async (t) => {
   const { store } = await fixture(t);
   const saved = await store.put('style-guide', { name: 'Good', markdown: '# Good' });

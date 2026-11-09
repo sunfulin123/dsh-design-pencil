@@ -71,14 +71,8 @@ pub(super) fn rebuild_registry(
     register_tool!("export_deck", export_deck_snapshot(doc));
     register_tool!("export_frames", export_frames_snapshot(doc));
     register_tool!("get_deck_boards", get_deck_boards_snapshot(doc));
-    register_tool!(
-        "list_scene_templates",
-        list_scene_templates_snapshot(profile.includes_user_scene_templates())
-    );
-    register_tool!(
-        "use_scene_template",
-        use_scene_template_snapshot(profile.includes_user_scene_templates())
-    );
+    ;
+    ;
     register_tool!("get_active_theme", get_active_theme_snapshot(doc));
     register_tool!("list_components", list_components_snapshot(doc));
     register_tool!("list_ui_kits", list_ui_kits_snapshot(doc));

@@ -7,14 +7,14 @@
 //! host capability the File menu respects but the quick menu forgot would
 //! paint a row whose action is a silent no-op.
 
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::editor_ui_state::EditorUiState;
-use op_editor_core::scene_template_catalog::TemplateScene;
 use op_editor_core::ExportQuickRow;
 
 /// Whether the open document is tagged as a slide deck. Deck-only export
 /// formats (PowerPoint, slideshow page, slide-per-page PDF) hang off this.
 pub fn document_is_deck(ui: &EditorUiState) -> bool {
-    ui.scenario == Some(TemplateScene::Slides)
+    ui.scenario == Some(DesignScene::Slides)
 }
 
 /// Whether the batch frame export is offered — hosts without a directory
@@ -73,7 +73,7 @@ mod tests {
 
     fn deck_ui() -> EditorUiState {
         EditorUiState {
-            scenario: Some(TemplateScene::Slides),
+            scenario: Some(DesignScene::Slides),
             deck_html_export_supported: true,
             batch_frame_export_supported: true,
             ..EditorUiState::default()
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn deck_without_html_capability_drops_both_deck_file_rows() {
         let ui = EditorUiState {
-            scenario: Some(TemplateScene::Slides),
+            scenario: Some(DesignScene::Slides),
             ..EditorUiState::default()
         };
         // PDF survives: it rides the same save picker as any image format.

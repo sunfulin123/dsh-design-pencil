@@ -1,20 +1,3 @@
-//! The Asset Center's Styles tab: style-guide catalogue → card view models.
-//!
-//! The registry stores whole markdown documents; a card needs a name, a few
-//! colours, and one line of prose. Deriving that here — once, from the
-//! canonical `op_ai_skills` registries rather than from a hand-copied table —
-//! is what keeps the tab honest: a guide added to the corpus shows up in the
-//! panel without anyone remembering to list it, and a guide whose palette
-//! section changes shows the new swatches.
-//!
-//! Two sources feed one list. The shipped corpus is baked into the binary; the
-//! user's imported `DESIGN.md` files arrive at runtime. They are merged here,
-//! imports first, because a list where your own material sits below fifty
-//! shipped entries is a list you scroll past your own work in. Ids keep them
-//! apart — a corpus guide is pinned by its bare name, an import by its
-//! `user:` id — so a file that names itself after a shipped guide cannot
-//! quietly take its place.
-
 use op_ai_skills::style_guide::{
     extract_style_guide_values, style_guide_registry, user_style_guides, ParsedStyleGuide,
     Platform, UserStyleGuide,
@@ -28,6 +11,7 @@ use crate::Color;
 pub const STYLE_SWATCH_COUNT: usize = 5;
 
 /// One style-guide card.
+#[derive(Clone)]
 pub struct StyleGuideCard {
     /// What pinning writes to the document: the guide's `name` for a corpus
     /// entry, its `user:<slug>` id for an import.
@@ -56,7 +40,7 @@ impl StyleGuideCard {
     fn from_guide(guide: &'static ParsedStyleGuide) -> Self {
         let values = extract_style_guide_values(&guide.content);
         let colors = &values.colors;
-        let swatches = [
+        let mut swatches: Vec<Color> = [
             colors.background.as_deref(),
             colors.surface.as_deref(),
             colors.accent.as_deref(),
@@ -69,14 +53,28 @@ impl StyleGuideCard {
         .take(STYLE_SWATCH_COUNT)
         .collect();
 
+        if swatches.is_empty() {
+            swatches =
+                op_ai_skills::style_guide::sample_palette(&guide.content, STYLE_SWATCH_COUNT)
+                    .iter()
+                    .filter_map(|sample| parse_swatch(&sample.color))
+                    .collect();
+        }
         Self {
             id: guide.name.clone(),
-            name: guide.name.clone(),
+            name: guide.display_name(),
             platform: guide.platform,
             tags: guide.tags.clone(),
             is_user: false,
             swatches,
-            summary: summary_for(&guide.tags, &values.typography.display_font),
+            summary: {
+                let summary = summary_for(&guide.tags, &values.typography.display_font);
+                if summary.is_empty() {
+                    guide.display_name()
+                } else {
+                    summary
+                }
+            },
         }
     }
 
@@ -133,11 +131,7 @@ pub fn filtered_style_guide_cards(query: &str) -> Vec<StyleGuideCard> {
         .iter()
         .map(|user| StyleGuideCard::from_user_guide(user))
         .collect();
-    cards.extend(
-        style_guide_registry()
-            .iter()
-            .map(StyleGuideCard::from_guide),
-    );
+    cards.extend(builtin_cards().iter().cloned());
     cards.retain(|card| card.matches(&query));
     cards
 }
@@ -183,11 +177,7 @@ pub fn cards_for_editor(state: &op_editor_core::EditorState, query: &str) -> Vec
             }
         })
         .collect();
-    cards.extend(
-        style_guide_registry()
-            .iter()
-            .map(StyleGuideCard::from_guide),
-    );
+    cards.extend(builtin_cards().iter().cloned());
     cards.retain(|card| card.matches(&query));
     cards
 }
@@ -285,3 +275,13 @@ pub(crate) mod style_test_support {
 #[cfg(test)]
 #[path = "asset_center_style_cards_tests.rs"]
 mod asset_center_style_cards_tests;
+
+fn builtin_cards() -> &'static [StyleGuideCard] {
+    static CARDS: std::sync::OnceLock<Vec<StyleGuideCard>> = std::sync::OnceLock::new();
+    CARDS.get_or_init(|| {
+        style_guide_registry()
+            .iter()
+            .map(StyleGuideCard::from_guide)
+            .collect()
+    })
+}

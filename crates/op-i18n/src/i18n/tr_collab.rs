@@ -156,56 +156,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "{{name}} imleci",
         "icon.catalogLoading" => "Simge kataloğu yükleniyor…",
-        "sceneTemplate.documentUnavailable" => "Bu şablonun belgesi yüklenemedi. Tekrar deneyin.",
+
         "sceneTemplate.deleteFailed" => "Bu şablon silinemedi. Tekrar deneyin.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "İskandil haritası · strateji sunumu",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "Harita kâğıdının sıcak beyazı, çelik ve mürekkep mavisiyle: her sayfa sonuçla açılır ve kaynaklı tek bir ölçümle desteklenir. Derinlik profili çubukları ve rota biçimli içindekiler yedi sayfa boyunca sürer, danışmanlık çıktıları ve strateji değerlendirmeleri için.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "Gelgit arduvazı · veri değerlendirme sunumu",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "Arduvaz grisi zeminde genel görünüm kartları, eğilim çizgisi, ayrıntı tablosu, risk listesi ve kulvarlı yol haritası. Yedi sayfa tam bir veri değerlendirmesini baştan sona yürütür, çeyrek dönem değerlendirmeleri ve metrik toplantıları için.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "Dizgi alanı ve çizgiler · Çince tipografi sunumu",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "Klasik Çin sayfası üzerine kurulu: dizgi alanı, sütun çizgileri, üst kenar notları ve balık kuyruğu sayfa numarası. Metin satırları otuz karakterin altında kalır, karşılıklı sütunlar ve alıntı sayfasıyla, ders ve seminerler için.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "Kareli grafit · akademik savunma sunumu",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "Kareli kâğıt üzerinde grafit yazı: sorun ve boşluk, yöntem, iki sayfa sonuç, sınırlılıklar, sonuç ve kaynakça. Sekiz sayfa savunma sırasına göre dizilmiş, öneri ve tez savunmaları için.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "Keten dosya · muhtıra sunumu",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "Keten kâğıt dosya dokusuyla kapak sayfasından arka plana, güncel verilere, çözümlemeye, seçenek karşılaştırmasına ve karara. Tek başına okunabilen bir muhtıra olarak yazılmış sekiz sayfa, karar değerlendirmeleri için.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "Defter çizgisi · rekabet matrisi sunumu",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "Defter çizgileri üzerinde değerlendirme ölçütleri, ana matris, dilim ölçekleri ve fark ile güçlü yön karşılaştırması. Yedi sayfa rekabet karşılaştırmasını denetlenebilir bir hesap gibi anlatır, tedarikçi seçimi ve pazar analizi için.",
-        "sceneTemplate.item.brandConceptSheet.title" => "Marka konsept panosu",
-        "sceneTemplate.item.brandConceptSheet.summary" => "Ana kilit düzenini, kurgu mantığını, tek renk terslemeleri ve en küçük boyutta dayanımı inceleyen yatay pano; ilk konsept teslimi için.",
-        "sceneTemplate.item.logoQaBoard.title" => "Logo kaynaşması QA panosu",
-        "sceneTemplate.item.logoQaBoard.summary" => "Dört hücre ortak anlam yükünü, yapısal bağımlılığı, siluet birliğini ve ikincil okumanın eklenmiş değil keşfedilmiş görünmesini denetler.",
-        "sceneTemplate.item.eventInvitationCard.title" => "Teknoloji Salonu Daveti",
-        "sceneTemplate.item.eventInvitationCard.summary" => "4:5 etkinlik daveti: büyük konu başlığı, saat ve yer için ikili kartlar, üç konuk, kayıt QR kodu ve koyu mavi-mor renkte ev sahibi logo satırı.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "Canlı Yayın Tanıtımı",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "4:5 canlı yayın duyurusu: belirgin konu, üç geri sayım kutusu, iki konuşmacı, platform kapsülü ve koyu gradyan üzerinde rezervasyon QR kartı.",
-        "sceneTemplate.item.hiringPosterCard.title" => "İşe Alım Posteri",
-        "sceneTemplate.item.hiringPosterCard.summary" => "4:5 işe alım posteri: büyük pozisyon başlığı, ekip fotoğrafı yer tutucusu, gereksinimler, maaş ve açık zeminde başvuru QR kodu.",
-        "sceneTemplate.item.courseEnrollCard.title" => "Kurs Kayıt Kartı",
-        "sceneTemplate.item.courseEnrollCard.summary" => "Sıcak tonlarda 4:5 kurs duyuru kartı: kurs adı, başlangıç bilgi şeridi, dört öne çıkan özellik, eğitmen, erken kayıt fiyatı ve kayıt QR kodu.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "Konferans Programı",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "4:5 konferans programı: etkinlik adı, beş duraklı zaman çizelgesi, kahve molası ve siyah zemin üzerinde turuncu sponsor logo satırı.",
-        "sceneTemplate.item.productLaunchCard.title" => "Ürün Lansmanı",
-        "sceneTemplate.item.productLaunchCard.summary" => "Minimal beyaz 4:5 lansman kartı: ürün yer tutucusu, üç satış noktası, fiyat, lansman teklifi ve satın alma QR kodu.",
-        "sceneTemplate.item.annualReportCard.title" => "Yıllık Veri Raporu",
-        "sceneTemplate.item.annualReportCard.summary" => "4:5 yıllık rapor kartı: dört ana sayı, yılın özeti, Top 3 sıralaması ve mor gradyan üzerinde QR kodu.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "Müzik Festivali Posteri",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "3:4 festival posteri: güçlü başlık, tarih ve mekân, üç sahnenin programı, üç bilet seviyesi, bilet QR kodu ve neon kontrastta özel destek.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "Kitap Kulübü Daveti",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "Kâğıt tonlarında 4:5 kitap kulübü daveti: başlık ve yazar, kapak yer tutucusu, moderatör, tarih ve yer, üç tartışma konusu ve kayıt QR kodu.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "Yapay zekâ destek pitch decki",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "Koyu mavi ve beyaz bir startup pitch decki: tema kapağı, büyük maliyet karşılaştırma rakamları, üç eğrili sonuç, beş adımlı döngü ve ilk 90 günün üç metriği; SaaS yatırım sunumları ve ürün lansmanları için.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "Çeyreklik iş değerlendirme decki",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "Açık mavi tonlarda on bir sayfalık değerlendirme: gündem, dört iş hattının her biri için üç KPI kartı, büyüme motoru ve iyileştirmeler, ardından gelecek çeyrek hedefleri; operasyon değerlendirmeleri ve çeyreklik raporlar için.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "Quicksort ders decki",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "Kırık beyaz kâğıt ve mürekkep yeşiliyle yedi sayfalık ders: öğrenme hedefleri, bölme ve özyinelemenin iki adımı, dizi hücreleri ve vurgulanmış pivot içeren iki bölme gösterimi ve karmaşıklık karşılaştırma tablosu; algoritma ve programlama öğretimi için.",
-        "sceneTemplate.item.compoundEffectCard.title" => "Bileşik etki bilgi kartı",
-        "sceneTemplate.item.compoundEffectCard.summary" => "Numaralı üst etiketi, büyük başlığı, tanımı, numaralı dairelerle üç maddeyi ve hesap ile QR kodu içeren sıcak turuncu 4:5 bilgi kartı; bilgi odaklı hesapların seri paylaşımları için.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "Analitik metrik paylaşım kartı",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "Büyük ana metrik ve aylık değişim rozeti, sağda yatay çubuklar ve altta üç ikincil metrik içeren koyu 1200×630 veri kartı; sosyal paylaşım ve haftalık rapor görselleri için.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP Belirteçleri",
-        "menu.saveAsTemplate" => "Şablon olarak kaydet…",
-        "menu.saveAsTemplate.saved" => "Şablon olarak kaydedildi",
-        "menu.saveAsTemplate.failed" => "Şablon kaydedilemedi",
+
+
+
         "assetCenter.template.mine" => "Şablonlarım",
         "assetCenter.template.builtIn" => "Yerleşik şablonlar",
         "ai.designProgress.detail.failureReason" => "Neden: {{reason}}",

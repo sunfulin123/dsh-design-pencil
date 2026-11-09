@@ -18,7 +18,7 @@ fn get_style_guide_tags_returns_light_and_dark_vocab() {
                 .get("tags")
                 .is_some_and(|tags| tags.contains("\"dark-mode\"")));
             let count: usize = out.get("count").expect("count").parse().expect("count");
-            assert!(count > 50);
+            assert_eq!(count, 8);
         }
         other => panic!("expected tags ok, got {other:?}"),
     }
@@ -27,18 +27,18 @@ fn get_style_guide_tags_returns_light_and_dark_vocab() {
 #[test]
 fn get_style_guide_finds_specific_guide_by_name() {
     let mut args = BTreeMap::new();
-    args.insert("name".into(), "saas-clean-light".into());
+    args.insert("name".into(), "talkdesk-cobalt".into());
 
     match get_style_guide_snapshot().call(&args) {
         ToolOutcome::Ok(out) => {
-            assert_eq!(out.get("name"), Some(&"saas-clean-light".to_string()));
+            assert_eq!(out.get("name"), Some(&"talkdesk-cobalt".to_string()));
             assert_eq!(out.get("platform"), Some(&"webapp".to_string()));
             assert!(out
                 .get("tags")
                 .is_some_and(|tags| tags.contains("\"light-mode\"")));
             assert!(out
                 .get("content")
-                .is_some_and(|content| content.contains("saas-clean-light")));
+                .is_some_and(|content| content.contains("talkdesk-cobalt")));
         }
         other => panic!("expected guide ok, got {other:?}"),
     }

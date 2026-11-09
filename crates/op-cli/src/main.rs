@@ -18,7 +18,7 @@ mod path_args;
 mod skill_export_cli;
 mod skill_install_cli;
 mod skill_install_error;
-mod template_cli;
+mod style_cli;
 
 use cli_error::CliError;
 
@@ -123,19 +123,12 @@ fn run(args: &[String]) -> Result<String, CliError> {
         Command::ExportDeck { output, format } => {
             export_cli::run_export_deck(target_port, &target_token, &output, &format)?
         }
-        Command::Templates { scene, tag } => template_cli::run_templates(
-            target_port,
-            &target_token,
-            scene.as_deref(),
-            tag.as_deref(),
-        )?,
-        Command::UseTemplate { template_id } => {
-            template_cli::run_use_template(target_port, &target_token, &template_id)?
-        }
+
+
         Command::ExportFrames { output_dir, format } => {
             export_cli::run_export_frames(target_port, &target_token, &output_dir, &format)?
         }
-        Command::Styles { id, tag, platform } => template_cli::run_styles(
+        Command::Styles { id, tag, platform } => style_cli::run_styles(
             target_port,
             &target_token,
             id.as_deref(),
@@ -174,8 +167,6 @@ fn command_needs_server(command: &Command) -> bool {
             | Command::ToolCallJson { .. }
             | Command::ExportDeck { .. }
             | Command::ExportFrames { .. }
-            | Command::Templates { .. }
-            | Command::UseTemplate { .. }
             | Command::Styles { .. }
             | Command::Export { .. }
     )
@@ -252,13 +243,8 @@ enum Command {
         output: String,
         format: String,
     },
-    Templates {
-        scene: Option<String>,
-        tag: Option<String>,
-    },
-    UseTemplate {
-        template_id: String,
-    },
+
+
     Styles {
         id: Option<String>,
         tag: Option<String>,
@@ -393,9 +379,9 @@ fn command_from_positionals(positionals: &[String], flags: &Flags) -> Result<Com
         "stop" => Ok(Command::StopMcp),
         "export" => export_cli::map_export(flags),
         "export-deck" => export_cli::map_export_deck(flags),
-        "templates" => template_cli::map_templates(flags),
-        "use-template" => template_cli::map_use_template(flags, positionals),
-        "styles" => template_cli::map_styles(flags, positionals),
+
+
+        "styles" => style_cli::map_styles(flags, positionals),
         "export-frames" => export_cli::map_export_frames(flags),
         "skill:export" => Ok(Command::SkillExport {
             name: required_pos(

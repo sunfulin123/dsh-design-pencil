@@ -156,56 +156,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "Kursor {{name}}",
         "icon.catalogLoading" => "Katalog ikon sedang dimuat…",
-        "sceneTemplate.documentUnavailable" => "Dokumen templat itu tidak dapat dimuat. Coba lagi.",
+
         "sceneTemplate.deleteFailed" => "Templat itu tidak dapat dihapus. Coba lagi.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "Peta pengukuran kedalaman · deck strategi",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "Putih hangat kertas peta laut berpadu biru baja dan biru tinta: setiap halaman dibuka dengan kesimpulan dan ditopang satu angka bersumber. Batang profil kedalaman dan daftar isi berbentuk jalur pengukuran mengikat tujuh halaman, untuk hasil kerja konsultan dan tinjauan strategi.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "Batu tulis jejak pasang · deck tinjauan data",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "Di atas abu batu tulis: ubin ringkasan, garis tren, tabel rincian, daftar risiko, dan peta jalan berjalur. Tujuh halaman menuntaskan satu putaran tinjauan data, untuk evaluasi kuartalan dan rapat metrik.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "Bidang cetak dan garis · deck tipografi Tionghoa",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "Dibangun di atas halaman Tionghoa klasik: bidang cetak, garis kolom, catatan tepi atas, dan nomor halaman ekor ikan. Baris isi tetap di bawah tiga puluh aksara, dengan dua kolom berhadapan dan halaman kutipan, untuk kuliah dan seminar.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "Grafit kertas kotak · deck sidang akademik",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "Huruf grafit di atas kertas kotak: masalah dan celah, metode, dua halaman hasil, keterbatasan, simpulan, dan daftar pustaka. Delapan halaman tersusun menurut urutan sidang, untuk proposal dan sidang tesis.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "Berkas linen · deck memo",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "Tekstur berkas kertas linen, dari halaman muka, latar, data terkini, analisis, perbandingan opsi, hingga keputusan. Delapan halaman yang terbaca utuh sebagai memo tersendiri, untuk rapat pengambilan keputusan.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "Garis buku besar · deck matriks kompetitor",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "Di atas garis buku besar ada kriteria penilaian, matriks utama, skala kuantil, dan pembacaan selisih berbanding keunggulan. Tujuh halaman menceritakan perbandingan kompetitor seperti pembukuan yang dapat dicocokkan, untuk seleksi vendor dan analisis pasar.",
-        "sceneTemplate.item.brandConceptSheet.title" => "Lembar konsep merek",
-        "sceneTemplate.item.brandConceptSheet.summary" => "Papan tinjau horizontal untuk lockup utama, logika konstruksi, versi monokrom terbalik, serta uji ukuran minimum — untuk serah terima konsep tahap pertama.",
-        "sceneTemplate.item.logoQaBoard.title" => "Papan QA fusi logo",
-        "sceneTemplate.item.logoQaBoard.summary" => "Empat sel memeriksa beban makna bersama, ketergantungan struktur, kesatuan siluet, dan apakah bacaan sekunder terasa ditemukan alih-alih ditempelkan.",
-        "sceneTemplate.item.eventInvitationCard.title" => "Undangan Salon Teknologi",
-        "sceneTemplate.item.eventInvitationCard.summary" => "Undangan acara 4:5 dengan judul tema besar, kartu waktu dan lokasi berpasangan, tiga tamu, QR pendaftaran, serta baris logo penyelenggara dalam biru-ungu tua.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "Teaser Livestream",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "Pengumuman livestream 4:5 dengan tema tegas, tiga kotak hitung mundur, dua pembicara, kapsul platform, dan kartu QR reservasi di atas gradasi gelap.",
-        "sceneTemplate.item.hiringPosterCard.title" => "Poster Rekrutmen",
-        "sceneTemplate.item.hiringPosterCard.summary" => "Poster rekrutmen 4:5 dengan nama posisi besar, placeholder foto tim, persyaratan, gaji, dan QR lamaran di kanvas terang.",
-        "sceneTemplate.item.courseEnrollCard.title" => "Kartu Pendaftaran Kursus",
-        "sceneTemplate.item.courseEnrollCard.summary" => "Kartu perekrutan kursus 4:5 bernuansa hangat dengan nama kursus, bar informasi mulai, empat sorotan, pengajar, harga early bird, dan QR pendaftaran.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "Agenda Konferensi",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "Agenda konferensi 4:5 dengan nama acara, linimasa lima sesi, jeda kopi, dan baris logo sponsor oranye di atas hitam.",
-        "sceneTemplate.item.productLaunchCard.title" => "Peluncuran Produk",
-        "sceneTemplate.item.productLaunchCard.summary" => "Kartu peluncuran putih minimalis 4:5 dengan placeholder produk, tiga keunggulan penjualan, harga, penawaran peluncuran, dan QR pembelian.",
-        "sceneTemplate.item.annualReportCard.title" => "Laporan Data Tahunan",
-        "sceneTemplate.item.annualReportCard.summary" => "Kartu laporan tahunan 4:5 dengan empat angka utama, satu kalimat rangkuman tahun, peringkat Top 3, dan QR di atas gradasi ungu.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "Poster Festival Musik",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "Poster festival 3:4 dengan judul utama, tanggal dan lokasi, susunan tiga panggung, tiga tingkat tiket, QR tiket, dan dukungan khusus dalam kontras neon.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "Undangan Klub Buku",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "Undangan klub buku 4:5 bernuansa kertas dengan judul dan penulis, placeholder sampul, pemandu, waktu dan tempat, tiga topik diskusi, serta QR pendaftaran.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "Deck pitch dukungan AI",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "Deck pitch startup sepuluh slide dalam biru tua dan putih: sampul bertema, angka besar perbandingan biaya, kesimpulan tiga kurva, siklus lima langkah, dan tiga metrik untuk 90 hari pertama; untuk pitch pendanaan SaaS dan peluncuran produk.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "Deck tinjauan bisnis kuartalan",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "Tinjauan sebelas slide bernuansa terang dan biru: agenda, satu kartu tiga KPI untuk masing-masing dari empat lini bisnis, mesin pertumbuhan dan perbaikan, lalu sasaran kuartal berikutnya; untuk tinjauan operasional dan laporan kuartalan.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "Deck kuliah quicksort",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "Materi tujuh slide berlatar putih gading dengan hijau tinta: tujuan belajar, dua langkah partisi dan rekursi, dua demo partisi dengan sel array dan pivot yang disorot, serta tabel perbandingan kompleksitas; untuk pengajaran algoritma dan pemrograman.",
-        "sceneTemplate.item.compoundEffectCard.title" => "Kartu pengetahuan efek majemuk",
-        "sceneTemplate.item.compoundEffectCard.summary" => "Kartu pengetahuan 4:5 berwarna oranye hangat dengan label alis bernomor, judul besar, definisi, tiga poin bernomor, serta footer akun dan QR; untuk seri konten akun pengetahuan.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "Kartu berbagi metrik analitik",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "Kartu data gelap 1200×630 dengan angka metrik utama yang besar dan lencana perubahan bulanan, batang horizontal di kanan, serta tiga metrik sekunder di bawah; untuk berbagi di media sosial dan laporan mingguan.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "Token MCP",
-        "menu.saveAsTemplate" => "Simpan sebagai Template…",
-        "menu.saveAsTemplate.saved" => "Tersimpan sebagai template",
-        "menu.saveAsTemplate.failed" => "Template tidak dapat disimpan",
+
+
+
         "assetCenter.template.mine" => "Template Saya",
         "assetCenter.template.builtIn" => "Template Bawaan",
         "ai.designProgress.detail.failureReason" => "Alasan: {{reason}}",

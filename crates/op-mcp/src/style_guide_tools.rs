@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use op_ai_skills::style_guide::{
     find_style_guide, select_style_guide, style_guide_registry, user_style_guides, Platform,
-    SelectOptions, STYLE_GUIDE_TAGS,
+    SelectOptions,
 };
 
 use super::{McpTool, ToolErrorCode, ToolOutcome};
@@ -17,7 +17,11 @@ impl McpTool for GetStyleGuideTags {
     }
 
     fn call(&self, _args: &BTreeMap<String, String>) -> ToolOutcome {
-        let tags = match serde_json::to_string(STYLE_GUIDE_TAGS) {
+        let vocabulary: std::collections::BTreeSet<_> = style_guide_registry()
+            .iter()
+            .flat_map(|guide| guide.tags.iter().cloned())
+            .collect();
+        let tags = match serde_json::to_string(&vocabulary) {
             Ok(json) => json,
             Err(e) => {
                 return ToolOutcome::Err(
@@ -28,7 +32,7 @@ impl McpTool for GetStyleGuideTags {
         };
         let mut out = BTreeMap::new();
         out.insert("tags".into(), tags);
-        out.insert("count".into(), STYLE_GUIDE_TAGS.len().to_string());
+        out.insert("count".into(), vocabulary.len().to_string());
         ToolOutcome::Ok(out)
     }
 }

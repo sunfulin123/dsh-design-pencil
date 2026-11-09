@@ -7,8 +7,8 @@
 use jian_ops_schema::node::PenNode;
 
 use crate::agent_settings::SettingsFocus;
+use crate::design_scene::DesignScene;
 use crate::editor_ui_state::{CompositingPickerTarget, EditorUiState, ExportFormat};
-use crate::scene_template_catalog::TemplateScene;
 use crate::state::EditorState;
 use crate::{EditorCommand, NodeId};
 
@@ -84,23 +84,23 @@ impl EditorUiState {
 
 /// The format a scenario's documents are delivered in, or `None` when the
 /// scenario has no opinion and the user's own last choice stands.
-pub fn scenario_default_export_format(scenario: Option<TemplateScene>) -> Option<ExportFormat> {
+pub fn scenario_default_export_format(scenario: Option<DesignScene>) -> Option<ExportFormat> {
     match scenario {
         // A deck is delivered as a slide-per-page PDF — see
         // `op_host_services::export_pdf::export_deck_pdf`.
-        Some(TemplateScene::Slides) => Some(ExportFormat::Pdf),
+        Some(DesignScene::Slides) => Some(ExportFormat::Pdf),
         // A card is delivered as a PNG, but so is a tutorial and a carousel,
         // a web page is one scrolling surface with no single deliverable at
         // all, and the user's own last choice (WebP for a lighter upload,
         // say) is as valid. Presetting here would silently overwrite that on
         // every export; the deck is the only scenario with a format its
         // delivery actually depends on.
-        Some(TemplateScene::Tutorial)
-        | Some(TemplateScene::Comparison)
-        | Some(TemplateScene::Carousel)
-        | Some(TemplateScene::Card)
-        | Some(TemplateScene::Web)
-        | Some(TemplateScene::Infographic)
+        Some(DesignScene::Tutorial)
+        | Some(DesignScene::Comparison)
+        | Some(DesignScene::Carousel)
+        | Some(DesignScene::Card)
+        | Some(DesignScene::Web)
+        | Some(DesignScene::Infographic)
         | None => None,
     }
 }
@@ -318,7 +318,7 @@ mod export_dialog_tests {
     #[test]
     fn opening_a_deck_export_dialog_presets_pdf() {
         let mut ui = EditorUiState {
-            scenario: Some(TemplateScene::Slides),
+            scenario: Some(DesignScene::Slides),
             export_format: ExportFormat::Png,
             ..Default::default()
         };
@@ -333,9 +333,9 @@ mod export_dialog_tests {
     fn opening_a_non_deck_export_dialog_keeps_the_users_format() {
         for scenario in [
             None,
-            Some(TemplateScene::Tutorial),
-            Some(TemplateScene::Comparison),
-            Some(TemplateScene::Carousel),
+            Some(DesignScene::Tutorial),
+            Some(DesignScene::Comparison),
+            Some(DesignScene::Carousel),
         ] {
             let mut ui = EditorUiState {
                 scenario,

@@ -22,7 +22,7 @@ impl WidgetHost {
             self.do_exit_preview(self.last_viewport_w, self.last_viewport_h);
             return true;
         }
-        if self.editor_state.editor_ui.escape_scene_template_center() {
+        if self.editor_state.editor_ui.escape_asset_center() {
             self.mark_dirty();
             return true;
         }

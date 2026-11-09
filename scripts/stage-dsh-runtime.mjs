@@ -22,12 +22,12 @@ export async function stageRuntime({ root, destination, revision }) {
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/canvaskit',
     'web-bundle/assets/fonts', 'web-bundle/assets/iconify-catalog-core.json',
     'web-bundle/assets/iconify-catalog-brands.json',
-    'web-bundle/assets/scene_templates', 'web-bundle/assets/i18n',
+    'web-bundle/assets/i18n',
   ]) {
     await mkdir(dirname(join(destination, path)), { recursive: true })
     await cp(join(runtime, path), join(destination, path), { recursive: true })
   }
-  for (const path of ['web-bundle/snippets', 'web-bundle/assets/scene_template_previews']) {
+  for (const path of ['web-bundle/snippets']) {
     try {
       await cp(join(runtime, path), join(destination, path), { recursive: true })
     } catch (error) {

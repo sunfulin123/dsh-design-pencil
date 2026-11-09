@@ -13,7 +13,7 @@ use std::ptr;
 /// painted outer frame and layered content (bundled with op-editor-core
 /// as a scene template).
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 fn create_engine(width: f32, height: f32, dpr: f32) -> Result<*mut OpEngine, OpStatus> {
     let doc = SAMPLE_DOC.as_bytes();

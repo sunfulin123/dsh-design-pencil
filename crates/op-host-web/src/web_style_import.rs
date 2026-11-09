@@ -32,7 +32,7 @@ pub(crate) fn drain_pending_style_import<C: RepaintContext + 'static>(inner: &In
         b.host_mut()
             .editor_state_mut()
             .editor_ui
-            .scene_template_center
+            .asset_center
             .take_pending_style_import_file()
     };
     if !requested {

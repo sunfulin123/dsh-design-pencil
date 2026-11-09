@@ -71,10 +71,7 @@ impl DesktopApp {
             .batch_frame_export_supported = true;
         // Desktop owns the user-template registry + durable store, so its
         // in-canvas File menu can expose the same action as the native menu.
-        host.editor_state_mut()
-            .editor_ui
-            .scene_template_center
-            .save_current_supported = true;
+
         // And for the deck-slideshow row: same save picker + offscreen
         // exporter. The row still only appears on a deck document.
         host.editor_state_mut().editor_ui.deck_html_export_supported = true;
@@ -84,9 +81,7 @@ impl DesktopApp {
         // And for the Scene Template Center's prompt-to-deck row: desktop
         // owns both halves it needs — replacing the document with a blank
         // starter and launching the chat turn that fills it.
-        host.editor_state_mut()
-            .editor_ui
-            .scene_template_generate_supported = true;
+
         // And for the Styles tab's import button: desktop has a file dialog,
         // so it asks for a DESIGN.md rather than offering a paste box.
         host.editor_state_mut()
@@ -99,7 +94,7 @@ impl DesktopApp {
         // Saved scene templates live in ~/.openpencil/templates; the runtime
         // registry they merge into is memory-only, so it has to be refilled
         // from disk at every launch, exactly like the style guides above.
-        crate::user_template_store::load_user_scene_templates_once();
+
         // Account gate + session restore. The bridge links the proprietary
         // auth library when a prebuilt exists for this target; stub builds
         // keep every account entry point hidden unless the dev fake-login

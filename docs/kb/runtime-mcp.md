@@ -54,11 +54,8 @@ CLI 默认目录由 [asset-directory](../../packages/dsh-node-runtime/asset-dire
 user id 不由名称推导，同名导入不会覆盖旧资产。更新/删除必须携带 revision，
 跨 host 写入失败或目录读取期间改变均明确返回错误，不接受混合版本的元数据。
 内置只读；style-guide 保留原始 Markdown，主题导入保留未知 JSON 字段。
-模板必须保留变量、图片、扩展字段及 reusable master 依赖，实例化单次 undo。
-每次托管插入单独命名空间化变量和主题轴；别名、公式、默认主题及节点覆盖均需改写。
-完整别名允许 slash，但公式中的 slash 是除法；必须共用解析器的标识符语法。
-模板库更新不能改变旧实例的变量值；复验要包含 save→insert→update→insert→undo，
-以及多个主题轴同名来源在一个目标文档内的隔离。
+内置风格只有 Cobalt 和 84 份原始 DESIGN.md，稳定 id 来自目录名；目录只发元数据，
+正文按 id 读取。模板类型、工具、资源、生产资料和历史资产合并均不再支持。
 Node 仅为 `batch_design` 提取变量/主题前置参数；普通 `set_variables`、`set_themes`
 必须保留其 object 参数，否则可发现的工具会在实际调用时报告参数缺失。
 
@@ -66,7 +63,7 @@ UI 与 MCP 共用 [AssetTools](../../packages/dsh-node-runtime/asset-tools.mjs)�
 但浏览器目录属于各自 EditorState；不能把用户资产灌入共享 WASM 全局 registry。
 UI 持久化动作未确认不能提前发布；预设异步读取必须保持顺序、整体发布。
 文档未同步时资产保存/应用明确拒绝，避免保存旧版本或覆盖正在编辑的设计。
-加载或实例化走 Node 设计事务与 draft autosave，再由常规同步拉回浏览器。
+主题预设加载走 Node 设计事务与 draft autosave，再由常规同步拉回浏览器。
 
 主题控制不同于文档主题变量。[broker](../../packages/dsh-node-runtime/editor-control.mjs)
 只在 editor ack 后报告 effective/preference/hostOverride；
@@ -86,8 +83,8 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 {
   "version": 1,
   "status": "verified",
-  "task_id": "74996489-c9be-4d1b-a26b-a81deaeef88f",
-  "verified_at": "2026-11-09T03:58:23.609214+00:00",
+  "task_id": "d7c48a9d-87cc-4072-bf2b-1bee9de13b7c",
+  "verified_at": "2026-11-09T10:04:22.809153+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -96,21 +93,20 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-dsh-engine/src/lib.rs": "24ae65072f011f377b955ca8bfa7ce5b86de25dcfafde4a5f0a8ce4cd950a4dd",
     "crates/op-mcp/Cargo.toml": "1d260158e5a08f8287175910ab205e2a7fd9abc3a15a780abbcd20e6b635e2bd",
     "crates/op-mcp/src/batch_design.rs": "dec04c3a39db844599d5b13fc0352814662dbaff97323152fc0b59220a417199",
-    "packages/dsh-node-runtime/engine-session.mjs": "c2d7d8028a13da2ed0842e977496436d2161662be89d2d5a09078ec82adb73ce",
+    "packages/dsh-node-runtime/engine-session.mjs": "761a7a05786c19475454eb3cdff10667bb5da0c12273d002a847ca63f39ec4d4",
     "packages/dsh-node-runtime/host-http.mjs": "43d6a480c630a30e78205e489058c02c8081ee1e6f8c835f7940cf3d65d3eca9",
     "packages/dsh-node-runtime/host-render-tools.mjs": "5b2c35117471753aff5c55a8121c227a8e573c90b5137e19f53d1496b2614b63",
-    "packages/dsh-node-runtime/node-host.mjs": "ef1541d00731f3e5c78551f3487614cff8fce2a04fac5da0a93862418e15891d",
-    "packages/dsh-node-runtime/asset-store.mjs": "66df967d9c4e7be10e36f1f8348d377ca90dad87f3d32291296c177ebcd6d483",
-    "packages/dsh-node-runtime/asset-tools.mjs": "fdf48f0240503792ceab96cc435ca018b9941be3adad8fce3220b3324ccc7c46",
+    "packages/dsh-node-runtime/node-host.mjs": "e6f04fb8b2db3bbd61ff6f69bb67bfe4b7fc8db140b88c8bd6bbe1b16dd3243a",
+    "packages/dsh-node-runtime/asset-store.mjs": "1ac2e71d2e47465db223a87b316d584d845f54d52a7534208546ab1e1029e511",
+    "packages/dsh-node-runtime/asset-tools.mjs": "ff6de9e61061aa7ea2de837c0db6c897bb97665fabed267391b9620cc0befed1",
     "packages/dsh-node-runtime/editor-control.mjs": "8fb0da89f7e860384a4e3ff4f935446295dc0877ddbe93c403834d3cd50b0d09",
-    "packages/dsh-node-runtime/asset-browser.test.mjs": "7ec18bb7069fbc40edee28fbab0316904064a4a1424cf272d26999c993313e7b",
-    "crates/op-host-web/src/managed_assets_sync.rs": "be75c4ef515e50a1b182bc71d0c1b7d221689a6cb9ad5c518c8c6d16409cabb2",
-    "crates/op-editor-core/src/scene_template_append.rs": "4a7eb51a15c1942f30e07b3b2ada2386b7bebe101b1adf6deaa5b06ddf3699d6",
+    "packages/dsh-node-runtime/asset-browser.test.mjs": "c44b799b5a9d4c99d15bde7366f05e5849adb43ed9f305e32d8ddf14715bd7d1",
+    "crates/op-host-web/src/managed_assets_sync.rs": "a4e4b0beeadd128ca933ccaa37b3d53984ce7a5311ad85664e43e99d6be316ec",
     "crates/op-editor-core/src/variables_resolve/evaluation.rs": "63949c106e12b274f5f7a095f30a58e531ca4d520a4dc077dc0708313edd89ac",
-    "crates/op-dsh-engine/src/asset_semantics.rs": "1b91e8c8205116614e9c948e83f27256b42341e28e1fe6f8ba4221debd94341f",
+    "crates/op-dsh-engine/src/asset_semantics.rs": "6294aa071f9b45bd999e812f0a7c8ab996bf255ac34c6020f7fd13dddf8fcf60",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "f640a2169d729b6a65702ac5e55dc4793485afca0ccef7a0861835e8f7ebeb85"
   },
-  "reason": "Render-wait host tools moved from node-host into host-render-tools and now include compare_html_fidelity; catalog/dispatch rule unchanged (new schemas live in tool_catalog's html_import_catalog submodule).",
-  "evidence": "host-http RENDER_WAIT_TOOLS includes compare_html_fidelity; DSH_E2E_CHROME=1 full node suite 177 passed incl. ai-design-loop and html-fidelity host tests"
+  "reason": "Removed retired template transaction invariants and migration; retained scoped style/preset storage, confirmation and autosave boundaries.",
+  "evidence": "asset-store tests: 13 passed; asset-tools and directory tests passed; DSH_E2E_CHROME=1 asset-browser and ai-design-loop: 4 passed, no skips."
 }
 ```

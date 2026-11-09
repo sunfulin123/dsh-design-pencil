@@ -1,9 +1,9 @@
 use super::*;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 fn deck_ui() -> EditorUiState {
     EditorUiState {
-        scenario: Some(TemplateScene::Slides),
+        scenario: Some(DesignScene::Slides),
         deck_html_export_supported: true,
         batch_frame_export_supported: true,
         ..EditorUiState::default()

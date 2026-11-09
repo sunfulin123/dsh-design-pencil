@@ -36,7 +36,7 @@ pub struct WebSyncDocument {
     /// is new enough to send it. Older daemons omit the field — `None` then
     /// means "unknown", not "no scenario", so appliers keep their current
     /// value rather than clearing it.
-    pub scenario: Option<crate::scene_template_catalog::TemplateScene>,
+    pub scenario: Option<crate::design_scene::DesignScene>,
     /// Validated saved view, outside the canonical document schema.
     pub viewport: Option<crate::Viewport>,
     /// A changed hint, including removal (reset), must be applied even when
@@ -260,13 +260,7 @@ impl WebSyncClient {
     /// preserve-only helper above remains source compatible.
     pub fn sync_with_editor_meta<F>(&mut self, body: &str, apply: F) -> Result<bool, WebSyncError>
     where
-        F: FnOnce(
-            PenDocument,
-            u64,
-            usize,
-            bool,
-            Option<crate::scene_template_catalog::TemplateScene>,
-        ) -> bool,
+        F: FnOnce(PenDocument, u64, usize, bool, Option<crate::design_scene::DesignScene>) -> bool,
     {
         self.sync_with_view_state(body, |next| {
             apply(

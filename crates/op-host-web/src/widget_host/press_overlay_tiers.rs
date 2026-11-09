@@ -69,7 +69,7 @@ impl WidgetHost {
             self.close_image_popovers_for_higher_overlay();
             return Some(true);
         }
-        if self.dispatch_scene_template_press(x, y, viewport_width, viewport_height) {
+        if self.dispatch_asset_center_press(x, y, viewport_width, viewport_height) {
             return Some(true);
         }
         if self.dispatch_prompt_center_press(x, y, viewport_width, viewport_height) {

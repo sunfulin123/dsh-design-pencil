@@ -669,17 +669,8 @@ impl WidgetHostNative {
                         });
                     }
                 }
-                op_editor_ui::widgets::MobileMoreEntry::Templates
-                | op_editor_ui::widgets::MobileMoreEntry::Assets => {
-                    let tab = match entry {
-                        op_editor_ui::widgets::MobileMoreEntry::Templates => {
-                            op_editor_core::AssetCenterTab::Templates
-                        }
-                        op_editor_ui::widgets::MobileMoreEntry::Assets => {
-                            op_editor_core::AssetCenterTab::Styles
-                        }
-                        _ => unreachable!("matched mobile asset-center entry"),
-                    };
+                op_editor_ui::widgets::MobileMoreEntry::Assets => {
+                    let tab = op_editor_core::AssetCenterTab::Styles;
                     let _ = op_editor_ui::widgets::press_flow::apply_shared_top_bar_hit(
                         &mut self.editor_state,
                         op_editor_ui::widgets::TopBarHit::OpenAssetCenter,
@@ -687,7 +678,7 @@ impl WidgetHostNative {
                     );
                     self.editor_state
                         .editor_ui
-                        .scene_template_center
+                        .asset_center
                         .select_tab(tab);
                 }
                 op_editor_ui::widgets::MobileMoreEntry::Settings => {

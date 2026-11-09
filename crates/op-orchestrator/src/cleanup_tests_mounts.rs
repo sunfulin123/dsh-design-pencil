@@ -34,5 +34,3 @@ mod tests_nested_horizontal_padding;
 mod tests_rail_wrapper_gutter;
 #[path = "cleanup_repair_summary_tests.rs"]
 mod tests_repair_summary;
-#[path = "cleanup_repair_tier_tests.rs"]
-mod tests_repair_tier;

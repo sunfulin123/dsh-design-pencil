@@ -23,7 +23,7 @@ fn catalog_context_lists_all_guides() {
 /// `warm-food-mobile-light` at the top of the automatic ranking.
 const FOOD_PROMPT: &str = "a food delivery mobile app";
 /// A guide the food prompt would never choose on its own.
-const AGAINST_THE_GRAIN: &str = "developer-terminal-dark";
+const AGAINST_THE_GRAIN: &str = "design-md:linear.app";
 
 #[test]
 fn a_pin_beats_the_prompt_ranking() {
@@ -203,13 +203,13 @@ fn industry_food_pushes_two_tags() {
 }
 
 #[test]
-fn food_delivery_ranks_warm_food_mobile_guide_first() {
+fn prompts_without_matching_source_tags_keep_the_cobalt_default() {
     let tags = infer_tags_from_prompt("a food delivery mobile app");
     let ranked = rank_style_guides_for_prompt(&tags, Platform::Mobile);
     assert_eq!(
         ranked.first().map(|guide| guide.name.as_str()),
-        Some("warm-food-mobile-light"),
-        "food delivery should prefer the food-specific mobile guide"
+        Some("talkdesk-cobalt"),
+        "missing source tags must not invent a brand match"
     );
 }
 
@@ -270,10 +270,11 @@ fn metadata_line_is_name_platform_and_lead_aesthetic_no_type_or_color() {
     // Softened (2026-06-23): no `:: tags` (type) and no ` bg:` (color).
     // Re-opened (2026-09-06): the planner picks by mood, so the line carries
     // the guide's lead "Key aesthetics" label — a few words, no hex, no tags.
-    let g = style_guide_registry()
-        .iter()
-        .find(|guide| guide.platform == op_ai_skills::style_guide::Platform::Mobile)
-        .expect("a mobile style guide is embedded");
+    let fixture = ParsedStyleGuide {
+        name: "metadata-fixture".into(), tags: vec![], platform: Platform::Mobile,
+        content: "## Style Summary\nKey aesthetics:\n- **Quiet hierarchy**: simple type.\n\nSignature recipes:\n- **Type first**: headings lead.\n- **Clear actions**: one primary.\n".into(),
+    };
+    let g = &fixture;
     let line = format_guide_metadata_line(g, PlanningMode::Rich);
     let head = format!("- {} [{}]", g.name, g.platform.as_str());
     assert!(line.starts_with(&head), "{line}");
@@ -496,39 +497,9 @@ fn compact_style_summary_carries_the_guides_key_aesthetics() {
         crate::model_profile::ModelTier::Basic,
         crate::model_profile::ModelTier::Standard,
     ] {
-        let text = crate::prompt::build_style_guide_instruction(Some("dark-bold-mobile"), tier)
+        let text = crate::prompt::build_style_guide_instruction(Some("talkdesk-cobalt"), tier)
             .expect("shipped guide resolves");
         assert!(text.contains("Key aesthetics"), "{text}");
-        assert!(text.contains("Electric lime"), "{text}");
-        assert!(text.contains("Signature recipes"), "{text}");
-        assert!(text.contains("Mesh gradient as protagonist"), "{text}");
+        assert!(text.contains("Contrast-first ramps"), "{text}");
     }
-}
-
-#[test]
-fn pinned_mobile_metadata_carries_both_recipe_names() {
-    let ctx = build_planning_style_guide_context(
-        "a mobile wellness screen",
-        Some("claude-opus"),
-        PlanningMode::Rich,
-        None,
-        Some("wellness-green-mobile-light"),
-    );
-    assert!(
-        ctx.available_style_guides.contains(
-            "- wellness-green-mobile-light [mobile] — Nature-tinted canvas · recipes: \
-             Top-leading protagonist / Dim-and-highlight \"now\""
-        ),
-        "pinned mobile guide metadata must carry recipes:\n{}",
-        ctx.available_style_guides
-    );
-    assert!(
-        ctx.available_style_guides
-            .contains("Top-leading protagonist")
-            && ctx
-                .available_style_guides
-                .contains("Dim-and-highlight \"now\""),
-        "pinned mobile guide metadata must carry both recipe names:\n{}",
-        ctx.available_style_guides
-    );
 }

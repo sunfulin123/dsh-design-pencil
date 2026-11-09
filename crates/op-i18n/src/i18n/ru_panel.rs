@@ -115,159 +115,143 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.action.confirmOwner" => "Присоединиться к сеансу",
         "collab.action.rejectOwner" => "Не присоединяться",
         "collab.error.ownerNotConfirmed" => "Вы не подтвердили ведущего, поэтому ничего не загружено.",
-        "sceneTemplate.title" => "Шаблоны сцен",
-        "sceneTemplate.searchPlaceholder" => "Поиск сцен и шаблонов…",
-        "sceneTemplate.empty" => "Подходящих шаблонов не найдено",
-        "sceneTemplate.frames" => "Страницы: {{count}}",
-        "sceneTemplate.generate.placeholder" => "Опишите тему — ИИ создаст всю презентацию",
-        "sceneTemplate.generate.button" => "Создать",
-        "sceneTemplate.generate.hint" => "Новый документ: тема превращается в готовую презентацию.",
-        "sceneTemplate.generate.promptTemplate" => "Создай презентацию (PPT) на следующую тему: {{topic}}",
-        "sceneTemplate.card.addToCanvas" => "Добавить на холст",
-        "sceneTemplate.card.generateFrom" => "Создать в этом стиле",
-        "sceneTemplate.generate.basis" => "На основе: ",
-        "sceneTemplate.filter.all" => "Все",
-        "sceneTemplate.scene.tutorial" => "Уроки",
-        "sceneTemplate.scene.comparison" => "Сравнение",
-        "sceneTemplate.scene.carousel" => "Карусель",
-        "sceneTemplate.scene.slides" => "Слайды",
-        "sceneTemplate.scene.card" => "Карточки",
-        "sceneTemplate.scene.web" => "Веб-страницы",
-        "sceneTemplate.generate.webPromptTemplate" => "Спроектируй многосекционную веб-страницу (лендинг) по следующей теме: {{topic}}",
-        "sceneTemplate.item.saasLandingOrange.title" => "SaaS-лендинг · Оранжевый",
-        "sceneTemplate.item.saasLandingOrange.summary" => "Светлая маркетинговая страница на почти чёрных панелях с одним оранжевым: навигация, первый экран со скриншотом продукта, три карточки возможностей, разбор рабочего процесса, отзывы и подписка в подвале. Замените тексты — и это готовый сайт.",
-        "sceneTemplate.item.productLandingLight.title" => "Страница продукта · Светлая",
-        "sceneTemplate.item.productLandingLight.summary" => "Бумажно-белая продуктовая страница в газетной подаче: интерактивное демо на первом экране, колонки возможностей, панель аналитики, сравнение «до и после» и три тарифа. Для SaaS-сайтов и запусков.",
-        "sceneTemplate.item.screenshotTutorial.title" => "Скриншот-инструкция · 3 шага",
-        "sceneTemplate.item.screenshotTutorial.summary" => {
-            "Обложка, три шага и финальный призыв к действию. Замените скриншоты и текст — и можно публиковать."
-        }
-        "sceneTemplate.item.knowledgeCarousel.title" => "Карусель знаний и идей",
-        "sceneTemplate.item.knowledgeCarousel.summary" => {
-            "Обложка, три тезиса и итоговый слайд — удобно разложить одну идею на последовательные карточки для свайпа."
-        }
-        "sceneTemplate.item.beforeAfter.title" => "Сравнение редизайна «до/после»",
-        "sceneTemplate.item.beforeAfter.summary" => {
-            "Версии до и после рядом с пояснениями изменений — для ретроспектив и портфолио."
-        }
-        "sceneTemplate.item.slideDeck.title" => "Презентация · 6 слайдов",
-        "sceneTemplate.item.slideDeck.summary" => {
-            "Обложка, повестка, ключевые тезисы, данные, диаграмма и финал в формате 16:9. Замените текст — и можно выступать."
-        }
-        "sceneTemplate.item.knowledgeCardVertical.title" => "Карточка знаний · Вертикальная",
-        "sceneTemplate.item.knowledgeCardVertical.summary" => "Одна карточка 3:4 с заголовком, четырьмя тезисами и подписью. Замените текст — и можно публиковать.",
-        "sceneTemplate.item.knowledgeCardSquare.title" => "Карточка знаний · Квадратная",
-        "sceneTemplate.item.knowledgeCardSquare.summary" => "Карточка 1:1 в той же вёрстке, компактная для обложки записи или поста в соцсети.",
-        "sceneTemplate.item.pitchDeckDark.title" => "Питч-дек · Тёмный",
-        "sceneTemplate.item.pitchDeckDark.summary" => "Обложка, проблема, решение, цифры, дорожная карта и контакты. Крупный шрифт на тёмном фоне — для инвестраундов и запусков.",
-        "sceneTemplate.item.lectureDeckLight.title" => "Лекционные слайды · Светлый",
-        "sceneTemplate.item.lectureDeckLight.summary" => "Титул курса, цели, разбор понятия, решённый пример, таблица сравнения и итог с домашним заданием. Бумажно-белый фон, не устают глаза.",
-        "sceneTemplate.item.minimalKeynote.title" => "Минималистичный keynote",
-        "sceneTemplate.item.minimalKeynote.summary" => "Много воздуха, огромный кегль, одна фраза по центру полосы — девять страниц без единой карточки, а оглавление — только линейки и цифры. Для запусков и докладов.",
-        "sceneTemplate.item.gradientTech.title" => "Градиентный tech",
-        "sceneTemplate.item.gradientTech.summary" => "Тёмный градиент и карточки из матового стекла: архитектура, замеры производительности и стена клиентов. Для запуска продукта для разработчиков.",
-        "sceneTemplate.scene.infographic" => "Инфографика",
-        "sceneTemplate.item.punchQuoteCard.title" => "Карточка-цитата · Плакат",
-        "sceneTemplate.item.punchQuoteCard.summary" => "Карточка 3:4 на почти чёрном фоне: две огромные строки над жёлтой полосой. Одна фраза и ничего лишнего — для мнений и цитат.",
-        "sceneTemplate.item.journalChecklistCard.title" => "Карточка-чеклист · База знаний",
-        "sceneTemplate.item.journalChecklistCard.summary" => "Белая карточка на светло-сером фоне: пять задач с галочками, метка и блок цитаты. Для планов на неделю.",
-        "sceneTemplate.item.dataReportInfographic.title" => "Инфографика с выводами",
-        "sceneTemplate.item.dataReportInfographic.summary" => "Высокая картинка с прокруткой: тёмная шапка, три крупных числа, сравнение полосами, доли и три вывода. Замените цифры — и можно публиковать.",
-        "sceneTemplate.item.stepsFlowInfographic.title" => "Инфографика по шагам",
-        "sceneTemplate.item.stepsFlowInfographic.summary" => "Высокая картинка с прокруткой: пять пронумерованных шагов в один поток, у каждого своя длительность, плюс два совета. Для инструкций и гайдов.",
-        "sceneTemplate.item.eventPosterDeck.title" => "Дек мероприятия · Афиша",
-        "sceneTemplate.item.eventPosterDeck.summary" => "Обложка, что интересного, программа, как добраться, билеты и финал. Галерейно-белый фон, красные и синие плашки, без скруглений и без градиентов — для маркетов, клубных встреч и открытий.",
-        "sceneTemplate.item.pitfallListInfographic.title" => "Инфографика с типичными ошибками",
-        "sceneTemplate.item.pitfallListInfographic.summary" => "Высокая картинка с прокруткой: шесть ошибок по частоте, у каждой — что не так и как сделать иначе, плюс проверка из четырёх пунктов перед публикацией. Только чёрный, белый и серый.",
-        "sceneTemplate.item.spineCultureCard.title" => {
-            "Карточка с вертикальным заголовком · Минеральные пигменты"
-        }
-        "sceneTemplate.item.spineCultureCard.summary" => "Карточка 3:4 на тёмной охристой глине: вертикальный китайский заголовок, осыпающаяся штукатурка, крупицы пигмента. Для культуры, лонгридов и авторских обложек.",
-        "sceneTemplate.item.metricSingleCard.title" => "Карточка одного числа · Сетка и иероглифы",
-        "sceneTemplate.item.metricSingleCard.summary" => "Карточка 1:1: одно огромное число на чистом белом, строгая швейцарская сетка и один красный квадрат-сигнал. Для выводов и результатов.",
-        "sceneTemplate.item.quoteFrameCard.title" => "Карточка цитаты · Шёлк сине-зелёный",
-        "sceneTemplate.item.quoteFrameCard.summary" => "Карточка 4:5 на пожелтевшем шёлке: одна фраза в рамке, у нижнего края — горы из азурита и малахита. Для выдержек, интервью и цитат.",
-        "sceneTemplate.item.dailySignCard.title" => "Карточка дня · Садовое окно",
-        "sceneTemplate.item.dailySignCard.summary" => "Карточка 3:4 на извёстковой стене с шестиугольным окном: внутри дата и одна строка. Пустота и есть украшение. Для ежедневных постов.",
-        "sceneTemplate.item.priceTierCard.title" => "Карточка тарифов · Неон галереи",
-        "sceneTemplate.item.priceTierCard.summary" => "Карточка 1:1 на чернильно-синей ночи: три тарифа, контуры неоновых трубок и их свечение. Для магазинов, событий и пакетов.",
-        "sceneTemplate.item.noticeBoardCard.title" => "Карточка объявления · Свинцовый набор",
-        "sceneTemplate.item.noticeBoardCard.summary" => "Карточка 4:5 на газетной бумаге: линейки шапки со сбитой приводкой, пронумерованные пункты и серийный штамп. Для объявлений и правил.",
-        "sceneTemplate.item.milestoneTimelineInfographic.title" => "Инфографика-хронология",
-        "sceneTemplate.item.milestoneTimelineInfographic.summary" => "Высокая картинка с прокруткой: одна ось на всю высоту, отметки лет рядом с карточками вех, в конце — следующий шаг. Для итогов, истории бренда и хода проекта.",
-        "sceneTemplate.item.conceptContrastInfographic.title" => "Инфографика сравнения понятий",
-        "sceneTemplate.item.conceptContrastInfographic.summary" => "Высокая картинка с прокруткой: сначала вывод, затем по карточке-определению на каждое понятие, разбор по критериям в две колонки и в конце — как выбирать.",
-        "sceneTemplate.item.rankingBoardInfographic.title" => "Инфографика рейтинга Топ-N",
-        "sceneTemplate.item.rankingBoardInfographic.summary" => "Высокая картинка с прокруткой: золото по чернильному фону — крупные значки у первой тройки, контурные с четвёртого по восьмое, у каждого — когда и как часто применять.",
-        "sceneTemplate.item.faqThreadInfographic.title" => "Инфографика вопросов и ответов",
-        "sceneTemplate.item.faqThreadInfographic.summary" => "Высокая картинка с прокруткой: шесть пар «вопрос — ответ», В залит, О контурный. Ни нумерации, ни порядка: любая пара работает сама по себе.",
-        "sceneTemplate.item.dataStoryInfographic.title" => "Инфографика истории в данных",
-        "sceneTemplate.item.dataStoryInfographic.summary" => "Высокая картинка с прокруткой: четыре числа, связанные в одну причинную цепочку, каждый шаг — сетка из десяти клеток, в конце — вывод, который можно применить.",
-        "sceneTemplate.item.challengeTrackerInfographic.title" => {
-            "Инфографика 30-дневного челленджа"
-        }
-        "sceneTemplate.item.challengeTrackerInfographic.summary" => "Высокая картинка с прокруткой: сетка из тридцати клеток, шесть на пять, вехи только на 7, 15 и 30 день. Сохраните и вычёркивайте по клетке в день.",
-        "sceneTemplate.item.ecosystemMapInfographic.title" => "Инфографика карты рынка",
-        "sceneTemplate.item.ecosystemMapInfographic.summary" => "Высокая картинка с прокруткой: четыре звена одной цепочки в сетке два на два, по три игрока в каждом, пустоты отмечены. Белые карточки на сланцевом фоне.",
-        "sceneTemplate.item.doDontComparison.title" => "Две колонки: как надо и как не надо",
-        "sceneTemplate.item.doDontComparison.summary" => "Карточка 3:4: два способа сделать одно и то же рядом, различаются фактурой и значком, а не красным и зелёным — читается и при дальтонизме.",
-        "sceneTemplate.item.mythTruthComparison.title" => "Мифы и правда",
-        "sceneTemplate.item.mythTruthComparison.summary" => "Высокая картинка: пять пар «говорят так / на самом деле», миф уже и светлее слева, правда шире и темнее справа.",
-        "sceneTemplate.item.pricingTiersComparison.title" => "Сравнение тарифов",
-        "sceneTemplate.item.pricingTiersComparison.summary" => "Карточка 3:4: бесплатный, Pro и командный рядом, цена — точка отсчёта, каждый столбец включает предыдущий.",
-        "sceneTemplate.item.scenarioGuideComparison.title" => "Подбор по ситуации",
-        "sceneTemplate.item.scenarioGuideComparison.summary" => "Высокая картинка: без характеристик — семь ситуаций, у каждой свой вердикт. Читателю нужно найти свою строку.",
-        "sceneTemplate.item.specTableComparison.title" => "Таблица характеристик",
-        "sceneTemplate.item.specTableComparison.summary" => "Высокая картинка: два кандидата в одной таблице, строка за строкой, победившая ячейка поднята тёмным фоном.",
-        "sceneTemplate.item.threeWayComparison.title" => "Сравнение трёх вариантов",
-        "sceneTemplate.item.threeWayComparison.summary" => "Высокая картинка: три варианта рядом, рекомендуемый — в середине; каждый столбец начинается с ситуации, а не с названия.",
-        "sceneTemplate.item.timeShiftComparison.title" => "Год назад и сейчас",
-        "sceneTemplate.item.timeShiftComparison.summary" => "Карточка 3:4: центральный стержень подписей, год назад слева, сейчас справа, оба значения на одной строке.",
-        "sceneTemplate.item.tradeoffScaleComparison.title" => "Весы плюсов и минусов",
-        "sceneTemplate.item.tradeoffScaleComparison.summary" => "Карточка 1:1: коромысло и две чаши — слева что получите, справа чем заплатите, перед каждой строкой пустой квадратик.",
-        "sceneTemplate.item.versionDiffComparison.title" => "Что изменилось в версии",
-        "sceneTemplate.item.versionDiffComparison.summary" => {
-            "Карточка 1:1: без деления на колонки — каждая строка сама завершает «было → стало»."
-        }
-        "sceneTemplate.item.appOnboardingTriptych.title" => "Триптих онбординга приложения",
-        "sceneTemplate.item.appOnboardingTriptych.summary" => "Карточка 3:4: три телефона в ряд с пустыми местами под картинки. Вставьте свои три экрана, добавьте текст — и можно на ревью или в ленту.",
-        "sceneTemplate.item.diyBlueprintGuide.title" => "Иллюстрированное руководство DIY",
-        "sceneTemplate.item.diyBlueprintGuide.summary" => "Высокая картинка, где таблица материалов занимает столько же места, сколько шаги: в самоделках ошибаются на подготовке, а не руками.",
-        "sceneTemplate.item.photoCompositionTutorial.title" => "Композиция в съёмке на телефон",
-        "sceneTemplate.item.photoCompositionTutorial.summary" => "3:4, пять кадров: тёмный видоискатель и яркие направляющие поверх места под фото — композицию объясняют только на кадре.",
-        "sceneTemplate.item.recipeFourStep.title" => "Рецепт в четыре шага",
-        "sceneTemplate.item.recipeFourStep.summary" => "Карточка 4:5, 2×2: все четыре шага на одной карточке. Сделайте скриншот и готовьте — у плиты листать неудобно.",
-        "sceneTemplate.item.skincareRoutineCards.title" => "Карточки ухода за кожей",
-        "sceneTemplate.item.skincareRoutineCards.summary" => "4:5, шесть кадров: в каждом шаге три числа — количество, время выдержки и утро или вечер. Ошибаются в дозе, а не в порядке.",
-        "sceneTemplate.item.softwareStepTutorial.title" => "Пошаговая инструкция к программе",
-        "sceneTemplate.item.softwareStepTutorial.summary" => "Карточка 4:5, единственная тёмная в серии: места под скриншоты и пронумерованные указания.",
-        "sceneTemplate.item.storageMakeoverSteps.title" => "Шаги наведения порядка",
-        "sceneTemplate.item.storageMakeoverSteps.summary" => "3:4, шесть кадров: кроме действия и картинки каждый шаг задаёт критерий готовности и бюджет времени.",
-        "sceneTemplate.item.weeklyReportLesson.title" => "Урок по еженедельному отчёту",
-        "sceneTemplate.item.weeklyReportLesson.summary" => "Высокая картинка: после разбора структуры из четырёх частей выдаёт каркас с подчёркнутыми пропусками.",
-        "sceneTemplate.item.workoutBreakdownGuide.title" => "Разбор упражнений",
-        "sceneTemplate.item.workoutBreakdownGuide.summary" => "Высокая картинка: у каждого движения рядом с картинкой и подсказками стоит полоса подходов, повторов и отдыха.",
-        "sceneTemplate.item.bookreviewSilkCarousel.title" => "Карусель разбора книги или фильма",
-        "sceneTemplate.item.bookreviewSilkCarousel.summary" => "3:4, пять полос: крючок, цитата с пометками, три наблюдения, одна фраза на вынос, финал. Работа разбирается на детали, а не пересказывается.",
-        "sceneTemplate.item.cityguideFilmCarousel.title" => "Карусель городского гида",
-        "sceneTemplate.item.cityguideFilmCarousel.summary" => "3:4, семь полос: места и маршруты чередуются — места для мечтающих, дневной маршрут и таблица «где есть и спать» для планирующих.",
-        "sceneTemplate.item.datareportGridCarousel.title" => "Карусель отчёта по данным",
-        "sceneTemplate.item.datareportGridCarousel.summary" => "3:4, шесть полос: после каждой полосы с данными идёт полоса без них, чтобы на третьем графике не пролистнули.",
-        "sceneTemplate.item.opinionLongformCarousel.title" => "Карусель развёрнутого мнения",
-        "sceneTemplate.item.opinionLongformCarousel.summary" => "3:4, шесть полос: строгий мастер-макет от начала до конца, номер и заголовок всегда на одном месте.",
-        "sceneTemplate.item.qaChalkboardCarousel.title" => "Карусель вопросов и ответов",
-        "sceneTemplate.item.qaChalkboardCarousel.summary" => "3:4, шесть полос: один вопрос на полосу, в углу — нарисованный от руки номер-вопросительный знак.",
-        "sceneTemplate.item.storyNightCarousel.title" => "Карусель личной истории",
-        "sceneTemplate.item.storyNightCarousel.summary" => "3:4, семь полос: разбор пережитого по оси времени — лента на пятой полосе несущая, первые четыре её отметки.",
-        "sceneTemplate.item.toolkitNotebookCarousel.title" => "Карусель подборки инструментов",
-        "sceneTemplate.item.toolkitNotebookCarousel.summary" => "3:4, шесть полос: шесть инструментов по одному на полосу, последняя собирает их в оглавление с номерами.",
-        "sceneTemplate.item.tutorialJournalCarousel.title" => "Карусель-инструкция",
-        "sceneTemplate.item.tutorialJournalCarousel.summary" => {
-            "3:4, шесть полос: один шаг на полосу, палец и есть индикатор прогресса."
-        }
-        "sceneTemplate.item.yearreviewMineralCarousel.title" => "Карусель итогов года",
-        "sceneTemplate.item.yearreviewMineralCarousel.summary" => "3:4, восемь полос: полосы с цифрами холодные, полосы с размышлениями тёплые, вперемежку.",
-        "fileMenu.newFromTemplate" => "Создать из шаблона",
+
+
+
+
+        "assetCenter.generate.placeholder" => "Опишите тему — ИИ создаст всю презентацию",
+        "assetCenter.generate.button" => "Создать",
+        "assetCenter.generate.hint" => "Новый документ: тема превращается в готовую презентацию.",
+        "assetCenter.generate.promptTemplate" => "Создай презентацию (PPT) на следующую тему: {{topic}}",
+
+
+        "assetCenter.generate.basis" => "На основе: ",
+
+        "designScene.tutorial" => "Уроки",
+        "designScene.comparison" => "Сравнение",
+        "designScene.carousel" => "Карусель",
+        "designScene.slides" => "Слайды",
+        "designScene.card" => "Карточки",
+        "designScene.web" => "Веб-страницы",
+        "assetCenter.generate.webPromptTemplate" => "Спроектируй многосекционную веб-страницу (лендинг) по следующей теме: {{topic}}",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "designScene.infographic" => "Инфографика",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "fileMenu.exportSlideshowHtml" => "Экспортировать слайд-шоу в HTML...",
         "fileMenu.exportPptx" => "Экспортировать в PowerPoint...",
         "dialog.slideshowHtmlTitle" => "Экспорт слайд-шоу",
@@ -685,7 +669,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "settings.agents.acpPresetAdd" => "Добавить",
         "settings.agents.acpNotInstalled" => "Не установлено",
         "assetCenter.title" => "Центр ресурсов",
-        "assetCenter.tab.templates" => "Шаблоны",
+
         "assetCenter.tab.styles" => "Стили",
         "assetCenter.style.empty" => "Подходящих стилей нет",
         "assetCenter.style.pinned" => "Закреплён",

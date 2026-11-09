@@ -325,7 +325,7 @@ fn export_editor_state_to_path(
     path: &std::path::Path,
 ) -> Result<(), op_host_services::export::ExportError> {
     use op_editor_core::editor_ui_state::ExportFormat as Fmt;
-    use op_editor_core::scene_template_catalog::TemplateScene;
+    use op_editor_core::design_scene::DesignScene;
 
     let fmt = state.editor_ui.export_format;
     let scale = state.editor_ui.export_scale;
@@ -340,7 +340,7 @@ fn export_editor_state_to_path(
         // A deck's pages are its boards, not its canvas pages: the
         // page-level exporter would put every slide plus the gaps
         // between them on one sheet.
-        if state.editor_ui.scenario == Some(TemplateScene::Slides) {
+        if state.editor_ui.scenario == Some(DesignScene::Slides) {
             return op_host_services::export_pdf::export_deck_pdf(state, path);
         }
         // PDF is intentionally multi-page; keep the full builder for it.

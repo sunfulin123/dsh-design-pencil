@@ -76,7 +76,7 @@ pub fn style_guide_summary(id: &str) -> Option<Arc<StyleGuideSummary>> {
         let colors = &values.colors;
         Arc::new(StyleGuideSummary {
             id: guide.id().to_string(),
-            name: guide.name.clone(),
+            name: guide.display_name(),
             swatches: [
                 colors.background.as_deref(),
                 colors.surface.as_deref(),

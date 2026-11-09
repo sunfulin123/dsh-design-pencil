@@ -626,12 +626,12 @@ fn export_quick_menu_paints_and_miss_click_closes() {
 /// no-ops here, and an offer nothing answers is worse than no offer.
 #[test]
 fn export_quick_menu_hides_rows_the_browser_cannot_serve() {
-    use op_editor_core::scene_template_catalog::TemplateScene;
+    use op_editor_core::design_scene::DesignScene;
     use op_editor_core::ExportQuickRow;
     use op_editor_ui::widgets::ExportQuickMenu;
 
     let mut host = WidgetHost::new();
-    host.editor_state.editor_ui.scenario = Some(TemplateScene::Slides);
+    host.editor_state.editor_ui.scenario = Some(DesignScene::Slides);
     let menu = ExportQuickMenu::for_editor_ui(&host.editor_state.editor_ui);
     assert_eq!(
         menu.rows(),

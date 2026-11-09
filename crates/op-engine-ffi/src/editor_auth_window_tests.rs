@@ -19,7 +19,7 @@ use crate::OpStatus;
 use op_editor_core::WindowControlRequest;
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 fn editor_engine() -> OpEngine {
     OpEngine::new(

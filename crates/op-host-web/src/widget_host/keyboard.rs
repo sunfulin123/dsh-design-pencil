@@ -25,7 +25,7 @@ impl WidgetHost {
         // this the web Asset Center could not be typed into at all — a
         // character fell through to the canvas shortcuts, where a bare letter
         // switches tools behind the open gallery.
-        if let Some(changed) = shared::scene_template_text(&mut self.editor_state, c, self.now_ms) {
+        if let Some(changed) = shared::asset_center_text(&mut self.editor_state, c, self.now_ms) {
             if changed {
                 self.mark_dirty();
             }

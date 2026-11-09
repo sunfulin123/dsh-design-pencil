@@ -156,56 +156,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "Cursor de {{name}}",
         "icon.catalogLoading" => "Carregando o catálogo de ícones…",
-        "sceneTemplate.documentUnavailable" => "Não foi possível carregar o documento desse modelo. Tente novamente.",
+
         "sceneTemplate.deleteFailed" => "Não foi possível excluir esse modelo. Tente novamente.",
-        "sceneTemplate.item.soundingNavyDeck.title" => "Carta de sondagem · deck de estratégia",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "Branco de carta náutica com azul aço e azul tinta: cada página abre com a conclusão e a sustenta com uma única leitura com fonte. Barras de perfil de profundidade e um sumário em rota de sondagem ao longo de sete páginas, para entregas de consultoria e revisões de estratégia.",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "Ardósia de maré · deck de revisão de dados",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "Sobre cinza ardósia: mosaicos de panorama, linha de tendência, tabela de detalhe, lista de riscos e um roteiro em raias. Sete páginas que percorrem uma revisão de dados completa, para retrospectivas trimestrais e reuniões de indicadores.",
-        "sceneTemplate.item.banxinRuleDeck.title" => "Mancha e filetes · deck de tipografia chinesa",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "Construído sobre a página chinesa clássica: mancha de texto, filetes de coluna, notas de cabeça e fólio em cauda de peixe. As linhas de texto ficam abaixo de trinta caracteres, com colunas confrontantes e página de citação, para aulas e seminários.",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "Grafite quadriculado · deck de defesa acadêmica",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "Tipos em grafite sobre papel quadriculado: problema e lacuna, método, duas páginas de resultados, limitações, conclusão e referências. Oito páginas na ordem de uma defesa, para projetos e defesas de tese.",
-        "sceneTemplate.item.dossierLinenDeck.title" => "Dossiê de linho · deck de memorando",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "Um dossiê em papel de linho, da folha de rosto ao contexto, aos dados atuais, à análise, à comparação de opções e à decisão. Oito páginas que se leem como um memorando autônomo, para comitês de decisão.",
-        "sceneTemplate.item.ledgerTickDeck.title" => "Livro-razão · deck de matriz competitiva",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "Critérios de avaliação, matriz principal, escalas por quantis e a leitura de lacunas e forças sobre o pautado de um livro-razão. Sete páginas que contam uma comparação competitiva como uma conta conferível, para seleção de fornecedores e análise de mercado.",
-        "sceneTemplate.item.brandConceptSheet.title" => "Prancha de conceito de marca",
-        "sceneTemplate.item.brandConceptSheet.summary" => "Uma prancha horizontal para revisar o lockup principal, a lógica construtiva, as inversões monocromáticas e a resistência no tamanho mínimo, feita para a primeira entrega do conceito.",
-        "sceneTemplate.item.logoQaBoard.title" => "Painel de QA da fusão do logo",
-        "sceneTemplate.item.logoQaBoard.summary" => "Quatro células verificam carga semântica compartilhada, dependência estrutural, unidade da silhueta e se a leitura secundária parece descoberta em vez de anexada.",
-        "sceneTemplate.item.eventInvitationCard.title" => "Convite para salão de tecnologia",
-        "sceneTemplate.item.eventInvitationCard.summary" => "Convite de evento 4:5 com título temático grande, cartões duplos de horário e local, três convidados, QR code de inscrição e faixa de logos do organizador em azul-violeta profundo.",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "Teaser de live",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "Anúncio de live 4:5 com tema em destaque, três blocos de contagem regressiva, dois palestrantes, cápsula da plataforma e cartão QR de reserva sobre gradiente escuro.",
-        "sceneTemplate.item.hiringPosterCard.title" => "Cartaz de contratação",
-        "sceneTemplate.item.hiringPosterCard.summary" => "Cartaz de contratação 4:5 com cargo em tamanho grande, espaço reservado para foto da equipe, requisitos, salário e QR code de candidatura em fundo claro.",
-        "sceneTemplate.item.courseEnrollCard.title" => "Inscrição no curso",
-        "sceneTemplate.item.courseEnrollCard.summary" => "Cartão de recrutamento de curso 4:5 em tons quentes, com nome, barra de início, quatro destaques, instrutor, preço antecipado e QR code de inscrição.",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "Agenda da conferência",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "Agenda de conferência 4:5 com nome do evento, linha do tempo de cinco etapas, pausa para café e faixa de logos dos patrocinadores em laranja sobre preto.",
-        "sceneTemplate.item.productLaunchCard.title" => "Lançamento de produto",
-        "sceneTemplate.item.productLaunchCard.summary" => "Cartão branco e minimalista de lançamento 4:5 com espaço reservado para o produto, três argumentos de venda, preço, oferta de estreia e QR code de compra.",
-        "sceneTemplate.item.annualReportCard.title" => "Relatório anual de dados",
-        "sceneTemplate.item.annualReportCard.summary" => "Cartão de relatório anual 4:5 com quatro números principais, uma síntese do ano, ranking Top 3 e QR code sobre gradiente roxo.",
-        "sceneTemplate.item.musicFestPosterCard.title" => "Cartaz de festival de música",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "Cartaz de festival 3:4 com manchete, data e local, programação de três palcos, três faixas de ingresso, QR code de compra e apoio especial em contraste neon.",
-        "sceneTemplate.item.bookClubInviteCard.title" => "Convite para clube do livro",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "Convite 4:5 em tons de papel com título e autor, espaço para a capa, mediador, data e local, três temas de conversa e QR code de inscrição.",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "Deck de pitch do suporte por IA",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "Um pitch deck de dez slides para uma startup, em azul profundo e branco: capa temática, números grandes de comparação de custos, conclusão em três curvas, ciclo de cinco passos e três métricas dos primeiros 90 dias, para captação SaaS e lançamentos de produto.",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "Deck de revisão trimestral do negócio",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "Uma revisão de onze slides em tons claros de azul: agenda, um cartão com três KPIs para cada uma das quatro linhas de negócio, motor de crescimento e melhorias, terminando com as metas do próximo trimestre, para revisões operacionais e relatórios trimestrais.",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "Deck de aula sobre quicksort",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "Uma aula de sete slides em branco quente e verde de tinta: objetivos de aprendizagem, dois passos de particionamento e recursão, duas demonstrações com células de array e pivô destacado, além de uma tabela de complexidade, para ensinar algoritmos e programação.",
-        "sceneTemplate.item.compoundEffectCard.title" => "Cartão de conhecimento · efeito composto",
-        "sceneTemplate.item.compoundEffectCard.summary" => "Um cartão de conhecimento 4:5 em laranja quente, com antetítulo numerado, título grande, definição, três pontos numerados e rodapé com conta e QR code, para séries de conteúdo de conhecimento.",
-        "sceneTemplate.item.analyticsMetricCard.title" => "Cartão de partilha de métricas analíticas",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "Um cartão de dados escuro de 1200×630, com métrica principal em destaque e selo de variação mensal, barras horizontais à direita e três métricas secundárias na base, para partilha social e relatórios semanais.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "Tokens MCP",
-        "menu.saveAsTemplate" => "Salvar como modelo…",
-        "menu.saveAsTemplate.saved" => "Salvo como modelo",
-        "menu.saveAsTemplate.failed" => "Não foi possível salvar o modelo",
+
+
+
         "assetCenter.template.mine" => "Meus modelos",
         "assetCenter.template.builtIn" => "Modelos integrados",
         "ai.designProgress.detail.failureReason" => "Motivo: {{reason}}",

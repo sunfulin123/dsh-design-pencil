@@ -42,8 +42,8 @@ impl WidgetHost {
             return Some(panel.focused_input_caret_rect(rect));
         }
         if let (Some(panel), Some(rect)) = (
-            op_editor_ui::widgets::SceneTemplatePanel::for_editor(&self.editor_state),
-            self.scene_template_panel_rect(self.last_viewport_w, self.last_viewport_h),
+            op_editor_ui::widgets::AssetCenterPanel::for_editor(&self.editor_state),
+            self.asset_center_panel_rect(self.last_viewport_w, self.last_viewport_h),
         ) {
             return Some(panel.focused_input_caret_rect(rect));
         }
@@ -121,7 +121,7 @@ impl WidgetHost {
         // join field does, plus one of its own: the style-import box receives
         // a whole DESIGN.md, and a char-by-char route that drops control
         // characters would flatten the markdown to a single line.
-        if let Some(changed) = op_editor_core::host_keyboard_transitions::scene_template_paste(
+        if let Some(changed) = op_editor_core::host_keyboard_transitions::asset_center_paste(
             &mut self.editor_state,
             text,
             self.now_ms,

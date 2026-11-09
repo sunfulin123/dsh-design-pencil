@@ -58,11 +58,11 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
 {
   "version": 1,
   "status": "verified",
-  "task_id": "2a0711ee-2f38-4187-a3f3-cb34abd32285",
-  "verified_at": "2026-11-09T07:37:45.006936+00:00",
+  "task_id": "d7c48a9d-87cc-4072-bf2b-1bee9de13b7c",
+  "verified_at": "2026-11-09T10:07:26.632132+00:00",
   "sources": {
     "crates/op-host-web/src/op_ck_bridge.js": "0d64f916a1c08d196ac558b290ee92ff753e0989e1030e288bcaeacdfc3452ab",
-    "crates/op-host-web/src/canvaskit/inner.rs": "4360f05d5668d16c9fc7c0c495266e270fa5d743c63946e67cf419f0155072eb",
+    "crates/op-host-web/src/canvaskit/inner.rs": "c3605933aeedc32e5acd0db1c7f6ff98002e7f87cdc16398692f67502e86252b",
     "crates/op-host-web/src/preview_host/paint.rs": "95c04f36d6c121bf586f8989ce5fe2fc36bf32193d8d0c6c03eb05ff9afd3e96",
     "crates/op-host-web/src/widget_host/canvas_tiles.rs": "d07d96e7f153efa7b0c072d9a0755fbf31df9d83f52fae8b424f509ed9e24ee6",
     "crates/op-host-web/src/widget_host/canvas_tiles_host.rs": "4cd5f6eac913da31300cad53dcde7eebc7b0a91cf8ab652fa0021e95d612acc9",
@@ -70,7 +70,7 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
     "crates/op-editor-ui/src/widgets/canvas_text_edit.rs": "54132a7a2322ddfdc1efc29c0383fe13429f7de45a110718cea6d792f68d603f",
     "crates/op-editor-ui/src/widgets/canvas_viewport_text.rs": "0b0b3e7c8494cd1d5644945c0335652290afbb7d281f316ce141fb888e6c7c71"
   },
-  "reason": "Updated resize context lifecycle and Preview 4096px snapshot invariants after fixing CanvasTiles clear_retained on resize_to_window, prioritizing missing/stale viewport tiles over overview_cells, and bypassing single-tile snapshot cache when Preview screen exceeds 4096 device px.",
-  "evidence": "cargo test -p op-host-web --lib --features canvaskit — 778 passed (incl. tall_screen_exceeding_4096_device_px_paints_directly_without_stretching_snapshot_tile); live Playwright resize & Preview verification on aether-store (1440x3370 + 390x5879)"
+  "reason": "Removed the obsolete template frame-pump call and its comment; tile, image, font and CanvasKit lifecycle behavior is unchanged.",
+  "evidence": "Reviewed canvaskit/inner.rs diff; CanvasKit host suite 778 passed with 29 preexisting ignores; browser gallery, Apple binding and AI screenshot-lint-fix loop passed."
 }
 ```

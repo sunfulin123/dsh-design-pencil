@@ -1,6 +1,6 @@
 //! Keyboard editing for the mobile Save / Save As file-name dialog.
 //!
-//! Same shape as [`crate::scene_template_keyboard`]: hosts route platform
+//! Same shape as [`crate::asset_center_keyboard`]: hosts route platform
 //! key events here so selection / UTF-8 caret semantics stay shared. The
 //! dialog is modal — while it is open it owns every keystroke, including
 //! ones it rejects, so a stray `r` cannot reach the rectangle tool while

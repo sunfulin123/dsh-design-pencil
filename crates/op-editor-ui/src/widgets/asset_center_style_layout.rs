@@ -1,20 +1,3 @@
-//! Geometry for the Styles tab's grid.
-//!
-//! The Templates tab is a plain uniform grid, and so was this one until
-//! imports arrived. Now the list has two halves — what the user brought and
-//! what ships with the app — and a heading between them, which a flat
-//! row/column walk cannot express: a heading is a full-width band that
-//! consumes vertical space without being a card, so every card below it
-//! shifts by an amount the flat walker knows nothing about.
-//!
-//! Hence one walker here that both paint and hit-test call. Splitting it would
-//! reintroduce exactly the class of bug the shared `card_rects` contract
-//! exists to prevent: a heading counted in paint but not in hit-test puts
-//! every card's click target one band away from where it is drawn.
-//!
-//! With no imports the walker degenerates to the flat grid it replaced —
-//! same rects, no headings — so the shipped-only case is untouched.
-
 use crate::Rect;
 
 /// Height of a section heading band, heading text included.

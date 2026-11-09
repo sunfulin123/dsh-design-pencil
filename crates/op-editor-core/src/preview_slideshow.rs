@@ -1,6 +1,6 @@
 //! Deck slideshow state for Preview (Play) mode.
 //!
-//! A document tagged [`TemplateScene::Slides`] is a deck, and previewing a
+//! A document tagged [`DesignScene::Slides`] is a deck, and previewing a
 //! deck means presenting it: one board at a time, filling the viewport,
 //! advanced with the arrow keys — not the interactive app preview an app
 //! design gets. This module owns the whole decision and the whole
@@ -11,7 +11,7 @@
 //! the authored child order of the page. Nothing is inferred from artboard
 //! size — a 1920x1080 document is not automatically a deck.
 
-use crate::scene_template_catalog::TemplateScene;
+use crate::design_scene::DesignScene;
 use crate::{EditorState, PenNodeExt};
 
 /// A control on the presenting toolbar.
@@ -183,7 +183,7 @@ pub fn selected_page_boards(state: &EditorState) -> Vec<String> {
 /// Gated on the recorded scenario, never on what the content looks like: the
 /// tag is the only thing that actually knows the document is a deck.
 pub fn slideshow_for_document(state: &EditorState) -> Option<SlideshowState> {
-    if state.editor_ui.scenario != Some(TemplateScene::Slides) {
+    if state.editor_ui.scenario != Some(DesignScene::Slides) {
         return None;
     }
     SlideshowState::new(active_page_boards(state))
@@ -246,7 +246,7 @@ mod tests {
             .expect("fixture parses")
             .value;
         let mut state = EditorState::from_document(document);
-        state.editor_ui.scenario = Some(TemplateScene::Slides);
+        state.editor_ui.scenario = Some(DesignScene::Slides);
         state
     }
 
@@ -331,7 +331,7 @@ mod tests {
         assert!(!ordinary.begin_preview_slideshow());
 
         let mut carousel = deck_state(THREE_BOARDS);
-        carousel.editor_ui.scenario = Some(TemplateScene::Carousel);
+        carousel.editor_ui.scenario = Some(DesignScene::Carousel);
         assert!(!carousel.begin_preview_slideshow());
 
         let mut deck = deck_state(THREE_BOARDS);

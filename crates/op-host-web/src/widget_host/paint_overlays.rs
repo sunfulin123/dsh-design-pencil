@@ -8,8 +8,8 @@
 
 use super::WidgetHost;
 use op_editor_ui::widgets::{
-    ComponentBrowserPanel, DesignMdPanel, IconPickerPanel, PaintCx, PromptCenterPanel,
-    SceneTemplatePanel, Widget, TOP_BAR_HEIGHT,
+    AssetCenterPanel, ComponentBrowserPanel, DesignMdPanel, IconPickerPanel, PaintCx,
+    PromptCenterPanel, Widget, TOP_BAR_HEIGHT,
 };
 use op_editor_ui::{Point2D, Rect, RenderBackend};
 
@@ -220,11 +220,11 @@ impl WidgetHost {
         // scrim is also the surface that takes a dismiss press, so paint and
         // hit-test must agree that it covers everything.
         if let (Some(panel), Some(panel_rect)) = (
-            SceneTemplatePanel::for_editor_at(&self.editor_state, self.now_ms),
-            self.scene_template_panel_rect(viewport_width, viewport_height),
+            AssetCenterPanel::for_editor_at(&self.editor_state, self.now_ms),
+            self.asset_center_panel_rect(viewport_width, viewport_height),
         ) {
-            if let Some(scrim) = self.scene_template_scrim_rect(viewport_width, viewport_height) {
-                backend.fill_rect(scrim, op_editor_ui::widgets::SCENE_TEMPLATE_SCRIM);
+            if let Some(scrim) = self.asset_center_scrim_rect(viewport_width, viewport_height) {
+                backend.fill_rect(scrim, op_editor_ui::widgets::ASSET_CENTER_SCRIM);
             }
             let mut cx = PaintCx {
                 backend: &mut *backend,

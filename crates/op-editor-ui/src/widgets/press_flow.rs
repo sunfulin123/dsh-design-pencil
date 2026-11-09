@@ -20,15 +20,15 @@ use crate::widgets::{
 };
 use crate::{Point2D, Rect};
 
+pub use super::asset_center_press_flow::{
+    fail_style_import_unreadable, hover_asset_center, import_design_md_into_document,
+    import_style_guide_text, press_asset_center, scroll_asset_center,
+    sync_style_guide_from_design_md,
+};
 pub use super::layer_context_flow::{
     apply_layer_context_action, apply_layer_context_action_with_allocator, LayerContextStep,
 };
 pub use super::prompt_center_press_flow::press_prompt_center;
-pub use super::scene_template_press_flow::{
-    fail_style_import_unreadable, hover_scene_template_center, import_design_md_into_document,
-    import_style_guide_text, press_scene_template_center, scroll_scene_template_center,
-    sync_style_guide_from_design_md,
-};
 
 /// Screen rect of the right-hand property rail. Both hosts derive it
 /// from the same two inputs, so the walk lives here instead of being
@@ -392,7 +392,7 @@ pub fn apply_shared_top_bar_hit(
             state.editor_ui.import_menu.open = false;
             state.editor_ui.import_menu.hover = None;
             state.editor_ui.account_menu_open = false;
-            state.editor_ui.open_scene_template_center(now_ms);
+            state.editor_ui.open_asset_center(now_ms);
             state.chat.blur_input(now_ms);
             TopBarPress::Handled
         }

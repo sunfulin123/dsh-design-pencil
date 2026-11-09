@@ -183,8 +183,8 @@ impl WidgetHostNative {
     }
 
     /// Left / Right arrow in the Scene Template Center's focused input.
-    pub fn apply_scene_template_caret(&mut self, forward: bool, extend: bool) -> bool {
-        if shared::scene_template_caret(&mut self.editor_state, forward, extend, self.now_ms) {
+    pub fn apply_asset_center_caret(&mut self, forward: bool, extend: bool) -> bool {
+        if shared::asset_center_caret(&mut self.editor_state, forward, extend, self.now_ms) {
             self.mark_dirty();
             return true;
         }

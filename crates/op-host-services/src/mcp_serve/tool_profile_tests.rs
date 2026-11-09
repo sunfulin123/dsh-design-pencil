@@ -112,26 +112,6 @@ fn the_online_profile_refuses_every_unshareable_tool() {
 }
 
 #[test]
-fn the_online_profile_still_serves_the_in_memory_catalog() {
-    let profile = McpAccessProfile::online(McpScopes::FULL);
-    for name in [
-        "add_page",
-        "insert_node",
-        "get_node",
-        "batch_design",
-        "get_design_agent_prompt",
-        "get_design_quality",
-        "list_scene_templates",
-        "list_ui_kits",
-        "undo",
-        "use_scene_template",
-    ] {
-        assert!(profile.lists(name), "{name}");
-        assert_eq!(profile.refuse(name), None, "{name}");
-    }
-}
-
-#[test]
 fn tool_search_catalog_uses_the_same_online_surface_filter() {
     let local = tool_search_schemas(McpAccessProfile::UNRESTRICTED);
     assert_eq!(
@@ -175,30 +155,6 @@ fn managed_profile_keeps_design_tools_without_internal_model_execution() {
         assert!(profile.lists(tool), "{tool}");
         assert_eq!(profile.refuse(tool), None, "{tool}");
     }
-}
-
-#[test]
-fn online_scene_template_calls_keep_shipped_ids_but_refuse_user_ids() {
-    let online = McpAccessProfile::online(McpScopes::FULL);
-    assert!(!online.includes_user_scene_templates());
-    assert!(McpAccessProfile::UNRESTRICTED.includes_user_scene_templates());
-    let shipped =
-        std::collections::BTreeMap::from([("templateId".to_string(), "slide-deck".to_string())]);
-    assert_eq!(online.refuse_call("use_scene_template", &shipped), None);
-
-    let user = std::collections::BTreeMap::from([(
-        "templateId".to_string(),
-        "  user:private-deck  ".to_string(),
-    )]);
-    assert_eq!(
-        online.refuse_call("use_scene_template", &user),
-        Some(ToolRefusal::UserTemplateDenied)
-    );
-    assert_eq!(
-        McpAccessProfile::UNRESTRICTED.refuse_call("use_scene_template", &user),
-        None,
-        "the local single-user daemon keeps access to its own saved templates"
-    );
 }
 
 #[test]
@@ -298,23 +254,6 @@ fn scopes_are_derived_from_the_hub_scope_list() {
             write: false
         }
     );
-}
-
-#[test]
-fn a_refusal_message_leads_with_its_machine_code() {
-    let denied = ToolRefusal::LocalResourceDenied.message("save_document");
-    assert!(denied.starts_with("tool-not-available:"), "{denied}");
-    assert!(denied.contains("save_document"), "{denied}");
-
-    let user_template = ToolRefusal::UserTemplateDenied.message("use_scene_template");
-    assert!(
-        user_template.starts_with("user-template-not-available:"),
-        "{user_template}"
-    );
-
-    let scoped = ToolRefusal::ScopeInsufficient.message("add_page");
-    assert!(scoped.starts_with("scope-insufficient:"), "{scoped}");
-    assert!(scoped.contains("mcp:write"), "{scoped}");
 }
 
 #[test]

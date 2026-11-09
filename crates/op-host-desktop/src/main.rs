@@ -63,7 +63,7 @@ mod keyboard_clipboard_payload;
 mod keyboard_input;
 mod keyboard_input_arrows;
 mod keyboard_presenting;
-mod keyboard_scene_template;
+mod keyboard_asset_center;
 mod kit_io;
 mod kit_persistence;
 mod kit_persistence_error;
@@ -92,8 +92,8 @@ mod remote_image_host;
 mod render_cli;
 mod render_cli_error;
 mod save_session;
-mod scene_template_generate;
-mod scene_template_open;
+
+
 mod settings_io;
 mod single_instance;
 mod style_import_host;
@@ -105,8 +105,8 @@ mod theme_preset_host;
 mod ui_prefs;
 mod update_check;
 mod user_style_store;
-mod user_template_save;
-mod user_template_store;
+
+
 mod window_resize;
 mod window_state;
 mod workspace_phase;

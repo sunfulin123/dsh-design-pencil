@@ -418,7 +418,7 @@ mod tests {
 
     // ─── Deck (Slides scenario) export ─────────────────────────────────
 
-    use op_editor_core::scene_template_catalog::TemplateScene;
+    use op_editor_core::design_scene::DesignScene;
     use op_editor_core::EditorState;
 
     /// A deck state from a canonical document body — the same fixture
@@ -431,7 +431,7 @@ mod tests {
         .expect("fixture JSON parses")
         .value;
         let mut state = EditorState::from_document(doc);
-        state.editor_ui.scenario = Some(TemplateScene::Slides);
+        state.editor_ui.scenario = Some(DesignScene::Slides);
         state
     }
 

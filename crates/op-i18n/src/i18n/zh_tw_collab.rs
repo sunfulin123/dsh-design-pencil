@@ -156,56 +156,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}，{{role}}",
         "collab.a11y.remoteCursor" => "{{name}} 的游標",
         "icon.catalogLoading" => "圖示庫正在載入…",
-        "sceneTemplate.documentUnavailable" => "該範本的文件載入失敗，請重試。",
+
         "sceneTemplate.deleteFailed" => "該範本刪除失敗，請重試。",
-        "sceneTemplate.item.soundingNavyDeck.title" => "測深海圖 · 顧問策略檔",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "海圖暖白配鋼藍墨藍，結論式標題加一條帶來源的讀數，深度剖面條與航跡目錄貫穿七頁，適合顧問交付與策略簡報。",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "潮痕石板 · 資料審視檔",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "石板灰底上的全景磁磚、趨勢線、明細表、風險清單與泳道路線，七頁走完一次資料審視，適合季度覆盤與指標例會。",
-        "sceneTemplate.item.banxinRuleDeck.title" => "版心界行 · 中文排版檔",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "以版心、界行、天頭批註與魚尾頁碼立身的中文原生排版，內文每行不超過三十字，雙欄對讀與引文頁耐讀，適合講稿與研討。",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "方格石墨 · 學術口試檔",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "方格紙底配石墨灰字，問題與缺口、方法、圖表兩頁結果、限制、結論到引用，八頁照口試順序排好，適合開題與論文口試。",
-        "sceneTemplate.item.dossierLinenDeck.title" => "卷宗亞麻 · 文件備忘檔",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "亞麻紙卷宗質感，從文件首頁、背景、現況資料到方案比較與決議，八頁寫成一份能獨立讀完的備忘錄，適合決策審查。",
-        "sceneTemplate.item.ledgerTickDeck.title" => "帳簿勾格 · 競品矩陣檔",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "帳簿格線上的評估口徑、主矩陣、分位刻度與差距優勢對照，七頁把競品比較講成一筆可核對的帳，適合選型與市場分析。",
-        "sceneTemplate.item.brandConceptSheet.title" => "品牌概念板",
-        "sceneTemplate.item.brandConceptSheet.summary" => "橫向品牌審視板：展示主鎖定組合、構成邏輯、黑白反轉與最小尺寸，適合首輪概念交付。",
-        "sceneTemplate.item.logoQaBoard.title" => "LOGO 融合驗收板",
-        "sceneTemplate.item.logoQaBoard.summary" => "四格逐項檢查共享承義、結構依存、輪廓統一與次級意象的自然出現，適合概念篩選和審視留痕。",
-        "sceneTemplate.item.eventInvitationCard.title" => "技術沙龍邀請函",
-        "sceneTemplate.item.eventInvitationCard.summary" => "4:5 活動邀請卡：主題大字、時間地點雙卡、三位嘉賓、報名 QR code 與主辦方 logo 列，深藍紫色調適合活動預熱。",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "直播預告卡",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "4:5 直播預告：主題大字搭配倒數三格、兩位主講、平台膠囊和預約 QR code 卡，深色漸層帶出開播提醒。",
-        "sceneTemplate.item.hiringPosterCard.title" => "招聘海報",
-        "sceneTemplate.item.hiringPosterCard.summary" => "4:5 招聘海報：職缺大字、團隊照片佔位、編號要求、薪資與投遞 QR code，淺色版面方便替換職缺資訊。",
-        "sceneTemplate.item.courseEnrollCard.title" => "課程招募卡",
-        "sceneTemplate.item.courseEnrollCard.summary" => "4:5 課程招募：課程名稱、開課資訊列、四格亮點、講師、早鳥價和報名 QR code，暖色調適合招生發布。",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "大會議程卡",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "4:5 大會議程：大會名稱、五場時間軸、茶歇和贊助 logo 列，黑底橙字適合會議日程發布。",
-        "sceneTemplate.item.productLaunchCard.title" => "新品上市卡",
-        "sceneTemplate.item.productLaunchCard.summary" => "4:5 新品上市卡：產品佔位、三項賣點、價格與首發優惠，再接購買 QR code，極簡白底突出產品。",
-        "sceneTemplate.item.annualReportCard.title" => "年度數據報告卡",
-        "sceneTemplate.item.annualReportCard.summary" => "4:5 年度數據報告：四大數字、年度一句話、Top3 榜單和 QR code，漸層紫底適合年終復盤。",
-        "sceneTemplate.item.musicFestPosterCard.title" => "音樂節海報",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "3:4 音樂節海報：主標題、日期場地、三舞台陣容、三檔票價、購票 QR code 和特別支持，螢光撞色適合演出預熱。",
-        "sceneTemplate.item.bookClubInviteCard.title" => "讀書會邀請卡",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "4:5 讀書會邀請：書名作者、封面佔位、領讀人、時間地點、三個話題和報名 QR code，紙色底適合線下活動。",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "AI 客服募資簡報檔",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "深藍底白字的創業募資簡報十頁：主題封面、成本比較大數字、三條曲線結論、五步閉環、上線九十天三項指標，適合 SaaS 募資簡報與產品發表。",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "季度業務覆盤檔",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "淺底藍調的覆盤十一頁：議程頁、四條業務線各一頁 KPI 三聯卡加成長引擎與待改善項目，結尾是下季目標，適合營運覆盤與季度簡報。",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "快速排序講課簡報檔",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "米白紙感配墨綠的七頁課件：學習目標、分割與遞迴兩步、上下兩頁帶陣列格與基準高亮的分割示範、複雜度對照表，適合演算法與程式教學。",
-        "sceneTemplate.item.compoundEffectCard.title" => "複利效應知識卡",
-        "sceneTemplate.item.compoundEffectCard.summary" => "暖橙紙感 4:5 知識卡：編號眉標、大字標題、一段定義、三條各帶序號圓標的要點，底部有帳號與 QR code，適合知識型帳號系列卡片。",
-        "sceneTemplate.item.analyticsMetricCard.title" => "分析指標分享卡",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "深色 1200×630 資料卡：主指標大數字與環比徽章、右側橫向長條圖、底部三格次要指標，適合社群分享與週報配圖。",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP 權杖",
-        "menu.saveAsTemplate" => "存為範本…",
-        "menu.saveAsTemplate.saved" => "已存為範本",
-        "menu.saveAsTemplate.failed" => "無法儲存範本",
+
+
+
         "assetCenter.template.mine" => "我的範本",
         "assetCenter.template.builtIn" => "內建範本",
         "ai.designProgress.detail.failureReason" => "失敗原因：{{reason}}",

@@ -1,5 +1,5 @@
 use super::*;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 const THREE_BOARDS: &str = r#"{"version":"1.0.0","children":[
     {"type":"frame","id":"slide-1","name":"Cover","x":0,"y":0,"width":1920,"height":1080},
@@ -12,7 +12,7 @@ fn deck_state(source: &str) -> EditorState {
         .expect("fixture parses")
         .value;
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     state
 }
 

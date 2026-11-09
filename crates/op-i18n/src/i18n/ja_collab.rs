@@ -172,56 +172,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}、{{role}}",
         "collab.a11y.remoteCursor" => "{{name}} のカーソル",
         "icon.catalogLoading" => "アイコンカタログを読み込んでいます…",
-        "sceneTemplate.documentUnavailable" => "このテンプレートのドキュメントを読み込めませんでした。もう一度お試しください。",
+
         "sceneTemplate.deleteFailed" => "このテンプレートを削除できませんでした。もう一度お試しください。",
-        "sceneTemplate.item.soundingNavyDeck.title" => "測深海図 · 戦略提案デッキ",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "海図の温白にスチールブルーと墨藍。各ページは結論から始め、出典付きの数値ひとつで裏づける。水深プロファイルの棒と航跡目次が七ページを貫く、コンサル提出物や戦略報告向け。",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "潮痕スレート · データレビュー デッキ",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "スレートグレーの地に全体タイル、トレンド線、明細表、リスク一覧、スイムレーンのロードマップ。七ページでデータレビューを一巡する、四半期の振り返りや指標定例向け。",
-        "sceneTemplate.item.banxinRuleDeck.title" => "版心と界線 · 中国語組版デッキ",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "版心、界線、天の注記、魚尾のノンブルで組み立てた中国語本文のための組版。本文は一行三十字以内に収め、二段の対照や引用ページが読みやすい、講義や研究会向け。",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "方眼グラファイト · 学術発表デッキ",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "方眼紙の地にグラファイトの文字。課題と空白、手法、図と表の結果二ページ、限界、結論、参考文献まで八ページを審査の順に配置、着手報告や学位審査向け。",
-        "sceneTemplate.item.dossierLinenDeck.title" => "リネン調ドシエ · 文書メモデッキ",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "リネン紙の書類束の質感で、表紙、背景、現状データ、分析、案の比較から決議まで。単体で読み切れるメモとして仕上げた八ページ、意思決定レビュー向け。",
-        "sceneTemplate.item.ledgerTickDeck.title" => "台帳の目盛 · 競合マトリクス デッキ",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "台帳の罫線の上に評価基準、主マトリクス、分位の目盛、差と強みの対照。七ページで競合比較を照合可能な帳簿として語る、製品選定や市場分析向け。",
-        "sceneTemplate.item.brandConceptSheet.title" => "ブランドコンセプトシート",
-        "sceneTemplate.item.brandConceptSheet.summary" => "主案のロックアップ、構成ロジック、白黒反転、最小サイズでの成立を一枚で確認する横長ボード。初回コンセプトの受け渡し向け。",
-        "sceneTemplate.item.logoQaBoard.title" => "ロゴ融合 QA ボード",
-        "sceneTemplate.item.logoQaBoard.summary" => "意味の共有、構造上の依存、シルエットの統一、そして副次的な読みが貼り足しではなく発見に見えるかを四つの枠で確認します。",
-        "sceneTemplate.item.eventInvitationCard.title" => "テックサロン招待状",
-        "sceneTemplate.item.eventInvitationCard.summary" => "4:5のイベント招待カード。大きなテーマ見出し、日時と会場の2カード、3人のゲスト、申込QRコード、主催者ロゴ列を深い青紫でまとめます。",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "ライブ配信予告カード",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "4:5のライブ配信予告。大きなテーマ、3つのカウントダウン枠、2人の登壇者、プラットフォームのピル、予約QRカードを暗いグラデーションでまとめます。",
-        "sceneTemplate.item.hiringPosterCard.title" => "採用ポスター",
-        "sceneTemplate.item.hiringPosterCard.summary" => "4:5の採用ポスター。大きな職種名、チーム写真のプレースホルダー、応募条件、給与、応募QRコードを明るい画面に配置します。",
-        "sceneTemplate.item.courseEnrollCard.title" => "講座募集カード",
-        "sceneTemplate.item.courseEnrollCard.summary" => "暖色の4:5講座募集カード。講座名、開講情報バー、4つの見どころ、講師、早割価格、申込QRコードを備えます。",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "カンファレンス議事カード",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "4:5のカンファレンス議事カード。大会名、5つの時間軸、休憩、黒地にオレンジのスポンサー・ロゴ列を配置します。",
-        "sceneTemplate.item.productLaunchCard.title" => "新製品ローンチカード",
-        "sceneTemplate.item.productLaunchCard.summary" => "ミニマルな白の4:5ローンチカード。製品プレースホルダー、3つの訴求点、価格、初回特典、購入QRコードを配置します。",
-        "sceneTemplate.item.annualReportCard.title" => "年間データレポートカード",
-        "sceneTemplate.item.annualReportCard.summary" => "4:5の年間レポートカード。4つの主要数字、年間の一言、Top 3ランキング、QRコードを紫のグラデーションに載せます。",
-        "sceneTemplate.item.musicFestPosterCard.title" => "音楽フェスポスター",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "3:4の音楽フェスポスター。主見出し、日付と会場、3ステージの出演者、3段階のチケット、購入QRコード、特別協力をネオン配色でまとめます。",
-        "sceneTemplate.item.bookClubInviteCard.title" => "読書会招待カード",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "紙色の4:5読書会招待カード。書名と著者、表紙プレースホルダー、進行役、日時と場所、3つの話題、申込QRコードを備えます。",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "AIカスタマーサポート・ピッチデッキ",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "濃紺に白文字のスタートアップ向け10枚ピッチ。テーマの表紙、コスト比較の大きな数字、3本の曲線による結論、5段階の循環、公開後90日間の3指標を収め、SaaSの資金調達や製品発表に向いています。",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "四半期ビジネスレビュー・デッキ",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "淡い青調の11枚レビュー。アジェンダ、4事業ラインそれぞれのKPI三連カードと成長エンジン・改善点、次四半期の目標までを収め、経営レビューや四半期報告に使えます。",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "クイックソート講義デッキ",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "生成りの紙に墨緑を合わせた7枚の講義資料。学習目標、分割と再帰の2ステップ、配列セルとピボットを強調した分割デモ2枚、計算量比較表で、アルゴリズムとプログラミングの授業向けです。",
-        "sceneTemplate.item.compoundEffectCard.title" => "複利効果の知識カード",
-        "sceneTemplate.item.compoundEffectCard.summary" => "暖色オレンジの4:5知識カード。番号付きの眉見出し、大きなタイトル、定義、番号円付きの3要点、アカウントとQRのフッターを備え、知識系アカウントの連作に向いています。",
-        "sceneTemplate.item.analyticsMetricCard.title" => "分析指標シェアカード",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "ダークな1200×630データカード。主指標の大きな数字と前月比バッジ、右側の横棒グラフ、下部の3つの補助指標を備え、SNS共有や週報の図版に向いています。",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP トークン",
-        "menu.saveAsTemplate" => "テンプレートとして保存…",
-        "menu.saveAsTemplate.saved" => "テンプレートとして保存しました",
-        "menu.saveAsTemplate.failed" => "テンプレートを保存できませんでした",
+
+
+
         "assetCenter.template.mine" => "マイテンプレート",
         "assetCenter.template.builtIn" => "内蔵テンプレート",
         "ai.designProgress.detail.failureReason" => "失敗理由：{{reason}}",

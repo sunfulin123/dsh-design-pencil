@@ -44,7 +44,7 @@ impl WidgetHostNative {
             }
             return true;
         }
-        if let Some(changed) = shared::scene_template_backspace(&mut self.editor_state, self.now_ms)
+        if let Some(changed) = shared::asset_center_backspace(&mut self.editor_state, self.now_ms)
         {
             if changed {
                 self.mark_dirty();
@@ -305,7 +305,7 @@ impl WidgetHostNative {
             return true;
         }
         if let Some(changed) =
-            shared::scene_template_delete_forward(&mut self.editor_state, self.now_ms)
+            shared::asset_center_delete_forward(&mut self.editor_state, self.now_ms)
         {
             if changed {
                 self.mark_dirty();

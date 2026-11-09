@@ -83,7 +83,6 @@ mod editor_presence_tests;
 #[cfg(all(feature = "editor", test))]
 mod editor_settings_input_tests;
 #[cfg(feature = "editor")]
-mod editor_template;
 #[cfg(feature = "editor")]
 mod editor_transform;
 mod error;
@@ -486,13 +485,8 @@ pub unsafe extern "C" fn op_pointer(
                     OpPointerPhase::Up => {
                         let release =
                             crate::editor_pointer_release::release_at(session, x, y, time_ms);
-                        let template = if release.is_ok() {
-                            crate::editor_template::drain_pending_scene_template(session)
-                        } else {
-                            Ok(false)
-                        };
                         let collab_changed = session.finish_collab_pointer_edit();
-                        (release? | template? | collab_changed, false)
+                        (release? | collab_changed, false)
                     }
                     OpPointerPhase::Cancel => (
                         session.cancel_editor_collab_gesture_at(Some(time_ms))?,
@@ -502,12 +496,7 @@ pub unsafe extern "C" fn op_pointer(
                 if camera_changed {
                     session.user_interacted = true;
                 }
-                let template_changed = if phase == OpPointerPhase::Up {
-                    false
-                } else {
-                    crate::editor_template::drain_pending_scene_template(session)?
-                };
-                if changed || template_changed || presence_changed {
+                if changed || presence_changed {
                     session.request_redraw();
                 }
                 return Ok(());

@@ -306,6 +306,7 @@ fn extract_radius(sections: &HashMap<String, String>) -> StyleRadius {
 pub fn extract_style_guide_values(content: &str) -> StyleGuideValues {
     let mut values = extract_corpus_values(content);
     super::token_table::fill_gaps(&mut values, content);
+    super::design_tokens::apply(&mut values, content);
     values
 }
 

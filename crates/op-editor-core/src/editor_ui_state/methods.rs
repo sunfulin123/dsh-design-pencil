@@ -5,8 +5,7 @@
 //! Split out of the `editor_ui_state` spine (800-line file ceiling).
 
 use super::{
-    EditorUiState, FontPickerPurpose, Locale, MissingFontSurface, RecentFile, SceneTemplateFocus,
-    RECENT_FILE_CAP,
+    EditorUiState, FontPickerPurpose, Locale, MissingFontSurface, RecentFile, RECENT_FILE_CAP,
 };
 
 impl EditorUiState {
@@ -153,7 +152,7 @@ impl EditorUiState {
 
     /// Open the Prompt Center with its search field focused.
     pub fn open_prompt_center(&mut self, now_ms: u64) {
-        self.close_scene_template_center();
+        self.close_asset_center();
         self.close_icon_picker();
         self.close_chat_model_picker();
         self.close_parallel_agents_picker();
@@ -182,26 +181,23 @@ impl EditorUiState {
     /// Closes the Prompt Center: both are full-size centred panels, so
     /// leaving one open behind the other would stack two card grids the user
     /// cannot see past.
-    pub fn open_scene_template_center(&mut self, now_ms: u64) {
+    pub fn open_asset_center(&mut self, now_ms: u64) {
         self.close_prompt_center();
         self.close_icon_picker();
         self.close_chat_model_picker();
         self.close_parallel_agents_picker();
-        self.scene_template_center
-            .open(now_ms, !self.touch_chrome());
+        self.asset_center.open(now_ms, !self.touch_chrome());
     }
 
     /// Close the Scene Template Center and clear its transient state.
-    pub fn close_scene_template_center(&mut self) -> bool {
-        if !self.scene_template_center.open {
+    pub fn close_asset_center(&mut self) -> bool {
+        if !self.asset_center.open {
             return false;
         }
-        self.scene_template_center.close();
+        self.asset_center.close();
         if matches!(
             self.pressed_button,
-            Some(crate::button_press_state::ButtonPressTarget::SceneTemplate(
-                _
-            ))
+            Some(crate::button_press_state::ButtonPressTarget::AssetCenter(_))
         ) {
             self.pressed_button = None;
         }
@@ -211,52 +207,11 @@ impl EditorUiState {
     /// Close the style-import layer and resolve keyboard ownership for the
     /// current input mode. Pointer-driven desktop keeps its search focus;
     /// touch returns to browsing until the user taps a field again.
-    pub fn close_scene_template_style_import(&mut self) -> bool {
-        let changed = self.scene_template_center.close_style_import();
+    pub fn close_asset_center_style_import(&mut self) -> bool {
+        let changed = self.asset_center.close_style_import();
         if changed && self.touch_chrome() {
-            self.scene_template_center.input_focus_active = false;
+            self.asset_center.input_focus_active = false;
         }
-        changed
-    }
-
-    /// Aim the generate row at a template: pin its style guide, narrow the
-    /// grid to its scene, and put the caret in the topic field.
-    ///
-    /// Three writes, one gesture, because the user asked one question — "make
-    /// me something like this" — and answering it in three places they then
-    /// have to find would be the same work done by hand. The pin is the part
-    /// that actually reaches the pipeline (`resolve_pinned_style_guide`
-    /// short-circuits the whole style menu to it); the filter and the focus
-    /// are so the panel now looks like what it is about to do.
-    ///
-    /// Returns whether anything moved.
-    pub fn use_scene_template_as_generate_basis(
-        &mut self,
-        template: &crate::scene_template_catalog::SceneTemplateDefinition,
-    ) -> bool {
-        let Some(guide) = template.generate_style_guide() else {
-            return false;
-        };
-        let mut changed = self.pinned_style_guide.as_deref() != Some(guide);
-        self.pinned_style_guide = Some(guide.to_string());
-
-        let center = &mut self.scene_template_center;
-        let filter = crate::editor_ui_state::SceneFilter::Scene(template.scene);
-        if center.filter != filter {
-            center.filter = filter;
-            // The grid reorders under the pointer, so a retained scroll or
-            // hover index would name a different card than the one just
-            // pressed — same reason the filter chips reset both.
-            center.scroll.offset = 0.0;
-            center.hover = None;
-            changed = true;
-        }
-        changed |= center.focus != SceneTemplateFocus::Generate;
-        center.focus = SceneTemplateFocus::Generate;
-        changed |= !center.input_focus_active;
-        center.input_focus_active = true;
-        changed |= center.generate_basis.as_deref() != Some(template.id.as_str());
-        center.generate_basis = Some(template.id.clone());
         changed
     }
 
@@ -272,22 +227,6 @@ impl EditorUiState {
         }
         // The Asset Center's basis chip is a label for a pin that no longer
         // exists; leaving it would name a style nothing is using.
-        self.scene_template_center.generate_basis = None;
-        true
-    }
-
-    /// Drop the generate row's basis chip and the pin it set.
-    ///
-    /// Both, because the chip is the only visible trace of the pin while the
-    /// Templates tab is showing: clearing the label and leaving the guide
-    /// pinned would keep steering every later generation with nothing on
-    /// screen saying so.
-    pub fn clear_scene_template_generate_basis(&mut self) -> bool {
-        let center = &mut self.scene_template_center;
-        if center.generate_basis.take().is_none() {
-            return false;
-        }
-        self.pinned_style_guide = None;
         true
     }
 

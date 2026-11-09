@@ -97,7 +97,7 @@ fn editor_press(session: &mut Session, x: f32, y: f32, time_ms: u64) -> FfiResul
     if changed || presence_changed {
         session.request_redraw();
     }
-    crate::editor_template::drain_pending_scene_template(session)?;
+    crate::editor_template::drain_pending_asset_center(session)?;
     Ok(())
 }
 
@@ -200,7 +200,7 @@ fn editor_release(session: &mut Session, x: f32, y: f32, time_ms: u64) -> FfiRes
     let (x, y) = session.editor_point(x, y);
     let release = crate::editor_pointer_release::release_at(session, x, y, time_ms);
     let template = if release.is_ok() {
-        crate::editor_template::drain_pending_scene_template(session)
+        crate::editor_template::drain_pending_asset_center(session)
     } else {
         Ok(false)
     };

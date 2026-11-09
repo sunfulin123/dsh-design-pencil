@@ -439,7 +439,6 @@ impl EditorCommand {
             | C::InsertSubtree { .. }
             | C::InsertAuthoredSubtree { .. }
             | C::InsertAuthoredSubtreePreservingRoots { .. }
-            | C::AdoptSceneTemplate { .. }
             | C::RefineDesign { .. }
             | C::Batch { .. }
             | C::ReplaceAllMatchingProperties { .. }

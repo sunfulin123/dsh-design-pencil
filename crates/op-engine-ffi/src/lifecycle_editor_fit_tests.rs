@@ -2,7 +2,7 @@ use super::*;
 use crate::desc::{Callbacks, CreateOptions};
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 fn editor_session(width: f32, height: f32) -> Session {
     Session::new(CreateOptions {

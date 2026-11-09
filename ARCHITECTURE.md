@@ -46,34 +46,28 @@ Node host（packages/dsh-node-runtime）
 ## 共享设计资产
 
 [AssetStore](packages/dsh-node-runtime/asset-store.mjs) 用 Node 标准库 SQLite 持久化
-用户模板、风格原始 Markdown 和 `.optheme` JSON；同目录的多个 host 共用事务与
+用户风格原始 Markdown 和 `.optheme` JSON；同目录的多个 host 共用事务与
 `assetsRevision`，不同目录相互隔离。CLI 默认使用用户级目录
-（[asset-directory](packages/dsh-node-runtime/asset-directory.mjs)：`DSH_ASSET_DIR`，否则
-macOS `~/Library/Application Support/dsh-design-pencil/assets`、Linux XDG data、Windows
-`LOCALAPPDATA`），因此每次用临时草稿文件启动的 DSH 会话共享同一资产库，重启不丢失。
-显式 `--asset-dir` 优先。旧的文档旁 `.dsh-design/assets` 在启动时一次性、非破坏性合并，
-旁边写 `migrated.json` 防止删除的资产复活；合并失败只写 stderr，不阻止启动。
-直接调用 `startNodeHost` 的库调用方未传目录时仍使用文档旁目录。
+（`DSH_ASSET_DIR` 或平台应用数据目录），显式 `--asset-dir` 优先。
+直接调用 `startNodeHost` 未传目录时使用文档旁目录；不合并旧资产库。
 
 [资产工具](packages/dsh-node-runtime/asset-tools.mjs) 同时服务 MCP 与 `/api/assets`。
-目录只返回元数据，正文按稳定 id 获取；目录读取期间 revision 改变会明确拒绝，
-不会发布混合快照。用户资产更新/改名/删除要求 `expectedRevision`；内置资产只读。
-模板限 50 个，单个 payload 和目录响应限 32 MiB；list 工具提供分页。
-Rust [资产语义](crates/op-dsh-engine/src/asset_semantics.rs) 复用已有解析、模板引用改写、
-变量/图片合并及命令；实例化和主题加载各占一个 undo，Node 保留未知节点扩展。
-保存模板包含选中节点引用的跨页 reusable master；删除资产不删除已插入的设计。
-MCP 和共享 HTTP API 的设计变更均经过原有 draft autosave。
-每次托管模板插入使用不冲突且兼容公式语法的命名空间；更新库模板不会重写旧实例。
-变量定义中的别名/公式与节点引用一起改写，完整别名可包含 slash；
-公式标识符遵循变量解析器的共享语法，slash 在公式中仍是除法。
-模板主题轴、默认选择和节点主题覆盖一起隔离，不改变目标文档原有主题。
+目录只返回元数据，正文按稳定 id 获取；读取期间 revision 改变会拒绝混合快照。
+用户资产更新/改名/删除要求 `expectedRevision`；内置资产只读。
+单个 payload 和目录响应限 32 MiB；list 工具提供分页。
+模板功能、目录、工具、存储类型、文档及预览资源已删除，不提供旧数据兼容。
+主题预设加载占一个 undo，MCP 与 HTTP 的设计变更均经过 draft autosave。
+
+风格唯一来源为 [style-guides](crates/op-ai-skills/skills/style-guides/)：保留默认
+`talkdesk-cobalt`，另有 84 份逐字保存的社区 `DESIGN.md`。清单记录来源相对路径、
+稳定 `design-md:<目录名>` id 和 SHA-256；空目录不导入。原文的 name 用于展示，id 用于
+查询与绑定。完整原文供 AI 使用，frontmatter 颜色/字体供卡片与结构化规范使用，
+无 frontmatter 的文件走现有宽容 Markdown 解析。不可变卡片与 AI 目录缓存避免逐帧解析全文。
 
 浏览器 [ManagedAssets](crates/op-editor-core/src/managed_assets.rs) 是每个 EditorState
-独立的目录视图，不写进进程全局用户 registry，也不进入文档历史。
-[同步桥](crates/op-host-web/src/managed_assets_sync.rs) 复用轻量版本 probe，仅 revision
-变化时拉目录；主题预设正文全部验证后按目录顺序一次发布。UI 导入/保存/删除在
-持久化确认后更新，未同步的设计不能直接保存或加载资产。绑定风格会将规范及变量
-同步到当前文档；不会只改一个不可供 AI 使用的装饰性 pin。
+独立的目录视图，不进入文档历史。[同步桥](crates/op-host-web/src/managed_assets_sync.rs)
+仅在 revision 变化时拉目录。UI 导入/删除在持久化确认后更新；绑定风格将规范及变量
+应用到当前文档，供 AI 使用。资产中心默认且仅展示风格；主题预设保持原有独立入口。
 
 [EditorControl](packages/dsh-node-runtime/editor-control.mjs) 等待真实编辑器确认主题，
 不持有其 poll/ack 或文档写入所需的队列。有效主题优先级：

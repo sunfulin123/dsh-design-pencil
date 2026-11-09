@@ -143,151 +143,143 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.action.confirmOwner" => "Join this session",
         "collab.action.rejectOwner" => "Do not join",
         "collab.error.ownerNotConfirmed" => "You did not confirm the host, so nothing was loaded.",
-        "sceneTemplate.title" => "Scene Templates",
-        "sceneTemplate.searchPlaceholder" => "Search scenes or templates",
-        "sceneTemplate.empty" => "No matching templates",
-        "sceneTemplate.frames" => "Pages: {{count}}",
-        "sceneTemplate.generate.placeholder" => "Describe a topic — AI generates the whole deck",
-        "sceneTemplate.generate.button" => "Generate",
-        "sceneTemplate.generate.hint" => "A new document, built from your topic as a full slide deck.",
-        "sceneTemplate.generate.promptTemplate" => "Create a presentation deck (PPT) on the following topic: {{topic}}",
-        "sceneTemplate.card.addToCanvas" => "Add to canvas",
-        "sceneTemplate.card.generateFrom" => "Generate from this",
-        "sceneTemplate.generate.basis" => "Based on: ",
-        "sceneTemplate.filter.all" => "All",
-        "sceneTemplate.scene.tutorial" => "Tutorials",
-        "sceneTemplate.scene.comparison" => "Comparison",
-        "sceneTemplate.scene.carousel" => "Carousel",
-        "sceneTemplate.scene.slides" => "Slides",
-        "sceneTemplate.scene.card" => "Cards",
-        "sceneTemplate.scene.web" => "Web Pages",
-        "sceneTemplate.generate.webPromptTemplate" => "Design a multi-section web landing page on the following topic: {{topic}}",
-        "sceneTemplate.item.saasLandingOrange.title" => "SaaS Landing Page · Orange",
-        "sceneTemplate.item.saasLandingOrange.summary" => "A light marketing page built on near-black panels and one orange accent: navigation, a hero with a product shot, three capability cards, a workflow walkthrough, testimonials and a subscribe footer. Swap the copy and it is a site.",
-        "sceneTemplate.item.productLandingLight.title" => "Product Landing Page · Light",
-        "sceneTemplate.item.productLandingLight.summary" => "A paper-white broadsheet product page: an interactive hero demo, capability columns, an analytics board, an old-versus-new comparison and three pricing tiers. Built for SaaS sites and product launches.",
-        "sceneTemplate.item.screenshotTutorial.title" => "Three-Step Screenshot Tutorial Cards",
-        "sceneTemplate.item.screenshotTutorial.summary" => {
-            "A cover, three how-to steps, and a closing call to action. Replace the screenshots and instructions to publish."
-        }
-        "sceneTemplate.item.knowledgeCarousel.title" => "Knowledge and Insights Carousel",
-        "sceneTemplate.item.knowledgeCarousel.summary" => {
-            "A cover, three key points, and a summary page—ideal for breaking one idea into a continuous, swipeable card series."
-        }
-        "sceneTemplate.item.beforeAfter.title" => "Before-and-After Redesign Comparison",
-        "sceneTemplate.item.beforeAfter.summary" => {
-            "A side-by-side before-and-after comparison with notes on the changes, ideal for retrospectives and portfolio showcases."
-        }
-        "sceneTemplate.item.slideDeck.title" => "Presentation · Six Slides",
-        "sceneTemplate.item.slideDeck.summary" => {
-            "A cover, agenda, key points, data, charts, and a closing slide in 16:9 presentation format. Replace the copy and present."
-        }
-        "sceneTemplate.item.knowledgeCardVertical.title" => "Knowledge Card · Portrait",
-        "sceneTemplate.item.knowledgeCardVertical.summary" => "A single 3:4 card with a headline, four takeaways, and a byline. Swap the copy and post it.",
-        "sceneTemplate.item.knowledgeCardSquare.title" => "Knowledge Card · Square",
-        "sceneTemplate.item.knowledgeCardSquare.summary" => "A 1:1 card in the same layout, compact enough for a post header or a social share.",
-        "sceneTemplate.item.pitchDeckDark.title" => "Pitch Deck · Dark",
-        "sceneTemplate.item.pitchDeckDark.summary" => "A cover, the problem, the solution, the numbers, a roadmap and a contact slide. Big type on a dark ground, built for fundraising and launch talks.",
-        "sceneTemplate.item.lectureDeckLight.title" => "Lecture Deck · Light",
-        "sceneTemplate.item.lectureDeckLight.summary" => "A course cover, objectives, a concept walkthrough, a worked example, a comparison table and a wrap-up. Paper-white, easy on the eyes for a full class.",
-        "sceneTemplate.item.minimalKeynote.title" => "Minimal Keynote",
-        "sceneTemplate.item.minimalKeynote.summary" => "White space, oversized type, one centred line per slide — nine pages without a single card, and an agenda of nothing but rules and numbers. Built for launches and keynotes.",
-        "sceneTemplate.item.gradientTech.title" => "Gradient Tech",
-        "sceneTemplate.item.gradientTech.summary" => "A dark gradient ground with frosted-glass cards, covering architecture, benchmarks and a customer wall. For developer product launches.",
-        "sceneTemplate.scene.infographic" => "Infographics",
-        "sceneTemplate.item.punchQuoteCard.title" => "Quote Card · Poster",
-        "sceneTemplate.item.punchQuoteCard.summary" => "A 3:4 card on near-black: two lines of oversized type over one yellow highlight bar. One sentence and nothing else, built for opinions and quotes.",
-        "sceneTemplate.item.journalChecklistCard.title" => "Checklist Card · Knowledge Base",
-        "sceneTemplate.item.journalChecklistCard.summary" => "A white checklist card on a soft grey ground: five tickable to-dos, a tag and a pull quote. Built for weekly plans and habit posts.",
-        "sceneTemplate.item.dataReportInfographic.title" => "Data Report Infographic",
-        "sceneTemplate.item.dataReportInfographic.summary" => "A tall scrolling graphic: dark masthead, three headline numbers, a ranked bar comparison, a share breakdown and three takeaways. Swap the numbers and post it.",
-        "sceneTemplate.item.stepsFlowInfographic.title" => "Step-by-Step Infographic",
-        "sceneTemplate.item.stepsFlowInfographic.summary" => "A tall scrolling graphic: five numbered step cards strung into one flow, each with a time estimate, plus two closing tips. Built for tutorials and how-to guides.",
-        "sceneTemplate.item.eventPosterDeck.title" => "Event Deck · Poster",
-        "sceneTemplate.item.eventPosterDeck.summary" => "A cover, highlights, a schedule, directions, ticket tiers and a sign-off. Gallery-white ground with decisive red and blue blocks, no rounded corners and no gradients — built for markets, club events and openings.",
-        "sceneTemplate.item.pitfallListInfographic.title" => "Pitfall Checklist Infographic",
-        "sceneTemplate.item.pitfallListInfographic.summary" => "A tall scrolling graphic: six mistakes ranked by how often people make them, each with what goes wrong and what to do instead, plus a four-line pre-publish check. Black, white and grey only.",
-        "sceneTemplate.item.spineCultureCard.title" => "Vertical Spine Card · Mineral Pigment",
-        "sceneTemplate.item.spineCultureCard.summary" => "A 3:4 card on ochre-clay dark ground with a vertical Chinese title, flaking plaster and pigment grains. For culture, long reads and personal-brand covers.",
-        "sceneTemplate.item.metricSingleCard.title" => "Single Metric Card · Grid Hanzi",
-        "sceneTemplate.item.metricSingleCard.summary" => "A 1:1 card: one huge number on pure white, a strict Swiss grid and a single red signal square. For conclusions and results.",
-        "sceneTemplate.item.quoteFrameCard.title" => "Quote Frame Card · Silk Blue-Green",
-        "sceneTemplate.item.quoteFrameCard.summary" => "A 4:5 card on aged silk yellow: one framed sentence, with an azurite-and-malachite mountain along the foot. For excerpts, interviews and quotations.",
-        "sceneTemplate.item.dailySignCard.title" => "Daily Card · Garden Frame",
-        "sceneTemplate.item.dailySignCard.summary" => "A 3:4 card on lime-washed wall with a hexagonal lattice window; date and one line sit inside it. Whitespace is the decoration. For daily posts and brand lines.",
-        "sceneTemplate.item.priceTierCard.title" => "Price Tier Card · Arcade Neon",
-        "sceneTemplate.item.priceTierCard.summary" => "A 1:1 card on ink-blue night with a three-tier price table, neon tube outlines and their scatter. For shops, events and package pricing.",
-        "sceneTemplate.item.noticeBoardCard.title" => "Notice Card · Lead Type Press",
-        "sceneTemplate.item.noticeBoardCard.summary" => "A 4:5 card on newsprint: masthead rules with a misregistered red plate, numbered clauses and a serial stamp. For notices, rules and house guidelines.",
-        "sceneTemplate.item.milestoneTimelineInfographic.title" => "Milestone Timeline Infographic",
-        "sceneTemplate.item.milestoneTimelineInfographic.summary" => "A tall scrolling graphic: one axis running the whole height, year ticks beside milestone cards, closing on what comes next. For retrospectives, brand history and project journeys.",
-        "sceneTemplate.item.conceptContrastInfographic.title" => "Concept Contrast Infographic",
-        "sceneTemplate.item.conceptContrastInfographic.summary" => "A tall scrolling graphic: the verdict first, then a definition card for each concept, a two-column breakdown by dimension, and finally how to choose.",
-        "sceneTemplate.item.rankingBoardInfographic.title" => "Top-N Ranking Infographic",
-        "sceneTemplate.item.rankingBoardInfographic.summary" => "A tall scrolling graphic: a gold-on-ink recommendation board — large badges for the top three, outlined ones for four through eight, each with when to use it and how often.",
-        "sceneTemplate.item.faqThreadInfographic.title" => "FAQ Thread Infographic",
-        "sceneTemplate.item.faqThreadInfographic.summary" => "A tall scrolling graphic: six question-and-answer pairs, Q solid and A outlined. No numbering, no order — any single pair stands on its own.",
-        "sceneTemplate.item.dataStoryInfographic.title" => "Data Story Infographic",
-        "sceneTemplate.item.dataStoryInfographic.summary" => "A tall scrolling graphic: four numbers strung into one causal line, each stage shown as a ten-block array, closing on a conclusion you can act on.",
-        "sceneTemplate.item.challengeTrackerInfographic.title" => "30-Day Challenge Infographic",
-        "sceneTemplate.item.challengeTrackerInfographic.summary" => "A tall scrolling graphic: a thirty-box grid, six by five, with milestones only on days 7, 15 and 30. Save it and cross off one box a day.",
-        "sceneTemplate.item.ecosystemMapInfographic.title" => "Ecosystem Map Infographic",
-        "sceneTemplate.item.ecosystemMapInfographic.summary" => "A tall scrolling graphic: a two-by-two array of four positions along one chain, three players in each, with the gaps called out. White cards floating on slate.",
-        "sceneTemplate.item.doDontComparison.title" => "Do / Don't Two-Column",
-        "sceneTemplate.item.doDontComparison.summary" => "A 3:4 card: two ways of doing the same thing side by side, told apart by material and icon rather than red-versus-green, so colour-blind readers can read it too.",
-        "sceneTemplate.item.mythTruthComparison.title" => "Myth vs Truth Infographic",
-        "sceneTemplate.item.mythTruthComparison.summary" => "A tall graphic: five pairs of “what people say / what is actually true”, myth narrow and pale on the left, truth wide and dark on the right, one pair at a time.",
-        "sceneTemplate.item.pricingTiersComparison.title" => "Pricing Tiers Comparison",
-        "sceneTemplate.item.pricingTiersComparison.summary" => "A 3:4 card: Free, Pro and Team side by side, price as the anchor, each column containing the one before it. For pricing pages and plan explainers.",
-        "sceneTemplate.item.scenarioGuideComparison.title" => "Scenario Guide Infographic",
-        "sceneTemplate.item.scenarioGuideComparison.summary" => "A tall graphic: no specs, just seven situations, each tagged with a verdict. The reader only has to find their own row.",
-        "sceneTemplate.item.specTableComparison.title" => "Spec Table Infographic",
-        "sceneTemplate.item.specTableComparison.summary" => "A tall graphic: two candidates in one real table, row by row, the winning cell lifted with a dark fill so you can see at a glance who wins where.",
-        "sceneTemplate.item.threeWayComparison.title" => "Three-Way Comparison Infographic",
-        "sceneTemplate.item.threeWayComparison.summary" => "A tall graphic: three options side by side with the recommendation in the middle; each column opens with a situation rather than a name, because readers are looking for themselves.",
-        "sceneTemplate.item.timeShiftComparison.title" => "Time Shift · A Year Ago and Now",
-        "sceneTemplate.item.timeShiftComparison.summary" => "A 3:4 card: a centred spine of labels, a year ago on the left and now on the right, both values of each item landing on the same row.",
-        "sceneTemplate.item.tradeoffScaleComparison.title" => "Trade-off Scale",
-        "sceneTemplate.item.tradeoffScaleComparison.summary" => "A 1:1 card: one beam, two pans — worth it on the left, what it costs on the right, an empty checkbox before every line. The card lists both sides and hands you the pen.",
-        "sceneTemplate.item.versionDiffComparison.title" => "Version Diff",
-        "sceneTemplate.item.versionDiffComparison.summary" => "A 1:1 card: no left-right split — every row completes its own “old → new”, so you just scroll and read.",
-        "sceneTemplate.item.appOnboardingTriptych.title" => "App Onboarding Triptych",
-        "sceneTemplate.item.appOnboardingTriptych.summary" => "A 3:4 card: three phones side by side with empty image wells. Drop in your own three onboarding screens, add the copy, and it is ready for review or posting.",
-        "sceneTemplate.item.diyBlueprintGuide.title" => "DIY Blueprint Guide",
-        "sceneTemplate.item.diyBlueprintGuide.summary" => "A tall graphic where the materials-and-specs table takes as much room as the steps — DIY usually fails in the preparation, not in the hands.",
-        "sceneTemplate.item.photoCompositionTutorial.title" => "Phone Photography Composition",
-        "sceneTemplate.item.photoCompositionTutorial.summary" => "3:4, five frames: each one a dark viewfinder with bright guide lines over the photo well, because composition can only be explained on the frame itself.",
-        "sceneTemplate.item.recipeFourStep.title" => "Four-Step Recipe Card",
-        "sceneTemplate.item.recipeFourStep.summary" => "A 4:5 card, 2×2: all four steps on one card. Screenshot it and cook from it — nobody wants to swipe pages at the stove.",
-        "sceneTemplate.item.skincareRoutineCards.title" => "Skincare Routine Cards",
-        "sceneTemplate.item.skincareRoutineCards.summary" => "4:5, six frames: every step fixes three numbers — how much, how long to wait, morning or night. Skincare goes wrong on dose and interval, not on order.",
-        "sceneTemplate.item.softwareStepTutorial.title" => "Software Step Tutorial",
-        "sceneTemplate.item.softwareStepTutorial.summary" => "A 4:5 card, the only dark one in the tutorial set: screenshot wells with numbered instructions, for tools and feature walkthroughs.",
-        "sceneTemplate.item.storageMakeoverSteps.title" => "Storage Makeover Steps",
-        "sceneTemplate.item.storageMakeoverSteps.summary" => "3:4, six frames: besides the action and the image well, each step fixes a done-condition and a time budget — you are finished when it looks like that.",
-        "sceneTemplate.item.weeklyReportLesson.title" => "Weekly Report Lesson",
-        "sceneTemplate.item.weeklyReportLesson.summary" => "A tall graphic: after the four-part structure it hands you a skeleton with underlined blanks — screenshot it and fill it in.",
-        "sceneTemplate.item.workoutBreakdownGuide.title" => "Workout Breakdown Guide",
-        "sceneTemplate.item.workoutBreakdownGuide.summary" => "A tall graphic: every movement carries a fixed sets / reps / rest bar alongside the image well and the cues, because people save this to train by the numbers.",
-        "sceneTemplate.item.bookreviewSilkCarousel.title" => "Book / Film Review Carousel",
-        "sceneTemplate.item.bookreviewSilkCarousel.summary" => "3:4, five boards: hook, an annotated excerpt, three insights, one quotable line, close. It takes a work apart into pieces you can carry away instead of retelling the plot.",
-        "sceneTemplate.item.cityguideFilmCarousel.title" => "City Guide Carousel",
-        "sceneTemplate.item.cityguideFilmCarousel.summary" => "3:4, seven boards: places and routes alternate — the place boards feed the dreamers, the day route and the eat-and-stay table feed the planners.",
-        "sceneTemplate.item.datareportGridCarousel.title" => "Data Report Carousel",
-        "sceneTemplate.item.datareportGridCarousel.summary" => "3:4, six boards: every data board is followed by a non-data one, so nobody swipes past the third chart. For quarterly reviews and industry notes.",
-        "sceneTemplate.item.opinionLongformCarousel.title" => "Long-Form Opinion Carousel",
-        "sceneTemplate.item.opinionLongformCarousel.summary" => "3:4, six boards: one strict visual master throughout — page number and title never move. On a carousel the previous board is gone, so consistency is not decoration.",
-        "sceneTemplate.item.qaChalkboardCarousel.title" => "Q&A Carousel",
-        "sceneTemplate.item.qaChalkboardCarousel.summary" => "3:4, six boards: one question per board, each with a hand-drawn question number in the corner. The question itself is the reason to swipe on.",
-        "sceneTemplate.item.storyNightCarousel.title" => "Story Carousel",
-        "sceneTemplate.item.storyNightCarousel.summary" => "3:4, seven boards: a personal retrospective built on time — the timeline on board five is the load-bearing wall, and the first four boards are each one of its marks.",
-        "sceneTemplate.item.toolkitNotebookCarousel.title" => "Toolkit Collection Carousel",
-        "sceneTemplate.item.toolkitNotebookCarousel.summary" => "3:4, six boards: six tools unfolded one per board, with the last board listing them all with page numbers — the collection reader is here to save it.",
-        "sceneTemplate.item.tutorialJournalCarousel.title" => "Tutorial Carousel",
-        "sceneTemplate.item.tutorialJournalCarousel.summary" => "3:4, six boards: one step per board, the finger is the progress bar. For crafts, software and everyday how-tos.",
-        "sceneTemplate.item.yearreviewMineralCarousel.title" => "Year in Review Carousel",
-        "sceneTemplate.item.yearreviewMineralCarousel.summary" => "3:4, eight boards: number boards run cold and reflection boards run warm, alternating. For year-end summaries and personal retrospectives.",
-        "fileMenu.newFromTemplate" => "New from Template",
+
+
+
+
+        "assetCenter.generate.placeholder" => "Describe a topic — AI generates the whole deck",
+        "assetCenter.generate.button" => "Generate",
+        "assetCenter.generate.hint" => "A new document, built from your topic as a full slide deck.",
+        "assetCenter.generate.promptTemplate" => "Create a presentation deck (PPT) on the following topic: {{topic}}",
+
+
+        "assetCenter.generate.basis" => "Based on: ",
+
+        "designScene.tutorial" => "Tutorials",
+        "designScene.comparison" => "Comparison",
+        "designScene.carousel" => "Carousel",
+        "designScene.slides" => "Slides",
+        "designScene.card" => "Cards",
+        "designScene.web" => "Web Pages",
+        "assetCenter.generate.webPromptTemplate" => "Design a multi-section web landing page on the following topic: {{topic}}",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "designScene.infographic" => "Infographics",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "fileMenu.exportSlideshowHtml" => "Export slideshow HTML...",
         "fileMenu.exportPptx" => "Export PowerPoint...",
         "dialog.slideshowHtmlTitle" => "Export slideshow",
@@ -691,7 +683,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "settings.agents.acpPresetAdd" => "Add",
         "settings.agents.acpNotInstalled" => "Not installed",
         "assetCenter.title" => "Asset Center",
-        "assetCenter.tab.templates" => "Templates",
+
         "assetCenter.tab.styles" => "Styles",
         "assetCenter.style.empty" => "No matching styles",
         "assetCenter.style.pinned" => "Pinned",

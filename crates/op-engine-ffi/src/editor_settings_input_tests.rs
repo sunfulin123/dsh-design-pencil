@@ -15,7 +15,7 @@ use crate::{op_editor_press, op_editor_release};
 use op_editor_core::agent_settings::{BuiltinAgentField, SettingsFocus};
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 const PHONE_W: f32 = 390.0;
 const PHONE_H: f32 = 844.0;

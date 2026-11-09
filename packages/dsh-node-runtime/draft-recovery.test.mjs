@@ -76,11 +76,11 @@ function success(result) {
 
 test('shared asset API design mutations produce a recoverable autosave', async (context) => {
   const f = await fixture(context);
-  const saved = success(await f.call('save_scene_template', { name: 'Recovery board' }));
+  const saved = success(await f.call('save_theme_preset', { name: 'Recovery theme' }));
   const response = await fetch(
     `${f.host.baseUrl}/api/assets/tools`,
     post({
-      name: 'instantiate_scene_template',
+      name: 'load_theme_preset',
       arguments: { id: saved.asset.id },
     }),
   );

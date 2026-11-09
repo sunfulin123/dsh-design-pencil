@@ -5,12 +5,12 @@ use crate::desc::{Callbacks, CreateOptions};
 use crate::lifecycle::{OpEngine, Session};
 use crate::{op_editor_press, op_editor_release, op_pointer, OpStatus};
 use op_editor_core::preview_slideshow::SlideshowToolbarButton;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::size_class::EditorSizeClass;
 use op_editor_ui::widgets::SlideshowToolbar;
 use op_editor_ui::{Point2D, Rect};
 
-const SLIDE_DECK: &str = include_str!("../../op-editor-core/assets/scene_templates/slide-deck.op");
+const SLIDE_DECK: &str = include_str!("../../op-editor-core/assets/asset_centers/slide-deck.op");
 const START: (f32, f32) = (260.0, 220.0);
 
 fn slideshow_engine() -> OpEngine {
@@ -30,7 +30,7 @@ fn slideshow_engine() -> OpEngine {
     let session = engine.session_mut_for_test();
     let viewport = session.editor_viewport();
     let host = session.editor_mut().expect("editor host");
-    host.editor_state_mut().editor_ui.scenario = Some(TemplateScene::Slides);
+    host.editor_state_mut().editor_ui.scenario = Some(DesignScene::Slides);
     host.editor_state_mut().editor_ui.touch = true;
     host.editor_state_mut().editor_ui.size_class = EditorSizeClass::Compact;
     assert!(host.enter_preview(viewport));

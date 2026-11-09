@@ -15,7 +15,6 @@
 use super::{DesignMdRequest, PreviewDeviceKind};
 use crate::design_md_button_state::DesignMdButton;
 use crate::prompt_center_catalog::PromptCategory;
-use crate::scene_template_catalog::TemplateScene;
 use serde::{Deserialize, Serialize};
 
 /// Canvas **Preview** (Play) mode state.
@@ -296,19 +295,9 @@ impl PromptCenterState {
     }
 }
 
-/// The catalogue subset selected by the Scene Template Center chip row.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum SceneFilter {
-    /// Every shipped template.
-    #[default]
-    All,
-    /// One scene.
-    Scene(TemplateScene),
-}
-
 /// Which Scene Template Center field owns the keyboard.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum SceneTemplateFocus {
+pub enum AssetCenterFocus {
     /// The catalogue search field, focused whenever the panel opens.
     #[default]
     Search,
@@ -326,21 +315,18 @@ pub enum SceneTemplateFocus {
 /// plus one match arm, not a second layout branch.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum AssetCenterTab {
-    /// The shipped scene templates — the panel's original content.
-    #[default]
-    Templates,
     /// The style-guide catalogue, one card per guide.
+    #[default]
     Styles,
 }
 
 impl AssetCenterTab {
     /// Every tab, in the order the chip row paints them.
-    pub const ALL: [AssetCenterTab; 2] = [AssetCenterTab::Templates, AssetCenterTab::Styles];
+    pub const ALL: [AssetCenterTab; 1] = [AssetCenterTab::Styles];
 
     /// i18n key for this tab's chip label.
     pub fn title_key(self) -> &'static str {
         match self {
-            AssetCenterTab::Templates => "assetCenter.tab.templates",
             AssetCenterTab::Styles => "assetCenter.tab.styles",
         }
     }
@@ -348,32 +334,20 @@ impl AssetCenterTab {
     /// Label used when the locale table has no entry for [`Self::title_key`].
     pub fn title_fallback(self) -> &'static str {
         match self {
-            AssetCenterTab::Templates => "模板",
             AssetCenterTab::Styles => "风格",
         }
     }
 }
 
-/// Grouped state for the non-modal Scene Template Center panel.
-///
-/// Deliberately smaller than [`PromptCenterState`]: the panel opens existing
-/// templates and delegates host-owned persistence through one-shot requests.
-/// There is no template authoring form in this state.
 #[derive(Debug, Clone, PartialEq)]
-pub struct SceneTemplateCenterState {
-    /// Whether this host can persist the open document into the user's local
-    /// template library. Unsupported hosts omit the File-menu action.
-    pub save_current_supported: bool,
-    /// Raised by File ▸ Save As Template and drained by the owning host.
-    pub pending_save_current: bool,
-    /// Whether the floating panel is visible.
+pub struct AssetCenterState {
     pub open: bool,
     /// Search text, caret, selection, and IME state.
     pub search: jian_core::text_input::TextInputState,
     /// Topic text for the generate row.
     pub generate: jian_core::text_input::TextInputState,
     /// Which of the two fields the keyboard writes into.
-    pub focus: SceneTemplateFocus,
+    pub focus: AssetCenterFocus,
     /// Whether that field currently owns platform text input.
     ///
     /// Desktop opens with search active for keyboard-first workflows. Touch
@@ -383,38 +357,13 @@ pub struct SceneTemplateCenterState {
     /// Which asset family the panel is showing.
     pub tab: AssetCenterTab,
     /// Active catalogue filter.
-    pub filter: SceneFilter,
     /// Vertical card-grid scroll.
     pub scroll: jian_core::scroll::ScrollState,
     /// Widget-defined hover token. Card rows use their filtered index;
     /// chrome controls use reserved high values.
     pub hover: Option<usize>,
-    /// Raised when a card is chosen; the host drains it to load the
-    /// document. Kept as a request rather than applied inline because
-    /// opening a document is a host capability (file dialogs, unsaved-work
-    /// prompts), not a widget one.
-    pub pending_open: Option<String>,
-    /// Raised when the generate row is submitted, carrying the raw topic
-    /// the user typed. Drained by the host for the same reason
-    /// `pending_open` is: replacing the document and launching a chat
-    /// turn are host capabilities, not widget ones.
     pub pending_generate: Option<String>,
-    /// The template the generate row is currently working from, as a
-    /// catalogue id.
-    ///
-    /// Purely a label and an undo handle for the pin: the style guide the
-    /// basis selected lives in `pinned_style_guide`, which is what the
-    /// pipeline reads. Keeping the id here as well is what lets the chip say
-    /// *which template* the user chose rather than which guide it resolved
-    /// to, and what lets dismissing the chip undo the pin it set.
-    pub generate_basis: Option<String>,
-    /// The Styles tab's `DESIGN.md` import.
     pub import: StyleImportState,
-    /// Ids of saved templates removed from memory whose directories a host
-    /// with a disk should delete. Mirrors `import.pending_delete`; kept on
-    /// the centre state because a template delete is a Templates-tab action,
-    /// not a style-import one.
-    pub pending_template_delete: Vec<String>,
 }
 
 /// Importing a user's own `DESIGN.md` into the Styles tab.
@@ -445,48 +394,30 @@ pub struct StyleImportState {
     pub pending_delete: Vec<String>,
 }
 
-impl Default for SceneTemplateCenterState {
+impl Default for AssetCenterState {
     fn default() -> Self {
         Self {
-            save_current_supported: false,
-            pending_save_current: false,
             open: false,
             search: Default::default(),
             generate: Default::default(),
-            focus: SceneTemplateFocus::Search,
+            focus: AssetCenterFocus::Search,
             input_focus_active: false,
             tab: AssetCenterTab::default(),
-            filter: SceneFilter::All,
             scroll: Default::default(),
             hover: None,
-            pending_open: None,
             pending_generate: None,
-            generate_basis: None,
             import: StyleImportState::default(),
-            pending_template_delete: Vec::new(),
         }
     }
 }
 
-impl SceneTemplateCenterState {
-    pub fn request_save_current(&mut self) -> bool {
-        if !self.save_current_supported || self.pending_save_current {
-            return false;
-        }
-        self.pending_save_current = true;
-        true
-    }
-
-    pub fn take_pending_save_current(&mut self) -> bool {
-        std::mem::take(&mut self.pending_save_current)
-    }
-
+impl AssetCenterState {
     /// Open the panel with no stale hover/scroll.
     pub fn open(&mut self, now_ms: u64, focus_search: bool) {
         self.open = true;
         self.hover = None;
         self.scroll.offset = 0.0;
-        self.focus = SceneTemplateFocus::Search;
+        self.focus = AssetCenterFocus::Search;
         self.input_focus_active = focus_search;
         if focus_search {
             self.search.touch(now_ms);
@@ -518,23 +449,12 @@ impl SceneTemplateCenterState {
         true
     }
 
-    /// Request that the host open `template_id` and close the panel.
-    pub fn request_open(&mut self, template_id: impl Into<String>) {
-        self.pending_open = Some(template_id.into());
-        self.close();
-    }
-
-    /// Drain a pending open request.
-    pub fn take_pending_open(&mut self) -> Option<String> {
-        self.pending_open.take()
-    }
-
     /// Mutable keyboard-owned field.
     pub fn focused_input_mut(&mut self) -> &mut jian_core::text_input::TextInputState {
         match self.focus {
-            SceneTemplateFocus::Search => &mut self.search,
-            SceneTemplateFocus::Generate => &mut self.generate,
-            SceneTemplateFocus::Import => &mut self.import.text,
+            AssetCenterFocus::Search => &mut self.search,
+            AssetCenterFocus::Generate => &mut self.generate,
+            AssetCenterFocus::Import => &mut self.import.text,
         }
     }
 
@@ -560,7 +480,7 @@ impl SceneTemplateCenterState {
         self.import.error_key = None;
         self.import.text.set_text("");
         self.import.text.touch(now_ms);
-        self.focus = SceneTemplateFocus::Import;
+        self.focus = AssetCenterFocus::Import;
         self.input_focus_active = true;
     }
 
@@ -576,7 +496,7 @@ impl SceneTemplateCenterState {
         self.import.open = false;
         self.import.text.set_text("");
         self.import.error_key = None;
-        self.focus = SceneTemplateFocus::Search;
+        self.focus = AssetCenterFocus::Search;
         true
     }
 
@@ -601,16 +521,6 @@ impl SceneTemplateCenterState {
         std::mem::take(&mut self.import.pending_delete)
     }
 
-    /// Note that `id` is gone from memory and its directory should follow.
-    pub fn queue_template_delete(&mut self, id: impl Into<String>) {
-        self.pending_template_delete.push(id.into());
-    }
-
-    /// Drain ids awaiting a directory delete.
-    pub fn take_pending_template_delete(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.pending_template_delete)
-    }
-
     /// Request that the host generate a document for the typed topic.
     ///
     /// An all-whitespace topic is not a request — the button is live but
@@ -623,7 +533,7 @@ impl SceneTemplateCenterState {
         }
         self.pending_generate = Some(topic);
         self.generate.set_text("");
-        self.focus = SceneTemplateFocus::Search;
+        self.focus = AssetCenterFocus::Search;
         self.close();
         true
     }

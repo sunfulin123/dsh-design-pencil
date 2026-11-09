@@ -147,7 +147,6 @@ pub mod stub_repair;
 pub mod subagent;
 pub mod subtask_completeness;
 pub mod table_repair;
-pub mod template_provenance;
 pub(crate) mod text_contrast_repair;
 pub mod tree_heuristics;
 pub mod unfilled_screens;
@@ -226,7 +225,6 @@ pub use stub_providers::{
     SkippedPreValidator, SkippedScreenshotProvider, SkippedVisionLlmClient,
     SkippedVisualRefProvider,
 };
-pub use template_provenance::{template_provenance, TemplateEvidence, TemplateProvenance};
 pub use types::*;
 pub use validation::{run_post_generation_validation, ValidationSummary};
 

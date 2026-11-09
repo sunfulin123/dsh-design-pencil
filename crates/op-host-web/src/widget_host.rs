@@ -106,6 +106,9 @@ mod sampling;
 mod screenshot;
 // Browser file-IO ingestion (Open / Figma import / clipboard paste)
 // — needs the codegen-gated document-pipeline deps (jian-ops-schema).
+#[cfg(test)]
+mod asset_center_ime_tests;
+mod asset_center_press;
 mod canvas_tiles;
 mod canvas_tiles_host;
 pub(crate) mod diagram_import;
@@ -213,9 +216,6 @@ mod resize_drag;
 #[cfg(test)]
 mod resize_drag_tests;
 mod scene_fonts;
-#[cfg(test)]
-mod scene_template_ime_tests;
-mod scene_template_press;
 mod scroll;
 mod settings_caret;
 #[cfg(test)]

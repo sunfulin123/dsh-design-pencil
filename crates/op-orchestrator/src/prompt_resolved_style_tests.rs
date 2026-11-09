@@ -75,9 +75,9 @@ fn plan_with_style(style_name: &str) -> OrchestratorPlan {
 #[test]
 fn subagent_style_instruction_contains_our_tokens() {
     let params = atlas_params();
-    let block = build_resolved_style_instruction("Atlas Grid", &params)
+    let block = build_resolved_style_instruction("design-md:apple", &params)
         .expect("known style and palette should format");
-    let ResolveOutcome::Hit(guide) = resolve_style("Atlas Grid", &params) else {
+    let ResolveOutcome::Hit(guide) = resolve_style("design-md:apple", &params) else {
         panic!("known style and palette should resolve");
     };
 
@@ -88,7 +88,7 @@ fn subagent_style_instruction_contains_our_tokens() {
         .expect("surface.primary");
     let accent_primary = guide.tokens.accent.get("primary").expect("accent.primary");
 
-    assert!(block.contains("RESOLVED STYLE REFERENCE (Atlas Grid / Alloy Blue)"));
+    assert!(block.contains("RESOLVED STYLE REFERENCE (design-md:apple / Alloy Blue)"));
     assert!(block.contains(&format!("surface.primary={surface_primary}")));
     assert!(block.contains(&format!("accent.primary={accent_primary}")));
     assert!(block.contains("rounded.md=8px"));
@@ -103,7 +103,7 @@ fn subagent_style_instruction_contains_our_tokens() {
 #[test]
 fn subagent_resolved_style_emits_no_variable_commands() {
     let params = atlas_params();
-    let block = build_resolved_style_instruction("Atlas Grid", &params)
+    let block = build_resolved_style_instruction("design-md:apple", &params)
         .expect("known style and palette should format");
 
     let block_type = std::any::type_name_of_val(&block);
@@ -112,7 +112,7 @@ fn subagent_resolved_style_emits_no_variable_commands() {
         "resolved-style builder must return prompt text, got {block_type}"
     );
 
-    let plan = plan_with_style("Atlas Grid");
+    let plan = plan_with_style("design-md:apple");
     let (call, _) = build_subagent_prompt(
         &plan.subtasks[0],
         &plan,
@@ -124,7 +124,7 @@ fn subagent_resolved_style_emits_no_variable_commands() {
     );
     assert!(
         call.system_prompt
-            .contains("RESOLVED STYLE REFERENCE (Atlas Grid / Alloy Blue)"),
+            .contains("RESOLVED STYLE REFERENCE (design-md:apple / Alloy Blue)"),
         "live subagent prompt should append the resolved-style block"
     );
 

@@ -143,7 +143,7 @@ fn every_open_surface_suppresses_exactly_its_own_button() {
             ui.export_quick_menu_open = true
         }),
         (TopBarButton::OpenAssetCenter, |ui| {
-            ui.scene_template_center.open = true
+            ui.asset_center.open = true
         }),
         (TopBarButton::OpenAgentSettings, |ui| {
             ui.agent_settings_open = true

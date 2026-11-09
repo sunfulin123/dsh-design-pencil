@@ -253,7 +253,7 @@ pub struct EditorUiState {
     ///
     /// Round-trips through `editorMeta` beside
     /// [`Self::preserve_authored_geometry`].
-    pub scenario: Option<crate::scene_template_catalog::TemplateScene>,
+    pub scenario: Option<crate::design_scene::DesignScene>,
     // --- Canvas preview (Play) mode -------------------------------
     /// Preview (Play) mode flag + device / screen switcher state.
     pub preview: PreviewState,
@@ -574,7 +574,7 @@ pub struct EditorUiState {
     /// hosts that leave it `false` omit the Scene Template Center's
     /// generate row entirely rather than paint a control whose press
     /// would go nowhere.
-    pub scene_template_generate_supported: bool,
+    pub asset_center_generate_supported: bool,
     /// Whether this host can put a native file dialog in front of the user.
     /// Desktop sets it and the Styles tab's import button opens a file
     /// picker; hosts that leave it `false` (the browser) get the paste box
@@ -747,7 +747,7 @@ pub struct EditorUiState {
     /// Floating prompt catalogue, search, save form, and custom entries.
     pub prompt_center: PromptCenterState,
     /// Floating Scene Template Center panel.
-    pub scene_template_center: SceneTemplateCenterState,
+    pub asset_center: AssetCenterState,
     /// Style guide the user pinned in the Asset Center, by `name`.
     ///
     /// Policy, not data: it never touches the node tree, it only tells the

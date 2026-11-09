@@ -435,7 +435,7 @@ fn subagent_prompt_drops_design_system_when_styling_covered() {
     // REPLACES design-system. style-defaults does NOT load (noStyleGuideMatch
     // false).
     let mut sg_plan = plan();
-    sg_plan.style_guide_name = Some("saas-clean-light".into());
+    sg_plan.style_guide_name = Some("talkdesk-cobalt".into());
     let (with_guide, _) = bsp(&subtask(), &sg_plan, &req(), AbortFlag::new(), false, false);
     assert!(
         with_guide.system_prompt.contains("VISUAL STYLE GUIDE"),

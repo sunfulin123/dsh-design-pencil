@@ -9,17 +9,11 @@ use super::super::fade;
 use super::super::paint::art::draw_coffee_photo;
 use super::super::{HomeSurface, StudioPalette};
 use super::hover_lift_dy;
-use crate::widgets::canvas_viewport_image::{
-    has_cached_image_bytes, note_pending_decode, required_raster_edge, store_remote_image_bytes,
-};
 use crate::widgets::icons::{draw_icon, Icon};
 use crate::widgets::PaintCx;
-use crate::{Color, ImageAdjustments, ImageDrawMode, Point2D, Rect};
-use op_editor_core::{HomeFamily, HomeHit, InfoKind};
+use crate::{Color, Point2D, Rect};
+use op_editor_core::{HomeFamily, HomeHit};
 
-/// The scene-template card previews are uniformly 1024×640 (the card
-/// baker's fixed canvas), which is what the contain-fit math below
-/// relies on.
 const PREVIEW_ASPECT: f32 = 1024.0 / 640.0;
 
 pub(super) fn text(cx: &mut PaintCx<'_>, content: &str, origin: Point2D, size: f32, color: Color) {
@@ -152,142 +146,62 @@ pub(super) fn paint_sticker(
     }
 }
 
-/// Contain-fit a template preview into `area`, framed by a white paper
-/// edge and topped with a small rotated tape strip. `crop_aspect`
-/// overrides the natural aspect (the 4:3 presentation variant);
-/// `opacity` carries the art-switch fade.
-pub(super) fn paint_template_paper(
+pub(super) fn paint_design_paper(
     cx: &mut PaintCx<'_>,
     area: Rect,
-    template_id: &str,
     palette: StudioPalette,
     crop_aspect: Option<f32>,
     opacity: f32,
 ) {
-    paint_paper_card(cx, area, template_id, palette, crop_aspect, 0.0, opacity);
+    paint_paper_card(cx, area, palette, crop_aspect, 0.0, opacity);
 }
 
-/// One papered template card; `rotation_deg` tilts the whole card
-/// (paper, image, tape and shadow) around its centre — the explore
-/// decks' tilted second piece.
 fn paint_paper_card(
     cx: &mut PaintCx<'_>,
     area: Rect,
-    template_id: &str,
     palette: StudioPalette,
     crop_aspect: Option<f32>,
     rotation_deg: f32,
     opacity: f32,
 ) {
-    let Some(asset) = crate::widgets::scene_template_previews::scene_template_preview(template_id)
-    else {
-        return;
-    };
-    let aspect = crop_aspect.unwrap_or(PREVIEW_ASPECT);
-    // Paper padding around the fitted image, plus headroom for the tape.
-    const PAPER_PAD: f32 = 8.0;
-    const TAPE_HEADROOM: f32 = 12.0;
-    let avail_w = (area.size.x - PAPER_PAD * 2.0).max(10.0);
-    let avail_h = (area.size.y - PAPER_PAD * 2.0 - TAPE_HEADROOM).max(10.0);
-    let fit_w = avail_w.min(avail_h * aspect);
-    let fit_h = fit_w / aspect;
-    let image = Rect::xywh(
-        area.origin.x + (area.size.x - fit_w) / 2.0,
-        area.origin.y + TAPE_HEADROOM + (area.size.y - TAPE_HEADROOM - fit_h) / 2.0,
-        fit_w,
-        fit_h,
-    );
-    let paper = Rect::xywh(
-        image.origin.x - PAPER_PAD,
-        image.origin.y - PAPER_PAD,
-        image.size.x + PAPER_PAD * 2.0,
-        image.size.y + PAPER_PAD * 2.0,
-    );
-    cx.backend.save();
-    if rotation_deg != 0.0 {
-        cx.backend.rotate(
-            rotation_deg.to_radians(),
-            Point2D::new(
-                paper.origin.x + paper.size.x / 2.0,
-                paper.origin.y + paper.size.y / 2.0,
-            ),
-        );
-    }
-    cx.backend.fill_drop_shadow(
+    let area = if let Some(aspect) = crop_aspect {
+        let width = area.size.x.min(area.size.y * aspect);
+        let height = width / aspect;
         Rect::xywh(
-            paper.origin.x + 4.0,
-            paper.origin.y + 8.0,
-            paper.size.x - 8.0,
-            paper.size.y - 8.0,
-        ),
-        8.0,
-        10.0,
-        fade(palette.ink, 0.14),
-    );
-    cx.backend.fill_round_rect(paper, 4.0, palette.panel);
-    cx.backend.stroke_round_rect(paper, 4.0, palette.line, 1.0);
-    // The tape strip overlaps the paper's top edge, slightly rotated.
-    let tape = Rect::xywh(
-        paper.origin.x + paper.size.x * 0.38,
-        paper.origin.y - 6.0,
-        38.0,
-        14.0,
-    );
+            area.origin.x + (area.size.x - width) / 2.0,
+            area.origin.y + (area.size.y - height) / 2.0,
+            width,
+            height,
+        )
+    } else {
+        area
+    };
     cx.backend.save();
     cx.backend.rotate(
-        -8.0_f32.to_radians(),
+        rotation_deg.to_radians(),
         Point2D::new(
-            tape.origin.x + tape.size.x / 2.0,
-            tape.origin.y + tape.size.y / 2.0,
+            area.origin.x + area.size.x / 2.0,
+            area.origin.y + area.size.y / 2.0,
         ),
     );
     cx.backend
-        .fill_round_rect(tape, 2.0, Color::rgba_u8(0xE3, 0xCC, 0xA6, 0.49));
-    cx.backend.restore();
-
-    let Some(bytes) = asset.bytes else {
-        op_editor_core::web_assets::request(asset.route);
-        cx.backend.restore();
-        return;
-    };
-    if !has_cached_image_bytes(asset.image_id) {
-        store_remote_image_bytes(asset.image_id, bytes.to_vec());
-    }
-    let max_edge = required_raster_edge(image, cx.backend.dpi_scale());
-    let sharp = cx.backend.image_decoded(asset.image_id, bytes, max_edge);
-    if !sharp {
-        note_pending_decode(asset.image_id, max_edge);
-    }
-    if sharp || cx.backend.image_resident(asset.image_id) {
-        cx.backend.draw_image_with_options(
-            image,
-            asset.image_id,
-            bytes,
-            ImageDrawMode::Fill,
-            ImageAdjustments::default(),
-            opacity,
-            0.0,
+        .fill_round_rect(area, 8.0, fade(palette.panel, opacity));
+    cx.backend
+        .stroke_round_rect(area, 8.0, fade(palette.line, opacity), 1.0);
+    for row in 0..5 {
+        let width = area.size.x * if row == 0 { 0.65 } else { 0.8 };
+        cx.backend.fill_round_rect(
+            Rect::xywh(
+                area.origin.x + area.size.x * 0.1,
+                area.origin.y + area.size.y * (0.15 + row as f32 * 0.14),
+                width,
+                if row == 0 { 12.0 } else { 5.0 },
+            ),
+            2.0,
+            fade(palette.ink, opacity * if row == 0 { 0.8 } else { 0.18 }),
         );
-    } else {
-        cx.backend.fill_rect(image, palette.preview);
     }
     cx.backend.restore();
-}
-
-/// The template id a task's preview panel shows.
-pub(super) fn preview_template_for(family: HomeFamily, info_kind: InfoKind) -> &'static str {
-    match family {
-        HomeFamily::Web => "product-landing-light",
-        HomeFamily::Presentation => "pitch-deck-dark",
-        HomeFamily::KnowledgeCards => "knowledge-carousel",
-        HomeFamily::ScreenshotTutorial => "screenshot-tutorial",
-        HomeFamily::Infographic => match info_kind {
-            InfoKind::Data => "data-report-infographic",
-            InfoKind::Flow => "steps-flow-infographic",
-            InfoKind::Comparison => "do-dont-comparison",
-        },
-        _ => "music-fest-poster-card",
-    }
 }
 
 /// One 看看还能做什么 card: tinted ground, copy column (icon tile,
@@ -439,11 +353,6 @@ pub(super) fn paint_explore_card(
     paint_explore_art(cx, art, family, palette);
 }
 
-/// The explore cards' two-piece art decks (prototype `knowledgeArt` /
-/// `tutorialArt` / `posterArt`, built here from the baked template
-/// previews): 图文卡片 = two overlapping paper cards, 截图教程 = the
-/// tutorial sheet plus a small phone frame overlapping bottom-right,
-/// 活动海报 = two poster crops side by side.
 fn paint_explore_art(cx: &mut PaintCx<'_>, area: Rect, family: HomeFamily, palette: StudioPalette) {
     match family {
         HomeFamily::KnowledgeCards => {
@@ -456,21 +365,13 @@ fn paint_explore_art(cx: &mut PaintCx<'_>, area: Rect, family: HomeFamily, palet
                 card_w,
                 area.size.y,
             );
-            paint_paper_card(
-                cx,
-                first,
-                "knowledge-card-vertical",
-                palette,
-                None,
-                -3.0,
-                1.0,
-            );
-            paint_paper_card(cx, second, "knowledge-carousel", palette, None, 6.0, 1.0);
+            paint_paper_card(cx, first, palette, None, -3.0, 1.0);
+            paint_paper_card(cx, second, palette, None, 6.0, 1.0);
         }
         HomeFamily::ScreenshotTutorial => {
             let sheet_w = (area.size.x * 0.62).max(50.0);
             let sheet = Rect::xywh(area.origin.x, area.origin.y, sheet_w, area.size.y);
-            paint_paper_card(cx, sheet, "screenshot-tutorial", palette, None, 0.0, 1.0);
+            paint_paper_card(cx, sheet, palette, None, 0.0, 1.0);
             let phone_w = (area.size.x * 0.30).clamp(34.0, 64.0);
             let phone_h = (phone_w / 0.475).min(area.size.y * 0.86);
             let phone = Rect::xywh(
@@ -493,24 +394,8 @@ fn paint_explore_art(cx: &mut PaintCx<'_>, area: Rect, family: HomeFamily, palet
                 poster_w,
                 poster_h,
             );
-            paint_paper_card(
-                cx,
-                first,
-                "music-fest-poster-card",
-                palette,
-                Some(0.69),
-                0.0,
-                1.0,
-            );
-            paint_paper_card(
-                cx,
-                second,
-                "hiring-poster-card",
-                palette,
-                Some(0.69),
-                4.0,
-                1.0,
-            );
+            paint_paper_card(cx, first, palette, Some(0.69), 0.0, 1.0);
+            paint_paper_card(cx, second, palette, Some(0.69), 4.0, 1.0);
         }
     }
 }

@@ -119,153 +119,143 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.action.confirmOwner" => "Rejoindre cette session",
         "collab.action.rejectOwner" => "Ne pas rejoindre",
         "collab.error.ownerNotConfirmed" => "Vous n’avez pas confirmé l’hôte, rien n’a été chargé.",
-        "sceneTemplate.title" => "Modèles de scènes",
-        "sceneTemplate.searchPlaceholder" => "Rechercher des scènes ou des modèles…",
-        "sceneTemplate.empty" => "Aucun modèle correspondant",
-        "sceneTemplate.frames" => "Pages : {{count}}",
-        "sceneTemplate.generate.placeholder" => "Décrivez un sujet, l'IA génère toute la présentation",
-        "sceneTemplate.generate.button" => "Générer",
-        "sceneTemplate.generate.hint" => "Un nouveau document, construit à partir de votre sujet en présentation complète.",
-        "sceneTemplate.generate.promptTemplate" => "Crée une présentation (PPT) sur le sujet suivant : {{topic}}",
-        "sceneTemplate.card.addToCanvas" => "Ajouter au canevas",
-        "sceneTemplate.card.generateFrom" => "Générer d'après",
-        "sceneTemplate.generate.basis" => "D'après : ",
-        "sceneTemplate.filter.all" => "Tous",
-        "sceneTemplate.scene.tutorial" => "Tutoriels",
-        "sceneTemplate.scene.comparison" => "Comparaison",
-        "sceneTemplate.scene.carousel" => "Carrousel",
-        "sceneTemplate.scene.slides" => "Diapos",
-        "sceneTemplate.scene.card" => "Cartes",
-        "sceneTemplate.scene.web" => "Pages web",
-        "sceneTemplate.generate.webPromptTemplate" => "Conçois une page d'atterrissage web en plusieurs sections sur le sujet suivant : {{topic}}",
-        "sceneTemplate.item.saasLandingOrange.title" => "Page SaaS · Orange",
-        "sceneTemplate.item.saasLandingOrange.summary" => "Une page marketing claire bâtie sur des panneaux noirs et un seul orange : navigation, hero avec capture produit, trois cartes de fonctionnalités, démonstration du flux, témoignages et pied de page d'abonnement. Changez les textes et c'est un site.",
-        "sceneTemplate.item.productLandingLight.title" => "Page produit · Claire",
-        "sceneTemplate.item.productLandingLight.summary" => "Une page produit blanc papier, d'allure éditoriale : démo interactive en hero, colonnes de fonctionnalités, tableau de bord, comparatif avant/après et trois offres tarifaires. Pour les sites SaaS et les lancements.",
-        "sceneTemplate.item.screenshotTutorial.title" => "Tutoriel par captures d’écran · 3 étapes",
-        "sceneTemplate.item.screenshotTutorial.summary" => {
-            "Une couverture, trois étapes et un appel à l’action final : remplacez les captures d’écran et les textes pour publier."
-        }
-        "sceneTemplate.item.knowledgeCarousel.title" => "Carrousel de connaissances et d’idées",
-        "sceneTemplate.item.knowledgeCarousel.summary" => {
-            "Une couverture, trois idées clés et une page de synthèse, pour décomposer un point de vue en cartes à faire défiler."
-        }
-        "sceneTemplate.item.beforeAfter.title" => "Comparatif avant/après",
-        "sceneTemplate.item.beforeAfter.summary" => {
-            "Comparaison avant/après côte à côte, accompagnée de notes sur les changements, idéale pour les rétrospectives et les portfolios."
-        }
-        "sceneTemplate.item.slideDeck.title" => "Présentation · 6 diapositives",
-        "sceneTemplate.item.slideDeck.summary" => {
-            "Couverture, sommaire, points clés, données, graphique et conclusion au format 16:9. Remplacez les textes et présentez."
-        }
-        "sceneTemplate.item.knowledgeCardVertical.title" => "Carte de connaissances · Portrait",
-        "sceneTemplate.item.knowledgeCardVertical.summary" => "Une carte 3:4 unique avec un titre, quatre points clés et une signature. Remplacez les textes et publiez.",
-        "sceneTemplate.item.knowledgeCardSquare.title" => "Carte de connaissances · Carré",
-        "sceneTemplate.item.knowledgeCardSquare.summary" => "Une carte 1:1 dans la même mise en page, assez compacte pour une image d’en-tête ou un partage social.",
-        "sceneTemplate.item.pitchDeckDark.title" => "Pitch deck · Sombre",
-        "sceneTemplate.item.pitchDeckDark.summary" => "Couverture, problème, solution, chiffres, feuille de route et page de contact. Grands caractères sur fond sombre, pensé pour la levée de fonds.",
-        "sceneTemplate.item.lectureDeckLight.title" => "Support de cours · Clair",
-        "sceneTemplate.item.lectureDeckLight.summary" => "Couverture, objectifs, explication d’un concept, exercice résolu, tableau comparatif et récapitulatif. Fond blanc papier, confortable sur toute une séance.",
-        "sceneTemplate.item.minimalKeynote.title" => "Keynote minimaliste",
-        "sceneTemplate.item.minimalKeynote.summary" => "Des blancs généreux, une typo surdimensionnée, une phrase centrée par page — neuf pages sans la moindre carte, et un sommaire réduit à des filets et des chiffres. Pour lancements et conférences.",
-        "sceneTemplate.item.gradientTech.title" => "Tech dégradé",
-        "sceneTemplate.item.gradientTech.summary" => "Fond dégradé sombre et cartes en verre dépoli : architecture, performances et mur de clients. Pour un lancement produit développeur.",
-        "sceneTemplate.scene.infographic" => "Infographies",
-        "sceneTemplate.item.punchQuoteCard.title" => "Carte citation · Affiche",
-        "sceneTemplate.item.punchQuoteCard.summary" => "Une carte 3:4 sur fond presque noir : deux lignes en très grand au-dessus d'une bande jaune. Une seule phrase, pour les prises de position et les citations.",
-        "sceneTemplate.item.journalChecklistCard.title" => "Carte à cocher · Base de connaissances",
-        "sceneTemplate.item.journalChecklistCard.summary" => "Une carte blanche sur fond gris clair : cinq tâches à cocher, une étiquette et une citation. Pour les plans de la semaine.",
-        "sceneTemplate.item.dataReportInfographic.title" => "Infographie de résultats",
-        "sceneTemplate.item.dataReportInfographic.summary" => "Une image verticale à faire défiler : bandeau sombre, trois chiffres clés, un comparatif en barres, une répartition et trois conclusions. Changez les chiffres et publiez.",
-        "sceneTemplate.item.stepsFlowInfographic.title" => "Infographie pas à pas",
-        "sceneTemplate.item.stepsFlowInfographic.summary" => "Une image verticale à faire défiler : cinq étapes numérotées enchaînées, chacune avec sa durée, plus deux conseils. Pour les tutoriels et les guides.",
-        "sceneTemplate.item.eventPosterDeck.title" => "Deck événement · Affiche",
-        "sceneTemplate.item.eventPosterDeck.summary" => "Couverture, temps forts, programme, accès, billetterie et clôture. Fond blanc de galerie, aplats rouges et bleus, aucun angle arrondi et aucun dégradé — pour marchés, événements associatifs et ouvertures.",
-        "sceneTemplate.item.pitfallListInfographic.title" => "Infographie des pièges à éviter",
-        "sceneTemplate.item.pitfallListInfographic.summary" => "Une image verticale à faire défiler : six erreurs classées par fréquence, chacune avec ce qui cloche et quoi faire à la place, plus une vérification en quatre points avant publication. Noir, blanc et gris uniquement.",
-        "sceneTemplate.item.spineCultureCard.title" => "Carte à titre vertical · Pigments minéraux",
-        "sceneTemplate.item.spineCultureCard.summary" => "Une carte 3:4 sur fond d'argile ocre : titre chinois à la verticale, plâtre écaillé, grains de pigment. Pour la culture, les longs textes et les couvertures d'auteur.",
-        "sceneTemplate.item.metricSingleCard.title" => "Carte à chiffre unique · Grille Hanzi",
-        "sceneTemplate.item.metricSingleCard.summary" => "Une carte 1:1 : un chiffre énorme sur blanc pur, une grille suisse stricte et un seul carré rouge de signal. Pour les conclusions et les résultats.",
-        "sceneTemplate.item.quoteFrameCard.title" => "Carte citation · Soie bleu-vert",
-        "sceneTemplate.item.quoteFrameCard.summary" => "Une carte 4:5 sur soie jaunie : une phrase encadrée, une montagne d'azurite et de malachite en pied. Pour extraits, entretiens et citations.",
-        "sceneTemplate.item.dailySignCard.title" => "Carte du jour · Fenêtre de jardin",
-        "sceneTemplate.item.dailySignCard.summary" => "Une carte 3:4 sur mur à la chaux, percée d'une fenêtre hexagonale : la date et une ligne à l'intérieur. Le vide est le décor. Pour les publications quotidiennes.",
-        "sceneTemplate.item.priceTierCard.title" => "Carte tarifs · Néons d'arcade",
-        "sceneTemplate.item.priceTierCard.summary" => "Une carte 1:1 sur nuit bleu encre : trois niveaux de tarifs, contours de tubes néon et leur halo. Pour boutiques, événements et forfaits.",
-        "sceneTemplate.item.noticeBoardCard.title" => "Carte d'annonce · Typographie plomb",
-        "sceneTemplate.item.noticeBoardCard.summary" => "Une carte 4:5 sur papier journal : filets de manchette avec repérage décalé, articles numérotés et un cachet de série. Pour avis, règles et consignes.",
-        "sceneTemplate.item.milestoneTimelineInfographic.title" => "Infographie chronologique",
-        "sceneTemplate.item.milestoneTimelineInfographic.summary" => "Une image verticale à faire défiler : un axe traversant toute la hauteur, des repères d'années à côté des cartes d'étapes, et la suite en clôture. Pour bilans, histoire de marque et parcours de projet.",
-        "sceneTemplate.item.conceptContrastInfographic.title" => {
-            "Infographie de comparaison de concepts"
-        }
-        "sceneTemplate.item.conceptContrastInfographic.summary" => "Une image verticale à faire défiler : la conclusion d'abord, puis une carte de définition par concept, un tableau à deux colonnes par critère, et enfin comment choisir.",
-        "sceneTemplate.item.rankingBoardInfographic.title" => "Infographie de classement Top N",
-        "sceneTemplate.item.rankingBoardInfographic.summary" => "Une image verticale à faire défiler : un palmarès or sur encre — grands badges pour le trio de tête, badges filaires ensuite, avec l'usage et la fréquence.",
-        "sceneTemplate.item.faqThreadInfographic.title" => "Infographie FAQ",
-        "sceneTemplate.item.faqThreadInfographic.summary" => "Une image verticale à faire défiler : six paires question-réponse, Q pleine et R filaire. Ni numéros ni ordre : chaque paire tient seule.",
-        "sceneTemplate.item.dataStoryInfographic.title" => "Infographie récit de données",
-        "sceneTemplate.item.dataStoryInfographic.summary" => "Une image verticale à faire défiler : quatre chiffres enchaînés en une ligne causale, chaque étape en grille de dix blocs, et une conclusion applicable pour finir.",
-        "sceneTemplate.item.challengeTrackerInfographic.title" => "Infographie défi 30 jours",
-        "sceneTemplate.item.challengeTrackerInfographic.summary" => "Une image verticale à faire défiler : une grille de trente cases, six par cinq, avec des jalons aux jours 7, 15 et 30. À enregistrer et à cocher chaque jour.",
-        "sceneTemplate.item.ecosystemMapInfographic.title" => "Infographie carte d'écosystème",
-        "sceneTemplate.item.ecosystemMapInfographic.summary" => "Une image verticale à faire défiler : quatre positions d'une même chaîne en deux par deux, trois acteurs par case, et les vides signalés. Cartes blanches sur ardoise.",
-        "sceneTemplate.item.doDontComparison.title" => "Deux colonnes à faire / à éviter",
-        "sceneTemplate.item.doDontComparison.summary" => "Une carte 3:4 : deux façons de faire la même chose côte à côte, distinguées par la matière et l'icône plutôt que par le rouge et le vert, lisible aussi pour les daltoniens.",
-        "sceneTemplate.item.mythTruthComparison.title" => "Idées reçues et réalité",
-        "sceneTemplate.item.mythTruthComparison.summary" => "Une image haute : cinq paires « ce qu'on dit / ce qui est vrai », l'idée reçue étroite et pâle à gauche, la réalité large et sombre à droite, une paire à la fois.",
-        "sceneTemplate.item.pricingTiersComparison.title" => "Comparatif de tarifs",
-        "sceneTemplate.item.pricingTiersComparison.summary" => "Une carte 3:4 : Gratuit, Pro et Équipe côte à côte, le prix comme point d'ancrage, chaque colonne contenant la précédente. Pour les pages tarifs.",
-        "sceneTemplate.item.scenarioGuideComparison.title" => "Guide de choix par situation",
-        "sceneTemplate.item.scenarioGuideComparison.summary" => "Une image haute : pas de spécifications, sept situations, chacune assortie d'un verdict. Le lecteur n'a qu'à trouver sa ligne.",
-        "sceneTemplate.item.specTableComparison.title" => "Tableau comparatif de spécifications",
-        "sceneTemplate.item.specTableComparison.summary" => "Une image haute : deux candidats dans un vrai tableau, ligne par ligne, la cellule gagnante relevée par un fond sombre.",
-        "sceneTemplate.item.threeWayComparison.title" => "Comparatif à trois options",
-        "sceneTemplate.item.threeWayComparison.summary" => "Une image haute : trois options côte à côte, la recommandation au centre ; chaque colonne s'ouvre sur une situation plutôt que sur un nom.",
-        "sceneTemplate.item.timeShiftComparison.title" => "Avant / maintenant à un an d'écart",
-        "sceneTemplate.item.timeShiftComparison.summary" => "Une carte 3:4 : une colonne vertébrale d'étiquettes au centre, il y a un an à gauche, aujourd'hui à droite, les deux valeurs sur la même ligne.",
-        "sceneTemplate.item.tradeoffScaleComparison.title" => "Balance avantages / inconvénients",
-        "sceneTemplate.item.tradeoffScaleComparison.summary" => "Une carte 1:1 : un fléau, deux plateaux — ce que ça vaut à gauche, ce que ça coûte à droite, une case vide devant chaque ligne. À vous de peser.",
-        "sceneTemplate.item.versionDiffComparison.title" => "Différences entre versions",
-        "sceneTemplate.item.versionDiffComparison.summary" => "Une carte 1:1 : pas de colonnes — chaque ligne accomplit son propre « avant → après », il suffit de faire défiler.",
-        "sceneTemplate.item.appOnboardingTriptych.title" => "Triptyque d'onboarding d'app",
-        "sceneTemplate.item.appOnboardingTriptych.summary" => "Une carte 3:4 : trois téléphones alignés avec des emplacements d'image vides. Déposez vos trois écrans, ajoutez le texte, c'est prêt pour la revue ou la publication.",
-        "sceneTemplate.item.diyBlueprintGuide.title" => "Guide DIY illustré",
-        "sceneTemplate.item.diyBlueprintGuide.summary" => "Une image haute où le tableau des matériaux occupe autant de place que les étapes — le bricolage échoue à la préparation, pas dans les mains.",
-        "sceneTemplate.item.photoCompositionTutorial.title" => "Composition photo au téléphone",
-        "sceneTemplate.item.photoCompositionTutorial.summary" => "3:4, cinq vues : chacune un viseur sombre et des repères fluo par-dessus l'emplacement photo — la composition ne s'explique que sur le cadre.",
-        "sceneTemplate.item.recipeFourStep.title" => "Recette en quatre étapes",
-        "sceneTemplate.item.recipeFourStep.summary" => "Une carte 4:5 en 2×2 : les quatre étapes sur une seule carte. Capture d'écran et on cuisine — devant les fourneaux, tourner les pages est un fardeau.",
-        "sceneTemplate.item.skincareRoutineCards.title" => "Cartes de routine soin",
-        "sceneTemplate.item.skincareRoutineCards.summary" => "4:5, six vues : chaque étape fixe trois nombres — la dose, le temps de pose, matin ou soir. Les ratés viennent de la dose, pas de l'ordre.",
-        "sceneTemplate.item.softwareStepTutorial.title" => "Tutoriel logiciel pas à pas",
-        "sceneTemplate.item.softwareStepTutorial.summary" => "Une carte 4:5, la seule sombre de la série : emplacements de captures et consignes numérotées, pour les outils et les fonctionnalités.",
-        "sceneTemplate.item.storageMakeoverSteps.title" => "Étapes de rangement",
-        "sceneTemplate.item.storageMakeoverSteps.summary" => "3:4, six vues : outre le geste et l'image, chaque étape fixe un critère d'achèvement et un budget temps — c'est fini quand ça ressemble à ça.",
-        "sceneTemplate.item.weeklyReportLesson.title" => "Leçon de rapport hebdomadaire",
-        "sceneTemplate.item.weeklyReportLesson.summary" => "Une image haute : après la structure en quatre temps, elle livre un squelette à trous soulignés — capture et remplissez.",
-        "sceneTemplate.item.workoutBreakdownGuide.title" => "Guide de décomposition d'exercices",
-        "sceneTemplate.item.workoutBreakdownGuide.summary" => "Une image haute : chaque mouvement porte une barre fixe séries / répétitions / repos à côté de l'image et des consignes.",
-        "sceneTemplate.item.bookreviewSilkCarousel.title" => "Carrousel d'analyse livre / film",
-        "sceneTemplate.item.bookreviewSilkCarousel.summary" => "3:4, cinq planches : accroche, extrait annoté, trois idées, une phrase à citer, clôture. On démonte l'œuvre en pièces à emporter plutôt que de résumer l'intrigue.",
-        "sceneTemplate.item.cityguideFilmCarousel.title" => "Carrousel guide de ville",
-        "sceneTemplate.item.cityguideFilmCarousel.summary" => "3:4, sept planches : lieux et itinéraires alternent — les lieux pour ceux qui rêvent, la journée type et le tableau manger-dormir pour ceux qui planifient.",
-        "sceneTemplate.item.datareportGridCarousel.title" => "Carrousel rapport de données",
-        "sceneTemplate.item.datareportGridCarousel.summary" => "3:4, six planches : chaque planche de données est suivie d'une planche sans données, pour que personne ne décroche au troisième graphique.",
-        "sceneTemplate.item.opinionLongformCarousel.title" => "Carrousel d'opinion longue",
-        "sceneTemplate.item.opinionLongformCarousel.summary" => "3:4, six planches : une maquette stricte de bout en bout, numéro et titre toujours au même endroit. Sur un carrousel, la planche précédente a disparu.",
-        "sceneTemplate.item.qaChalkboardCarousel.title" => "Carrousel questions-réponses",
-        "sceneTemplate.item.qaChalkboardCarousel.summary" => "3:4, six planches : une question par planche, avec un numéro-point d'interrogation dessiné à la main dans le coin.",
-        "sceneTemplate.item.storyNightCarousel.title" => "Carrousel récit",
-        "sceneTemplate.item.storyNightCarousel.summary" => "3:4, sept planches : un retour d'expérience bâti sur le temps — la frise de la cinquième planche est le mur porteur.",
-        "sceneTemplate.item.toolkitNotebookCarousel.title" => "Carrousel boîte à outils",
-        "sceneTemplate.item.toolkitNotebookCarousel.summary" => "3:4, six planches : six outils déployés un par planche, la dernière les listant avec leurs numéros — le lecteur vient pour enregistrer.",
-        "sceneTemplate.item.tutorialJournalCarousel.title" => "Carrousel tutoriel",
-        "sceneTemplate.item.tutorialJournalCarousel.summary" => "3:4, six planches : une étape par planche, le doigt fait office de barre de progression.",
-        "sceneTemplate.item.yearreviewMineralCarousel.title" => "Carrousel bilan de l'année",
-        "sceneTemplate.item.yearreviewMineralCarousel.summary" => "3:4, huit planches : planches chiffrées froides et planches de ressenti chaudes, en alternance.",
-        "fileMenu.newFromTemplate" => "Nouveau à partir d’un modèle",
+
+
+
+
+        "assetCenter.generate.placeholder" => "Décrivez un sujet, l'IA génère toute la présentation",
+        "assetCenter.generate.button" => "Générer",
+        "assetCenter.generate.hint" => "Un nouveau document, construit à partir de votre sujet en présentation complète.",
+        "assetCenter.generate.promptTemplate" => "Crée une présentation (PPT) sur le sujet suivant : {{topic}}",
+
+
+        "assetCenter.generate.basis" => "D'après : ",
+
+        "designScene.tutorial" => "Tutoriels",
+        "designScene.comparison" => "Comparaison",
+        "designScene.carousel" => "Carrousel",
+        "designScene.slides" => "Diapos",
+        "designScene.card" => "Cartes",
+        "designScene.web" => "Pages web",
+        "assetCenter.generate.webPromptTemplate" => "Conçois une page d'atterrissage web en plusieurs sections sur le sujet suivant : {{topic}}",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        "designScene.infographic" => "Infographies",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "fileMenu.exportSlideshowHtml" => "Exporter le diaporama HTML...",
         "fileMenu.exportPptx" => "Exporter en PowerPoint...",
         "dialog.slideshowHtmlTitle" => "Exporter le diaporama",
@@ -695,7 +685,7 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "settings.agents.acpPresetAdd" => "Ajouter",
         "settings.agents.acpNotInstalled" => "Non installé",
         "assetCenter.title" => "Centre de ressources",
-        "assetCenter.tab.templates" => "Modèles",
+
         "assetCenter.tab.styles" => "Styles",
         "assetCenter.style.empty" => "Aucun style correspondant",
         "assetCenter.style.pinned" => "Épinglé",

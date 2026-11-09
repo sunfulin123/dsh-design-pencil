@@ -44,7 +44,7 @@ impl WidgetHostNative {
         // The Asset Center takes a paste as a unit: its style-import box
         // receives a whole DESIGN.md, and the char-by-char route below drops
         // control characters, which would flatten the markdown to one line.
-        if let Some(changed) = op_editor_core::host_keyboard_transitions::scene_template_paste(
+        if let Some(changed) = op_editor_core::host_keyboard_transitions::asset_center_paste(
             &mut self.editor_state,
             text,
             self.now_ms,

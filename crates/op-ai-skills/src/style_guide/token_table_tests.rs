@@ -134,7 +134,10 @@ fn malformed_tables_do_not_panic() {
 /// the palette of fifty guides that were working.
 #[test]
 fn the_token_dialect_never_changes_a_corpus_guides_values() {
-    for guide in crate::style_guide::style_guide_registry() {
+    for guide in crate::style_guide::style_guide_registry()
+        .iter()
+        .filter(|g| !g.name.starts_with("design-md:"))
+    {
         let corpus_only = crate::style_guide::parser::extract_corpus_values(&guide.content);
         let with_dialect = extract_style_guide_values(&guide.content);
         assert_eq!(

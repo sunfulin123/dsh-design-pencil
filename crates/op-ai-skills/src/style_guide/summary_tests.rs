@@ -42,9 +42,9 @@ fn a_summary_shows_the_authors_name_not_the_id() {
 #[test]
 fn a_corpus_guide_summarizes_under_its_own_name() {
     let _guard = exclusive();
-    let summary = style_guide_summary("zen-paper-light").expect("the corpus ships this guide");
-    assert_eq!(summary.id, "zen-paper-light");
-    assert_eq!(summary.name, "zen-paper-light");
+    let summary = style_guide_summary("talkdesk-cobalt").expect("the corpus ships this guide");
+    assert_eq!(summary.id, "talkdesk-cobalt");
+    assert_eq!(summary.name, "talkdesk-cobalt");
     assert!(!summary.swatches.is_empty());
 }
 

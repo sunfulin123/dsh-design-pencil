@@ -8,14 +8,14 @@
 //! renderer both accept.
 
 use super::*;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 fn deck_state(source: &str) -> EditorState {
     let doc = jian_ops_schema::load_str(source)
         .expect("fixture JSON parses")
         .value;
     let mut state = EditorState::from_document(doc);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     state
 }
 

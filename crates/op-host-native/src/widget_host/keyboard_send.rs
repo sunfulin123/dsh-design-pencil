@@ -54,13 +54,13 @@ impl WidgetHostNative {
         // Enter in the Scene Template Center submits the generate row when
         // that field has the caret, and is swallowed otherwise: the panel is
         // open over the canvas, so the key must never reach chat send.
-        if self.editor_state.editor_ui.scene_template_center.open {
-            if self.editor_state.editor_ui.scene_template_center.focus
-                == op_editor_core::SceneTemplateFocus::Generate
+        if self.editor_state.editor_ui.asset_center.open {
+            if self.editor_state.editor_ui.asset_center.focus
+                == op_editor_core::AssetCenterFocus::Generate
                 && self
                     .editor_state
                     .editor_ui
-                    .scene_template_center
+                    .asset_center
                     .request_generate()
             {
                 self.mark_dirty();

@@ -567,7 +567,7 @@ mod tests {
         let mut host = WidgetHost::new();
         host.editor_state = op_editor_core::EditorState::from_document(document);
         host.editor_state.editor_ui.scenario =
-            Some(op_editor_core::scene_template_catalog::TemplateScene::Slides);
+            Some(op_editor_core::design_scene::DesignScene::Slides);
         host
     }
 

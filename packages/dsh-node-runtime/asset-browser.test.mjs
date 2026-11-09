@@ -186,6 +186,13 @@ test(
     assert.ok(hydrated, 'the managed UI refreshes its catalogue after the MCP import');
     const view = await page.evaluate('fetch("/api/assets").then(r => r.json())');
     assert.ok(view.assets.some((a) => a.id === saved.structuredContent.asset.id));
+    const builtins = view.assets.filter((a) => a.kind === 'style-guide' && !a.isUser);
+    assert.equal(builtins.length, 85);
+    assert.equal(builtins[0].id, 'talkdesk-cobalt');
+    assert.ok(view.assets.every((a) => a.kind !== 'scene-template'));
+    const apple = await call('get_style_guide', { id: 'design-md:apple' });
+    assert.equal(apple.isError, false, JSON.stringify(apple));
+    assert.ok(apple.structuredContent.content.includes('name: Apple-design-analysis'));
     assert.equal(
       (await call('get_style_guide', { id: saved.structuredContent.asset.id })).structuredContent
         .content,

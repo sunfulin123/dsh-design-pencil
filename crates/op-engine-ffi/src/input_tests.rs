@@ -5,7 +5,7 @@ use crate::OpStatus;
 
 const LOGICAL: (f32, f32) = (834.0, 1_112.0);
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 fn event(
     tracker: &mut GestureTracker,

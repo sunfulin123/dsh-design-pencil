@@ -303,7 +303,6 @@ export async function startNodeHost({
   sourcePath,
   draftDirectory,
   assetDirectory,
-  legacyAssetDirectory,
   webRoot,
   canvaskitRoot,
   onShutdown,
@@ -315,7 +314,6 @@ export async function startNodeHost({
   };
   const assetStore = await openAssetStore({
     assetDirectory,
-    legacyDirectory: legacyAssetDirectory,
     sourcePath: file.contents ? sourcePath : undefined,
   });
   let session;

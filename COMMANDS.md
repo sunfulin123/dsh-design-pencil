@@ -132,8 +132,6 @@ CLI 默认把资产存到用户级目录（macOS `~/Library/Application Support/
 测试一律传临时目录，不要操作用户资产。需 Node 24+ 的内置 SQLite；没有额外 npm 数据库依赖。
 
 可发现工具：
-- 模板：`list_scene_templates`、`get_scene_template`、`save_scene_template`、
-  `instantiate_scene_template`、`rename_scene_template`、`delete_scene_template`。
 - 风格：`list_style_guides`、`get_style_guide`（支持稳定 id）、`import_design_md`、
   `rename_style_guide`、`delete_style_guide`。
 - 预设：`list_theme_presets`、`get_theme_preset`、`save_theme_preset`、
@@ -142,6 +140,7 @@ CLI 默认把资产存到用户级目录（macOS `~/Library/Application Support/
 - 编辑器外观：`get_editor_theme`、`set_editor_theme`；`persist` 默认 false，
   需要真实交互编辑器在线，headless 截图页不提供外观确认。
 
+内置风格为 Cobalt + 84 份 DESIGN.md（共 85 个，只读）；不再提供模板工具或旧库迁移。
 `import_design_md` 默认导入共享风格库；`target:"document"` 更新当前文档规范。
 
 ## HTML 导入与保真验收

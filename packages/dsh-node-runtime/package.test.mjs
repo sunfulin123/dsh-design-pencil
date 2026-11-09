@@ -27,7 +27,6 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     'web-bundle/canvaskit/LICENSE', 'web-bundle/assets/fonts/Roboto-Regular.ttf',
     'web-bundle/assets/iconify-catalog-core.json',
     'web-bundle/assets/iconify-catalog-brands.json',
-    'web-bundle/assets/scene_templates/example.op',
     'web-bundle/assets/i18n/ja.json',
     'web-bundle/assets/prompt_center_previews/unused.jpg',
     'node-host.test.mjs', 'build-web.sh', 'wasm/op_dsh_engine.d.ts',

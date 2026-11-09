@@ -205,7 +205,7 @@ mod tests {
 
     fn warm_food_plan() -> OrchestratorPlan {
         let mut plan = plan();
-        plan.style_guide_name = Some("warm-food-mobile-light".into());
+        plan.style_guide_name = Some("design-md:apple".into());
         plan
     }
 
@@ -261,7 +261,7 @@ mod tests {
 
         assert_eq!(
             light_hex(variables.get("--primary").expect("--primary")),
-            "#FF5A1F"
+            "#0066CC"
         );
     }
 

@@ -9,7 +9,7 @@
 use std::io::Read as _;
 
 use super::*;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 
 /// A 1×1 opaque PNG — the smallest thing the media path can embed and
 /// the size reader can measure.
@@ -20,7 +20,7 @@ fn deck_state(source: &str) -> EditorState {
         .expect("fixture JSON parses")
         .value;
     let mut state = EditorState::from_document(doc);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     state
 }
 

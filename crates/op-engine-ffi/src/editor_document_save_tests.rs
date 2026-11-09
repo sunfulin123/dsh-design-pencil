@@ -37,7 +37,7 @@ fn visible_root(label: &str) -> PathBuf {
 }
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 fn scratch_root() -> PathBuf {
     // First redirect wins process-wide; every test installs the same

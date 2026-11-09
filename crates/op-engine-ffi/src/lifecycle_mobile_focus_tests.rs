@@ -5,7 +5,7 @@ use op_editor_core::size_class::{EditorSizeClass, MobileSheetKind};
 use op_editor_core::{FontPickerPurpose, PropertyFocus};
 
 const SAMPLE_DOC: &str =
-    include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+    include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
 fn editor_session() -> Session {
     editor_session_at(834.0, 1_112.0)

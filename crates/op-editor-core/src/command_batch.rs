@@ -81,7 +81,6 @@ fn batchable(cmd: &EditorCommand) -> bool {
         | C::InsertSubtree { .. }
         | C::InsertAuthoredSubtree { .. }
         | C::InsertAuthoredSubtreePreservingRoots { .. }
-        | C::AdoptSceneTemplate { .. }
         | C::RefineDesign { .. }
         | C::SetVariableScalar { .. }
         | C::CreateVariable { .. }

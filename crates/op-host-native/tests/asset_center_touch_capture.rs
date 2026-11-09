@@ -14,11 +14,11 @@ use op_host_native::WidgetHostNative;
 
 const VIEWPORTS: [(&str, i32, i32, EditorSizeClass, AssetCenterTab); 2] = [
     (
-        "compact-templates.png",
+        "compact-styles.png",
         390,
         844,
         EditorSizeClass::Compact,
-        AssetCenterTab::Templates,
+        AssetCenterTab::Styles,
     ),
     (
         "medium-styles.png",
@@ -64,12 +64,12 @@ fn paint_viewport(
         ui.touch = true;
         ui.size_class = size_class;
         ui.sidebar_open = false;
-        ui.open_scene_template_center(0);
-        ui.scene_template_center.select_tab(tab);
+        ui.open_asset_center(0);
+        ui.asset_center.select_tab(tab);
     }
     host.mark_editor_state_dirty();
-    assert!(host.editor_state().editor_ui.scene_template_center.open);
-    assert_eq!(host.editor_state().editor_ui.scene_template_center.tab, tab);
+    assert!(host.editor_state().editor_ui.asset_center.open);
+    assert_eq!(host.editor_state().editor_ui.asset_center.tab, tab);
 
     let mut backend = NativeBackend::with_dpi(1.0);
     let mut surface = skia_safe::surfaces::raster_n32_premul((width, height))

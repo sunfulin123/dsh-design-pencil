@@ -158,56 +158,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}, {{role}}",
         "collab.a11y.remoteCursor" => "เคอร์เซอร์ของ {{name}}",
         "icon.catalogLoading" => "กำลังโหลดแคตตาล็อกไอคอน…",
-        "sceneTemplate.documentUnavailable" => "โหลดเอกสารของเทมเพลตนี้ไม่สำเร็จ ลองอีกครั้ง",
+
         "sceneTemplate.deleteFailed" => "ลบเทมเพลตนั้นไม่สำเร็จ ลองอีกครั้ง",
-        "sceneTemplate.item.soundingNavyDeck.title" => "แผนที่หยั่งความลึก · เด็คกลยุทธ์",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "ขาวอุ่นแบบกระดาษแผนที่เดินเรือ ตัดกับน้ำเงินเหล็กและน้ำเงินหมึก แต่ละหน้าขึ้นต้นด้วยข้อสรุปและหนุนด้วยตัวเลขพร้อมแหล่งที่มาเพียงตัวเดียว แท่งโปรไฟล์ความลึกและสารบัญแนวร่องน้ำพาดผ่านทั้งเจ็ดหน้า เหมาะกับงานส่งมอบที่ปรึกษาและการทบทวนกลยุทธ์",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "หินชนวนรอยน้ำ · เด็คทบทวนข้อมูล",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "บนพื้นเทาหินชนวน มีการ์ดภาพรวม เส้นแนวโน้ม ตารางรายละเอียด รายการความเสี่ยง และแผนที่เส้นทางแบบเลน เจ็ดหน้าเดินครบหนึ่งรอบการทบทวนข้อมูล เหมาะกับการสรุปรายไตรมาสและประชุมตัวชี้วัด",
-        "sceneTemplate.item.banxinRuleDeck.title" => "กรอบหน้าและเส้นคั่น · เด็คการจัดหน้าภาษาจีน",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "สร้างบนหน้ากระดาษจีนแบบดั้งเดิม ทั้งกรอบหน้า เส้นคั่นคอลัมน์ หมายเหตุขอบบน และเลขหน้าแบบหางปลา บรรทัดเนื้อความไม่เกินสามสิบอักษร พร้อมสองคอลัมน์เทียบอ่านและหน้าอ้างคำ เหมาะกับการบรรยายและสัมมนา",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "กระดาษกราฟสีแกรไฟต์ · เด็คสอบป้องกันวิทยานิพนธ์",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "ตัวอักษรสีแกรไฟต์บนกระดาษกราฟ ตั้งแต่ปัญหาและช่องว่าง วิธีการ ผลลัพธ์สองหน้าทั้งภาพและตาราง ข้อจำกัด ข้อสรุป จนถึงเอกสารอ้างอิง แปดหน้าเรียงตามลำดับการสอบ เหมาะกับการเสนอหัวข้อและสอบป้องกัน",
-        "sceneTemplate.item.dossierLinenDeck.title" => "แฟ้มผ้าลินิน · เด็คบันทึกข้อความ",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "ผิวสัมผัสแบบแฟ้มกระดาษลินิน ตั้งแต่หน้าปกเอกสาร ที่มา ข้อมูลปัจจุบัน การวิเคราะห์ การเทียบทางเลือก จนถึงมติ แปดหน้าที่อ่านจบได้ในตัวเองเหมือนบันทึกข้อความ เหมาะกับการพิจารณาตัดสินใจ",
-        "sceneTemplate.item.ledgerTickDeck.title" => "เส้นบัญชี · เด็คเมทริกซ์คู่แข่ง",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "บนเส้นบรรทัดสมุดบัญชี มีเกณฑ์ประเมิน เมทริกซ์หลัก สเกลแบ่งช่วง และการเทียบช่องว่างกับจุดแข็ง เจ็ดหน้าเล่าการเปรียบเทียบคู่แข่งให้เป็นบัญชีที่ตรวจทานได้ เหมาะกับการคัดเลือกและวิเคราะห์ตลาด",
-        "sceneTemplate.item.brandConceptSheet.title" => "แผ่นแนวคิดแบรนด์",
-        "sceneTemplate.item.brandConceptSheet.summary" => "บอร์ดแนวนอนสำหรับตรวจล็อกอัปหลัก ตรรกะการสร้าง แบบขาวดำสลับสี และความอยู่รอดที่ขนาดเล็กสุด เหมาะกับการส่งมอบแนวคิดรอบแรก",
-        "sceneTemplate.item.logoQaBoard.title" => "บอร์ด QA การผสานความหมายของโลโก้",
-        "sceneTemplate.item.logoQaBoard.summary" => "สี่ช่องตรวจการรับความหมายร่วมกัน การพึ่งพาเชิงโครงสร้าง ความเป็นหนึ่งของเงารูป และภาพรองที่ดูเหมือนถูกค้นพบแทนที่จะนำมาติดเพิ่ม",
-        "sceneTemplate.item.eventInvitationCard.title" => "การ์ดเชิญงานเสวนาเทคโนโลยี",
-        "sceneTemplate.item.eventInvitationCard.summary" => "การ์ดเชิญงานขนาด 4:5 พร้อมหัวข้อใหญ่ การ์ดเวลาและสถานที่สองใบ แขกสามคน QR สำหรับลงทะเบียน และแถวโลโก้ผู้จัดในโทนน้ำเงินม่วงเข้ม",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "ทีเซอร์ไลฟ์สตรีม",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "ประกาศไลฟ์สตรีมขนาด 4:5 พร้อมหัวข้อเด่น ช่องนับถอยหลังสามช่อง วิทยากรสองคน แคปซูลแพลตฟอร์ม และการ์ด QR สำหรับจองบนพื้นไล่เฉดเข้ม",
-        "sceneTemplate.item.hiringPosterCard.title" => "โปสเตอร์รับสมัครงาน",
-        "sceneTemplate.item.hiringPosterCard.summary" => "โปสเตอร์รับสมัครงานขนาด 4:5 พร้อมชื่อตำแหน่งตัวใหญ่ พื้นที่แทนรูปทีม คุณสมบัติ เงินเดือน และ QR สำหรับสมัครบนพื้นสีอ่อน",
-        "sceneTemplate.item.courseEnrollCard.title" => "การ์ดรับสมัครคอร์ส",
-        "sceneTemplate.item.courseEnrollCard.summary" => "การ์ดรับสมัครคอร์สขนาด 4:5 โทนอบอุ่น พร้อมชื่อคอร์ส แถบข้อมูลเปิดเรียน จุดเด่นสี่ช่อง ผู้สอน ราคา Early Bird และ QR สำหรับลงทะเบียน",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "การ์ดกำหนดการประชุม",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "กำหนดการประชุมขนาด 4:5 พร้อมชื่ออีเวนต์ ไทม์ไลน์ห้าช่วง พักดื่มกาแฟ และแถวโลโก้ผู้สนับสนุนสีส้มบนพื้นดำ",
-        "sceneTemplate.item.productLaunchCard.title" => "การ์ดเปิดตัวผลิตภัณฑ์",
-        "sceneTemplate.item.productLaunchCard.summary" => "การ์ดเปิดตัวขนาด 4:5 สีขาวแบบมินิมอล พร้อมพื้นที่แทนผลิตภัณฑ์ จุดขายสามข้อ ราคา ข้อเสนอเปิดตัว และ QR สำหรับซื้อ",
-        "sceneTemplate.item.annualReportCard.title" => "การ์ดรายงานข้อมูลประจำปี",
-        "sceneTemplate.item.annualReportCard.summary" => "การ์ดรายงานประจำปีขนาด 4:5 พร้อมตัวเลขสำคัญสี่รายการ ประโยคสรุปปี อันดับ Top 3 และ QR บนพื้นไล่เฉดสีม่วง",
-        "sceneTemplate.item.musicFestPosterCard.title" => "โปสเตอร์เทศกาลดนตรี",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "โปสเตอร์เทศกาลขนาด 3:4 พร้อมหัวเรื่องหลัก วันที่และสถานที่ ไลน์อัปสามเวที บัตรสามระดับ QR สำหรับซื้อตั๋ว และผู้สนับสนุนพิเศษในสีสะท้อนนีออน",
-        "sceneTemplate.item.bookClubInviteCard.title" => "การ์ดเชิญชมรมหนังสือ",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "การ์ดเชิญชมรมหนังสือขนาด 4:5 โทนกระดาษ พร้อมชื่อหนังสือและผู้เขียน พื้นที่แทนปก ผู้นำการอ่าน เวลาและสถานที่ สามหัวข้อสนทนา และ QR สำหรับลงทะเบียน",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "เด็คพิตช์ฝ่ายสนับสนุน AI",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "เด็คพิตช์สตาร์ตอัปสิบสไลด์ในสีน้ำเงินเข้มกับตัวอักษรสีขาว: ปกตามธีม ตัวเลขเปรียบเทียบต้นทุนขนาดใหญ่ บทสรุปจากเส้นโค้งสามเส้น วงจรห้าขั้น และสามตัวชี้วัดใน 90 วันแรก เหมาะกับพิตช์ระดมทุน SaaS และการเปิดตัวผลิตภัณฑ์",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "เด็ครีวิวธุรกิจรายไตรมาส",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "รีวิวสิบเอ็ดสไลด์โทนสว่างและน้ำเงิน: มีวาระการประชุม การ์ด KPI สามตัวสำหรับแต่ละสายธุรกิจจากสี่สาย พร้อมเครื่องยนต์การเติบโตและสิ่งที่ต้องปรับปรุง ปิดท้ายด้วยเป้าหมายไตรมาสหน้า เหมาะกับการรีวิวการดำเนินงานและรายงานรายไตรมาส",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "เด็คบทเรียน Quicksort",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "บทเรียนเจ็ดสไลด์บนพื้นกระดาษสีขาวนวลกับสีเขียวหมึก: เป้าหมายการเรียนรู้ สองขั้นของการแบ่งพาร์ทิชันและรีเคอร์ชัน ตัวอย่างการแบ่งสองหน้าพร้อมช่องอาร์เรย์และไพวอตที่ไฮไลต์ และตารางเปรียบเทียบความซับซ้อน เหมาะกับการสอนอัลกอริทึมและการเขียนโปรแกรม",
-        "sceneTemplate.item.compoundEffectCard.title" => "การ์ดความรู้เรื่องพลังทบต้น",
-        "sceneTemplate.item.compoundEffectCard.summary" => "การ์ดความรู้ 4:5 โทนส้มอุ่น มีป้ายคิ้วหมายเลข ชื่อเรื่องขนาดใหญ่ คำจำกัดความ สามประเด็นพร้อมวงกลมหมายเลข และท้ายการ์ดเป็นบัญชีกับ QR เหมาะกับซีรีส์ของบัญชีสายความรู้",
-        "sceneTemplate.item.analyticsMetricCard.title" => "การ์ดแชร์ตัวชี้วัด Analytics",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "การ์ดข้อมูลสีเข้มขนาด 1200×630 มีตัวเลขตัวชี้วัดหลักขนาดใหญ่กับป้ายเทียบเดือนก่อน กราฟแท่งแนวนอนด้านขวา และตัวชี้วัดรองสามช่องด้านล่าง เหมาะกับการแชร์บนโซเชียลและภาพประกอบรายงานประจำสัปดาห์",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "โทเค็น MCP",
-        "menu.saveAsTemplate" => "บันทึกเป็นเทมเพลต…",
-        "menu.saveAsTemplate.saved" => "บันทึกเป็นเทมเพลตแล้ว",
-        "menu.saveAsTemplate.failed" => "ไม่สามารถบันทึกเทมเพลตได้",
+
+
+
         "assetCenter.template.mine" => "เทมเพลตของฉัน",
         "assetCenter.template.builtIn" => "เทมเพลตในตัว",
         "ai.designProgress.detail.failureReason" => "สาเหตุ: {{reason}}",

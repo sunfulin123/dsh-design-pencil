@@ -22,10 +22,10 @@ use crate::widgets::host_canvas_geometry::{
 };
 use crate::widgets::{
     ExportQuickMenu, ImportMenu, LayoutCx, LocalePicker, ShapePicker, Toolbar, TopBar, Widget,
-    COMPONENT_BROWSER_PANEL_H, COMPONENT_BROWSER_PANEL_W, DESIGN_MD_PANEL_H, DESIGN_MD_PANEL_W,
-    ICON_PICKER_PANEL_H, ICON_PICKER_PANEL_W, IMPORT_MENU_WIDTH, LOCALE_PICKER_WIDTH,
-    PROMPT_CENTER_MIN_H, PROMPT_CENTER_MIN_W, PROMPT_CENTER_VIEWPORT_H_RATIO,
-    PROMPT_CENTER_VIEWPORT_W_RATIO, SCENE_TEMPLATE_GALLERY_INSET, SHAPE_PICKER_WIDTH,
+    ASSET_CENTER_GALLERY_INSET, COMPONENT_BROWSER_PANEL_H, COMPONENT_BROWSER_PANEL_W,
+    DESIGN_MD_PANEL_H, DESIGN_MD_PANEL_W, ICON_PICKER_PANEL_H, ICON_PICKER_PANEL_W,
+    IMPORT_MENU_WIDTH, LOCALE_PICKER_WIDTH, PROMPT_CENTER_MIN_H, PROMPT_CENTER_MIN_W,
+    PROMPT_CENTER_VIEWPORT_H_RATIO, PROMPT_CENTER_VIEWPORT_W_RATIO, SHAPE_PICKER_WIDTH,
     TOOLBAR_WIDTH, TOP_BAR_HEIGHT,
 };
 use crate::{Point2D, Rect};
@@ -298,7 +298,7 @@ pub fn prompt_center_panel_rect(
     })
 }
 
-/// Asset Center rect — inset by [`SCENE_TEMPLATE_GALLERY_INSET`] from the
+/// Asset Center rect — inset by [`ASSET_CENTER_GALLERY_INSET`] from the
 /// usable host viewport. Desktop keeps the persistent top bar clear; touch
 /// hosts hand the gallery the full safe-area-adjusted viewport because their
 /// desktop top bar is not painted.
@@ -318,12 +318,12 @@ pub fn prompt_center_panel_rect(
 /// — an eighth of the shorter axis, capped at the nominal margin — so a
 /// narrow window still yields a usable (if tight) gallery rather than an empty
 /// or inverted rect.
-pub fn scene_template_panel_rect(
+pub fn asset_center_panel_rect(
     state: &EditorState,
     viewport_w: f32,
     viewport_h: f32,
 ) -> Option<Rect> {
-    if !state.editor_ui.scene_template_center.open {
+    if !state.editor_ui.asset_center.open {
         return None;
     }
     let available_w = viewport_w.max(0.0);
@@ -333,7 +333,7 @@ pub fn scene_template_panel_rect(
         TOP_BAR_HEIGHT
     };
     let available_h = (viewport_h - top).max(0.0);
-    let inset = SCENE_TEMPLATE_GALLERY_INSET
+    let inset = ASSET_CENTER_GALLERY_INSET
         .min(available_w / 8.0)
         .min(available_h / 8.0)
         .max(0.0);
@@ -353,12 +353,12 @@ pub fn scene_template_panel_rect(
 /// the canvas would leave the top bar and rails at full brightness around a
 /// darkened middle, which reads as a popup on a lit page rather than as an
 /// editor that stepped back. A press anywhere on it dismisses the gallery.
-pub fn scene_template_scrim_rect(
+pub fn asset_center_scrim_rect(
     state: &EditorState,
     viewport_w: f32,
     viewport_h: f32,
 ) -> Option<Rect> {
-    if !state.editor_ui.scene_template_center.open {
+    if !state.editor_ui.asset_center.open {
         return None;
     }
     Some(Rect {

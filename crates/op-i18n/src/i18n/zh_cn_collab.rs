@@ -156,56 +156,56 @@ pub fn lookup(key: &str) -> Option<&'static str> {
         "collab.a11y.participant" => "{{name}}，{{role}}",
         "collab.a11y.remoteCursor" => "{{name}} 的光标",
         "icon.catalogLoading" => "图标库正在加载…",
-        "sceneTemplate.documentUnavailable" => "该模板的文档加载失败，请重试。",
+
         "sceneTemplate.deleteFailed" => "该模板删除失败，请重试。",
-        "sceneTemplate.item.soundingNavyDeck.title" => "测深海图 · 咨询策略档",
-        "sceneTemplate.item.soundingNavyDeck.summary" => "海图暖白配钢蓝墨蓝，结论式标题加一条带来源的读数，深度剖面条与航迹目录贯穿七页，适合咨询交付与策略汇报。",
-        "sceneTemplate.item.tidemarkSlateDeck.title" => "潮痕石板 · 数据评审档",
-        "sceneTemplate.item.tidemarkSlateDeck.summary" => "石板灰底上的全景磁贴、趋势线、明细表、风险清单和泳道路线，七页走完一次数据评审，适合季度复盘与指标例会。",
-        "sceneTemplate.item.banxinRuleDeck.title" => "版心界行 · 中文排版档",
-        "sceneTemplate.item.banxinRuleDeck.summary" => "以版心、界行、天头批注和鱼尾页码立身的中文原生排版，正文每行不超三十字，双栏对读与引文页耐读，适合讲稿与研讨。",
-        "sceneTemplate.item.gridpaperGraphiteDeck.title" => "方格石墨 · 学术答辩档",
-        "sceneTemplate.item.gridpaperGraphiteDeck.summary" => "方格纸底配石墨灰字，问题与缺口、方法、图表两页结果、局限、结论到引用，八页照答辩顺序排好，适合开题与论文答辩。",
-        "sceneTemplate.item.dossierLinenDeck.title" => "卷宗亚麻 · 文档备忘档",
-        "sceneTemplate.item.dossierLinenDeck.summary" => "亚麻纸卷宗质感，从文件首页、背景、现状数据到方案对比与决议，八页写成一份能独立读完的备忘录，适合决策评审。",
-        "sceneTemplate.item.ledgerTickDeck.title" => "账簿勾格 · 竞品矩阵档",
-        "sceneTemplate.item.ledgerTickDeck.summary" => "账簿格线上的评估口径、主矩阵、分位刻度与差距优势对照，七页把竞品比较讲成一笔可核对的账，适合选型与市场分析。",
-        "sceneTemplate.item.brandConceptSheet.title" => "品牌概念板",
-        "sceneTemplate.item.brandConceptSheet.summary" => "横向品牌评审板：展示主锁定组合、构成逻辑、黑白反转与最小尺寸，适合首轮概念交付。",
-        "sceneTemplate.item.logoQaBoard.title" => "LOGO 融合验收板",
-        "sceneTemplate.item.logoQaBoard.summary" => "四格逐项检查共享承义、结构依存、轮廓统一与次级意象的自然出现，适合概念筛选和评审留痕。",
-        "sceneTemplate.item.eventInvitationCard.title" => "技术沙龙邀请函",
-        "sceneTemplate.item.eventInvitationCard.summary" => "4:5 活动邀请卡：主题大字、时间地点双卡、三位嘉宾、报名二维码和主办方 logo 行，深蓝紫调适合活动预热。",
-        "sceneTemplate.item.livestreamTeaserCard.title" => "直播预告卡",
-        "sceneTemplate.item.livestreamTeaserCard.summary" => "4:5 直播预告：主题大字配倒计时三格、两位主讲、平台胶囊和预约二维码卡，深色渐变带出开播提醒。",
-        "sceneTemplate.item.hiringPosterCard.title" => "招聘海报",
-        "sceneTemplate.item.hiringPosterCard.summary" => "4:5 招聘海报：岗位大字、团队照片占位、编号要求、薪资与投递二维码，浅色版面方便替换职位信息。",
-        "sceneTemplate.item.courseEnrollCard.title" => "课程招募卡",
-        "sceneTemplate.item.courseEnrollCard.summary" => "4:5 课程招募：课程名、开课信息条、四格亮点、讲师、早鸟价和报名二维码，暖色调适合招生发布。",
-        "sceneTemplate.item.conferenceAgendaCard.title" => "大会议程卡",
-        "sceneTemplate.item.conferenceAgendaCard.summary" => "4:5 大会议程：大会名、五场时间轴、茶歇和赞助 logo 行，黑底橙字适合会议日程发布。",
-        "sceneTemplate.item.productLaunchCard.title" => "新品上市卡",
-        "sceneTemplate.item.productLaunchCard.summary" => "4:5 新品上市卡：产品占位、三条卖点、价格与首发优惠，再接购买二维码，极简白底突出产品。",
-        "sceneTemplate.item.annualReportCard.title" => "年度数据报告卡",
-        "sceneTemplate.item.annualReportCard.summary" => "4:5 年度数据报告：四大数字、年度一句话、Top3 榜单和二维码，渐变紫底适合年终复盘。",
-        "sceneTemplate.item.musicFestPosterCard.title" => "音乐节海报",
-        "sceneTemplate.item.musicFestPosterCard.summary" => "3:4 音乐节海报：主标题、日期场地、三舞台阵容、三档票价、购票二维码和特别支持，荧光撞色适合演出预热。",
-        "sceneTemplate.item.bookClubInviteCard.title" => "读书会邀请卡",
-        "sceneTemplate.item.bookClubInviteCard.summary" => "4:5 读书会邀请：书名作者、封面占位、领读人、时间地点、三话题和报名二维码，纸色底适合线下活动。",
-        "sceneTemplate.item.aiSupportPitchDeck.title" => "智能客服路演档",
-        "sceneTemplate.item.aiSupportPitchDeck.summary" => "深蓝底白字的创业路演十页：主题封面、成本对比大数字、三条曲线结论、五步闭环、上线九十天三指标，适合 SaaS 融资路演与产品发布。",
-        "sceneTemplate.item.quarterlyReviewDeck.title" => "季度业务复盘档",
-        "sceneTemplate.item.quarterlyReviewDeck.summary" => "浅底蓝调的复盘十一页：议程页、四条业务线各一页 KPI 三联卡加增长引擎与待改进，结尾下季目标，适合经营复盘与季度汇报。",
-        "sceneTemplate.item.quicksortLectureDeck.title" => "算法讲解课件档",
-        "sceneTemplate.item.quicksortLectureDeck.summary" => "米白纸感配墨绿的七页课件：学习目标、分区与递归两步、分区演示上下两页带数组格与基准高亮、复杂度对照表，适合算法与编程教学。",
-        "sceneTemplate.item.compoundEffectCard.title" => "思维模型知识卡",
-        "sceneTemplate.item.compoundEffectCard.summary" => "暖橙纸感 4:5 知识卡：编号眉标、大字标题、一段定义、三条要点各带序号圆标，底部账号与二维码，适合知识类账号的系列卡片。",
-        "sceneTemplate.item.analyticsMetricCard.title" => "数据看板分享卡",
-        "sceneTemplate.item.analyticsMetricCard.summary" => "深色 1200×630 数据卡：主指标大数字与环比徽标、右侧横向条形图、底部三格次要指标，适合社交分享与周报配图。",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         "account.mcpToken" => "MCP 令牌",
-        "menu.saveAsTemplate" => "存为模板…",
-        "menu.saveAsTemplate.saved" => "已存为模板",
-        "menu.saveAsTemplate.failed" => "无法保存模板",
+
+
+
         "assetCenter.template.mine" => "我的模板",
         "assetCenter.template.builtIn" => "内置模板",
         "ai.designProgress.detail.failureReason" => "失败原因：{{reason}}",

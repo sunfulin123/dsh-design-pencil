@@ -1,7 +1,7 @@
 //! Focused native-host coverage for slideshow touch navigation.
 
 use super::super::WidgetHostNative;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::size_class::EditorSizeClass;
 use op_editor_core::EditorState;
 use op_editor_ui::Point2D;
@@ -30,7 +30,7 @@ fn presenting_host() -> WidgetHostNative {
         .expect("parse slideshow fixture")
         .value;
     let mut state = EditorState::from_document(document);
-    state.editor_ui.scenario = Some(TemplateScene::Slides);
+    state.editor_ui.scenario = Some(DesignScene::Slides);
     state.editor_ui.touch = true;
     state.editor_ui.size_class = EditorSizeClass::Compact;
     let mut host = WidgetHostNative::new();

@@ -75,6 +75,31 @@ pub fn style_guide_registry() -> &'static [ParsedStyleGuide] {
                 }
             }
         }
+        if let Some(dir) = crate::style_guides_dir() {
+            let manifest: serde_json::Value = serde_json::from_str(
+                dir.get_file(dir.path().join("manifest.json"))
+                    .unwrap()
+                    .contents_utf8()
+                    .unwrap(),
+            )
+            .expect("valid builtin design manifest");
+            for entry in manifest.as_array().unwrap() {
+                let path = entry["path"].as_str().unwrap();
+                let raw = dir
+                    .get_file(dir.path().join(path))
+                    .unwrap()
+                    .contents_utf8()
+                    .unwrap();
+                let guide = super::design_md_import::parse_design_md(raw, path)
+                    .expect("builtin DESIGN.md must be readable");
+                out.push(ParsedStyleGuide {
+                    name: entry["id"].as_str().unwrap().to_string(),
+                    tags: guide.tags,
+                    platform: guide.platform,
+                    content: raw.to_string(),
+                });
+            }
+        }
         // The preferred guide leads listings and wins equal-score tag matches.
         out.sort_by_key(|guide| guide.name != PREFERRED_STYLE_GUIDE);
         out
@@ -163,6 +188,17 @@ mod tests {
     }
 
     #[test]
+    fn builtin_design_corpus_replaces_retired_styles() {
+        let guides = style_guide_registry();
+        assert_eq!(guides.len(), 85);
+        assert_eq!(guides[0].name, "talkdesk-cobalt");
+        assert!(guides.iter().any(|g| g.name == "design-md:apple"));
+        assert!(guides.iter().any(|g| g.name == "design-md:linear.app"));
+        assert!(!guides.iter().any(|g| g.name == "warm-food-mobile-light"));
+        assert!(!guides.iter().any(|g| g.name == "design-md:talkdesk"));
+    }
+
+    #[test]
     fn registry_loads_the_style_guides() {
         let reg = style_guide_registry();
         // ~50 style guides ship with the corpus.
@@ -176,97 +212,27 @@ mod tests {
     }
 
     #[test]
-    fn every_style_guide_declares_its_scope_boundary() {
-        for guide in style_guide_registry() {
-            assert!(
-                guide.content.contains("## Style Scope"),
-                "{} must declare an explicit style scope",
-                guide.name
-            );
-            assert!(
-                guide.content.contains("This guide is self-contained"),
-                "{} must prevent cross-guide visual leakage",
-                guide.name
-            );
-            assert!(
-                guide
-                    .content
-                    .contains("Treat unnamed layout frames as structural by default"),
-                "{} must avoid turning layout frames into decorated surfaces",
-                guide.name
-            );
-        }
-    }
-
-    #[test]
-    fn mobile_guides_carry_component_discipline() {
-        for guide in style_guide_registry()
-            .iter()
-            .filter(|g| g.platform == Platform::Mobile)
-        {
-            assert!(
-                guide.content.contains("### Mobile Composition Guardrails"),
-                "{} must include mobile composition guardrails",
-                guide.name
-            );
-            assert!(
-                guide.content.contains("Search should be one clean row"),
-                "{} must avoid nested tinted search shells",
-                guide.name
-            );
-            assert!(
-                guide
-                    .content
-                    .contains("carousel viewport frames stay transparent"),
-                "{} must avoid rounded carousel backing shells",
-                guide.name
-            );
-            assert!(
-                guide.content.contains("do not add circular white bubbles"),
-                "{} must avoid favorite/like bubble chrome",
-                guide.name
-            );
-        }
-    }
-
-    #[test]
-    fn style_guides_do_not_revive_forced_pill_nav_templates() {
-        for guide in style_guide_registry() {
-            for forbidden in [
-                "Tab bar pill",
-                "Pill tab bar",
-                "bottom navigation pill",
-                "cornerRadius 100",
-                "100px",
-            ] {
-                assert!(
-                    !guide.content.contains(forbidden),
-                    "{} must not contain forced pill-nav wording: {forbidden}",
-                    guide.name
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn warm_food_guide_rejects_generic_delivery_app_chrome() {
-        let guide = style_guide_registry()
-            .iter()
-            .find(|g| g.name == "warm-food-mobile-light")
-            .expect("warm food guide present");
-
-        for required in [
-            "polished food and restaurant mobile interface",
-            "Card Surface    | #FFFFFF | Product/menu cards only",
-            "Search row: transparent structural frame",
-            "no extra white rounded carousel backing",
-            "avoid pastel pink/blue search shells",
-            "heart/bookmark icons sit directly over the image with no circular border bubble",
-            "Featured food cards default to an image-top product-card composition",
-        ] {
-            assert!(
-                guide.content.contains(required),
-                "warm food guide missing quality guardrail: {required}"
+    fn builtin_design_files_keep_their_original_content() {
+        let dir = crate::style_guides_dir().unwrap();
+        let manifest: serde_json::Value = serde_json::from_str(
+            dir.get_file(dir.path().join("manifest.json"))
+                .unwrap()
+                .contents_utf8()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(manifest.as_array().unwrap().len(), 84);
+        for entry in manifest.as_array().unwrap() {
+            let guide = style_guide_registry()
+                .iter()
+                .find(|g| g.name == entry["id"].as_str().unwrap())
+                .unwrap();
+            assert_eq!(
+                guide.content,
+                dir.get_file(dir.path().join(entry["path"].as_str().unwrap()))
+                    .unwrap()
+                    .contents_utf8()
+                    .unwrap()
             );
         }
     }

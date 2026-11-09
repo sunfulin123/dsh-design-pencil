@@ -460,7 +460,7 @@ mod tests {
     use op_editor_core::{NodeId, PenNodeExt};
 
     const SAMPLE_DOCUMENT: &str =
-        include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+        include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
 
     fn editor_session(width: f32, height: f32) -> Session {
         Session::new(CreateOptions {

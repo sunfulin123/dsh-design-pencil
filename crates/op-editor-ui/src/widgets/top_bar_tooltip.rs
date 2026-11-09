@@ -129,7 +129,7 @@ pub fn suppressed(ui: &EditorUiState, button: TopBarButton) -> bool {
         TopBarButton::OpenImportMenu => ui.import_menu_open || ui.import_menu.open,
         TopBarButton::ToggleLocale => ui.locale_picker.open,
         TopBarButton::OpenExportMenu => ui.export_quick_menu_open,
-        TopBarButton::OpenAssetCenter => ui.scene_template_center.open,
+        TopBarButton::OpenAssetCenter => ui.asset_center.open,
         TopBarButton::OpenAgentSettings => ui.agent_settings_open,
         TopBarButton::OpenCollaboration => ui.collab.panel.open,
         TopBarButton::ToggleGitPanel => ui.git_panel.open,

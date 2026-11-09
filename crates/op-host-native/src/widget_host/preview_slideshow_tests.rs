@@ -8,7 +8,7 @@
 
 use super::WidgetHostNative;
 use op_editor_core::preview_slideshow::SlideshowToolbarButton;
-use op_editor_core::scene_template_catalog::TemplateScene;
+use op_editor_core::design_scene::DesignScene;
 use op_editor_core::{
     AccountState, EditorState, Locale, PreviewDeviceKind, PropertyFocus, ThemeMode,
 };
@@ -38,7 +38,7 @@ const THREE_BOARD_DECK: &str = r##"{
     ]
 }"##;
 
-fn host_with(source: &str, scenario: Option<TemplateScene>) -> WidgetHostNative {
+fn host_with(source: &str, scenario: Option<DesignScene>) -> WidgetHostNative {
     let document = jian_ops_schema::load_str(source)
         .expect("parse slideshow fixture")
         .value;
@@ -59,7 +59,7 @@ fn board_on_screen(host: &WidgetHostNative) -> Option<String> {
 #[test]
 fn a_deck_presents_from_board_zero_and_arrow_keys_move_through_it() {
     let _guard = test_lock();
-    let mut host = host_with(THREE_BOARD_DECK, Some(TemplateScene::Slides));
+    let mut host = host_with(THREE_BOARD_DECK, Some(DesignScene::Slides));
 
     assert!(host.enter_preview((1200.0, 800.0)));
     assert!(host.preview_slideshow_active(), "a deck presents");
@@ -93,7 +93,7 @@ fn a_deck_presents_from_board_zero_and_arrow_keys_move_through_it() {
 #[test]
 fn the_presented_board_is_framed_by_the_viewport_fit() {
     let _guard = test_lock();
-    let mut host = host_with(THREE_BOARD_DECK, Some(TemplateScene::Slides));
+    let mut host = host_with(THREE_BOARD_DECK, Some(DesignScene::Slides));
 
     host.enter_preview((1920.0, 1080.0));
     let first_zoom = host.editor_state.viewport.zoom;
@@ -133,42 +133,11 @@ fn an_untagged_document_previews_interactively_as_before() {
 /// user actually opens has to present, and its board count has to match the
 /// slides it was authored with.
 #[test]
-fn the_shipped_slide_deck_template_presents_every_board() {
-    let _guard = test_lock();
-    let source = op_editor_core::scene_template_catalog::scene_template_document("slide-deck")
-        .expect("the deck template ships");
-    let mut host = host_with(source, Some(TemplateScene::Slides));
-    let authored_boards = host.editor_state.active_children().len();
-    assert!(authored_boards > 1, "the deck has several slides");
-
-    assert!(host.enter_preview((1200.0, 800.0)));
-
-    let slideshow = host
-        .editor_state
-        .preview_slideshow()
-        .expect("the deck presents");
-    assert_eq!(slideshow.len(), authored_boards);
-    assert_eq!(slideshow.counter_label(), format!("1 / {authored_boards}"));
-
-    // Walking to the end lands on the last board and holds there.
-    for _ in 0..authored_boards {
-        host.preview_dispatch_key("ArrowRight", false);
-    }
-    let slideshow = host
-        .editor_state
-        .preview_slideshow()
-        .expect("still present");
-    assert_eq!(slideshow.index(), authored_boards - 1);
-}
-
-/// A deck tag on a page with no boards must not panic or trap the user in
-/// an empty presentation — preview behaves exactly as it did before.
-#[test]
 fn a_deck_with_no_boards_falls_back_to_ordinary_preview() {
     let _guard = test_lock();
     let mut host = host_with(
         r#"{"version":"1.0.0","children":[]}"#,
-        Some(TemplateScene::Slides),
+        Some(DesignScene::Slides),
     );
 
     assert!(host.enter_preview((1200.0, 800.0)));
@@ -184,7 +153,7 @@ const VW: f32 = 1200.0;
 const VH: f32 = 800.0;
 
 fn presenting_host() -> WidgetHostNative {
-    let mut host = host_with(THREE_BOARD_DECK, Some(TemplateScene::Slides));
+    let mut host = host_with(THREE_BOARD_DECK, Some(DesignScene::Slides));
     // `apply_cursor_move` resolves overlays against the cached viewport, the
     // way the runner leaves it after a frame.
     host.last_viewport_w = VW;
@@ -411,7 +380,7 @@ fn a_non_presenting_preview_still_routes_presses_to_the_runtime() {
 #[test]
 fn presenting_takes_the_full_stage_and_gives_it_back_on_exit() {
     let _guard = test_lock();
-    let mut host = host_with(THREE_BOARD_DECK, Some(TemplateScene::Slides));
+    let mut host = host_with(THREE_BOARD_DECK, Some(DesignScene::Slides));
     host.last_viewport_w = VW;
     host.last_viewport_h = VH;
     let editing_stage = host.preview_canvas_rect(VW, VH);
@@ -524,7 +493,7 @@ fn the_rails_are_not_painted_while_presenting() {
     }
 
     let mut backend = NativeBackend::with_dpi(1.0);
-    let mut host = host_with(THREE_BOARD_DECK, Some(TemplateScene::Slides));
+    let mut host = host_with(THREE_BOARD_DECK, Some(DesignScene::Slides));
     host.last_viewport_w = W as f32;
     host.last_viewport_h = H as f32;
     host.enter_preview((W as f32, H as f32));

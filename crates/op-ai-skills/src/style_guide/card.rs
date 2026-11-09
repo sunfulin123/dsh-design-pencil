@@ -100,7 +100,7 @@ pub fn style_guide_card(id: &str) -> Option<Arc<StyleGuideCard>> {
         Arc::new(StyleGuideCard {
             id: guide.id().to_string(),
             is_user: guide.is_user(),
-            name: guide.name.clone(),
+            name: guide.display_name(),
             swatches: swatches(&values, &guide.content),
             display_font: values.typography.display_font.clone(),
             body_font: values.typography.body_font.clone(),

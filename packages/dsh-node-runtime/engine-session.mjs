@@ -1235,7 +1235,6 @@ export class EngineSession {
       'apply_asset',
       args,
       () => this.#engine.apply_asset_json(kind, JSON.stringify(payload), JSON.stringify(args)),
-      kind === 'scene-template' ? payload.document : undefined,
     );
   }
 

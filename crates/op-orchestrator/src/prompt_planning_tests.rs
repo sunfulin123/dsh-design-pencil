@@ -550,7 +550,7 @@ fn subagent_prompt_basic_mobile_food_keeps_mobile_app_skill() {
     let mut mobile_plan = plan();
     mobile_plan.root_frame.width = 402.0;
     mobile_plan.root_frame.height = 874.0;
-    mobile_plan.style_guide_name = Some("warm-food-mobile-light".into());
+    mobile_plan.style_guide_name = Some("design-md:uber".into());
     let mobile_subtask = Subtask {
         id: "main-content".into(),
         label: "Main Content".into(),

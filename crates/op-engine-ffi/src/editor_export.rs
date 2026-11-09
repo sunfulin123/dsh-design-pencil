@@ -286,7 +286,7 @@ mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     const SAMPLE_DOC: &str =
-        include_str!("../../op-editor-core/assets/scene_templates/daily-sign-card.op");
+        include_str!("../../op-editor-core/assets/asset_centers/daily-sign-card.op");
     static TEMP_ID: AtomicU64 = AtomicU64::new(0);
 
     fn session() -> Session {

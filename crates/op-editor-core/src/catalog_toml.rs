@@ -1,7 +1,7 @@
 //! Shared value parsers for the compile-time embedded catalogue assets.
 //!
 //! Both the Prompt Center (`prompt_center.toml`) and the Scene Template
-//! Center (`scene_templates.toml`) ship as checked-in TOML written in a
+//! Center (`asset_centers.toml`) ship as checked-in TOML written in a
 //! deliberately small subset, parsed here rather than through a TOML crate
 //! so the catalogues stay dependency-free and wasm-safe.
 //!

@@ -3,7 +3,7 @@ import { lstat, mkdir, open, realpath } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-const KINDS = new Set(['scene-template', 'style-guide', 'theme-preset']);
+const KINDS = new Set(['style-guide', 'theme-preset']);
 const MAX_BYTES = 32 * 1024 * 1024;
 const USER_ID = /^user:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -42,15 +42,6 @@ function payloadJson(kind, payload) {
     (typeof payload.markdown !== 'string' || !payload.markdown.trim())
   ) {
     throw invalid('Style guide requires nonempty Markdown');
-  }
-  if (
-    kind === 'scene-template' &&
-    (!payload.document ||
-      typeof payload.document !== 'object' ||
-      Array.isArray(payload.document) ||
-      !Array.isArray(payload.document.children))
-  ) {
-    throw invalid('Scene template requires a canonical document with children');
   }
   if (
     kind === 'theme-preset' &&
@@ -257,33 +248,9 @@ export class AssetStore {
           .prepare('UPDATE assets SET name=?,payload=? WHERE kind=? AND id=?')
           .run(name, json, kind, id);
       } else {
-        if (
-          kind === 'scene-template' &&
-          this.#db.prepare('SELECT count(*) AS n FROM assets WHERE kind=?').get(kind).n >= 50
-        ) {
-          throw new AssetStoreError('asset-quota', 'The 50 saved-template quota is full');
-        }
         this.#db.prepare('INSERT INTO assets VALUES (?,?,?,?)').run(assetId, kind, name, json);
       }
       return { id: assetId, kind, name, payload: JSON.parse(json) };
-    });
-  }
-
-  /** Insert an asset from another library under its existing stable id. */
-  async adopt({ id, kind, payload }) {
-    checkKind(kind);
-    checkId(id);
-    const json = payloadJson(kind, payload);
-    const name = checkName(payload.name);
-    return this.#mutate(undefined, () => {
-      if (
-        kind === 'scene-template' &&
-        this.#db.prepare('SELECT count(*) AS n FROM assets WHERE kind=?').get(kind).n >= 50
-      ) {
-        throw new AssetStoreError('asset-quota', 'The 50 saved-template quota is full');
-      }
-      this.#db.prepare('INSERT INTO assets VALUES (?,?,?,?)').run(id, kind, name, json);
-      return { id, kind, name, payload: JSON.parse(json) };
     });
   }
 

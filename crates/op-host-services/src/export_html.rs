@@ -128,7 +128,7 @@ fn deck_title(state: &EditorState, slides: &[SlideAsset]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use op_editor_core::scene_template_catalog::TemplateScene;
+    use op_editor_core::design_scene::DesignScene;
 
     fn temp_path(tag: &str) -> std::path::PathBuf {
         let mut p = std::env::temp_dir();
@@ -148,7 +148,7 @@ mod tests {
             .expect("fixture JSON parses")
             .value;
         let mut state = EditorState::from_document(doc);
-        state.editor_ui.scenario = Some(TemplateScene::Slides);
+        state.editor_ui.scenario = Some(DesignScene::Slides);
         state
     }
 
