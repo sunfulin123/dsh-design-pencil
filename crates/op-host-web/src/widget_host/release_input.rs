@@ -96,7 +96,7 @@ impl WidgetHost {
             self.commit_marquee_selection(m, viewport_w, viewport_h);
             return true;
         }
-        if self.code_selection_drag.take().is_some() {
+        if self.release_text_edit_pointer() || self.code_selection_drag.take().is_some() {
             return true;
         }
         if self.image_input_selection_drag.take().is_some() {
@@ -176,7 +176,7 @@ impl WidgetHost {
             }
             return true;
         }
-        if self.code_selection_drag.take().is_some() {
+        if self.release_text_edit_pointer() || self.code_selection_drag.take().is_some() {
             return true;
         }
         if self.image_input_selection_drag.take().is_some() {

@@ -52,10 +52,10 @@ opacity 0 的图层要保留（参与 auto-layout、可编辑）；只跳过 `vi
 {
   "version": 1,
   "status": "verified",
-  "task_id": "b3f56376-1e0c-4097-b48b-ce0eadca2f5f",
-  "verified_at": "2026-11-08T17:09:44.406594+00:00",
+  "task_id": "5dcaea20-8276-42e7-919d-e4bc2255561f",
+  "verified_at": "2026-11-10T11:13:34.196841+00:00",
   "sources": {
-    "crates/op-figma/src/common.rs": "f1eef5632dd0218229465b9a23257c6e98506f95c953a3f4acfd299470105c13",
+    "crates/op-figma/src/common.rs": "d2c228b5c2817982399b5809e7a6efdf83b015c7e1758c1c140d2bc885742b2f",
     "crates/op-figma/src/instance/apply.rs": "5abb04389085ec6edb402a7611d12e76928ba55954468c6019db0152b2a0e023",
     "crates/op-figma/src/text_cache.rs": "5a2fd670c31cb9d119753e67769609cc130ccb0fe7d6baf08a550baf303f0fd8",
     "crates/op-figma/src/instance/swap_filter.rs": "83b6a2eb97b5f05dd339fe17990ab59f99bd13ce02ac5cc6c2a2ab2e771a1f32",
@@ -67,7 +67,7 @@ opacity 0 的图层要保留（参与 auto-layout、可编辑）；只跳过 `vi
     "crates/op-figma/src/paint_vars.rs": "e922588c31a6b33995b2678f0e289a4aeed8d2e4309a98394f146aede88bf78f",
     "crates/op-editor-ui/src/widgets/canvas_viewport_paint/shapes.rs": "f418e3e3358a01bb25048fefbd594457e4027dd3b61cdf9584d917c2e3cd29b9"
   },
-  "reason": "Added verified Group/resizeToFit, versioned styleIdForEffect, variable-bound paint opacity, and alpha-silhouette drop-shadow invariants.",
-  "evidence": "cargo test -p op-figma — 297 passed; cargo test -p op-editor-ui --lib — 1924 passed; compare_figma_fidelity on 3 boards × REST/.fig: structural 0, text exact, px 1.70–3.03%"
+  "reason": "Reviewed the only initializer change: the new preview flag defaults to None; Figma instance sizing and import behavior remain unchanged.",
+  "evidence": "cargo test --manifest-path crates/op-figma/Cargo.toml --lib: 297 passed, 4 ignored."
 }
 ```

@@ -32,6 +32,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+      - name: Install locked runtime dependencies
+        working-directory: packages
+        run: bun install --frozen-lockfile
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: '1.96.0'

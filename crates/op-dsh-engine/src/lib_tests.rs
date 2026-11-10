@@ -295,6 +295,86 @@ fn design_quality_is_scoped_and_bounded() {
     assert_eq!(scoped["structuredContent"]["truncated"], false);
 }
 
+#[test]
+fn design_quality_checks_actual_touch_target_geometry_and_preserves_fit_content() {
+    let mut engine = DesignEngine::new();
+    engine.load_document(&json!({"version":"1.0.0","children":[{"type":"frame","id":"page",
+        "width":800,"height":600,"layout":"vertical","children":[
+            {"type":"frame","id":"short","role":"nav link","width":"fit_content","height":44,
+             "layout":"horizontal","padding":[0,4],"children":[{"type":"text","id":"short-label","content":"i","fontSize":16}]},
+            {"type":"frame","id":"wide","role":"nav link","width":44,"height":44,
+             "layout":"horizontal","padding":[0,16],"children":[{"type":"text","id":"wide-label","content":"Menu","fontSize":16}]}
+        ]}]}).to_string()).unwrap();
+    let quality = |engine: &mut DesignEngine| -> Value {
+        serde_json::from_str::<Value>(&engine.call_tool("get_design_quality", "{}").unwrap())
+            .unwrap()["structuredContent"]
+            .clone()
+    };
+    let issues = quality(&mut engine)["navIssues"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(
+        issues.len(),
+        1,
+        "only the actually undersized link should be reported"
+    );
+    assert_eq!(issues[0]["nodeId"], "short");
+    assert!(issues[0]["suggestedPatch"]["padding"].is_array());
+    assert!(issues[0]["reason"]
+        .as_str()
+        .unwrap()
+        .contains("fit_content"));
+    let _ = engine
+        .call_tool(
+            "update_node",
+            &json!({"nodeId":"short","data":issues[0]["suggestedPatch"]}).to_string(),
+        )
+        .unwrap();
+    assert!(quality(&mut engine)["navIssues"]
+        .as_array()
+        .unwrap()
+        .is_empty());
+    assert!(engine.document_json().unwrap().contains("fit_content"));
+    let _ = engine.call_tool("undo", "{}").unwrap();
+    assert_eq!(
+        quality(&mut engine)["navIssues"].as_array().unwrap().len(),
+        1
+    );
+}
+
+#[test]
+fn design_quality_provides_an_effective_fix_for_responsive_targets() {
+    let mut engine = DesignEngine::new();
+    engine.load_document(&json!({"version":"1.2","formatVersion":"1.2","responsive":true,"children":[{"type":"frame","id":"page",
+        "width":800,"height":600,"layout":"vertical","children":[{"type":"frame","id":"short","role":"button",
+        "width":"fit_content","height":44,"layout":"horizontal","padding":[0,4],"children":[
+            {"type":"text","id":"label","content":"i","fontSize":16}
+        ]}]}]}).to_string()).unwrap();
+    let quality = |engine: &mut DesignEngine| -> Value {
+        serde_json::from_str::<Value>(&engine.call_tool("get_design_quality", "{}").unwrap())
+            .unwrap()["structuredContent"]
+            .clone()
+    };
+    let issues = quality(&mut engine)["navIssues"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(issues.len(), 1);
+    assert!(issues[0]["suggestedPatch"]["padding"].is_array());
+    let _ = engine
+        .call_tool(
+            "update_node",
+            &json!({"nodeId":"short","data":issues[0]["suggestedPatch"]}).to_string(),
+        )
+        .unwrap();
+    assert!(quality(&mut engine)["navIssues"]
+        .as_array()
+        .unwrap()
+        .is_empty());
+    assert!(engine.document_json().unwrap().contains("fit_content"));
+}
+
 fn two_page_engine() -> DesignEngine {
     let mut engine = DesignEngine::new();
     let doc = json!({"version": "1.0.0", "children": [], "pages": [

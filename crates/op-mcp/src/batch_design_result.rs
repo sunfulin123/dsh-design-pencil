@@ -136,6 +136,20 @@ impl BatchDesign {
         bindings: Vec<String>,
         promoted: Vec<PromoteNote>,
     ) -> ToolOutcome {
+        if parent_id.is_real()
+            && !self.existing_ids.contains(&parent_id)
+            && args
+                .get("strictParent")
+                .is_some_and(|raw| matches!(raw.trim(), "true" | "1"))
+        {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                format!(
+                    "Insert parent '{}' does not exist; read the current root and retry",
+                    parent_id.as_str()
+                ),
+            );
+        }
         let post_processed = args
             .get("postProcess")
             .or_else(|| args.get("post_process"))

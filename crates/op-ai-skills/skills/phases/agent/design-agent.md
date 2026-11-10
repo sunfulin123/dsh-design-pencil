@@ -19,18 +19,16 @@ If you need access to many tools in one turn, call `ToolSearch` with:
 ### Step 3 — Branch on the task type
 
 **Creative task / new visual direction:**
-- Call `get_style_guide_tags` to list all available style guides by their tags.
-- Then call `get_style_guide` (by tags, or by exact name) to load the concrete design tokens: colors, fonts, sizes, spacing, corner radii, icon style.
+- Call `list_style_guides` to discover the actual built-in and user style IDs. Use `get_style_guide` with the selected `id` or exact `name` to load its design guidance.
 - Capture the returned style-guide `name` — you will pass it to `spawn_agents` when delegating sub-screens.
 
 **Composition task / editing an existing design:**
-- Call `get_guidelines(topic)` using `"web-app"` or `"mobile"` for product-design principles that apply to the screen you are editing; add `"scroll"` when the request mentions parallax / sticky / scroll effects (it carries the page-scroll contract), `"card"` for a card board, and `"icons"` for the icon_font/lucide icon contract. When you are done, call `finalize_design` once — it runs the same repair passes the built-in pipeline applies.
+- Call `get_guidelines` with the supported `topic` argument when relevant. For a selected local edit, restrict changes to the requested nodes and descendants; do not modify shared definitions or unrelated screens unless the user requests a broader change. Run `finalize_design` only with the intended `root_ids`, never an unscoped page-wide pass for a local edit.
 - Do NOT pull a full style guide when you are adjusting an existing composition.
 
 **Visual style for new or refreshed work:**
 - The default style is **Talkdesk Cobalt**. Unless the user names another look or the document already has its own design system, fetch `get_style_guide({"name":"talkdesk-cobalt"})` and build with Cobalt library tokens (Step 4).
-- Only when the user asks for a different visual direction: early in the loop, also fetch one visual style with `get_guidelines(category:"style", name:"Atlas Grid", colorPalette:"Alloy Blue", roundness:"medium", elevation:"low", headings:"Inter", body:"Inter", captions:"Inter", data:"IBM Plex Mono")`; choose styles like Atlas Grid, Beacon Landing, or Console Board and palettes like Alloy Blue or Amber Field.
-- Treat the returned TokenMap as visual-direction reference. In Step 4, choose one colour/token source of truth before drawing; do not mix this palette with an unrelated preset.
+- When the user asks for another visual direction, use `list_style_guides` and `get_style_guide` to choose an available guide. Treat its values as visual-direction reference; in Step 4, choose one colour/token source of truth before drawing; do not mix this palette with an unrelated preset.
 
 ### Step 4 — Design variables and built-in design systems
 
@@ -271,4 +269,6 @@ When the user asks for 2+ new screens in one request AND their parallel-agents s
 
 ## Finishing
 
-{{finishCondition}} Give a one-line summary of what you built (e.g., "Built a 4-screen mobile onboarding flow with the Indigo style guide."). Do not dump JSON, node trees, or raw DSL into the chat.
+For a new design, inspect a real `get_screenshot` result, run `lint_document` on the relevant root, repair actionable findings, and inspect the result again. For a local edit, scope checks to the affected design and preserve manual adjustments elsewhere. Report a tool failure or an unavailable screenshot honestly; never claim an unverified check succeeded.
+
+{{finishCondition}} Summarize what changed, what was checked, and any remaining issue. Do not dump JSON, node trees, or raw DSL into the chat.

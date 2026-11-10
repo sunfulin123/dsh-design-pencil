@@ -13,7 +13,12 @@ use op_editor_core::{EditorState, Locale, PropertyFocus};
 mod ops;
 pub(crate) use ops::dispatch;
 
-pub const HEIGHT: f32 = 744.0;
+pub const HEIGHT: f32 = 512.0;
+const HEADER_HEIGHT: f32 = 36.0;
+
+pub fn height(expanded: bool) -> f32 {
+    HEADER_HEIGHT + if expanded { HEIGHT } else { 0.0 }
+}
 const FIELD_KEYS: [&str; 13] = [
     "textInspector.markdown",
     "textInspector.start",
@@ -32,55 +37,67 @@ const FIELD_KEYS: [&str; 13] = [
 
 fn field_rects(x: f32, y: f32, w: f32) -> Vec<(usize, Rect)> {
     let half = (w - 8.0) / 2.0;
-    let mut fields = vec![(0, Rect::xywh(x, y + 24.0, w, 58.0))];
-    for (row_y, a, b) in [
-        (180.0, 1, 2),
-        (216.0, 3, 4),
-        (252.0, 5, 6),
-        (528.0, 7, 10),
-        (564.0, 8, 9),
-    ] {
+    let mut fields = vec![
+        (0, Rect::xywh(x, y + 24.0, w, 58.0)),
+        (6, Rect::xywh(x, y + 152.0, w, 28.0)),
+    ];
+    for (row_y, a, b) in [(296.0, 7, 10), (332.0, 8, 9)] {
         fields.push((a, Rect::xywh(x, y + row_y, half, 28.0)));
         fields.push((b, Rect::xywh(x + half + 8.0, y + row_y, half, 28.0)));
     }
-    fields.push((11, Rect::xywh(x, y + 600.0, w, 28.0)));
-    fields.push((12, Rect::xywh(x, y + 360.0, w, 28.0)));
+    fields.push((11, Rect::xywh(x, y + 368.0, w, 28.0)));
     fields
 }
 
-pub fn push_input_rects(out: &mut Vec<(PropertyFocus, Rect)>, x: f32, y: f32, w: f32) {
+pub fn push_input_rects(
+    out: &mut Vec<(PropertyFocus, Rect)>,
+    x: f32,
+    y: f32,
+    w: f32,
+    expanded: bool,
+) {
+    if !expanded {
+        return;
+    }
     out.extend(
-        field_rects(x + PAD_X, y, w)
+        field_rects(x + PAD_X, y + HEADER_HEIGHT, w)
             .into_iter()
             .map(|(i, r)| (PropertyFocus::TextDesign(i), r)),
     );
 }
 
-pub fn action_rects(x: f32, y: f32, w: f32) -> Vec<(A, Rect)> {
+pub fn action_rects(x: f32, y: f32, w: f32, expanded: bool) -> Vec<(A, Rect)> {
+    let mut out = vec![(
+        A::ToggleTextAdvanced,
+        Rect::xywh(x, y, w + PAD_X * 2.0, HEADER_HEIGHT),
+    )];
+    if !expanded {
+        return out;
+    }
+    let y = y + HEADER_HEIGHT;
     let x = x + PAD_X;
-    let mut out = vec![
+    out.extend([
         (A::ApplyTextMarkdown, Rect::xywh(x, y + 90.0, w, 28.0)),
         (
             A::ToggleTextRangeClearLink,
-            Rect::xywh(x, y + 324.0, w, 28.0),
+            Rect::xywh(x, y + 188.0, (w - 4.0) / 2.0, 28.0),
         ),
-        (A::ApplyTextRange, Rect::xywh(x, y + 424.0, w, 28.0)),
-        (A::ApplyTextParagraph, Rect::xywh(x, y + 644.0, w, 28.0)),
-    ];
+        (
+            A::ApplyTextRange,
+            Rect::xywh(x + (w + 4.0) / 2.0, y + 188.0, (w - 4.0) / 2.0, 28.0),
+        ),
+        (A::ApplyTextParagraph, Rect::xywh(x, y + 412.0, w, 28.0)),
+    ]);
     for i in 0..3 {
         out.push((
-            A::CycleTextRangeFlag(i),
-            Rect::xywh(x + i as f32 * w / 3.0, y + 288.0, w / 3.0, 28.0),
-        ));
-        out.push((
             A::SetTextParagraphList(i),
-            Rect::xywh(x + i as f32 * w / 3.0, y + 492.0, w / 3.0, 28.0),
+            Rect::xywh(x + i as f32 * w / 3.0, y + 260.0, w / 3.0, 28.0),
         ));
     }
     for i in 0..4 {
         out.push((
             A::SetTextTruncation(i),
-            Rect::xywh(x + i as f32 * w / 4.0, y + 708.0, w / 4.0, 28.0),
+            Rect::xywh(x + i as f32 * w / 4.0, y + 476.0, w / 4.0, 28.0),
         ));
     }
     out
@@ -113,6 +130,23 @@ pub fn paint(
 ) -> f32 {
     let t = |key| op_i18n::translate(locale, key);
     let w = width - PAD_X * 2.0;
+    paint_section_label(cx, theme, t("designSystem.advancedText"), x, y, width);
+    let indicator = if draft.expanded { "−" } else { "+" };
+    cx.backend.draw_text(
+        &TextLayout::single_run(
+            indicator,
+            "system-ui",
+            14.0,
+            theme.foreground.to_jian(),
+            Point2D::new(0.0, 0.0),
+        ),
+        Point2D::new(x + width - PAD_X - 12.0, y + 20.0),
+    );
+    if !draft.expanded {
+        super::property_panel_inputs::paint_section_divider(cx, theme, x, y + HEADER_HEIGHT, width);
+        return y + HEADER_HEIGHT;
+    }
+    let y = y + HEADER_HEIGHT;
     let mut muted = *theme;
     if !enabled {
         muted.foreground = theme.muted_foreground;
@@ -121,16 +155,13 @@ pub fn paint(
     let theme = &muted;
     for (offset, key) in [
         (0.0, "textInspector.markdown"),
-        (128.0, "textInspector.range"),
-        (464.0, "textInspector.paragraph"),
-        (680.0, "textInspector.truncation"),
+        (128.0, "textInspector.link"),
+        (232.0, "textInspector.paragraph"),
+        (448.0, "textInspector.truncation"),
     ] {
         paint_section_label(cx, theme, t(key), x, y + offset, width);
     }
-    for (offset, key) in [
-        (158.0, "textInspector.offsetHint"),
-        (412.0, "textInspector.styleHint"),
-    ] {
+    for (offset, key) in [(226.0, "textInspector.selectCharacters")] {
         let label = if enabled {
             t(key)
         } else {
@@ -180,7 +211,7 @@ pub fn paint(
             );
         }
     }
-    for (action, rect) in action_rects(x, y, w) {
+    for (action, rect) in action_rects(x, y - HEADER_HEIGHT, w, draft.expanded) {
         let (label, active, status) = match action {
             A::ApplyTextMarkdown => (t("textInspector.applyMarkdown").into(), false, None),
             A::ApplyTextRange => (t("textInspector.applyRange").into(), false, None),
@@ -221,6 +252,7 @@ pub fn paint(
                 draft.list == i,
                 None,
             ),
+            A::ToggleTextAdvanced => continue,
             _ => unreachable!(),
         };
         cx.backend

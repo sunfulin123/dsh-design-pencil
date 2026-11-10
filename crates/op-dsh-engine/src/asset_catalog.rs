@@ -4,6 +4,24 @@ pub fn schemas() -> Vec<Value> {
     let mut result = Vec::new();
     for (name, description, properties, required) in [
         (
+            "get_design_capabilities",
+            "Return the live tool schemas and managed-host access classifications.",
+            json!({}),
+            json!([]),
+        ),
+        (
+            "plan_design_canvas",
+            "Plan a neutral editable canvas from the user's stated device or dimensions.",
+            json!({"userMessage":{"type":"string","minLength":1},"context":{"type":"string"}}),
+            json!(["userMessage"]),
+        ),
+        (
+            "plan_design_style",
+            "Resolve style selection from the actual user request and document context; list current catalogue choices without changing a document.",
+            json!({"userMessage":{"type":"string","minLength":1},"taskKind":{"type":"string","enum":["new","continue","local","restyle"]},"documentStyleId":{"type":"string","minLength":1},"documentHasStyle":{"type":"boolean"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":100},"query":{"type":"string"},"locale":{"type":"string","enum":["zh","en"]}}),
+            json!(["userMessage","taskKind"]),
+        ),
+        (
             "import_design_md",
             "Import raw Markdown into the style library (default) or document specification.",
             json!({"markdown":{"type":"string","minLength":1},"name":{"type":"string"},"target":{"type":"string","enum":["style-guide","document"]},"id":{"type":"string"},"expectedRevision":{"type":"integer","minimum":0}}),

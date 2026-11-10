@@ -23,6 +23,7 @@ pub fn text_design_tool_schema(name: &str) -> Option<Value> {
             required.push("markdown");
         }
         "set_text_style" | "get_text_style" => {
+            properties["pageId"] = json!({"type":"string","minLength":1,"description":"Optional target page ID; omit for the active page."});
             for key in ["start", "end"] {
                 properties[key] = json!({
                     "type":"integer","minimum":0,
@@ -30,6 +31,7 @@ pub fn text_design_tool_schema(name: &str) -> Option<Value> {
                 });
             }
             if name == "set_text_style" {
+                properties["expectedText"] = json!({"type":"string","description":"Optional full original plain text; reject the edit if the current text differs."});
                 properties["style"] = json!({
                     "type":"object","additionalProperties":false,
                     "properties":{

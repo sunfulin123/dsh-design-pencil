@@ -179,7 +179,9 @@ export class AssetStore {
     try {
       this.#db.exec('BEGIN');
       const revision = this.#revision();
-      const rows = this.#db.prepare('SELECT id,kind,name FROM assets ORDER BY rowid').all();
+      // Retired templates remain in the database but are no longer exposed.
+      const rows = this.#db.prepare('SELECT id,kind,name FROM assets WHERE kind <> ? ORDER BY rowid')
+        .all('scene-template');
       for (const row of rows) {
         checkId(row.id);
         checkKind(row.kind);
@@ -252,6 +254,50 @@ export class AssetStore {
       }
       return { id: assetId, kind, name, payload: JSON.parse(json) };
     });
+  }
+
+  hasImportedSource(sourceKey) {
+    this.#assertOpen();
+    if (!/^[a-f0-9]{64}$/.test(sourceKey)) throw invalid('Invalid asset import source');
+    try {
+      const table = this.#db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='imported_asset_sources'").get();
+      return !!table && !!this.#db.prepare('SELECT source FROM imported_asset_sources WHERE source=?').get(sourceKey);
+    } catch (error) { throw storageError(error); }
+  }
+
+  /** Atomically import each old library once without overwriting existing ids. */
+  async importLegacyOnce(sourceKey, assets) {
+    this.#assertOpen();
+    if (!/^[a-f0-9]{64}$/.test(sourceKey) || !Array.isArray(assets)) {
+      throw invalid('Invalid asset import source');
+    }
+    const rows = assets.map(({ id, kind, name, payload }) => {
+      checkId(id);
+      checkKind(kind);
+      return { id, kind, name: checkName(name), payload: payloadJson(kind, payload) };
+    });
+    try {
+      this.#db.exec('BEGIN IMMEDIATE');
+      this.#db.exec('CREATE TABLE IF NOT EXISTS imported_asset_sources (source TEXT PRIMARY KEY)');
+      if (this.#db.prepare('SELECT source FROM imported_asset_sources WHERE source=?').get(sourceKey)) {
+        this.#db.exec('COMMIT');
+        return 0;
+      }
+      const before = this.#revision();
+      const insert = this.#db.prepare('INSERT OR IGNORE INTO assets VALUES (?,?,?,?)');
+      let copied = 0;
+      for (const row of rows) copied += insert.run(row.id, row.kind, row.name, row.payload).changes;
+      if (copied > 0) {
+        if (before === Number.MAX_SAFE_INTEGER) throw new AssetStoreError('asset-storage', 'Asset revision exhausted');
+        this.#db.prepare('UPDATE metadata SET revision=? WHERE id=1').run(before + 1);
+      }
+      this.#db.prepare('INSERT INTO imported_asset_sources VALUES (?)').run(sourceKey);
+      this.#db.exec('COMMIT');
+      return copied;
+    } catch (error) {
+      if (this.#db.isTransaction) this.#db.exec('ROLLBACK');
+      throw storageError(error);
+    }
   }
 
   async rename(kind, id, name, { expectedRevision } = {}) {

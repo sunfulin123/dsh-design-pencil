@@ -4,11 +4,14 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { basename, dirname, extname, resolve } from 'node:path';
 import { expandScriptWithVariables } from './script-expansion.mjs';
+import { healOperationsParents, preflightDesignScript } from './design-script-preflight.mjs';
 export { expandScriptWithVariables } from './script-expansion.mjs';
-import { deflateSync } from 'node:zlib';
+import { encodeRgbaPng } from './png-encode.mjs';
+export { encodeRgbaPng } from './png-encode.mjs';
 import { DocumentStore } from './document-store.mjs';
 import { DocumentHistory, preserveTemplateExtensions } from './document-history.mjs';
 import { enrichSelection } from './selection-enrichment.mjs';
+import { saveTextRange, attachTextRange, clearTextRange, isSelectionSetTool } from './selection-text-context.mjs';
 import { collectDocumentFonts } from './font-inventory.mjs';
 import { FigmaImportJobs } from './figma-import-jobs.mjs';
 import { FigmaApiError, parseFigmaWebUrl, figmaRequestTimeoutMs } from './figma-rest-client.mjs';
@@ -45,7 +48,7 @@ function snapToNearestScale(val, scale, stepFallback) {
 
 export function normalizeNodeAestheticPayload(raw, isPatch = false, options = {}) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
-  if (options.preserveAuthoredGeometry === true) return { ...raw };
+  if (isPatch || options.preserveAuthoredGeometry === true) return { ...raw };
   const out = { ...raw };
   if (typeof out.gap === 'number' && Number.isFinite(out.gap)) {
     out.gap = snapToNearestScale(out.gap, SPACING_GRID, 8);
@@ -220,64 +223,6 @@ export async function convertSnapshotToDocument({ snapshot, snapshotPath } = {})
     throw new Error('snapshot or snapshotPath is required');
   }
   return JSON.parse(DesignEngine.convert_snapshot_document(content));
-}
-
-const CRC32_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let i = 0; i < 256; i += 1) {
-    let c = i;
-    for (let k = 0; k < 8; k += 1) {
-      c = (c & 1) !== 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    }
-    table[i] = c >>> 0;
-  }
-  return table;
-})();
-
-function crc32(buf) {
-  let crc = 0xffffffff;
-  for (let i = 0; i < buf.length; i += 1) {
-    crc = CRC32_TABLE[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function pngChunk(type, data) {
-  const typeBytes = Buffer.from(type, 'ascii');
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length, 0);
-  const crcInput = Buffer.concat([typeBytes, data]);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(crcInput), 0);
-  return Buffer.concat([len, crcInput, crc]);
-}
-
-export function encodeRgbaPng(width, height, rgba) {
-  const w = Math.max(1, Math.min(4096, Math.round(width)));
-  const h = Math.max(1, Math.min(4096, Math.round(height)));
-  const stride = w * 4 + 1;
-  const raw = Buffer.alloc(stride * h);
-  for (let y = 0; y < h; y += 1) {
-    const rowStart = y * stride;
-    raw[rowStart] = 0;
-    const srcStart = y * w * 4;
-    rgba.copy(raw, rowStart + 1, srcStart, srcStart + w * 4);
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(w, 0);
-  ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 6;
-  ihdr[10] = 0;
-  ihdr[11] = 0;
-  ihdr[12] = 0;
-  const idat = deflateSync(raw, { level: 3 });
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', idat),
-    pngChunk('IEND', Buffer.alloc(0)),
-  ]);
 }
 
 function parseHexColor(raw) {
@@ -487,90 +432,6 @@ function renderDocumentPreviewPng(document, layoutTree, requestedNodeId) {
   };
 }
 
-function healOperationsParents(operations, document) {
-  if (typeof operations !== 'string' || !operations.trim()) return operations;
-  const roots = activePageNodes(document);
-  if (roots.length === 0) return operations;
-  const containerIds = new Set();
-  const leafParentMap = new Map();
-  const nameToContainerId = new Map();
-  const walk = (nodes, parentContainerId) => {
-    for (const node of nodes ?? []) {
-      if (!node || typeof node !== 'object' || typeof node.id !== 'string') continue;
-      const isContainer =
-        node.type === 'frame' || node.type === 'group' || Array.isArray(node.children);
-      if (isContainer) {
-        containerIds.add(node.id);
-        if (typeof node.name === 'string' && node.name.trim()) {
-          const key = node.name.trim().toLowerCase();
-          if (!nameToContainerId.has(key)) nameToContainerId.set(key, node.id);
-        }
-        if (Array.isArray(node.children)) walk(node.children, node.id);
-      } else if (parentContainerId) {
-        leafParentMap.set(node.id, parentContainerId);
-      }
-    }
-  };
-  const rootFrame = roots.find((r) => r && (r.type === 'frame' || r.type === 'group')) ?? roots[0];
-  const rootId = typeof rootFrame?.id === 'string' ? rootFrame.id : null;
-  walk(roots, rootId);
-
-  const lines = operations.split('\n');
-  const definedBindings = new Set();
-  for (const line of lines) {
-    const match = /^\s*([A-Za-z_]\w*)\s*=\s*[ICKRMG]\s*\(/.exec(line);
-    if (match) definedBindings.add(match[1]);
-  }
-
-  const resolveParentToken = (rawToken) => {
-    const trimmed = rawToken.trim();
-    const unquoted = trimmed.replace(/^["']|["']$/g, '');
-    if (definedBindings.has(unquoted)) {
-      return unquoted;
-    }
-    if (containerIds.has(unquoted)) {
-      return JSON.stringify(unquoted);
-    }
-    if (
-      !unquoted ||
-      unquoted === 'null' ||
-      unquoted === 'undefined' ||
-      unquoted === '0' ||
-      unquoted === 'root' ||
-      unquoted === 'document'
-    ) {
-      return rawToken;
-    }
-    if (leafParentMap.has(unquoted)) {
-      return JSON.stringify(leafParentMap.get(unquoted));
-    }
-    const byName = nameToContainerId.get(unquoted.toLowerCase());
-    if (byName) {
-      return JSON.stringify(byName);
-    }
-    if (rootId && /^n\d+$/i.test(unquoted)) {
-      return JSON.stringify(rootId);
-    }
-    return rawToken;
-  };
-
-  return lines
-    .map((line) => {
-      const insertMatch = /^(\s*(?:[A-Za-z_]\w*\s*=\s*)?I\s*\(\s*)([^,]+)(,.*)$/s.exec(line);
-      if (insertMatch) {
-        return `${insertMatch[1]}${resolveParentToken(insertMatch[2])}${insertMatch[3]}`;
-      }
-      const kitMatch =
-        /^(\s*(?:[A-Za-z_]\w*\s*=\s*)?K\s*\(\s*(?:"[^"]*"|'[^']*')\s*,\s*)([^,)]+)(.*)$/s.exec(
-          line,
-        );
-      if (kitMatch) {
-        return `${kitMatch[1]}${resolveParentToken(kitMatch[2])}${kitMatch[3]}`;
-      }
-      return line;
-    })
-    .join('\n');
-}
 
 function withCanonicalSavedViewport(document, canonicalMeta) {
   if (!Object.hasOwn(document.editorMeta ?? {}, 'viewport')) return document;
@@ -830,6 +691,9 @@ export class EngineSession {
       const preserveAuthoredGeometry = Boolean(
         this.#store.peek()?.editorMeta?.preserveAuthoredGeometry,
       );
+      const healParents = operations => healOperationsParents(operations, activePageNodes(this.#store.peek()), {
+        strict: normalizedArgs.strictParent === true,
+      });
       if (
         name === 'batch_design' &&
         typeof normalizedArgs.script === 'string' &&
@@ -854,6 +718,16 @@ export class EngineSession {
         normalizedArgs.operations = expanded.operations;
         batchVariables = { ...batchVariables, ...expanded.variables };
         batchThemes = { ...batchThemes, ...expanded.themes };
+        const checked = preflightDesignScript({
+          expanded,
+          args: normalizedArgs,
+          variables: batchVariables,
+          themes: batchThemes,
+          createEngine: () => new DesignEngine(),
+          document: () => this.#engineDocJson(),
+          heal: healParents,
+        });
+        if (checked?.isError) return checked;
       }
       if (name === 'batch_design') {
         const hasVars = Object.keys(batchVariables).length > 0;
@@ -906,10 +780,7 @@ export class EngineSession {
           });
           normalizedArgs.operations = expanded.operations;
         }
-        normalizedArgs.operations = healOperationsParents(
-          normalizedArgs.operations,
-          this.#store.peek(),
-        );
+        normalizedArgs.operations = healParents(normalizedArgs.operations);
       } else if (name === 'update_node' && normalizedArgs.data !== undefined) {
         const parsedData =
           typeof normalizedArgs.data === 'string'
@@ -1260,12 +1131,10 @@ export class EngineSession {
       this.#pendingUiScale = result.structuredContent.scale;
     }
     if (name === 'clear_selection') {
+      clearTextRange(this);
       this.#selectedIds = [];
-    } else if (
-      name === 'set_selection_set' ||
-      name === 'select_nodes' ||
-      name === 'select_by_type'
-    ) {
+    } else if (isSelectionSetTool(name)) {
+      clearTextRange(this);
       const sel = JSON.parse(
         this.#engine.call_tool('get_selection', JSON.stringify({ readDepth: 0 })),
       )?.structuredContent;
@@ -1294,6 +1163,10 @@ export class EngineSession {
       } catch {
         // Keep un-enriched selection if layout snapshot fails
       }
+    }
+    if (name === 'get_selection' && !result.isError) {
+      attachTextRange(this, result.structuredContent, result.structuredContent);
+      if (result.structuredContent?.textRange) result.content = [{ type: 'text', text: JSON.stringify(result.structuredContent) }];
     }
     return result;
   }
@@ -1338,10 +1211,10 @@ export class EngineSession {
       this.#engine.call_tool('get_selection', JSON.stringify({ readDepth: 0 })),
     );
     const content = result.structuredContent ?? {};
-    return {
+    return attachTextRange(this, {
       selectedIds: Array.isArray(content.selectedIds) ? content.selectedIds : [],
       activePageId: typeof content.activePageId === 'string' ? content.activePageId : null,
-    };
+    }, content);
   }
 
   getUiScaleHint() {
@@ -1372,6 +1245,7 @@ export class EngineSession {
     this.#selectedIds = ids;
     if (pageId !== undefined) this.#activePageId = pageId;
     this.#applySelectionToEngine(this.#engine, this.#store.snapshot().document);
+    saveTextRange(this, body);
     return { ok: true };
   }
 

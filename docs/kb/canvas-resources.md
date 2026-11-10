@@ -35,6 +35,11 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
 改图片/字体失效或渲染路径时，同时验证视觉一致性、无空白/闪烁和交互分位耗时，
 而非仅看平均 FPS。
 
+## 顶层设计边界
+
+[编辑器边界](../../crates/op-editor-ui/src/widgets/canvas_viewport/root_boundaries.rs) 在场景绘制后以屏幕像素描画未选中的顶层画板和分组，并复用节点翻转及旋转；选中对象使用原有高亮。
+该提示属于编辑器覆盖层，不进入文档、场景预览或文档截图。显式页面背景优先于编辑器的默认画布底色。
+
 ## 文本度量与基线（Figma 一致性）
 
 画布文本必须按绘制所用字体测量，并与 Figma 的未 hinting 布局一致：
@@ -48,6 +53,9 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
 - [文本绘制](../../crates/op-editor-ui/src/widgets/canvas_viewport_text.rs) 把每行基线取整到
   文本框内的整像素（Figma 规则）；拉丁文 `middle` 用字体 ascent/descent 居中（Figma/CSS），
   仅 CJK 行用墨迹居中。小数基线会被光栅化吸附，产生 ±0.5px 偏移。
+- 混合字体的文字绘制与鼠标命中使用相同的字体度量；编辑器按 grapheme 边界移动或删除，
+  而对外文字工具的范围使用 Unicode scalar 偏移。点击属性面板时选区保留，
+  文本源改变后不得继续使用旧选区。
 
 复验：`node --test crates/op-host-web/tests/op_ck_bridge_text_metrics.test.mjs`；
 `cargo test -p op-editor-ui --lib canvas_text_edit canvas_viewport_text`。
@@ -58,8 +66,8 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
 {
   "version": 1,
   "status": "verified",
-  "task_id": "d7c48a9d-87cc-4072-bf2b-1bee9de13b7c",
-  "verified_at": "2026-11-09T10:07:26.632132+00:00",
+  "task_id": "59e60cab-d63f-490b-8fbc-144f1b7867c8",
+  "verified_at": "2026-11-10T04:43:24.408226+00:00",
   "sources": {
     "crates/op-host-web/src/op_ck_bridge.js": "0d64f916a1c08d196ac558b290ee92ff753e0989e1030e288bcaeacdfc3452ab",
     "crates/op-host-web/src/canvaskit/inner.rs": "c3605933aeedc32e5acd0db1c7f6ff98002e7f87cdc16398692f67502e86252b",
@@ -67,10 +75,12 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
     "crates/op-host-web/src/widget_host/canvas_tiles.rs": "d07d96e7f153efa7b0c072d9a0755fbf31df9d83f52fae8b424f509ed9e24ee6",
     "crates/op-host-web/src/widget_host/canvas_tiles_host.rs": "4cd5f6eac913da31300cad53dcde7eebc7b0a91cf8ab652fa0021e95d612acc9",
     "crates/op-editor-ui/src/widgets/canvas_tiles.rs": "6b90bbe62de6a5ec8068658beb912f1e19ec737a39dfb9c1f5c944e6287f3616",
-    "crates/op-editor-ui/src/widgets/canvas_text_edit.rs": "54132a7a2322ddfdc1efc29c0383fe13429f7de45a110718cea6d792f68d603f",
-    "crates/op-editor-ui/src/widgets/canvas_viewport_text.rs": "0b0b3e7c8494cd1d5644945c0335652290afbb7d281f316ce141fb888e6c7c71"
+    "crates/op-editor-ui/src/widgets/canvas_text_edit.rs": "3efc6a59d28417535aa191f0b5695c8240396837dfcaba8dcd1b0b58181dc743",
+    "crates/op-editor-core/src/text_edit_rich.rs": "839dc71de88719eb7a34ee607532b5d7c7df2907e90121ae13c8b848daf6bc76",
+    "crates/op-host-web/src/widget_host/text_edit_pointer.rs": "e7cd2499632ae81ef735c79631a25ddeeef1e6eba0ff5d7e61da48f5eccead1c",
+    "crates/op-editor-ui/src/widgets/canvas_viewport_text.rs": "25df6837e4b19062c3cd976bd8894d5ab125821a4159a9a1f8e2b402ec97231b"
   },
-  "reason": "Removed the obsolete template frame-pump call and its comment; tile, image, font and CanvasKit lifecycle behavior is unchanged.",
-  "evidence": "Reviewed canvaskit/inner.rs diff; CanvasKit host suite 778 passed with 29 preexisting ignores; browser gallery, Apple binding and AI screenshot-lint-fix loop passed."
+  "reason": "Review editor-only root outlines and authored page background precedence.",
+  "evidence": "CanvasViewport editor versus scene preview regression and host screenshot paint inspection."
 }
 ```

@@ -17,6 +17,7 @@ use op_editor_core::web_sync::WebSyncClient;
 use crate::live_sync;
 use crate::live_sync_json::{serialize_sync_document, SyncDocumentJson, SYNC_MAX_BODY_BYTES};
 use crate::repaint_ctx::RepaintContext;
+use crate::selection_push_queue::push_selection_if_changed;
 
 /// Pull cadence (version probe). TS gets SSE pushes; one tick of latency.
 const POLL_INTERVAL_MS: i32 = 200;
@@ -282,7 +283,7 @@ fn maybe_auto_resolve_conflict_in_session<C: RepaintContext + 'static>(
         .try_borrow()
         .map(|context| context.host().editor_state().editor_ui.collab.phase)
         .unwrap_or(op_editor_core::CollabConnectionPhase::Idle);
-    if !auto_resolve_is_safe(has_conflict, phase, server_is_authoritative()) {
+    if !host_auto_resolve_is_safe(has_conflict, phase, server_is_authoritative()) {
         return;
     }
     // Accepting the remote overwrites whatever this tab had not yet pushed.
@@ -369,7 +370,7 @@ fn apply_document_response<C: RepaintContext + 'static>(
         .and_then(|mut s| {
             let apply_next = |next: op_editor_core::web_sync::WebSyncDocument| {
                 let host = inner_ref.host_mut();
-                let prev_selected = host.editor_state().selection.set.clone();
+                let previous_selection = host.capture_sync_selection();
                 let content_changed = host.editor_state().doc != next.document;
                 // A daemon-authored camera (saved or set_viewport) wins;
                 // otherwise unseen new content is framed below.
@@ -401,20 +402,8 @@ fn apply_document_response<C: RepaintContext + 'static>(
                 if content_changed && (!explicit_view || !undoable) {
                     host.fit_if_content_offscreen();
                 }
-                if content_changed && undoable && !prev_selected.is_empty() {
-                    let surviving: Vec<op_editor_core::NodeId> = prev_selected
-                        .into_iter()
-                        .filter(|id| {
-                            op_editor_core::walkers::find_node(
-                                host.editor_state().active_children(),
-                                id,
-                            )
-                            .is_some()
-                        })
-                        .collect();
-                    for id in surviving {
-                        host.editor_state_mut().toggle_selection(id);
-                    }
+                if content_changed && undoable {
+                    host.restore_sync_selection(previous_selection);
                 }
                 inner_ref.repaint().is_ok()
             };
@@ -680,43 +669,6 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
     }
 }
 
-/// POST the selection to the daemon when it changed since the last sample
-/// (TS pushes `{selectedIds, activePageId}` debounced 300 ms; this samples on
-/// the 400 ms tick). Fire-and-forget like the TS fetch().catch(() => {}).
-/// Unaffected by the sync gate (one-way browser → daemon presentation state,
-/// not document content).
-fn push_selection_if_changed<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    base: &str,
-    last_selection_key: &Rc<RefCell<Option<String>>>,
-) {
-    if crate::render_mode::render_only() {
-        return;
-    }
-    let (key, body) = {
-        let Ok(b) = inner.try_borrow() else {
-            return;
-        };
-        let state = b.host().editor_state();
-        (
-            crate::ui_scale_sync::selection_key(state),
-            crate::ui_scale_sync::selection_body(state),
-        )
-    };
-    if last_selection_key
-        .try_borrow()
-        .map(|last| last.as_deref() == Some(key.as_str()))
-        .unwrap_or(true)
-    {
-        return;
-    }
-    let Ok(mut last_selection_key) = last_selection_key.try_borrow_mut() else {
-        return;
-    };
-    *last_selection_key = Some(key);
-    let _ = live_sync::post_json(&format!("{base}/api/mcp/selection"), &body, None);
-}
-
 #[cfg(test)]
 #[path = "live_sync_glue_tests.rs"]
 mod tests;
@@ -793,7 +745,7 @@ mod live_sync_conflict;
 mod live_sync_identity;
 pub(crate) use live_sync_identity::{auth_is_invalid, note_auth_invalid, reset_for_new_identity};
 // Only the latch's own test lifts it; the reset clears it internally.
-use live_sync_conflict::{auto_resolve_is_safe, probe_serve_mode, server_is_authoritative};
+use live_sync_conflict::{host_auto_resolve_is_safe, probe_serve_mode, server_is_authoritative};
 #[cfg(test)]
 pub(crate) use live_sync_identity::clear_auth_invalid;
 // Lives here rather than beside `lib.rs`'s modules because the two paths it

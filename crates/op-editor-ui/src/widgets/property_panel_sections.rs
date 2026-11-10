@@ -256,125 +256,9 @@ pub use crate::widgets::property_panel_inputs::{paint_tab_strip, tab_strip_hit, 
 
 // ── Header row ────────────────────────────────────────────────────
 
-pub fn paint_node_header(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    snapshot: &NodeSnapshot,
-    edit: &EditContext<'_>,
-    x: f32,
-    y: f32,
-    w: f32,
-) -> f32 {
-    // Show the node's name so the header matches the LayerPanel
-    // row; fall back to the kind label for an unnamed node.
-    let fallback_title = if snapshot.name.is_empty() {
-        snapshot.kind.as_str()
-    } else {
-        snapshot.name.as_str()
-    };
-    let title = edit.value_for(PropertyFocus::NodeName, fallback_title);
-    // Component / instance badging — TS tints the header purple and
-    // prefixes a Diamond glyph (property-panel.tsx:182-187).
-    let (title_color, badge) = if snapshot.is_reusable {
-        (COMPONENT_ACCENT, true)
-    } else if snapshot.is_instance {
-        (INSTANCE_ACCENT, true)
-    } else {
-        (theme.secondary_foreground, false)
-    };
-    let mut text_x = x + PAD_X;
-    if badge {
-        draw_icon(
-            cx.backend,
-            Icon::Diamond,
-            Point2D::new(text_x, y + 11.0),
-            12.0,
-            title_color,
-            1.4,
-        );
-        text_x += 18.0;
-    }
-    let actions_w = 52.0;
-    let name_rect = Rect {
-        origin: Point2D::new(text_x, y + 3.0),
-        size: Point2D::new(
-            (w - PAD_X * 2.0 - actions_w - (text_x - (x + PAD_X))).max(40.0),
-            INPUT_HEIGHT,
-        ),
-    };
-    let name_focused = edit.focus == Some(PropertyFocus::NodeName);
-    if name_focused {
-        cx.backend.fill_round_rect(name_rect, 4.0, theme.muted);
-        cx.backend
-            .stroke_round_rect(name_rect, 4.0, theme.primary, 1.0);
-    }
-    cx.backend.save();
-    cx.backend.clip_rect(name_rect);
-    if !name_focused
-        || !edit.paint_input_view_at(
-            cx,
-            theme,
-            PropertyFocus::NodeName,
-            name_rect,
-            13.0,
-            4.0,
-            y + 21.0,
-        )
-    {
-        let max_text_w = (name_rect.size.x - 8.0).max(16.0);
-        let fitted_title =
-            crate::widgets::text_metrics::fit_chrome(cx.backend, title, max_text_w, 13.0);
-        let label = TextLayout::single_run(
-            &fitted_title,
-            "system-ui",
-            13.0,
-            (title_color).to_jian(),
-            Point2D::new(0.0, 0.0),
-        )
-        .with_font_weight(600);
-        cx.backend.draw_text(
-            &label,
-            Point2D::new(text_x + if name_focused { 4.0 } else { 0.0 }, y + 21.0),
-        );
-    }
-    cx.backend.restore();
-    let right_x = x + w - PAD_X;
-    let lock_icon = if snapshot.locked {
-        Icon::Lock
-    } else {
-        Icon::LockOpen
-    };
-    let eye_icon = if snapshot.visible {
-        Icon::Eye
-    } else {
-        Icon::EyeOff
-    };
-    draw_icon(
-        cx.backend,
-        eye_icon,
-        Point2D::new(right_x - 42.0, y + 10.0),
-        14.0,
-        if snapshot.visible {
-            theme.muted_foreground
-        } else {
-            theme.primary
-        },
-        1.5,
-    );
-    draw_icon(
-        cx.backend,
-        lock_icon,
-        Point2D::new(right_x - 18.0, y + 10.0),
-        14.0,
-        if snapshot.locked {
-            theme.primary
-        } else {
-            theme.muted_foreground
-        },
-        1.5,
-    );
-    y + HEADER_HEIGHT
-}
+#[path = "property_panel_header.rs"]
+mod header;
+pub use header::paint_node_header;
 
 // ── Create-component button ───────────────────────────────────────
 // ── Position section ──────────────────────────────────────────────
@@ -392,12 +276,25 @@ pub fn paint_position_section(
     alignment_enabled: [bool; 8],
     alignment_active: [bool; 8],
     locale: op_editor_core::Locale,
+    advanced: bool,
     x: f32,
     y: f32,
     width: f32,
 ) -> f32 {
     let per_corner_expanded = corner_expanded && snapshot.supports_per_corner;
     let mut y = paint_section_label(cx, theme, labels.position, x, y, width);
+    let marker = if advanced { "−" } else { "+" };
+    let marker_layout = TextLayout::single_run(
+        marker,
+        "system-ui",
+        14.0,
+        theme.muted_foreground.to_jian(),
+        Point2D::new(0.0, 0.0),
+    );
+    cx.backend.draw_text(
+        &marker_layout,
+        Point2D::new(x + width - PAD_X - 12.0, y - 7.0),
+    );
     let usable_w = width - PAD_X * 2.0;
     let half_w = (usable_w - 8.0) / 2.0;
     crate::widgets::align_toolbar::AlignToolbar::for_panel_row(
@@ -412,41 +309,43 @@ pub fn paint_position_section(
     .with_active_actions(alignment_active)
     .paint_panel(cx.backend, theme, locale);
     y += crate::widgets::align_toolbar::POSITION_ACTION_HEIGHT;
-    let x_rect = Rect {
-        origin: Point2D::new(x + PAD_X, y),
-        size: Point2D::new(half_w, INPUT_HEIGHT),
-    };
-    let y_rect = Rect {
-        origin: Point2D::new(x + PAD_X + half_w + 8.0, y),
-        size: Point2D::new(half_w, INPUT_HEIGHT),
-    };
-    let x_value = snapshot.x.to_string();
-    paint_input_with_prefix_focused_state(
-        cx,
-        theme,
-        x_rect,
-        "X",
-        edit.value_for(PropertyFocus::PositionX, &x_value),
-        edit.focus == Some(PropertyFocus::PositionX),
-        edit.caret_at(PropertyFocus::PositionX),
-        edit.select_all_at(PropertyFocus::PositionX),
-        edit.input_at(PropertyFocus::PositionX),
-        edit.now_ms,
-    );
-    let y_value = snapshot.y.to_string();
-    paint_input_with_prefix_focused_state(
-        cx,
-        theme,
-        y_rect,
-        "Y",
-        edit.value_for(PropertyFocus::PositionY, &y_value),
-        edit.focus == Some(PropertyFocus::PositionY),
-        edit.caret_at(PropertyFocus::PositionY),
-        edit.select_all_at(PropertyFocus::PositionY),
-        edit.input_at(PropertyFocus::PositionY),
-        edit.now_ms,
-    );
-    y += INPUT_HEIGHT + 6.0;
+    if advanced {
+        let x_rect = Rect {
+            origin: Point2D::new(x + PAD_X, y),
+            size: Point2D::new(half_w, INPUT_HEIGHT),
+        };
+        let y_rect = Rect {
+            origin: Point2D::new(x + PAD_X + half_w + 8.0, y),
+            size: Point2D::new(half_w, INPUT_HEIGHT),
+        };
+        let x_value = snapshot.x.to_string();
+        paint_input_with_prefix_focused_state(
+            cx,
+            theme,
+            x_rect,
+            "X",
+            edit.value_for(PropertyFocus::PositionX, &x_value),
+            edit.focus == Some(PropertyFocus::PositionX),
+            edit.caret_at(PropertyFocus::PositionX),
+            edit.select_all_at(PropertyFocus::PositionX),
+            edit.input_at(PropertyFocus::PositionX),
+            edit.now_ms,
+        );
+        let y_value = snapshot.y.to_string();
+        paint_input_with_prefix_focused_state(
+            cx,
+            theme,
+            y_rect,
+            "Y",
+            edit.value_for(PropertyFocus::PositionY, &y_value),
+            edit.focus == Some(PropertyFocus::PositionY),
+            edit.caret_at(PropertyFocus::PositionY),
+            edit.select_all_at(PropertyFocus::PositionY),
+            edit.input_at(PropertyFocus::PositionY),
+            edit.now_ms,
+        );
+        y += INPUT_HEIGHT + 6.0;
+    }
     // Rotation input — TS uses RotateCw glyph; we render with an
     // icon-prefixed pill that accepts editable degree values.
     let rotation_rect = Rect {
@@ -454,19 +353,21 @@ pub fn paint_position_section(
         size: Point2D::new(half_w, INPUT_HEIGHT),
     };
     let rotation_value = format!("{}", snapshot.rotation_deg.round() as i32);
-    paint_input_with_icon_focused_state(
-        cx,
-        theme,
-        rotation_rect,
-        Icon::RotateCw,
-        edit.value_for(PropertyFocus::Rotation, &rotation_value),
-        Some("°"),
-        edit.focus == Some(PropertyFocus::Rotation),
-        edit.caret_at(PropertyFocus::Rotation),
-        edit.select_all_at(PropertyFocus::Rotation),
-        edit.input_at(PropertyFocus::Rotation),
-        edit.now_ms,
-    );
+    if advanced {
+        paint_input_with_icon_focused_state(
+            cx,
+            theme,
+            rotation_rect,
+            Icon::RotateCw,
+            edit.value_for(PropertyFocus::Rotation, &rotation_value),
+            Some("°"),
+            edit.focus == Some(PropertyFocus::Rotation),
+            edit.caret_at(PropertyFocus::Rotation),
+            edit.select_all_at(PropertyFocus::Rotation),
+            edit.input_at(PropertyFocus::Rotation),
+            edit.now_ms,
+        );
+    }
     if show_radius {
         // Corner radius (R) — editable input bound to Node::corner_radius
         // via PropertyFocus::PositionR.
@@ -511,7 +412,9 @@ pub fn paint_position_section(
             );
         }
     }
-    y += INPUT_HEIGHT;
+    if advanced || show_radius {
+        y += INPUT_HEIGHT;
+    }
     if show_radius && per_corner_expanded {
         crate::widgets::property_panel_corner::paint_grid(
             cx,

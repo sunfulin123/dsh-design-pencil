@@ -52,7 +52,7 @@ pub fn styled_range(
     Ok(TextContent::Styled(result))
 }
 
-pub(super) fn push_segment(out: &mut Vec<StyledTextSegment>, run: StyledTextSegment) {
+pub(crate) fn push_segment(out: &mut Vec<StyledTextSegment>, run: StyledTextSegment) {
     if run.text.is_empty() {
         return;
     }

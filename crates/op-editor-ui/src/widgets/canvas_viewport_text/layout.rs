@@ -81,6 +81,8 @@ pub(super) fn styled_layout(
         }
     }
     let mut baselines = Vec::with_capacity(ranges.len());
+    let mut line_tops = Vec::with_capacity(ranges.len());
+    let mut line_heights = Vec::with_capacity(ranges.len());
     let mut block_height = 0.0;
     for range in &ranges {
         let mut ascent = 0.0_f32;
@@ -107,6 +109,8 @@ pub(super) fn styled_layout(
             for_each_slice_range(&node.text_runs, range.start, range.end, &mut metrics);
         }
         let height = ascent + descent;
+        line_tops.push(block_height);
+        line_heights.push(height);
         // Latin lines keep their font-metric baseline (Figma / CSS); a CJK
         // line under `middle` is centred by its ink.
         let line = &text[range.clone()];
@@ -136,6 +140,15 @@ pub(super) fn styled_layout(
                 .map(|range| text[range.clone()].to_owned())
                 .collect(),
             line_starts: ranges.iter().map(|range| range.start).collect(),
+            line_tops,
+            line_heights,
+            runs: node.text_runs.clone(),
+            run_scale: font_size
+                / if node.font_size > 0.0 {
+                    node.font_size
+                } else {
+                    13.0
+                },
             font_size,
             weight,
             family: family.to_owned(),

@@ -429,7 +429,7 @@ fn parse_tool_call_rejects_structured_values_in_mcp_tools_call_shape() {
 
 #[test]
 fn get_guidelines_style_flat_params_parses() {
-    let line = r#"{"jsonrpc":"2.0","id":17,"method":"tools/call","params":{"name":"get_guidelines","arguments":{"category":"style","name":"Atlas Grid","colorPalette":"Alloy Blue","roundness":"medium","elevation":"low","headings":"Inter","body":"Inter","captions":"Inter","data":"IBM Plex Mono","decorativeImagery":"product diagrams only when they clarify state"}}}"#;
+    let line = r#"{"jsonrpc":"2.0","id":17,"method":"tools/call","params":{"name":"get_guidelines","arguments":{"category":"style","name":"talkdesk-cobalt","colorPalette":"Alloy Blue","roundness":"medium","elevation":"low","headings":"Inter","body":"Inter","captions":"Inter","data":"IBM Plex Mono","decorativeImagery":"product diagrams only when they clarify state"}}}"#;
     let call = parse_tool_call(line).expect("flat scalar style args must parse");
     assert_eq!(call.tool, "get_guidelines");
     assert_eq!(
@@ -448,7 +448,7 @@ fn get_guidelines_style_flat_params_parses() {
             assert_eq!(result.get("category").map(String::as_str), Some("style"));
             let content = result.get("content").expect("content field");
             assert!(
-                content.contains("Atlas Grid is a practical workspace style"),
+                content.contains("Talkdesk Cobalt is the Talkdesk product design system"),
                 "style guideline must dispatch through registry: {content}"
             );
             assert!(

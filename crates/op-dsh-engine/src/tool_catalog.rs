@@ -4,6 +4,7 @@ use op_editor_core::EditorState;
 use op_mcp::McpTool;
 use serde_json::{json, Value};
 
+mod ai_prompt_catalog;
 #[path = "html_import_catalog.rs"]
 pub(crate) mod html_import_catalog;
 pub(crate) use html_import_catalog::is_host_tool as is_html_host_tool;
@@ -13,7 +14,7 @@ macro_rules! tools {
         pub fn build_tool(name: &str, $state: &EditorState) -> Option<Box<dyn McpTool>> {
             match name {
                 $($name => Some(Box::new($factory)),)*
-                _ => build_text_tool(name, $state),
+                _ => ai_prompt_catalog::build_tool(name).or_else(|| build_text_tool(name, $state)),
             }
         }
 
@@ -26,7 +27,7 @@ macro_rules! tools {
                     "required": $required, "additionalProperties": false,
                 },
             })),*];
-            list.extend(extra_schemas().into_iter().chain(crate::asset_catalog::schemas()).chain(crate::library_tools::schemas()));
+            list.extend(extra_schemas().into_iter().chain(crate::asset_catalog::schemas()).chain(crate::library_tools::schemas()).chain(ai_prompt_catalog::schemas()));
             html_import_catalog::patch_import_html(&mut list);
             list
         }
@@ -125,7 +126,7 @@ fn build_text_tool(name: &str, state: &EditorState) -> Option<Box<dyn McpTool>> 
 tools!(state;
     ("batch_design", op_mcp::batch_design_snapshot(state),
      "Atomically insert, copy, replace, move, update or delete canonical design nodes.",
-     {"script":{"type":"string"},"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"},"postProcess":{"type":"boolean"},"canvasWidth":{"type":"number"}}, []),
+     {"script":{"type":"string"},"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"},"postProcess":{"type":"boolean"},"canvasWidth":{"type":"number"},"strictParent":{"type":"boolean"}}, []),
     ("batch_get", op_mcp::batch_get_snapshot(state),
      "Read or search canonical nodes and their children.",
      {"nodeIds":{"type":"array","items":{"type":"string"}},"patterns":{"type":"array","items":{"type":"object"}},"parentId":{"type":"string"},"pageId":{"type":"string"},"readDepth":{"type":"number"},"searchDepth":{"type":"number"},"resolveRefs":{"type":"boolean"}}, []),
@@ -208,14 +209,14 @@ tools!(state;
      "Read available style guide tags.", {}, []),
     ("get_style_guide", op_mcp::get_style_guide_snapshot(),
      "Select a style guide by tags or name.",
-     {"tags":{"type":"string"},"name":{"type":"string"},"platform":{"type":"string"},"id":{"type":"string"}}, []),
+     {"tags":{"type":"string"},"name":{"type":"string"},"platform":{"type":"string"},"id":{"type":"string"},"expectedRevision":{"type":"integer","minimum":0}}, []),
     ("list_style_guides", op_mcp::list_style_guides_snapshot(),
      "List bundled and persistent style guides; managed hosts support paginated queries.", {"platform":{"type":"string"},"id":{"type":"string"},"tag":{"type":"string"},"query":{"type":"string"},"source":{"type":"string","enum":["builtin","user"]},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":100}}, []),
     ("get_design_md", op_mcp::get_design_md_snapshot(state),
      "Read the document's DESIGN.md specification.", {}, []),
     ("set_design_md", op_mcp::set_design_md_snapshot(state),
      "Update the document's DESIGN.md specification.",
-     {"markdown":{"type":"string"},"content":{"type":"string"},"autoExtract":{"type":"boolean"}}, []),
+     {"markdown":{"type":"string"},"content":{"type":"string"},"autoExtract":{"type":"boolean"},"onlyIfBlank":{"type":"boolean"}}, []),
     ("export_design_md", op_mcp::export_design_md_snapshot(state),
      "Export the document's DESIGN.md specification.", {}, []),
     ("export_code", op_mcp::code_export_tools::export_code_snapshot(state),
@@ -224,8 +225,6 @@ tools!(state;
       "nodeIds":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}}}, ["format"]),
     ("get_design_prompt", op_mcp::get_design_prompt_snapshot(state),
      "Read the design prompt guidance.", {"section":{"type":"string"}}, []),
-    ("get_design_agent_prompt", op_mcp::get_design_agent_prompt_snapshot(),
-     "Read the design agent system prompt.", {}, []),
     ("lint_document", op_mcp::lint_document_snapshot(state),
      "Run structural and visual lint detectors. Scope with rootId/nodeId/nodeIds (only the boards holding them are linted). Replies carry count, byCategory and bySeverity totals plus one page of issues (limit, default 50); pass nextCursor as cursor for the next page. Recommended: summaryOnly:true first, then page through the categories you will fix.",
      {"rootId":{"type":"string"},"nodeId":{"type":"string"},"nodeIds":{"type":"array","items":{"type":"string"}},"rules":{"type":"array","items":{"type":"string"}},"severity":{"type":"string","enum":["error","warning","info"]},"limit":{"type":"integer","minimum":1,"maximum":500},"cursor":{"type":"string"},"summaryOnly":{"type":"boolean"}}, []),

@@ -121,7 +121,16 @@ impl Widget for PropertyPanel {
         // `tab_bottom - scroll` == `scrolled.origin.y + TAB_HEIGHT`,
         // matching the layout walker's `+= TAB_HEIGHT` step.
         let mut y = tab_bottom - scroll;
-        y = sections::paint_node_header(cx, &self.theme, &self.snapshot, &edit_ctx, x, y, w);
+        y = sections::paint_node_header(
+            cx,
+            &self.theme,
+            &self.snapshot,
+            &edit_ctx,
+            self.locale,
+            x,
+            y,
+            w,
+        );
         if self.visible_sections().create_component {
             y = crate::widgets::property_panel_instance::paint_component_block_with_description(
                 cx,
@@ -151,6 +160,7 @@ impl Widget for PropertyPanel {
             self.alignment_enabled,
             self.alignment_active,
             self.locale,
+            self.position_advanced,
             x,
             y,
             w,
@@ -579,72 +589,5 @@ impl Widget for PropertyPanel {
     }
 }
 
-impl PropertyPanel {
-    /// Paint inspector overlays that are allowed to extend out of the
-    /// right rail. Hosts call this late in their composition pass so
-    /// the image-fill / search / generate popovers sit above floating
-    /// canvas controls.
-    pub fn paint_overlays(&self, cx: &mut PaintCx<'_>, rect: Rect) {
-        if self.page_only {
-            return;
-        }
-        let caps = self.capabilities();
-        if !(caps.fill || caps.image) {
-            return;
-        }
-        // The Code tab paints no Design sections — none of the
-        // Design-anchored popovers may float over it.
-        if matches!(self.tab, op_editor_core::PropertyTab::Code) {
-            return;
-        }
-        let rect = self.begin_density_paint(cx.backend, rect);
-        let scroll = self.effective_scroll(rect);
-        let scrolled = Rect {
-            origin: Point2D::new(rect.origin.x, rect.origin.y - scroll),
-            size: rect.size,
-        };
-        if self.image_fill_popover_open {
-            let edit_ctx = sections::EditContext {
-                focus: self.focus,
-                draft: self.draft.as_str(),
-                input: &self.input,
-                caret: self.caret_pos,
-                select_all: self.select_all,
-                now_ms: self.now_ms,
-            };
-            sections::paint_image_fill_popover(
-                cx,
-                &self.theme,
-                scrolled,
-                self.visible_sections(),
-                &self.snapshot,
-                &edit_ctx,
-                self.locale,
-            );
-        }
-        if caps.image && self.image_panel.search_open {
-            crate::widgets::property_panel_image_popovers::paint_search_popover(
-                cx,
-                &self.theme,
-                scrolled,
-                self.visible_sections(),
-                &self.image_panel,
-                self.locale,
-                self.now_ms,
-            );
-        }
-        if caps.image && self.image_panel.generate_open {
-            crate::widgets::property_panel_image_popovers::paint_generate_popover(
-                cx,
-                &self.theme,
-                scrolled,
-                self.visible_sections(),
-                &self.image_panel,
-                self.image_gen_profile.as_ref(),
-                self.locale,
-                self.now_ms,
-            );
-        }
-        self.end_density_paint(cx.backend);
-    }
-}
+#[path = "paint_overlays.rs"]
+mod paint_overlays;

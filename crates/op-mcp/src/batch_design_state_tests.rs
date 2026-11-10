@@ -153,6 +153,23 @@ fn batch_design_falls_back_to_root_for_phantom_parent_binding() {
 }
 
 #[test]
+fn strict_parent_rejects_a_missing_parent_without_emitting_a_command() {
+    let state = op_editor_core::EditorState::new();
+    let tool = batch_design_snapshot(&state);
+    let mut args = BTreeMap::new();
+    args.insert("strictParent".into(), "true".into());
+    args.insert(
+        "operations".into(),
+        "card=I(missing, {\"type\":\"frame\",\"name\":\"Card\"})".into(),
+    );
+    let ToolOutcome::Err(_, message) = tool.call(&args) else {
+        panic!("strict missing parent must fail without a command");
+    };
+    assert!(message.contains("missing"), "{message}");
+    assert!(state.active_children().is_empty());
+}
+
+#[test]
 fn batch_design_operations_hoists_node_state() {
     // An I()-program insert whose root frame declares node-level
     // `state` must yield TWO sibling commands — MergeAppState(unplanned)

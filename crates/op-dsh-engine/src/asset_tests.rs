@@ -101,6 +101,23 @@ fn get_style_guide_id_is_not_ignored_or_replaced_with_an_unrelated_guide() {
 }
 
 #[test]
+fn builtin_style_assets_expose_preview_from_their_own_guide() {
+    let engine = DesignEngine::new();
+    let guides: Value =
+        serde_json::from_str(&engine.builtin_assets_json("style-guide").unwrap()).unwrap();
+    let guide = guides
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|guide| guide["id"] == "talkdesk-cobalt")
+        .unwrap();
+    let expected = op_ai_skills::style_guide::style_guide_card("talkdesk-cobalt").unwrap();
+    assert_eq!(guide["swatches"], json!(expected.swatches));
+    assert!(!guide["swatches"].as_array().unwrap().is_empty());
+    assert_eq!(guide["summary"], json!(expected.description));
+}
+
+#[test]
 fn theme_asset_merges_in_one_undo_without_changing_builtin_contract() {
     let mut engine = DesignEngine::new();
     let before = engine.document_json().unwrap();

@@ -4,13 +4,21 @@
 //! Split out of the `vscode_bridge` spine to keep it under the 800-line cap;
 //! re-exported there so the mount call sites keep their paths.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use js_sys::{Object, Promise};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use crate::live_sync;
 
-use super::INIT_RESOLVER;
+use super::{
+    helpers::{post_to_parent, read_triple},
+    INIT_RESOLVER, LATE_INIT_HOOK,
+};
+use crate::repaint_ctx::RepaintContext;
+use op_editor_core::bridge_protocol::event_ready;
 
 /// True when the page runs inside a frame (`window.self != window.top`) — the
 /// VS Code webview case, where `mount_ck` awaits the host's `init` before it
@@ -62,4 +70,25 @@ pub(crate) async fn await_init(window: &web_sys::Window, timeout_ms: i32) {
             "[op-bridge] init not received before timeout; proceeding as direct open",
         ));
     }
+}
+
+/// Register the one-shot late-init recovery hook (see [`LATE_INIT_HOOK`]).
+/// `canvaskit`'s fallback bootstrap calls this ONLY after its unmanaged
+/// sync-reset has completed, so the recovery reset the hook later triggers
+/// cannot interleave with the fallback reset. Overwrites any prior hook (only
+/// one bootstrap ever registers).
+pub(crate) fn register_late_init_hook<F: Fn() + 'static>(hook: F) {
+    LATE_INIT_HOOK.with(|h| *h.borrow_mut() = Some(Box::new(hook)));
+}
+
+/// Post the managed `ready` reply with the current `(generation, revision)` so
+/// the host learns the starter document's identity before it sends
+/// `open-document`. Called from `canvaskit`'s managed bootstrap ONLY after the
+/// sync-reset has completed (see [`handle_init`]). `ready` is a
+/// request/response-style reply — not one of the three edge/state events the
+/// tick observer owns — so a direct post here keeps single-point edge
+/// discipline intact while ordering `ready` strictly after the reset.
+pub(crate) fn emit_ready<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
+    let (gen, rev, _) = read_triple(inner).unwrap_or((0, 0, false));
+    post_to_parent(&event_ready(gen, rev));
 }

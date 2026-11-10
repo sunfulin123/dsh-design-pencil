@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-/// Severity of a detected issue. All current detectors emit `Warning`;
+/// Severity of a detected issue. `Error` identifies a release-blocking defect;
 /// `Info` is detect-only (an auto-fix would not be safe).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

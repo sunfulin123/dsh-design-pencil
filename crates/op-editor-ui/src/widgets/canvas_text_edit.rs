@@ -13,9 +13,13 @@
 //! viewport transform as a canvas transform); the host converts
 //! screen presses to doc points before calling [`TextEditLayout::offset_at_point`].
 
-use crate::layout_scene::{SceneNode, SceneTextAlign, SceneTextVerticalAlign};
+use crate::layout_scene::{SceneNode, SceneTextAlign, SceneTextRun, SceneTextVerticalAlign};
 use crate::{Point2D, Rect, RenderBackend};
 use jian_core::text_input::prev_char_boundary;
+use unicode_segmentation::UnicodeSegmentation;
+
+#[path = "canvas_text_edit_styled.rs"]
+mod styled;
 
 /// Resolved line layout of a Text node's content.
 pub struct TextEditLayout {
@@ -26,6 +30,10 @@ pub struct TextEditLayout {
     /// separators (dropped spaces, `\n`) fall in the gaps between
     /// one line's end and the next line's start.
     pub line_starts: Vec<usize>,
+    pub line_tops: Vec<f32>,
+    pub line_heights: Vec<f32>,
+    pub runs: Vec<SceneTextRun>,
+    pub run_scale: f32,
     /// Resolved font size (doc px; painter default applied).
     pub font_size: f32,
     /// Resolved CSS-style weight (painter default applied).
@@ -105,6 +113,11 @@ fn vertical_block_offset(align: SceneTextVerticalAlign, box_h: f32, block_h: f32
 /// wrap decision (`text_wrap` + 5% / half-font-size tolerance) as
 /// `paint_text_node`.
 pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> TextEditLayout {
+    if !node.text_runs.is_empty() {
+        let mut editing_node = node.clone();
+        editing_node.text_truncation = false;
+        return super::canvas_viewport_text::text_edit_styled_layout(backend, &editing_node);
+    }
     let text = node.text.as_deref().unwrap_or("");
     let mut font_size = if node.font_size > 0.0 {
         node.font_size
@@ -191,6 +204,12 @@ pub fn text_edit_layout(backend: &mut dyn RenderBackend, node: &SceneNode) -> Te
     );
     TextEditLayout {
         line_starts,
+        line_tops: (0..lines.len())
+            .map(|index| index as f32 * line_h)
+            .collect(),
+        line_heights: vec![line_h; lines.len()],
+        runs: Vec::new(),
+        run_scale: 1.0,
         font_size,
         weight,
         family: family.to_owned(),
@@ -263,7 +282,10 @@ impl TextEditLayout {
         idx
     }
 
-    fn line_width(&self, backend: &mut dyn RenderBackend, line: &str) -> f32 {
+    fn line_width(&self, backend: &mut dyn RenderBackend, idx: usize, line: &str) -> f32 {
+        if !self.runs.is_empty() {
+            return styled::advance(self, backend, idx, line.len());
+        }
         measure_line_width(
             backend,
             line,
@@ -286,15 +308,15 @@ impl TextEditLayout {
     }
 
     /// Alignment-adjusted left edge of `line` (doc space).
-    fn line_x(&self, backend: &mut dyn RenderBackend, line: &str) -> f32 {
+    fn line_x(&self, backend: &mut dyn RenderBackend, idx: usize, line: &str) -> f32 {
         match self.text_align {
             SceneTextAlign::Left | SceneTextAlign::Justify => self.origin.x,
             SceneTextAlign::Center => {
-                let line_w = self.line_width(backend, line);
+                let line_w = self.line_width(backend, idx, line);
                 self.origin.x + (self.align_width - line_w).max(0.0) / 2.0
             }
             SceneTextAlign::Right => {
-                let line_w = self.line_width(backend, line);
+                let line_w = self.line_width(backend, idx, line);
                 self.origin.x + (self.align_width - line_w).max(0.0)
             }
         }
@@ -305,10 +327,19 @@ impl TextEditLayout {
     /// painter's two advance models: substring measure when there is
     /// no letter spacing (whole-line draw), per-char measure plus
     /// spacing AFTER every char when there is (per-char draw).
-    fn prefix_width(&self, backend: &mut dyn RenderBackend, line: &str, byte_offset: usize) -> f32 {
+    fn prefix_width(
+        &self,
+        backend: &mut dyn RenderBackend,
+        idx: usize,
+        line: &str,
+        byte_offset: usize,
+    ) -> f32 {
         let offset = prev_char_boundary(line, byte_offset.min(line.len()));
         if offset == 0 {
             return 0.0;
+        }
+        if !self.runs.is_empty() {
+            return styled::advance(self, backend, idx, offset);
         }
         let prefix = &line[..offset];
         if self.letter_spacing.abs() < f32::EPSILON {
@@ -335,8 +366,9 @@ impl TextEditLayout {
         let line = &self.lines[line_idx];
         let start = self.line_starts[line_idx];
         let local = offset.saturating_sub(start).min(line.len());
-        let x = self.line_x(backend, line) + self.prefix_width(backend, line, local);
-        let y = self.origin.y + line_idx as f32 * self.line_h;
+        let x = self.line_x(backend, line_idx, line)
+            + self.prefix_width(backend, line_idx, line, local);
+        let y = self.origin.y + self.line_tops[line_idx];
         (x, y)
     }
 
@@ -361,15 +393,15 @@ impl TextEditLayout {
             }
             let local_start = start.saturating_sub(line_start).min(line.len());
             let local_end = end.saturating_sub(line_start).min(line.len());
-            let line_x = self.line_x(backend, line);
-            let x0 = line_x + self.prefix_width(backend, line, local_start);
-            let x1 = line_x + self.prefix_width(backend, line, local_end);
+            let line_x = self.line_x(backend, idx, line);
+            let x0 = line_x + self.prefix_width(backend, idx, line, local_start);
+            let x1 = line_x + self.prefix_width(backend, idx, line, local_end);
             if x1 <= x0 + 0.5 {
                 continue;
             }
             out.push(Rect {
-                origin: Point2D::new(x0, self.origin.y + idx as f32 * self.line_h),
-                size: Point2D::new(x1 - x0, self.font_size * 1.2),
+                origin: Point2D::new(x0, self.origin.y + self.line_tops[idx]),
+                size: Point2D::new(x1 - x0, self.line_heights[idx]),
             });
         }
         out
@@ -380,24 +412,29 @@ impl TextEditLayout {
     /// first/last line, so drags above/below the node still select);
     /// the x walks the line's glyph advances with the midpoint rule.
     pub fn offset_at_point(&self, backend: &mut dyn RenderBackend, point: Point2D) -> usize {
-        let line_idx = (((point.y - self.origin.y) / self.line_h).floor() as isize)
-            .clamp(0, self.lines.len() as isize - 1) as usize;
+        let local_y = point.y - self.origin.y;
+        let line_idx = self
+            .line_tops
+            .iter()
+            .rposition(|top| *top <= local_y)
+            .unwrap_or(0);
         let line = &self.lines[line_idx];
         let start = self.line_starts[line_idx];
-        let local_x = point.x - self.line_x(backend, line);
+        let local_x = point.x - self.line_x(backend, line_idx, line);
         if local_x <= 0.0 {
             return start;
         }
-        start + self.offset_in_line_at_x(backend, line, local_x)
+        start + self.offset_in_line_at_x(backend, line_idx, line, local_x)
     }
 
     fn offset_in_line_at_x(
         &self,
         backend: &mut dyn RenderBackend,
+        idx: usize,
         line: &str,
         local_x: f32,
     ) -> usize {
-        let mut boundaries: Vec<usize> = line.char_indices().map(|(idx, _)| idx).collect();
+        let mut boundaries: Vec<usize> = line.grapheme_indices(true).map(|(idx, _)| idx).collect();
         boundaries.push(line.len());
         let char_count = boundaries.len().saturating_sub(1);
         if char_count == 0 {
@@ -407,8 +444,8 @@ impl TextEditLayout {
         let mut hi = char_count;
         while lo < hi {
             let mid = (lo + hi) / 2;
-            let before = self.prefix_width(backend, line, boundaries[mid]);
-            let after = self.prefix_width(backend, line, boundaries[mid + 1]);
+            let before = self.prefix_width(backend, idx, line, boundaries[mid]);
+            let after = self.prefix_width(backend, idx, line, boundaries[mid + 1]);
             if local_x < (before + after) / 2.0 {
                 hi = mid;
             } else {

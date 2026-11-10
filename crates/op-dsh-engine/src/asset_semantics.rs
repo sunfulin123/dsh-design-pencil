@@ -1,8 +1,43 @@
 use op_editor_core::theme_presets::{parse_preset_file, THEME_PRESET_FILE_VERSION};
 use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
 
 use crate::{error_reply, js_error, DesignEngine, EditorCommand};
+
+fn builtin_style_category(id: &str) -> Option<&'static str> {
+    if id == "talkdesk-cobalt" {
+        return Some("enterprise");
+    }
+    static CATEGORIES: OnceLock<HashMap<String, String>> = OnceLock::new();
+    CATEGORIES
+        .get_or_init(|| {
+            let Some(dir) = op_ai_skills::style_guides_dir() else {
+                return HashMap::new();
+            };
+            let Some(text) = dir
+                .get_file(dir.path().join("manifest.json"))
+                .and_then(|file| file.contents_utf8())
+            else {
+                return HashMap::new();
+            };
+            let Ok(Value::Array(entries)) = serde_json::from_str::<Value>(text) else {
+                return HashMap::new();
+            };
+            entries
+                .into_iter()
+                .filter_map(|entry| {
+                    Some((
+                        entry["id"].as_str()?.to_owned(),
+                        entry["category"].as_str()?.to_owned(),
+                    ))
+                })
+                .collect()
+        })
+        .get(id)
+        .map(String::as_str)
+}
 
 pub fn validate(kind: &str, payload: &str) -> Result<Value, String> {
     let mut value: Value = serde_json::from_str(payload).map_err(|e| e.to_string())?;
@@ -41,8 +76,17 @@ impl DesignEngine {
             "style-guide" => op_ai_skills::style_guide::style_guide_registry()
                 .iter()
                 .map(|guide| {
+                    let preview = op_ai_skills::style_guide::style_guide_card(&guide.name);
+                    let swatches = preview
+                        .as_ref()
+                        .map(|card| card.swatches.as_slice())
+                        .unwrap_or_default();
+                    let summary = preview
+                        .as_ref()
+                        .and_then(|card| card.description.as_deref());
                     json!({"id":guide.name,"name":guide.display_name(),"tags":guide.tags,
-                    "platform":guide.platform.as_str(),"isUser":false,"content":guide.content})
+                    "platform":guide.platform.as_str(),"isUser":false,"content":guide.content,
+                    "swatches":swatches,"summary":summary,"category":builtin_style_category(&guide.name)})
                 })
                 .collect(),
             "theme-preset" => op_ai_skills::design_systems::design_system_presets()

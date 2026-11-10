@@ -56,6 +56,8 @@ mod live_sync_json;
 mod managed_assets_sync;
 #[cfg(all(test, feature = "canvaskit"))]
 mod managed_assets_tests;
+#[cfg(feature = "canvaskit")]
+mod selection_push_queue;
 // The recovery stash behind an online auto-accept.
 #[cfg(feature = "canvaskit")]
 mod live_sync_recovery;

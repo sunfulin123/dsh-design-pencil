@@ -38,6 +38,9 @@ Node host（packages/dsh-node-runtime）
 页面 patch 只用于能准确描述的变更；full reset 必须保留完整重同步路径。
 浏览器写入使用 baseVersion 防止覆盖并发编辑；content、selection、metadata 的
 版本/历史语义分别测试，不能把“HTTP 成功”视为“设计事务成功”。
+CanvasKit 按实际选择事件保留有界的临时选区历史，并按顺序推送最新选区；
+宿主可按聊天提交时间捕获目标，时间或状态不确定时拒绝猜测。DSH 插件拥有
+实时草稿的并发写入队列、恢复检查点和发布前画布同步屏障；这些机制不改变文档格式。
 
 截图等待不能持有 renderer bootstrap 所需的 mutation queue。
 真实/近似 renderer 必须在结果中区分；颜色或 UI 验收不能接受不明来源的截图。
@@ -63,6 +66,7 @@ Node host（packages/dsh-node-runtime）
 稳定 `design-md:<目录名>` id 和 SHA-256；空目录不导入。原文的 name 用于展示，id 用于
 查询与绑定。完整原文供 AI 使用，frontmatter 颜色/字体供卡片与结构化规范使用，
 无 frontmatter 的文件走现有宽容 Markdown 解析。不可变卡片与 AI 目录缓存避免逐帧解析全文。
+内置清单的应用场景分类只补充目录元数据，内容指纹针对完整 DESIGN 正文；用户风格不指定分类时保持未分类。
 
 浏览器 [ManagedAssets](crates/op-editor-core/src/managed_assets.rs) 是每个 EditorState
 独立的目录视图，不进入文档历史。[同步桥](crates/op-host-web/src/managed_assets_sync.rs)
@@ -75,6 +79,20 @@ embedding host override > 临时 MCP override > 设备偏好。
 `persist` 默认 false；true 必须确认 effective 和 preference，保存失败/宿主强制主题/
 无编辑器/超时均明确报错。render-only Chrome 不冒充交互编辑器。
 
+## OP 设计指导与宿主接入
+
+[synapse-design](crates/op-ai-skills/skills/synapse-design/SKILL.md) 是 OP
+设计流程的内置来源：先读取对话和当前文档，再从资产风格目录决定是否询问用户；
+设计结束通过真实截图和结构检查发现问题、修复并复测。分阶段资料通过
+`get_design_prompt` 的 `op-design-*` 节点读取。`get_design_agent_prompt` 返回版本化
+核心指导；managed Node host 可按选择的稳定 style id 读取完整原始 DESIGN 并组装。
+
+`plan_design_style` 使用同一个资产目录提供候选、推荐 id 和 revision；
+`plan_design_canvas` 只创建不含预置配色的中性画布计划。
+`get_design_capabilities` 根据实际注册工具返回访问分类，未知工具默认要求宿主单独授权。
+`ss-dsh-design` 负责会话、用户选择 UI、授权和注入，设计指导不在插件重复维护。
+运行时构建将核心 skill 复制到 wasm 构建产物；发布 staging 校验源码一致并写入哈希清单。
+
 ## 变量集合与内置库
 
 变量模型对齐 Figma：`PenDocument.variableCollections` 记录集合（集合名即 `themes` 中的
@@ -85,7 +103,8 @@ Figma 团队库一致。库变量在文档中用 CSS 名（`--primary-9`），�
 
 文档只保存用到的库变量：[library_tools](crates/op-dsh-engine/src/library_tools.rs) 在
 `call_tool` 前扫描参数中的库变量名，在 state 副本上按别名闭包导入后执行工具，与工具
-产生的修改合成一个 undo；只读或失败的调用不留下导入。库更新只提示不自动应用
+产生的修改合成一个 undo；只读或失败的调用不留下导入。`set_design_md` 的原始 Markdown
+是指导文本，不因文中提及变量而触发库导入。库更新只提示不自动应用
 （`get_library_updates` / `accept_library_updates`，变量面板底部同样提供接受入口）。
 重命名库变量即与库解除关联。`cornerRadius`、`fontSize` 等纯数值字段不接受 `$` 引用，
 AI 指南只把库变量用于颜色、gap、padding、opacity。

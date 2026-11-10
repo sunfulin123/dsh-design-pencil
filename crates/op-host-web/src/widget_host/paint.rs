@@ -200,8 +200,7 @@ impl WidgetHost {
         // page first paints a loading cover and rebuilds next frame.
         let page_loading_cover = self.cover_page_switch_this_frame();
         if !page_loading_cover {
-            self.refresh_layout_scene();
-            self.apply_pending_page_fit();
+            self.prepare_text_edit_paint(backend);
         }
         self.frame_perf.mark("scene");
         // The rail's slides tab, resolved ahead of the long immutable

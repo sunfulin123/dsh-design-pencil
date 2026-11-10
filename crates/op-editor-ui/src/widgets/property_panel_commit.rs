@@ -53,6 +53,11 @@ pub fn property_focus_initial(focus: PropertyFocus, panel: &PropertyPanel) -> St
             .unwrap_or_default(),
         F::PageBackgroundHex => panel.page_background.clone().unwrap_or_default(),
         F::NodeName => panel.snapshot.name.clone(),
+        F::TextContent if panel.text_inspector.selected_content.is_some() => panel
+            .text_inspector
+            .selected_content
+            .clone()
+            .unwrap_or_default(),
         F::TextContent => panel
             .snapshot
             .text
@@ -123,6 +128,13 @@ pub fn property_focus_initial(focus: PropertyFocus, panel: &PropertyPanel) -> St
                 .map(|a| a.inner_percent)
                 .unwrap_or(0.0),
         ),
+        F::FontSize if panel.text_inspector.selection_style.is_some() => panel
+            .text_inspector
+            .selection_style
+            .as_ref()
+            .and_then(|style| style.size)
+            .map(format_panel_number)
+            .unwrap_or_default(),
         F::FontSize => panel
             .snapshot
             .text
@@ -180,6 +192,15 @@ pub fn property_focus_initial(focus: PropertyFocus, panel: &PropertyPanel) -> St
             .and_then(|image| image.tile_scale)
             .map(format_panel_number_roundtrip)
             .unwrap_or_else(|| "1".to_string()),
+        F::FillHex(index)
+            if panel
+                .snapshot
+                .fills
+                .get(index)
+                .is_some_and(|fill| fill.mixed) =>
+        {
+            String::new()
+        }
         F::FillHex(index) => panel
             .snapshot
             .fills
@@ -244,53 +265,9 @@ where
         .unwrap_or_default()
 }
 
-/// Commit a pending effect-parameter edit (the Effects section's
-/// editable value box). Parses the shared draft and writes it via
-/// `SetEffectParam`; a non-numeric draft is discarded. Returns `true`
-/// when a focus was taken, i.e. the host should mark dirty.
-pub fn commit_effect_param_focus(state: &mut EditorState) -> bool {
-    let Some(focus) = state.editor_ui.effect_param_focus.take() else {
-        return false;
-    };
-    state.ui.property_draft_select_all = false;
-    let draft = state.ui.property_input.text().to_owned();
-    state.ui.property_input.set_text("");
-    state.ui.property_input_draft.clear();
-    state.ui.property_caret_pos = 0;
-    if let Ok(value) = draft.trim().parse::<f32>() {
-        if value.is_finite() {
-            let id = state.selection.anchor.clone();
-            if id.is_real() {
-                // Instance-write redirect (GAP #10) — see
-                // `apply_property_action` for the choke-point note.
-                let instance_scope = state.begin_instance_write_for_anchor();
-                state.commit_history();
-                let _ = state.apply(op_editor_core::EditorCommand::SetEffectParam {
-                    node_id: id,
-                    index: focus.effect as u32,
-                    field: focus.field,
-                    value,
-                });
-                if let Some(scope) = instance_scope {
-                    state.finish_instance_write(scope);
-                }
-            }
-        }
-    }
-    true
-}
-
-/// Drop an effect-parameter draft without applying it.
-///
-/// Collaboration gates use this after a role/phase change so a draft that was
-/// focused while editable cannot commit after the session becomes read-only.
-pub fn discard_effect_param_focus(state: &mut EditorState) -> bool {
-    if state.editor_ui.effect_param_focus.take().is_none() {
-        return false;
-    }
-    clear_property_draft(state);
-    true
-}
+#[path = "property_panel_effect_commit.rs"]
+mod effect_commit;
+pub use effect_commit::{commit_effect_param_focus, discard_effect_param_focus};
 
 /// Drop a PropertyPanel draft without applying it.
 pub fn discard_property_focus(state: &mut EditorState) -> bool {
@@ -346,6 +323,26 @@ pub fn commit_property_focus(state: &mut EditorState) -> bool {
             op_editor_core::text_inspector_draft::TextInspectorDraft::for_state(state);
         if let Some(value) = state.ui.text_inspector.values.get_mut(index) {
             *value = draft;
+        }
+        return true;
+    }
+    if focus == PropertyFocus::FontSize
+        && (state.ui.text_selection.is_some() || state.ui.text_insertion.is_some())
+    {
+        if let Ok(value) = draft.trim().parse::<f32>() {
+            let style = op_editor_core::text_design::TextRangeStyle {
+                font_size: Some(value),
+                ..Default::default()
+            };
+            let _ = state.apply_text_selection_style(&style);
+        }
+        return true;
+    }
+    if focus == PropertyFocus::TextContent
+        && (state.ui.text_selection.is_some() || state.ui.text_insertion.is_some())
+    {
+        if state.insert_at_retained_caret(&draft).is_none() {
+            let _ = state.replace_selected_text(&draft);
         }
         return true;
     }

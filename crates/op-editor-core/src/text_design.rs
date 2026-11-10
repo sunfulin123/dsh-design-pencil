@@ -106,6 +106,7 @@ mod text_range;
 
 pub use text_markdown::markdown_to_node;
 pub use text_paragraph::paragraph_to_node;
+pub(crate) use text_range::push_segment;
 pub use text_range::{safe_link, styled_range};
 
 pub fn plain_text(content: &TextContent) -> String {

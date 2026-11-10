@@ -239,6 +239,7 @@ pub struct VisibleSections {
     pub size_hug_height: bool,
     pub clip_content: bool,
     pub text: bool,
+    pub text_advanced: bool,
     pub icon: bool,
     /// Form-widget section — `Some(kind)` for a widget node, `None`
     /// otherwise. The kind drives which rows the section paints +
@@ -258,6 +259,7 @@ pub struct VisibleSections {
     /// Node-level Blend / Mask controls. Hidden for the inert
     /// multi-selection aggregate and page-only inspector.
     pub compositing: bool,
+    pub position_advanced: bool,
     pub corner_radius: bool,
     pub corner_per_corner: bool,
     pub corner_expand: bool,
@@ -301,6 +303,7 @@ impl VisibleSections {
         size_hug_height: false,
         clip_content: true,
         text: false,
+        text_advanced: true,
         icon: false,
         widget: None,
         widget_checked: false,
@@ -309,6 +312,7 @@ impl VisibleSections {
         image_warning: false,
         opacity: true,
         compositing: true,
+        position_advanced: true,
         corner_radius: true,
         corner_per_corner: true,
         corner_expand: false,

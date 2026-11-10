@@ -21,6 +21,47 @@ fn set_selected_color_writes_first_solid_fill() {
 }
 
 #[test]
+fn local_color_override_keeps_brand_variable_and_undo_restores_binding() {
+    use jian_ops_schema::variable::{VariableKind, VariableScalar};
+    let mut state = doc_with_rect();
+    assert!(state.create_variable(
+        "brand",
+        VariableKind::Color,
+        VariableScalar::Str("#ff8800".into())
+    ));
+    assert!(state.bind_selected_color_variable(ColorTarget::Fill, "brand"));
+    state.commit_history();
+    assert!(state.set_selected_color(true, "#112233"));
+    assert_eq!(
+        crate::fills::first_solid_fill_hex(state.selected_node().unwrap()),
+        Some("#112233")
+    );
+    assert!(!state
+        .ui
+        .variables
+        .fill_refs
+        .contains_key(&NodeId::new("n1")));
+    assert_eq!(
+        state.resolve_variable("brand"),
+        Some(&VariableScalar::Str("#ff8800".into()))
+    );
+    assert!(state.undo());
+    assert_eq!(
+        crate::fills::first_solid_fill_hex(state.selected_node().unwrap()),
+        Some("$brand")
+    );
+    assert_eq!(
+        state
+            .ui
+            .variables
+            .fill_refs
+            .get(&NodeId::new("n1"))
+            .map(String::as_str),
+        Some("brand")
+    );
+}
+
+#[test]
 fn set_selected_color_writes_stroke() {
     let mut s = doc_with_rect();
     assert!(s.set_selected_color(false, "#00ff00"));

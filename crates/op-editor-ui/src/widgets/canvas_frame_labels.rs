@@ -55,6 +55,7 @@ fn generating_icon_top(text_baseline_y: f32) -> f32 {
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct FrameLabel {
     pub(super) id: String,
+    pub(super) target_id: String,
     pub(super) text: String,
     pub(super) color: Color,
     pub(super) generating: bool,
@@ -67,8 +68,10 @@ impl FrameLabel {
         color: Color,
         generating: bool,
     ) -> Self {
+        let id = id.into();
         Self {
-            id: id.into(),
+            target_id: id.clone(),
+            id,
             text: text.into(),
             color,
             generating,
@@ -148,7 +151,7 @@ pub(super) fn frame_label_at_point(
         }
         let label = labels.next().expect("peeked label exists");
         if (label_rect(node, label, viewport_origin, viewport)).contains(point) {
-            return Some(label.id.clone());
+            return Some(label.target_id.clone());
         }
     }
     None

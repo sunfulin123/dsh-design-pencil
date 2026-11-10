@@ -42,6 +42,35 @@ impl<'a> CanvasViewport<'a> {
             pan_y: state.viewport.pan_y,
             zoom: state.viewport.zoom,
         };
+        // Keep the selected glyphs visible while a property control owns focus.
+        let retained = state
+            .ui
+            .text_editing
+            .is_none()
+            .then(|| state.current_text_selection())
+            .flatten();
+        let (text_editing, text_edit_input) = if let Some(range) = retained {
+            let offset = |index| {
+                range
+                    .text
+                    .char_indices()
+                    .nth(index)
+                    .map_or(range.text.len(), |(byte, _)| byte)
+            };
+            let mut input = jian_core::text_input::TextInputState::with_text(&range.text);
+            input.set_caret(offset(range.start), 0);
+            input.drag_to(offset(range.end), 0);
+            (Some(range.node_id.as_str().to_owned()), input)
+        } else {
+            (
+                state
+                    .ui
+                    .text_editing
+                    .as_ref()
+                    .map(|id| id.as_str().to_string()),
+                state.ui.text_edit_input.clone(),
+            )
+        };
         Self {
             id: WidgetId::new(4000),
             viewport,
@@ -73,12 +102,8 @@ impl<'a> CanvasViewport<'a> {
                 .as_ref()
                 .is_some_and(|id| id == &state.selection.anchor),
             node_drag_overlay: None,
-            text_editing: state
-                .ui
-                .text_editing
-                .as_ref()
-                .map(|id| id.as_str().to_string()),
-            text_edit_input: state.ui.text_edit_input.clone(),
+            text_editing,
+            text_edit_input,
             canvas_background,
             show_grid,
             show_pixel_grid: state.editor_ui.pixel_grid_visible,
@@ -93,6 +118,8 @@ impl<'a> CanvasViewport<'a> {
                 .filter(|_| matches!(state.tool, op_editor_core::Tool::Select))
                 .map(|id| id.as_str().to_string()),
             frame_labels: collect_frame_labels(state),
+            show_root_boundaries: true,
+            device_frame_pair: generated_device_frame_pair(state),
             collab_presence: crate::widgets::canvas_collab_presence::snapshot(
                 &state.editor_ui.collab,
             ),
@@ -149,6 +176,8 @@ impl<'a> CanvasViewport<'a> {
             now_ms: 0,
             hovered: None,
             frame_labels: Vec::new(),
+            show_root_boundaries: false,
+            device_frame_pair: None,
             collab_presence: Vec::new(),
             fast_interaction: false,
             cull_override: None,
@@ -207,18 +236,38 @@ fn collect_frame_labels(state: &EditorState) -> Vec<FrameLabel> {
         b: 0.969,
         a: 1.0,
     }; // #9281f7
+    let pair = generated_device_frame_pair(state);
     state
         .active_children()
         .iter()
         .filter_map(|node| {
             use jian_ops_schema::node::PenNode;
-            let name = node.base().name.clone().unwrap_or_default();
+            if pair
+                .as_ref()
+                .is_some_and(|(_, page)| node.base().id == *page)
+            {
+                return None;
+            }
+            let source = pair
+                .as_ref()
+                .and_then(|(frame, page)| {
+                    (node.base().id == *frame)
+                        .then(|| {
+                            state
+                                .active_children()
+                                .iter()
+                                .find(|n| n.base().id == *page)
+                        })
+                        .flatten()
+                })
+                .unwrap_or(node);
+            let name = source.base().name.clone().unwrap_or_default();
             if name.is_empty() {
                 return None;
             }
-            let id = op_editor_core::NodeId::new(node.base().id.clone());
-            let generating = matches!(node, PenNode::Frame(_))
-                && op_editor_core::agent_indicators::is_frame_generating(node.base().id.as_str());
+            let id = op_editor_core::NodeId::new(source.base().id.clone());
+            let generating = matches!(source, PenNode::Frame(_))
+                && op_editor_core::agent_indicators::is_frame_generating(source.base().id.as_str());
             let color = if generating || state.selection.contains(&id) {
                 theme.primary
             } else {
@@ -229,14 +278,39 @@ fn collect_frame_labels(state: &EditorState) -> Vec<FrameLabel> {
                     _ => return None,
                 }
             };
-            Some(FrameLabel::new(
+            let mut label = FrameLabel::new(
                 node.base().id.clone(),
                 generating_label_text(&name, generating),
                 color,
                 generating,
-            ))
+            );
+            label.target_id = source.base().id.clone();
+            Some(label)
         })
         .collect()
+}
+
+fn generated_device_frame_pair(state: &EditorState) -> Option<(String, String)> {
+    use jian_ops_schema::node::PenNode;
+    use op_editor_core::PenNodeExt;
+    let roots = state.active_children();
+    if roots.len() != 2 {
+        return None;
+    }
+    let shell = roots.iter().find(|node| {
+        let base = node.base();
+        matches!(node, PenNode::Frame(_))
+            && base.id == "synapse-device-frame"
+            && base.locked == Some(true)
+            && matches!(
+                base.name.as_deref(),
+                Some("Synapse Device Frame · Browser" | "Synapse Device Frame · Phone")
+            )
+    })?;
+    let page = roots
+        .iter()
+        .find(|node| node.base().id != shell.base().id && matches!(node, PenNode::Frame(_)))?;
+    Some((shell.base().id.clone(), page.base().id.clone()))
 }
 
 pub(super) fn generating_label_text(base_name: &str, generating: bool) -> String {

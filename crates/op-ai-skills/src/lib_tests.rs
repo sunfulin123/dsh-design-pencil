@@ -397,12 +397,12 @@ fn local_edit_skill_outputs_script_gen_protocol() {
 fn design_agent_prompt_mentions_style_fetch() {
     let prompt = design_agent_system_prompt();
     assert!(
-        prompt.contains("get_guidelines(category:\"style\""),
-        "design-agent prompt must tell the loop to fetch a style guideline"
+        prompt.contains("list_style_guides") && prompt.contains("get_style_guide"),
+        "design-agent prompt must discover and fetch an available style guide"
     );
     assert!(
-        prompt.contains("colorPalette:\""),
-        "design-agent prompt must show the flat colorPalette style param"
+        !prompt.contains("get_guidelines(category:\"style\""),
+        "the prompt must not advertise arguments absent from the tool schema"
     );
 }
 

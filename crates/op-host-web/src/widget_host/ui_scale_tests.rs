@@ -128,6 +128,7 @@ fn check_text_inspector_host_input(width: f32, height: f32, touch: bool) {
     .unwrap()];
     host.editor_state.selection.set = vec![NodeId::new("title")];
     host.editor_state.selection.anchor = NodeId::new("title");
+    host.editor_state.ui.text_inspector.expanded = true;
     host.editor_state.editor_ui.property_panel_scroll.offset = if touch { 960.0 } else { 640.0 };
     host.mark_dirty();
     host.paint_dyn(&mut Capture::default(), width, height);

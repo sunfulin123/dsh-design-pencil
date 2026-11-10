@@ -13,7 +13,152 @@ fn state() -> EditorState {
     .unwrap()];
     state.selection.set = vec![NodeId::new("t")];
     state.selection.anchor = NodeId::new("t");
+    state.ui.text_inspector.expanded = true;
     state
+}
+
+#[test]
+fn advanced_text_settings_remain_session_local_when_collapsed() {
+    let mut state = state();
+    state.ui.text_inspector.expanded = false;
+    let rect = Rect::xywh(0.0, 0.0, 280.0, 460.0);
+    let before = state.doc.clone();
+    let collapsed = PropertyPanel::for_selection(&state)
+        .unwrap()
+        .content_height(rect);
+    dispatch(&mut state, PropertyPanelAction::ToggleTextAdvanced);
+    let expanded = PropertyPanel::for_selection(&state)
+        .unwrap()
+        .content_height(rect);
+    assert!(expanded > collapsed + 500.0);
+    assert_eq!(state.doc, before);
+    assert!(!state.history.can_undo());
+}
+
+#[test]
+fn selected_text_color_shows_mixed_and_changes_only_the_range() {
+    let mut state = state();
+    state.doc.children[0] = serde_json::from_value(serde_json::json!({
+        "type": "text", "id": "t", "width": 240,
+        "content": [{"text": "A", "fill": "#ff0000"}, {"text": "中", "fill": "#0000ff"}, {"text": "Z"}]
+    })).unwrap();
+    let before = state.doc.clone();
+    assert!(state.start_text_edit(NodeId::new("t")));
+    assert!(state.text_edit_select_range(0, "A中".len(), 1));
+    state.retain_text_selection();
+    state.text_edit_commit();
+    let panel = PropertyPanel::for_selection(&state).unwrap();
+    assert!(panel.snapshot.fills[0].mixed);
+    assert_eq!(
+        property_focus_initial(PropertyFocus::FillHex(0), &panel),
+        ""
+    );
+    state.ui.property_focus = Some(PropertyFocus::FillHex(0));
+    state.ui.property_input.set_text("#00ff00");
+    assert!(commit_property_focus(&mut state));
+    let panel = PropertyPanel::for_selection(&state).unwrap();
+    assert!(!panel.snapshot.fills[0].mixed);
+    assert_eq!(
+        property_focus_initial(PropertyFocus::FillHex(0), &panel),
+        "#00FF00"
+    );
+    let PenNode::Text(text) = state.selected_node().unwrap() else {
+        panic!("text")
+    };
+    let TextContent::Styled(runs) = &text.content else {
+        panic!("styled")
+    };
+    assert!(runs
+        .iter()
+        .find(|run| run.text == "Z")
+        .unwrap()
+        .fill
+        .is_none());
+    assert!(state.undo());
+    assert_eq!(state.doc, before);
+}
+
+#[test]
+fn property_text_edits_only_the_selected_characters_and_keeps_other_styles() {
+    let mut state = state();
+    state.doc.children[0] = serde_json::from_value(serde_json::json!({
+        "type":"text", "id":"t", "content":[
+            {"text":"A", "fontWeight":700}, {"text":"中🙂", "fill":"#0000ff"}, {"text":"Z"}
+        ]
+    }))
+    .unwrap();
+    let before = state.doc.clone();
+    assert!(state.start_text_edit(NodeId::new("t")));
+    assert!(state.text_edit_select_range(1, "A中🙂".len(), 1));
+    state.retain_text_selection();
+    state.text_edit_commit();
+    let panel = PropertyPanel::for_selection(&state).unwrap();
+    assert_eq!(
+        property_focus_initial(PropertyFocus::TextContent, &panel),
+        "中🙂"
+    );
+    state.ui.property_focus = Some(PropertyFocus::TextContent);
+    state.ui.property_input.set_text("你好");
+    assert!(commit_property_focus(&mut state));
+    let PenNode::Text(text) = state.selected_node().unwrap() else {
+        panic!("text")
+    };
+    let TextContent::Styled(runs) = &text.content else {
+        panic!("styled")
+    };
+    assert_eq!(
+        runs.iter().map(|run| run.text.as_str()).collect::<String>(),
+        "A你好Z"
+    );
+    assert_eq!(runs[0].font_weight, Some(700));
+    assert_eq!(runs[1].fill.as_deref(), Some("#0000ff"));
+    assert_eq!(state.current_text_selection().unwrap().end, 3);
+    assert!(state.undo());
+    assert_eq!(state.doc, before);
+}
+
+#[test]
+fn inspector_caret_edits_only_future_input() {
+    let mut state = state();
+    let before = state.doc.clone();
+    assert!(state.start_text_edit(NodeId::new("t")));
+    assert!(state.text_edit_set_caret(1, false, 1));
+    state.retain_text_selection();
+    state.text_edit_commit();
+    let panel = PropertyPanel::for_selection(&state).unwrap();
+    assert!(panel.text_inspector.insertion);
+    assert_eq!(
+        property_focus_initial(PropertyFocus::TextContent, &panel),
+        ""
+    );
+
+    state.ui.property_focus = Some(PropertyFocus::FontSize);
+    state.ui.property_input.set_text("24");
+    assert!(commit_property_focus(&mut state));
+    assert_eq!(state.doc, before);
+    let panel = PropertyPanel::for_selection(&state).unwrap();
+    assert_eq!(
+        property_focus_initial(PropertyFocus::FontSize, &panel),
+        "24"
+    );
+
+    state.ui.property_focus = Some(PropertyFocus::TextContent);
+    state.ui.property_input.set_text("新");
+    assert!(commit_property_focus(&mut state));
+    let PenNode::Text(text) = state.selected_node().unwrap() else {
+        panic!("text")
+    };
+    let TextContent::Styled(runs) = &text.content else {
+        panic!("styled")
+    };
+    assert_eq!(
+        runs.iter().map(|run| run.text.as_str()).collect::<String>(),
+        "A新中🙂Z"
+    );
+    assert_eq!(runs[1].font_size, Some(24.0));
+    assert_eq!(runs[0].font_size, None);
+    assert!(state.undo());
+    assert_eq!(state.doc, before);
 }
 
 fn dispatch(state: &mut EditorState, action: PropertyPanelAction) {
@@ -173,7 +318,11 @@ fn text_design_invalid_locked_and_multiple_targets_do_not_write() {
 
 #[test]
 fn text_design_controls_are_hit_reachable_after_scrolling_and_seed_drafts() {
-    let state = state();
+    let mut state = state();
+    assert!(state.start_text_edit(NodeId::new("t")));
+    assert!(state.text_edit_select_range(0, 1, 0));
+    state.retain_text_selection();
+    state.text_edit_commit();
     let panel = PropertyPanel::for_selection(&state).unwrap();
     let rect = Rect {
         origin: Point2D::new(0.0, 0.0),
@@ -185,14 +334,18 @@ fn text_design_controls_are_hit_reachable_after_scrolling_and_seed_drafts() {
         PropertyPanelAction::ApplyTextParagraph,
     ];
     for expected in actions {
+        let x = if expected == PropertyPanelAction::ApplyTextRange {
+            200.0
+        } else {
+            100.0
+        };
         let found = (40..2500).any(|y| {
-            panel.hit_test_action(rect, Point2D::new(100.0, y as f32)) == Some(expected.clone())
+            panel.hit_test_action(rect, Point2D::new(x, y as f32)) == Some(expected.clone())
         });
         assert!(found, "missing reachable {expected:?}");
     }
-    let focus = PropertyFocus::TextDesign(2);
-    assert_eq!(property_focus_initial(focus, &panel), "4");
-    assert!((40..2500).any(|y| panel.hit_test(rect, Point2D::new(215.0, y as f32)) == Some(focus)));
+    let focus = PropertyFocus::TextDesign(6);
+    assert!((40..2500).any(|y| panel.hit_test(rect, Point2D::new(100.0, y as f32)) == Some(focus)));
 }
 
 #[test]

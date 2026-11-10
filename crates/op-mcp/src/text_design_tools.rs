@@ -19,12 +19,20 @@ use std::collections::BTreeMap;
 
 struct TextSnapshot {
     shared: TextDesignSnapshot,
+    pages: BTreeMap<String, Vec<PenNode>>,
 }
 
 impl TextSnapshot {
     fn new(state: &EditorState) -> Self {
         Self {
             shared: TextDesignSnapshot::new(state),
+            pages: state
+                .doc
+                .pages
+                .iter()
+                .flatten()
+                .map(|page| (page.id.clone(), page.children.clone()))
+                .collect(),
         }
     }
 
@@ -41,6 +49,26 @@ impl TextSnapshot {
     fn text(&self, args: &BTreeMap<String, String>) -> Result<TextNode, ToolOutcome> {
         let node = self.node(args)?;
         self.shared.text(node.id_str()).map_err(invalid)
+    }
+
+    #[allow(clippy::result_large_err)]
+    fn text_on_page(&self, args: &BTreeMap<String, String>) -> Result<TextNode, ToolOutcome> {
+        let Some(page_id) = args.get("pageId") else {
+            return self.text(args);
+        };
+        let roots = self
+            .pages
+            .get(page_id)
+            .ok_or_else(|| invalid(format!("page {page_id:?} does not exist")))?;
+        let id = args
+            .get("nodeId")
+            .or_else(|| args.get("node_id"))
+            .ok_or_else(|| missing("nodeId"))?;
+        let node = op_editor_core::walkers::find_node(roots, &NodeId::new(id))
+            .ok_or_else(|| invalid(format!("node {id:?} does not exist on page {page_id:?}")))?;
+        op_editor_core::command_node_attrs::resolve_text_node(node)
+            .cloned()
+            .ok_or_else(|| invalid("target a Text node or a single-text wrapper"))
     }
 
     #[allow(clippy::result_large_err)]
@@ -121,7 +149,7 @@ impl McpTool for SetTextContent {
                     Ok(text) => text,
                     Err(error) => return error,
                 };
-                patch_content(&text.base.id, TextContent::Plain(content.clone()))
+                patch_content(&text.base.id, TextContent::Plain(content.clone()), None)
             }
             _ => invalid("format must be plain or markdown"),
         }
@@ -164,7 +192,7 @@ impl McpTool for SetTextStyle {
         "set_text_style"
     }
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
-        let text = match self.snapshot.text(args) {
+        let text = match self.snapshot.text_on_page(args) {
             Ok(t) => t,
             Err(e) => return e,
         };
@@ -175,13 +203,20 @@ impl McpTool for SetTextStyle {
             Ok(v) => v,
             Err(e) => return e,
         };
-        let length = plain_text(&text.content).chars().count();
+        let current_text = plain_text(&text.content);
+        if args
+            .get("expectedText")
+            .is_some_and(|expected| expected != &current_text)
+        {
+            return invalid("The selected text changed; select it again before applying the style");
+        }
+        let length = current_text.chars().count();
         let (start, end) = match range(args, length) {
             Ok(v) => v,
             Err(e) => return e,
         };
         match styled_range(&text.content, start, end, &style) {
-            Ok(content) => patch_content(&text.base.id, content),
+            Ok(content) => patch_content(&text.base.id, content, args.get("pageId").cloned()),
             Err(error) => invalid(error),
         }
     }
@@ -192,7 +227,7 @@ impl McpTool for GetTextStyle {
         "get_text_style"
     }
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
-        let text = match self.snapshot.text(args) {
+        let text = match self.snapshot.text_on_page(args) {
             Ok(t) => t,
             Err(e) => return e,
         };
@@ -253,14 +288,14 @@ impl McpTool for SetParagraphStyle {
     }
 }
 
-fn patch_content(id: &str, content: TextContent) -> ToolOutcome {
+fn patch_content(id: &str, content: TextContent, page_id: Option<String>) -> ToolOutcome {
     ToolOutcome::OkJsonWithCommand(
         json!({"wrote":true,"nodeId":id}).to_string(),
         EditorCommand::Batch {
             commands: vec![EditorCommand::PatchNodeData {
                 node_id: NodeId::new(id),
                 patch_json: json!({"content":content}).to_string(),
-                page_id: None,
+                page_id,
             }],
         },
     )

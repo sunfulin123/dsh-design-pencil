@@ -225,8 +225,11 @@ mod shape_create;
 mod shape_create_tests;
 mod shape_picker_press;
 mod slides_panel;
+#[cfg(feature = "canvaskit")]
+mod sync_selection;
 mod text_drag;
 mod text_edit_caret;
+mod text_edit_pointer;
 #[cfg(test)]
 mod theme_tests;
 mod toolbar_actions;
@@ -335,6 +338,7 @@ pub struct WidgetHost {
     effect_radius_drag: Option<usize>,
     /// Active generated-code preview text selection drag.
     code_selection_drag: Option<CodeSelectionDragState>,
+    text_edit_pointer: Option<text_edit_pointer::TextEditPointer>,
     /// Active chat input text selection drag.
     chat_input_selection_drag: Option<ChatInputSelectionDragState>,
     /// Active Search / Generate popover input selection drag.

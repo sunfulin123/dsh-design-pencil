@@ -88,6 +88,7 @@ pub(super) fn fills_of(node: &PenNode) -> Vec<FillSummary> {
                 PenFill::Image(b) => (None, b.opacity.unwrap_or(1.0)),
             };
             FillSummary {
+                mixed: false,
                 fill_type,
                 color: hex.and_then(color_from_hex).unwrap_or(Color::WHITE),
                 opacity,

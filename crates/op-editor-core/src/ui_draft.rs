@@ -377,6 +377,12 @@ pub struct UiDraftState {
     pub component_inspector: crate::component_inspector_draft::ComponentInspectorDraft,
     pub design_system_inspector: crate::design_system_inspector_draft::DesignSystemInspectorDraft,
     pub text_inspector: crate::text_inspector_draft::TextInspectorDraft,
+    /// Position's exact coordinates and rotation are expanded for this session.
+    pub position_advanced: bool,
+    /// Text selected for property-panel edits; never serialized into the document.
+    pub text_selection: Option<crate::text_selection::TextSelection>,
+    /// Typographic settings for subsequent input at a retained canvas caret.
+    pub text_insertion: Option<crate::text_insertion::TextInsertion>,
     pub appearance_clipboard: Option<std::collections::BTreeMap<String, serde_json::Value>>,
     /// Why the last [`crate::DesignCommand`] was rejected, so hosts can
     /// give an agent an actionable error. Cleared on each design apply.
@@ -406,6 +412,8 @@ pub struct UiDraftState {
     /// Draft, caret, selection, IME composition, and blink state for
     /// the inline canvas text editor.
     pub text_edit_input: jian_core::text_input::TextInputState,
+    /// Style of the selected run replaced by an in-flight IME composition.
+    pub text_composition_seed: Option<jian_ops_schema::style::StyledTextSegment>,
     /// In-progress Pen-tool path. `Some(id)` while the user is
     /// click-adding anchors; cleared on Enter / Escape / tool change.
     pub pen_in_progress: Option<NodeId>,

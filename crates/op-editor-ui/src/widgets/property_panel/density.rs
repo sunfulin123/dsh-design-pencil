@@ -338,7 +338,7 @@ mod tests {
             .all(|(_, rect)| { rect.size.x * scale >= 44.0 && rect.size.y * scale >= 44.0 }));
 
         let text_touch =
-            crate::widgets::property_panel_text::text_action_rects(0.0, 0.0, 248.0, true);
+            crate::widgets::property_panel_text::text_action_rects(0.0, 0.0, 248.0, true, true);
         for (action, rect) in text_touch.iter().filter(|(action, _)| {
             matches!(
                 action,
@@ -382,7 +382,7 @@ mod tests {
             .1;
         assert_close(desktop_gap.size.y, 20.0);
         let desktop_text =
-            crate::widgets::property_panel_text::text_action_rects(0.0, 0.0, 248.0, false);
+            crate::widgets::property_panel_text::text_action_rects(0.0, 0.0, 248.0, false, true);
         assert_close(desktop_text[0].1.size.y, 28.0);
         assert_close(
             crate::widgets::property_panel_effects::effect_row_rects(0.0, 0.0, 280.0, false)

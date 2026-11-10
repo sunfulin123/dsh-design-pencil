@@ -62,6 +62,10 @@ pub struct PenNodeBase {
     pub enabled: Option<BoolOrExpression>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visible: Option<bool>,
+    /// Whether a frame is eligible as a standalone prototype preview screen.
+    /// This does not hide the node when it is rendered inside its parent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview_as_screen: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub locked: Option<bool>,
     /// Keep this node at its authored viewport position while its nearest

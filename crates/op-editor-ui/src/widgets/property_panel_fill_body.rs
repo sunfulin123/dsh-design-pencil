@@ -26,6 +26,7 @@ pub(crate) fn paint_fill_solid_body(
     fill_index: usize,
     fill: Color,
     variable_ref: Option<&str>,
+    mixed_label: Option<&str>,
     show_variable_button: bool,
     x: f32,
     y: f32,
@@ -41,7 +42,7 @@ pub(crate) fn paint_fill_solid_body(
     let variable_text = variable_ref.map(|name| format!("${name}"));
     let hex_text = variable_text
         .as_deref()
-        .unwrap_or_else(|| edit.value_for(hex_focus, &hex_owned));
+        .unwrap_or_else(|| edit.value_for(hex_focus, mixed_label.unwrap_or(&hex_owned)));
     let variable_w = if show_variable_button {
         COLOR_VARIABLE_BUTTON_W + COLOR_VARIABLE_GAP
     } else {

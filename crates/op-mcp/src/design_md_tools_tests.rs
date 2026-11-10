@@ -46,6 +46,43 @@ fn set_design_md_markdown_emits_set_command() {
 }
 
 #[test]
+fn set_design_md_only_if_blank_rejects_authored_content_or_existing_design() {
+    let args = BTreeMap::from([
+        ("markdown".into(), "# New design".into()),
+        ("onlyIfBlank".into(), "true".into()),
+    ]);
+    let mut state = op_editor_core::EditorState::new();
+    assert!(matches!(
+        set_design_md_snapshot(&state).call(&args),
+        ToolOutcome::OkWithCommand(_, _)
+    ));
+    state.doc.children.push(
+        serde_json::from_str(r#"{"type":"rectangle","id":"r","width":10,"height":10}"#).unwrap(),
+    );
+    assert!(matches!(
+        set_design_md_snapshot(&state).call(&args),
+        ToolOutcome::Err(_, _)
+    ));
+    state.doc.children.clear();
+    state.doc.pages = Some(
+        serde_json::from_value(serde_json::json!([
+            {"id":"other","name":"Other","children":[{"type":"text","id":"t","content":"Existing"}]}
+        ]))
+        .unwrap(),
+    );
+    assert!(matches!(
+        set_design_md_snapshot(&state).call(&args),
+        ToolOutcome::Err(_, _)
+    ));
+    state.doc.pages = None;
+    state.doc.design_md = Some(op_editor_core::parse_design_md("# Existing design"));
+    assert!(matches!(
+        set_design_md_snapshot(&state).call(&args),
+        ToolOutcome::Err(_, _)
+    ));
+}
+
+#[test]
 fn export_design_md_extracts_from_document_when_absent() {
     let mut state = op_editor_core::EditorState::new();
     state.doc.variables = Some(std::collections::BTreeMap::from([(

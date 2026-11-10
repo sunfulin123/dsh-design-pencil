@@ -1,13 +1,59 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { indexRuntimePayload } from './dsh-runtime-payload.mjs'
 
+async function skillFiles(directory, prefix = '') {
+  const files = []
+  for (const entry of await readdir(join(directory, prefix), { withFileTypes: true })) {
+    const path = join(prefix, entry.name)
+    if (entry.isDirectory()) files.push(...await skillFiles(directory, path))
+    else if (entry.isFile()) files.push(path)
+    else throw new Error(`Unexpected HTML skill resource: ${path}`)
+  }
+  return files.sort()
+}
+
+async function verifyHtmlSkill(source, built) {
+  const expected = await skillFiles(source)
+  const actual = await skillFiles(built)
+  if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error('HTML POC skill resources differ from the built runtime; rebuild the engine')
+  for (const path of expected) {
+    if (!(await readFile(join(source, path))).equals(await readFile(join(built, path)))) {
+      throw new Error(`HTML POC skill resource differs from the built runtime: ${path}`)
+    }
+  }
+}
+
+async function stageScriptDependencies(runtime, destination, dependencies) {
+  const fromRuntime = createRequire(join(runtime, 'package.json'))
+  const coreEntry = fromRuntime.resolve('quickjs-emscripten-core')
+  const fromCore = createRequire(coreEntry)
+  const packages = [
+    ['quickjs-emscripten-core', fromRuntime, dependencies['quickjs-emscripten-core']],
+    ['@jitl/quickjs-wasmfile-release-sync', fromRuntime, dependencies['@jitl/quickjs-wasmfile-release-sync']],
+    ['@jitl/quickjs-ffi-types', fromCore, dependencies['quickjs-emscripten-core']],
+  ]
+  for (const [name, resolver, version] of packages) {
+    const source = dirname(dirname(resolver.resolve(name)))
+    const metadata = JSON.parse(await readFile(join(source, 'package.json'), 'utf8'))
+    if (metadata.name !== name || metadata.version !== version) throw new Error(`Unexpected script dependency: ${name}`)
+    await cp(source, join(destination, 'node_modules', name), {
+      recursive: true, dereference: true, filter: path => !/\.d\.(?:ts|mts|cts)$|\.map$|\.tsbuildinfo$/.test(path),
+    })
+  }
+}
+
 export async function stageRuntime({ root, destination, revision }) {
   const runtime = join(root, 'packages/dsh-node-runtime')
   const metadata = JSON.parse(await readFile(join(runtime, 'package.json'), 'utf8'))
+  const skillSource = await readFile(join(root, 'crates/op-ai-skills/skills/synapse-design/SKILL.md'))
+  const builtSkill = await readFile(join(runtime, 'wasm/design-skill.md'))
+  if (!skillSource.equals(builtSkill)) throw new Error('Design skill differs from the built runtime; rebuild the engine')
+  await verifyHtmlSkill(join(root, 'crates/op-ai-skills/skills/synapse-design-html'), join(runtime, 'skills/synapse-design-html'))
   await rm(destination, { recursive: true, force: true })
   await mkdir(destination, { recursive: true })
   // Every runtime module, so an import added to the host cannot be left out
@@ -17,7 +63,7 @@ export async function stageRuntime({ root, destination, revision }) {
   )
   for (const path of [
     'package.json', ...modules,
-    'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm',
+    'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm', 'wasm/design-skill.md', 'skills/synapse-design-html',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/canvaskit',
     'web-bundle/assets/fonts', 'web-bundle/assets/iconify-catalog-core.json',
@@ -34,6 +80,7 @@ export async function stageRuntime({ root, destination, revision }) {
       if (error.code !== 'ENOENT') throw error
     }
   }
+  await stageScriptDependencies(runtime, destination, metadata.dependencies)
   await cp(join(root, 'LICENSE'), join(destination, 'LICENSE'))
   const { files } = await indexRuntimePayload(destination)
   const manifest = {

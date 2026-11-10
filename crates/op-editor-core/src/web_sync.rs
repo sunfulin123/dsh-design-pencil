@@ -669,9 +669,22 @@ impl WebSyncClient {
 /// can use an empty sentinel for "force next push".
 pub fn selection_sync_key(state: &crate::EditorState) -> String {
     let ids: Vec<&str> = state.selection.set.iter().map(|id| id.as_str()).collect();
+    let text = state
+        .current_text_selection()
+        .map(|range| {
+            format!(
+                "|text:{}:{}:{}:{}",
+                range.node_id.as_str(),
+                range.start,
+                range.end,
+                range.text
+            )
+        })
+        .unwrap_or_default();
     format!(
-        "sel:{}|page:{}",
+        "sel:{}{}|page:{}",
         ids.join(","),
+        text,
         active_page_id(state).unwrap_or_default()
     )
 }
@@ -682,10 +695,13 @@ pub fn selection_sync_key(state: &crate::EditorState) -> String {
 /// concept (it is the single document authority, not a relay cache).
 pub fn selection_push_body(state: &crate::EditorState) -> String {
     let ids: Vec<&str> = state.selection.set.iter().map(|id| id.as_str()).collect();
-    let body = serde_json::json!({
+    let mut body = serde_json::json!({
         "selectedIds": ids,
         "activePageId": active_page_id(state),
     });
+    if let Some(range) = state.current_text_selection() {
+        body["textRange"] = serde_json::json!({"nodeId": range.node_id.as_str(), "start": range.start, "end": range.end, "sourceText": range.text});
+    }
     serde_json::to_string(&body).unwrap_or_else(|_| r#"{"selectedIds":[]}"#.to_string())
 }
 

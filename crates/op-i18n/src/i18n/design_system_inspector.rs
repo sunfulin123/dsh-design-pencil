@@ -1,6 +1,34 @@
 //! Inspector strings shared by embedded and lazy locale catalogs.
 pub fn lookup(key: &str, chinese: bool) -> Option<&'static str> {
     let (en, zh) = match key {
+        "designSystem.modeLocal" => ("Layer", "本图层"),
+        "designSystem.modeInherited" => ("Inherited", "跟随"),
+        "textInspector.entireText" => ("Entire text box", "整个文本框"),
+        "textInspector.nextInput" => ("Next input", "后续输入"),
+        "designSystem.askAi" => ("Ask AI", "交给 AI"),
+        "designSystem.aiUnavailable" => (
+            "Open this design in DSH to use AI",
+            "请在 DSH 中打开设计以使用 AI",
+        ),
+        "textInspector.staleSelection" => (
+            "Text changed. Select it again before editing.",
+            "文字已更改，请重新选择后再修改。",
+        ),
+        "designSystem.advanced" => ("More settings · Design system", "更多设置 · 设计系统"),
+        "designSystem.advancedText" => ("More text settings", "更多文字设置"),
+        "textInspector.selectedText" => ("Selected text", "已选文字"),
+        "textInspector.mixed" => ("Mixed", "混合"),
+        "textInspector.selectCharacters" => (
+            "Select text on the canvas to edit its link",
+            "在画布中选中文字后修改链接",
+        ),
+        "designSystem.chooseStyle" => ("Select a style", "选择样式"),
+        "designSystem.chooseCollection" => ("Select a collection", "选择集合"),
+        "designSystem.chooseMode" => ("Select a mode", "选择模式"),
+        "designSystem.followParent" => ("Follow inherited mode", "跟随上级模式"),
+        "designSystem.noStyles" => ("No shared styles yet", "暂无共享样式"),
+        "designSystem.noCollections" => ("No collections yet", "暂无变量集合"),
+        "designSystem.singleMode" => ("Single mode", "单一模式"),
         "designSystem.styleId" => ("Style ID", "样式 ID"),
         "designSystem.variable" => ("Variable", "变量"),
         "designSystem.property" => ("Property path", "属性路径"),
@@ -20,6 +48,8 @@ pub fn lookup(key: &str, chinese: bool) -> Option<&'static str> {
         "designSystem.previousStyle" => ("Previous style", "上一个样式"),
         "designSystem.nextStyle" => ("Next style", "下一个样式"),
         "designSystem.capture" => ("Capture / update style", "捕获 / 更新样式"),
+        "designSystem.createStyle" => ("Create style", "新建样式"),
+        "designSystem.updateStyle" => ("Update style", "更新样式"),
         "designSystem.apply" => ("Apply", "应用"),
         "designSystem.detach" => ("Detach", "分离"),
         "designSystem.bind" => ("Bind", "绑定"),

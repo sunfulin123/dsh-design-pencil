@@ -290,6 +290,53 @@ fn styled_runs_paint_separate_slices_with_run_weight() {
 }
 
 #[test]
+fn edited_mixed_style_text_uses_painted_run_geometry_for_caret_and_hit() {
+    let mut node = text_node("AB中D");
+    node.font_size = 10.0;
+    node.bounds = Rect::xywh(0.0, 0.0, 200.0, 60.0);
+    node.text_runs = vec![
+        SceneTextRun {
+            font_size: 24.0,
+            font_family: Some("Georgia".into()),
+            ..run(0, 2)
+        },
+        run(2, "AB中D".len()),
+    ];
+    let mut input = jian_core::text_input::TextInputState::with_text("AB中D");
+    input.set_caret(2, 0);
+    input.drag_to("AB中".len(), 0);
+    let edit = EditCaret {
+        editing: "t".into(),
+        input,
+        now_ms: 0,
+        selection_color: Color::BLUE,
+    };
+    let mut backend = CaptureBackend {
+        responsive_metrics: true,
+        ..Default::default()
+    };
+    paint_text_node(
+        &mut PaintCx {
+            backend: &mut backend,
+        },
+        &node,
+        node.bounds,
+        1.0,
+        &Some(edit),
+    );
+    assert_eq!(backend.contents, ["AB", "中D"]);
+    let second_run_x = backend.origins[1].x;
+    let layout = crate::widgets::canvas_text_edit::text_edit_layout(&mut backend, &node);
+    let (caret_x, caret_y) = layout.caret_position(&mut backend, 2);
+    assert!((caret_x - second_run_x).abs() < 0.01);
+    assert_eq!(
+        layout.offset_at_point(&mut backend, Point2D::new(caret_x + 0.1, caret_y + 1.0)),
+        2
+    );
+    assert!((backend.round_rects[0].origin.x - caret_x).abs() < 0.01);
+}
+
+#[test]
 fn styled_wrap_uses_run_family_and_size_without_overlapping_line_boxes() {
     let mut node = text_node("X yy");
     node.font_family = "Inter".into();

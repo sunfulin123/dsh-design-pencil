@@ -65,6 +65,7 @@ function __snapFontSize(val) {
 function __normalizeAestheticProps(obj, isPatch) {
   if (__preserveAuthoredGeometry === true) return obj;
   if (obj == null || typeof obj !== "object" || Array.isArray(obj)) return obj;
+  if (isPatch) return Object.assign({}, obj);
   var out = Object.assign({}, obj);
   if (__hasOwn(out, "gap") && typeof out.gap === "number") {
     out.gap = __snapSpacingValue(out.gap);

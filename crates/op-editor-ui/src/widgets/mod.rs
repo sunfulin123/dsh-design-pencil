@@ -92,6 +92,7 @@ pub(crate) mod property_panel_design_system;
 mod property_panel_design_system_tests;
 pub mod property_panel_dispatch;
 pub mod property_panel_dispatch_support;
+mod property_panel_effect_dispatch;
 pub mod property_panel_effects;
 pub mod property_panel_export;
 #[cfg(test)]

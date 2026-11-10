@@ -43,6 +43,8 @@ mod builders;
 mod hit_test;
 #[path = "canvas_viewport/overlays.rs"]
 mod overlays;
+#[path = "canvas_viewport/root_boundaries.rs"]
+mod root_boundaries;
 
 #[cfg(test)]
 use builders::generating_label_text;
@@ -131,6 +133,10 @@ pub struct CanvasViewport<'a> {
     /// carries no node names); painted screen-space above each root
     /// frame (TS `drawFrameLabelColored`).
     pub(super) frame_labels: Vec<FrameLabel>,
+    /// Editor-only root boundaries, excluded from scene exports and previews.
+    pub(super) show_root_boundaries: bool,
+    /// Generated device shells and their page form one visual boundary.
+    pub(super) device_frame_pair: Option<(String, String)>,
     /// Bounded collaboration cursor/selection projection. It is painted
     /// below the local selection overlay, so local edit affordances remain
     /// visually authoritative.
@@ -214,7 +220,7 @@ impl<'a> Widget for CanvasViewport<'a> {
                 .iter()
                 .map(|label| {
                     let mut label = label.clone();
-                    if label.id == hovered {
+                    if label.target_id == hovered {
                         label.color = self.theme.primary;
                     }
                     label
@@ -330,6 +336,16 @@ impl<'a> Widget for CanvasViewport<'a> {
                 )
             };
             paint_hits.merge_missing(child_hits);
+            if self.show_root_boundaries {
+                root_boundaries::paint(
+                    cx,
+                    &page.children,
+                    &self.selected_set,
+                    self.device_frame_pair.as_ref(),
+                    viewport_origin,
+                    viewport.zoom,
+                );
+            }
             if let Some(overlay) = self.node_drag_overlay.as_ref() {
                 if let Some(node) = page.find(overlay.node_id.as_str()) {
                     let mut floating = node.clone();

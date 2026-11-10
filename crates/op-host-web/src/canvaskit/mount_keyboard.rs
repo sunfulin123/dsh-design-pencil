@@ -307,6 +307,11 @@ pub(super) fn register_keyboard_listeners(
                 evt.prevent_default();
                 crate::repaint_coalescer::request();
             }
+            drop(b);
+            crate::live_sync_glue::flush_selection_if_changed(&inner);
+            if consumed {
+                crate::live_sync_glue::flush_document_if_changed(&inner);
+            }
         })?;
     }
 

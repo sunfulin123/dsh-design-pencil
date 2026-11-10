@@ -78,6 +78,7 @@ pub enum EffectAddMenuHit {
 }
 
 pub struct PropertyPanel {
+    pub position_advanced: bool,
     pub component_inspector: Option<crate::widgets::property_panel_components::ComponentInspector>,
     pub design_system_inspector:
         op_editor_core::design_system_inspector_draft::DesignSystemInspectorDraft,
@@ -327,7 +328,7 @@ impl PropertyPanel {
         base + self.component_inspector.as_ref().map_or(0.0, |model| {
             crate::widgets::property_panel_components::height(model, self.locale)
         }) + if !self.is_multi {
-            crate::widgets::property_panel_design_system::HEIGHT
+            crate::widgets::property_panel_design_system::height(&self.design_system_inspector)
         } else {
             0.0
         }
@@ -370,7 +371,7 @@ impl PropertyPanel {
             scrolled.origin.x,
             scrolled.origin.y + base + component_height,
             scrolled.size.x,
-            crate::widgets::property_panel_design_system::HEIGHT,
+            crate::widgets::property_panel_design_system::height(&self.design_system_inspector),
         ))
     }
 
@@ -389,6 +390,20 @@ impl PropertyPanel {
             self.export_format_picker_open,
             self.padding_mode_popover_open,
         );
+        if self.snapshot.can_preview_screen {
+            let scrolled = self.scrolled_rect(panel_rect);
+            actions.push((
+                PropertyPanelAction::TogglePreviewAsScreen,
+                Rect::xywh(
+                    scrolled.origin.x + scrolled.size.x
+                        - crate::widgets::property_panel_inputs::PAD_X
+                        - 110.0,
+                    scrolled.origin.y + crate::widgets::property_panel_inputs::TAB_HEIGHT + 5.0,
+                    60.0,
+                    24.0,
+                ),
+            ));
+        }
         if let (Some(model), Some(bounds)) = (
             &self.component_inspector,
             self.component_inspector_rect(panel_rect),
@@ -404,6 +419,7 @@ impl PropertyPanel {
                 bounds.origin.x,
                 bounds.origin.y,
                 bounds.size.x - crate::widgets::property_panel_inputs::PAD_X * 2.0,
+                &self.design_system_inspector,
             ));
         }
         actions
@@ -440,6 +456,7 @@ impl PropertyPanel {
             size_hug_height: self.snapshot.size_hug_height,
             clip_content: self.snapshot.can_clip_content,
             text: self.snapshot.text.is_some(),
+            text_advanced: self.text_inspector.expanded,
             icon: self.snapshot.icon.is_some(),
             widget: self.snapshot.widget.as_ref().map(|w| w.kind),
             widget_checked: self.snapshot.widget.as_ref().is_some_and(|w| w.checked),
@@ -452,6 +469,7 @@ impl PropertyPanel {
                     .is_some_and(|v| v.warning.is_some()),
             opacity: caps.opacity,
             compositing: !self.is_multi,
+            position_advanced: self.position_advanced,
             corner_radius: self.snapshot.has_corner_radius,
             corner_per_corner: self.snapshot.supports_per_corner,
             corner_expand: self.corner_expand_open,

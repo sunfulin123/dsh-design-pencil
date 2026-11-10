@@ -19,6 +19,11 @@ use crate::widgets::PaintCx;
 use crate::{Point2D, Rect, TextLayout};
 use op_editor_core::PropertyFocus;
 
+#[path = "property_panel_text_summary.rs"]
+mod selection_summary;
+#[path = "property_panel_text_format.rs"]
+mod text_format;
+
 const FAMILY_ROW_GAP: f32 = 6.0;
 const CONTENT_ROW_GAP: f32 = 8.0;
 const FORMAT_ROW_GAP: f32 = 6.0;
@@ -43,10 +48,10 @@ pub(crate) fn text_layout_block_height(touch_controls: bool) -> f32 {
     SECTION_HEADER_HEIGHT + text_button_height(touch_controls) + 12.0
 }
 
-pub fn text_section_height(touch_controls: bool) -> f32 {
+pub fn text_section_height(touch_controls: bool, expanded: bool) -> f32 {
     base_text_section_height(touch_controls)
         + SECTION_GAP
-        + crate::widgets::property_panel_text_design::HEIGHT
+        + crate::widgets::property_panel_text_design::height(expanded)
 }
 
 fn base_text_section_height(touch_controls: bool) -> f32 {
@@ -78,6 +83,7 @@ pub fn push_text_input_rects(
     y: f32,
     usable_w: f32,
     touch_controls: bool,
+    expanded: bool,
 ) {
     let button_h = text_button_height(touch_controls);
     let half_w = (usable_w - 8.0) / 2.0;
@@ -123,6 +129,7 @@ pub fn push_text_input_rects(
             + base_text_section_height(touch_controls)
             + SECTION_GAP,
         usable_w,
+        expanded,
     );
 }
 
@@ -131,6 +138,7 @@ pub fn text_action_rects(
     y: f32,
     usable_w: f32,
     touch_controls: bool,
+    expanded: bool,
 ) -> Vec<(PropertyPanelAction, Rect)> {
     let mut out = Vec::new();
     let button_h = text_button_height(touch_controls);
@@ -254,44 +262,14 @@ pub fn text_action_rects(
         x0,
         growth_y - SECTION_HEADER_HEIGHT + base_text_section_height(touch_controls) + SECTION_GAP,
         usable_w,
+        expanded,
     ));
     out
 }
 
-/// Dropdown rows for the weight picker — opens below the left-half
-/// weight trigger of the weight/size row.
-pub fn font_weight_picker_action_rects(
-    x0: f32,
-    y: f32,
-    usable_w: f32,
-    touch_controls: bool,
-) -> Vec<(PropertyPanelAction, Rect)> {
-    // Full-width rows so the "number + name" labels (e.g. "800 Extra
-    // Bold") fit; the trigger sits on the left half but a dropdown may
-    // be wider than its trigger.
-    let weight_y = y
-        + text_layout_block_height(touch_controls)
-        + SECTION_HEADER_HEIGHT
-        + INPUT_HEIGHT
-        + CONTENT_ROW_GAP
-        + INPUT_HEIGHT
-        + FAMILY_ROW_GAP
-        + INPUT_HEIGHT
-        + 4.0;
-    FontWeightChoice::ALL
-        .into_iter()
-        .enumerate()
-        .map(|(i, choice)| {
-            (
-                PropertyPanelAction::SetFontWeight(choice),
-                Rect {
-                    origin: Point2D::new(x0 + PAD_X, weight_y + i as f32 * 28.0),
-                    size: Point2D::new(usable_w, 28.0),
-                },
-            )
-        })
-        .collect()
-}
+#[path = "property_panel_text_weight_geometry.rs"]
+mod weight_geometry;
+pub use weight_geometry::font_weight_picker_action_rects;
 
 #[allow(clippy::too_many_arguments)]
 pub fn paint_text_section(
@@ -323,7 +301,16 @@ pub fn paint_text_section(
     let mut y = paint_section_label(
         cx,
         theme,
-        op_i18n::translate(locale, "text.typography"),
+        op_i18n::translate(
+            locale,
+            if inspector.selected_text {
+                "textInspector.selectedText"
+            } else if inspector.insertion {
+                "textInspector.nextInput"
+            } else {
+                "textInspector.entireText"
+            },
+        ),
         x,
         y,
         width,
@@ -340,7 +327,13 @@ pub fn paint_text_section(
         theme,
         content_rect,
         "T",
-        edit.value_for(PropertyFocus::TextContent, &text.content),
+        edit.value_for(
+            PropertyFocus::TextContent,
+            inspector
+                .selected_content
+                .as_deref()
+                .unwrap_or(&text.content),
+        ),
         edit.focus == Some(PropertyFocus::TextContent),
         edit.caret_at(PropertyFocus::TextContent),
         edit.select_all_at(PropertyFocus::TextContent),
@@ -372,7 +365,7 @@ pub fn paint_text_section(
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(usable_w, INPUT_HEIGHT),
     };
-    let family_name = display_font_family(&text.font_family);
+    let family_name = selection_summary::family(text, inspector, locale);
     crate::widgets::property_panel_text_input::paint_text_dropdown_trigger(
         cx,
         theme,
@@ -387,10 +380,7 @@ pub fn paint_text_section(
         origin: Point2D::new(x + PAD_X, y),
         size: Point2D::new(half_w, INPUT_HEIGHT),
     };
-    let weight_label = op_i18n::translate(
-        locale,
-        FontWeightChoice::nearest(text.font_weight).label_key(),
-    );
+    let weight_label = selection_summary::weight(text, inspector, locale);
     crate::widgets::property_panel_text_input::paint_text_dropdown_trigger(
         cx,
         theme,
@@ -398,7 +388,7 @@ pub fn paint_text_section(
         weight_label,
         "system-ui",
     );
-    let font_size = format_panel_number(text.font_size);
+    let font_size = selection_summary::size(text, inspector, locale);
     paint_input_with_prefix_focused_state(
         cx,
         theme,
@@ -416,50 +406,17 @@ pub fn paint_text_section(
     );
     y += INPUT_HEIGHT + FORMAT_ROW_GAP;
 
-    // Formatting toolbar row: Bold (B), Italic (I), Underline (U), Strikethrough (S).
-    let button_h = text_button_height(touch_controls);
-    let fmt_w = usable_w / 4.0;
-    let fmt_track = Rect {
-        origin: Point2D::new(x + PAD_X, y),
-        size: Point2D::new(usable_w, button_h),
-    };
-    cx.backend
-        .fill_round_rect(fmt_track, INPUT_RADIUS, theme.muted);
-    cx.backend
-        .stroke_round_rect(fmt_track, INPUT_RADIUS, theme.border, 1.0);
-    for (i, (icon, is_on)) in [
-        (Icon::Bold, text.font_weight >= 600),
-        (Icon::Italic, text.italic),
-        (Icon::Underline, text.underline),
-        (Icon::Strikethrough, text.strikethrough),
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let cell = Rect {
-            origin: Point2D::new(x + PAD_X + i as f32 * fmt_w + 2.0, y + 2.0),
-            size: Point2D::new((fmt_w - 4.0).max(0.0), (button_h - 4.0).max(0.0)),
-        };
-        if is_on {
-            cx.backend.fill_round_rect(cell, 4.0, theme.background);
-        }
-        draw_icon(
-            cx.backend,
-            icon,
-            Point2D::new(
-                cell.origin.x + (cell.size.x - 14.0) / 2.0,
-                cell.origin.y + (cell.size.y - 14.0) / 2.0,
-            ),
-            14.0,
-            if is_on {
-                theme.primary
-            } else {
-                theme.muted_foreground
-            },
-            1.6,
-        );
-    }
-    y += button_h + 6.0;
+    y = text_format::paint(
+        cx,
+        theme,
+        text,
+        inspector,
+        locale,
+        x,
+        y,
+        usable_w,
+        touch_controls,
+    );
 
     // Caption row — 行高 (left) / 字间距 (right), small muted labels
     // above the inputs (TS `text-[9px] justify-between`).
@@ -557,179 +514,6 @@ pub(crate) use crate::widgets::property_panel_typography::{
     font_weight_picker_rect, sections_top_before_text, text_section_top,
 };
 
-#[allow(clippy::too_many_arguments)]
-fn paint_text_growth_row(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    locale: op_editor_core::Locale,
-    x: f32,
-    y: f32,
-    width: f32,
-    active: TextGrowthValue,
-    touch_controls: bool,
-) -> f32 {
-    let usable_w = width - PAD_X * 2.0;
-    let specs = [
-        (TextGrowthValue::Auto, "textLayout.autoWidth"),
-        (TextGrowthValue::FixedWidth, "textLayout.autoHeight"),
-        (TextGrowthValue::FixedWidthHeight, "textLayout.fixed"),
-    ];
-    let labels: Vec<&str> = specs
-        .iter()
-        .map(|(_, key)| op_i18n::translate(locale, key))
-        .collect();
-    let active_idx = specs.iter().position(|(v, _)| *v == active).unwrap_or(0);
-    jian_widgets::components::toggle_group::ToggleGroup {
-        options: &labels,
-        icons: None,
-        active: active_idx,
-        hover: None,
-        font_size: 10.0,
-    }
-    .paint(
-        cx.backend,
-        Rect {
-            origin: Point2D::new(x + PAD_X, y),
-            size: Point2D::new(usable_w, text_button_height(touch_controls)),
-        },
-        &crate::widgets::button::tokens_from_theme(theme),
-    );
-    y + text_button_height(touch_controls)
-}
-
-#[allow(clippy::too_many_arguments)]
-fn paint_horizontal_align_row(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    locale: op_editor_core::Locale,
-    x: f32,
-    y: f32,
-    width: f32,
-    active: TextAlignValue,
-    touch_controls: bool,
-) -> f32 {
-    paint_align_row(
-        cx,
-        theme,
-        locale,
-        x,
-        y,
-        width,
-        "text.horizontal",
-        &H_ALIGN_SPECS,
-        active,
-        touch_controls,
-    )
-}
-
-#[allow(clippy::too_many_arguments)]
-fn paint_vertical_align_row(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    locale: op_editor_core::Locale,
-    x: f32,
-    y: f32,
-    width: f32,
-    active: TextVerticalAlignValue,
-    touch_controls: bool,
-) -> f32 {
-    paint_align_row(
-        cx,
-        theme,
-        locale,
-        x,
-        y,
-        width,
-        "text.vertical",
-        &V_ALIGN_SPECS,
-        active,
-        touch_controls,
-    )
-}
-
-#[allow(clippy::too_many_arguments)]
-fn paint_align_row<T: Copy + PartialEq>(
-    cx: &mut PaintCx<'_>,
-    theme: &Theme,
-    locale: op_editor_core::Locale,
-    x: f32,
-    y: f32,
-    width: f32,
-    label_key: &'static str,
-    specs: &[AlignButtonSpec<T>],
-    active: T,
-    touch_controls: bool,
-) -> f32 {
-    let label = TextLayout::single_run(
-        op_i18n::translate(locale, label_key),
-        "system-ui",
-        11.0,
-        (theme.muted_foreground).to_jian(),
-        Point2D::new(0.0, 0.0),
-    );
-    cx.backend
-        .draw_text(&label, Point2D::new(x + PAD_X, y + 13.0));
-    let y = y + ALIGN_LABEL_H;
-    let usable_w = width - PAD_X * 2.0;
-    // Icon-only segmented control via jian ToggleGroup; font_size 12 yields a
-    // 16px icon (font + 4), matching the previous hand-rolled cells.
-    let empty_labels: Vec<&str> = specs.iter().map(|_| "").collect();
-    let icon_paths: Vec<&[&str]> = specs.iter().map(|s| s.icon.paths()).collect();
-    let active_idx = specs.iter().position(|s| s.value == active).unwrap_or(0);
-    jian_widgets::components::toggle_group::ToggleGroup {
-        options: &empty_labels,
-        icons: Some(&icon_paths),
-        active: active_idx,
-        hover: None,
-        font_size: 12.0,
-    }
-    .paint(
-        cx.backend,
-        Rect {
-            origin: Point2D::new(x + PAD_X, y),
-            size: Point2D::new(usable_w, text_button_height(touch_controls)),
-        },
-        &crate::widgets::button::tokens_from_theme(theme),
-    );
-    y + text_button_height(touch_controls)
-}
-
-#[derive(Clone, Copy)]
-struct AlignButtonSpec<T> {
-    value: T,
-    icon: Icon,
-}
-
-const H_ALIGN_SPECS: [AlignButtonSpec<TextAlignValue>; 4] = [
-    AlignButtonSpec {
-        value: TextAlignValue::Left,
-        icon: Icon::AlignLeft,
-    },
-    AlignButtonSpec {
-        value: TextAlignValue::Center,
-        icon: Icon::AlignCenterH,
-    },
-    AlignButtonSpec {
-        value: TextAlignValue::Right,
-        icon: Icon::AlignRight,
-    },
-    AlignButtonSpec {
-        value: TextAlignValue::Justify,
-        icon: Icon::AlignCenterH,
-    },
-];
-
-const V_ALIGN_SPECS: [AlignButtonSpec<TextVerticalAlignValue>; 3] = [
-    AlignButtonSpec {
-        value: TextVerticalAlignValue::Top,
-        icon: Icon::AlignTop,
-    },
-    AlignButtonSpec {
-        value: TextVerticalAlignValue::Middle,
-        icon: Icon::AlignCenterV,
-    },
-    AlignButtonSpec {
-        value: TextVerticalAlignValue::Bottom,
-        icon: Icon::AlignBottom,
-    },
-];
+#[path = "property_panel_text_alignment.rs"]
+mod alignment;
+use alignment::{paint_horizontal_align_row, paint_text_growth_row, paint_vertical_align_row};

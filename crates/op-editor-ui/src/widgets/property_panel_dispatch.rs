@@ -86,6 +86,11 @@ pub fn apply_property_action(
     use PropertyActionOutcome::{FollowUp, Handled, HostOwned};
     use PropertyPanelAction as A;
     match action {
+        A::CopySharedStyleId => HostOwned,
+        A::TogglePositionAdvanced => {
+            state.ui.position_advanced = !state.ui.position_advanced;
+            Handled
+        }
         A::DesignSystem(_) => {
             debug_assert!(crate::widgets::property_panel_design_system::is_action(
                 action
@@ -97,7 +102,8 @@ pub fn apply_property_action(
             crate::widgets::property_panel_components::dispatch(state, action, ctx.now_ms);
             Handled
         }
-        A::ApplyTextMarkdown
+        A::ToggleTextAdvanced
+        | A::ApplyTextMarkdown
         | A::ApplyTextRange
         | A::ApplyTextParagraph
         | A::SetTextTruncation(_)
@@ -191,40 +197,11 @@ pub fn apply_property_action(
             layout_ops::set_selected_layout_mode(state, *mode);
             Handled
         }
-        A::ToggleSizeFillWidth => {
-            layout_ops::toggle_selected_sizing(
-                state,
-                true,
-                jian_ops_schema::sizing::SizingKeyword::FillContainer,
-                ctx.resolved_sizing_fallback,
-            );
-            Handled
-        }
-        A::ToggleSizeFillHeight => {
-            layout_ops::toggle_selected_sizing(
-                state,
-                false,
-                jian_ops_schema::sizing::SizingKeyword::FillContainer,
-                ctx.resolved_sizing_fallback,
-            );
-            Handled
-        }
-        A::ToggleSizeHugWidth => {
-            layout_ops::toggle_selected_sizing(
-                state,
-                true,
-                jian_ops_schema::sizing::SizingKeyword::FitContent,
-                ctx.resolved_sizing_fallback,
-            );
-            Handled
-        }
-        A::ToggleSizeHugHeight => {
-            layout_ops::toggle_selected_sizing(
-                state,
-                false,
-                jian_ops_schema::sizing::SizingKeyword::FitContent,
-                ctx.resolved_sizing_fallback,
-            );
+        A::ToggleSizeFillWidth
+        | A::ToggleSizeFillHeight
+        | A::ToggleSizeHugWidth
+        | A::ToggleSizeHugHeight => {
+            layout_ops::toggle_sizing_action(state, action, ctx.resolved_sizing_fallback);
             Handled
         }
         A::ToggleSizeClipContent => {
@@ -601,32 +578,12 @@ pub fn apply_property_action(
             state.editor_ui.close_effect_add_picker();
             Handled
         }
-        A::SetEffectVisible(index, visible) => {
-            let _ = state.set_selected_effect_visible(*index, *visible);
-            Handled
-        }
-        A::RemoveEffect(index) => {
-            let _ = state.remove_selected_effect(*index);
-            Handled
-        }
-        A::AdjustEffectParam {
-            effect,
-            field,
-            new_value,
-        } => {
-            let id = state.selection.anchor.clone();
-            if id.is_real() {
-                if ctx.effect_radius_drag.is_none() {
-                    state.commit_history();
-                }
-                *ctx.effect_radius_drag = Some(*effect);
-                let _ = state.apply(op_editor_core::EditorCommand::SetEffectParam {
-                    node_id: id,
-                    index: *effect as u32,
-                    field: *field,
-                    value: *new_value,
-                });
-            }
+        A::SetEffectVisible(_, _) | A::RemoveEffect(_) | A::AdjustEffectParam { .. } => {
+            crate::widgets::property_panel_effect_dispatch::apply(
+                state,
+                action,
+                ctx.effect_radius_drag,
+            );
             Handled
         }
         // The seeding half is shared (`focus_effect_param`), but the
@@ -664,7 +621,8 @@ pub fn apply_property_action(
         | A::ToggleTextUnderline
         | A::ToggleTextStrikethrough
         | A::ToggleNodeVisible
-        | A::ToggleNodeLocked => apply_node_text_and_interaction_action(state, action),
+        | A::ToggleNodeLocked
+        | A::TogglePreviewAsScreen => apply_node_text_and_interaction_action(state, action),
         // Image Search / Generate popovers ride host-owned selection
         // drag + input-blur glue.
         A::ToggleImageSearchPopover

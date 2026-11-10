@@ -93,6 +93,29 @@ pub(super) const fn auto_resolve_is_safe(
     has_conflict && (server_authoritative || matches!(phase, CollabConnectionPhase::Active))
 }
 
+/// An embedding host owns conflict recovery; never discard its pending local state.
+pub(super) const fn auto_resolve_for_shell(
+    has_conflict: bool,
+    phase: CollabConnectionPhase,
+    server_authoritative: bool,
+    host_controls_conflict: bool,
+) -> bool {
+    !host_controls_conflict && auto_resolve_is_safe(has_conflict, phase, server_authoritative)
+}
+
+pub(super) fn host_auto_resolve_is_safe(
+    has_conflict: bool,
+    phase: CollabConnectionPhase,
+    server_authoritative: bool,
+) -> bool {
+    auto_resolve_for_shell(
+        has_conflict,
+        phase,
+        server_authoritative,
+        crate::web_clipboard::is_vscode_embed(),
+    )
+}
+
 /// Whether the daemon this shell talks to is the sole sequencer for the
 /// document.
 ///
@@ -168,6 +191,28 @@ mod auto_resolve_tests {
     use super::*;
 
     use op_editor_core::CollabConnectionPhase;
+
+    #[test]
+    fn hosted_editor_keeps_conflicting_local_changes_until_host_resolution() {
+        assert!(!auto_resolve_for_shell(
+            true,
+            CollabConnectionPhase::Idle,
+            true,
+            true,
+        ));
+        assert!(!auto_resolve_for_shell(
+            true,
+            CollabConnectionPhase::Active,
+            true,
+            true,
+        ));
+        assert!(auto_resolve_for_shell(
+            true,
+            CollabConnectionPhase::Idle,
+            true,
+            false,
+        ));
+    }
 
     #[test]
     fn a_conflict_inside_an_active_session_resolves_itself() {

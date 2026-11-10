@@ -24,6 +24,41 @@ fn generating_label_text_prefixes_active_frame_names() {
 }
 
 #[test]
+fn generated_device_title_targets_the_real_screen_at_multiple_zooms() {
+    let document = jian_ops_schema::load_str(r#"{"version":"1.0.0","children":[
+        {"type":"frame","id":"screen","name":"Support chat","x":100,"y":80,"width":600,"height":400},
+        {"type":"frame","id":"synapse-device-frame","name":"Synapse Device Frame · Browser","locked":true,"x":100,"y":40,"width":600,"height":440}
+    ]}"#).unwrap().value;
+    let mut state = EditorState::from_document(document);
+    let mut screen = SceneNode::leaf("screen", NodeKind::Frame);
+    screen.bounds = Rect::xywh(100.0, 80.0, 600.0, 400.0);
+    let mut shell = SceneNode::leaf("synapse-device-frame", NodeKind::Frame);
+    shell.bounds = Rect::xywh(100.0, 40.0, 600.0, 440.0);
+    let scene = LayoutScene {
+        pages: vec![ScenePage {
+            id: "page".into(),
+            name: "page".into(),
+            children: vec![screen, shell],
+        }],
+        active_page_index: 0,
+    };
+    for zoom in [0.5, 1.0, 2.0] {
+        state.viewport.zoom = zoom;
+        let viewport = CanvasViewport::from_editor(&state, &scene);
+        assert_eq!(viewport.frame_labels.len(), 1);
+        assert_eq!(viewport.frame_labels[0].text, "Support chat");
+        assert_eq!(viewport.frame_labels[0].target_id, "screen");
+        assert_eq!(
+            viewport.frame_label_at_point(
+                Rect::xywh(0.0, 0.0, 2000.0, 1500.0),
+                Point2D::new(100.0 * zoom + 10.0, 40.0 * zoom - 10.0)
+            ),
+            Some("screen".into())
+        );
+    }
+}
+
+#[test]
 fn frame_label_paint_uses_top_level_scene_nodes() {
     let _guard = crate::agent_indicator_test_support::lock();
     op_editor_core::agent_indicators::clear();

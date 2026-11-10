@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -81,6 +82,58 @@ test('imported Markdown is queryable from both MCP and API after host restart', 
   assert.equal(guide.structuredContent.content, markdown);
   const listed = await call(reopened, 'list_style_guides', { id: asset.id });
   assert.equal(listed.structuredContent.guides[0].content, markdown);
+});
+
+test('OP guidance selects from the live catalogue and injects the complete selected design', async (t) => {
+  const { host } = await fixture(t);
+  const markdown = '# My distinctive brand\n\nUse a violet accent #6123ab and generous spacing.';
+  const saved = await call(host, 'import_design_md', { name: 'My Brand', markdown });
+  const { id } = saved.structuredContent.asset;
+  const pending = await call(host, 'plan_design_style', { userMessage: '设计一个应用', taskKind: 'new' });
+  assert.equal(pending.structuredContent.decision, 'ask_user');
+  assert.equal(pending.structuredContent.recommendedId, 'talkdesk-cobalt');
+  const importedPreview = pending.structuredContent.candidates.find((item) => item.id === id);
+  assert.ok(importedPreview.swatches.some((color) => color.toLowerCase() === '#6123ab'));
+  assert.equal(importedPreview.category ?? 'uncategorized', 'uncategorized');
+  assert.equal(importedPreview.contentHash, createHash('sha256').update(markdown).digest('hex'));
+  const builtinPreview = pending.structuredContent.candidates.find((item) => item.id === 'talkdesk-cobalt');
+  assert.ok(builtinPreview.swatches.length > 0);
+  assert.equal(typeof builtinPreview.summary, 'string');
+  assert.equal(JSON.stringify(pending).includes(markdown), false);
+  const canvas = await call(host, 'plan_design_canvas', { userMessage: '你决定', context: '设计手机应用' });
+  assert.equal(canvas.isError, false, JSON.stringify(canvas));
+  assert.equal(canvas.structuredContent.canvas.platform, 'mobile');
+  const selected = await call(host, 'plan_design_style', { userMessage: '使用 My Brand 风格', taskKind: 'new' });
+  assert.equal(selected.structuredContent.guideId, id);
+  const prompt = await call(host, 'get_design_agent_prompt', {
+    userMessage: '设计一个应用', mode: 'full', styleId: id,
+    expectedRevision: pending.structuredContent.catalogRevision,
+  });
+  assert.equal(prompt.isError, false, JSON.stringify(prompt));
+  assert.equal(prompt.structuredContent.style.id, id);
+  assert.ok(prompt.structuredContent.prompt.includes(markdown));
+  assert.ok(prompt.structuredContent.prompt.includes('three-layer context funnel'));
+  assert.equal((await call(host, 'set_design_md', { markdown })).isError, false);
+  const inherited = await call(host, 'get_design_agent_prompt', {
+    userMessage: '缩小卡片', mode: 'local', useDocumentStyle: true,
+  });
+  assert.equal(inherited.isError, false, JSON.stringify(inherited));
+  assert.ok(inherited.structuredContent.prompt.includes(markdown));
+  assert.equal(inherited.structuredContent.style.source, 'document');
+  const caps = await call(host, 'get_design_capabilities');
+  assert.equal(caps.structuredContent.version, 1);
+  assert.equal(caps.structuredContent.tools.find((item) => item.name === 'import_design_md').access, 'sensitive');
+  assert.equal(caps.structuredContent.tools.find((item) => item.name === 'set_text_style').access, 'document-write');
+  await call(host, 'rename_style_guide', { id, name: 'Updated Brand', expectedRevision: 1 });
+  const stale = await call(host, 'get_design_agent_prompt', {
+    userMessage: '设计一个应用', styleId: id, expectedRevision: 1,
+  });
+  assert.equal(stale.isError, true);
+  assert.equal(stale.structuredContent.error, 'asset-conflict');
+  const invalidRevision = await call(host, 'get_style_guide', { name: 'Updated Brand', expectedRevision: 1 });
+  assert.equal(invalidRevision.isError, true);
+  const missing = await call(host, 'get_design_agent_prompt', { userMessage: '设计', styleId: 'missing' });
+  assert.equal(missing.isError, true);
 });
 
 test('asset updates require current revisions and deleting assets does not change designs', async (t) => {
@@ -186,6 +239,8 @@ test('all 84 DESIGN.md guides ship as immutable builtins beside Cobalt and templ
   const guides = list.structuredContent.guides;
   assert.equal(guides[0].id, 'talkdesk-cobalt');
   assert.equal(guides.filter((g) => g.id.startsWith('design-md:')).length, 84);
+  assert.ok(guides.every((g) => typeof g.category === 'string' && g.category.length > 0));
+  assert.ok(guides.every((g) => /^[a-f0-9]{64}$/.test(g.contentHash)));
   assert.ok(guides.every((g) => g.isUser === false));
   assert.ok(!guides.some((g) => g.id === 'design-md:talkdesk'));
   const { readFile } = await import('node:fs/promises');

@@ -6,6 +6,11 @@ pub const FIELD_COUNT: usize = 13;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TextInspectorDraft {
+    pub expanded: bool,
+    pub selected_text: bool,
+    pub insertion: bool,
+    pub selected_content: Option<String>,
+    pub selection_style: Option<crate::text_selection::TextSelectionStyle>,
     /// Captured by action routing before a host opens its instance-write scope.
     pub authored_blocked: bool,
     pub target: String,
@@ -23,6 +28,11 @@ pub struct TextInspectorDraft {
 impl Default for TextInspectorDraft {
     fn default() -> Self {
         Self {
+            expanded: false,
+            selected_text: false,
+            insertion: false,
+            selected_content: None,
+            selection_style: None,
             authored_blocked: false,
             target: String::new(),
             values: std::array::from_fn(|i| match i {
@@ -66,11 +76,34 @@ impl TextInspectorDraft {
 
     pub fn for_state(state: &EditorState) -> Self {
         let id = state.selection.anchor.as_str();
+        let range = state.current_text_selection();
+        let selected_text = range.is_some();
+        let insertion = state.current_text_insertion().is_some();
+        let selected_content = range
+            .map(|range| {
+                range
+                    .text
+                    .chars()
+                    .skip(range.start)
+                    .take(range.end - range.start)
+                    .collect()
+            })
+            .or_else(|| insertion.then(String::new));
         if state.ui.text_inspector.target == id {
-            return state.ui.text_inspector.clone();
+            let mut draft = state.ui.text_inspector.clone();
+            draft.selected_text = selected_text;
+            draft.insertion = insertion;
+            draft.selected_content = selected_content;
+            draft.selection_style = state.selected_text_style();
+            return draft;
         }
         let mut draft = Self {
             target: id.into(),
+            expanded: state.ui.text_inspector.expanded,
+            selected_text,
+            insertion,
+            selected_content,
+            selection_style: state.selected_text_style(),
             ..Self::default()
         };
         if let Some(text) = state

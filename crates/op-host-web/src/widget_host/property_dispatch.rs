@@ -155,6 +155,10 @@ impl WidgetHost {
     fn apply_host_property_action(&mut self, action: PropertyPanelAction) {
         use PropertyPanelAction as A;
         match action {
+            A::CopySharedStyleId => {
+                #[cfg(feature = "canvaskit")]
+                self.host_copy_text(&self.editor_state.ui.design_system_inspector.values[0]);
+            }
             A::MatchImageAspectRatio => self.match_selected_image_aspect_ratio(),
             A::ToggleImageSearchPopover => self.toggle_image_search_popover(),
             A::ToggleImageGeneratePopover => self.toggle_image_generate_popover(),

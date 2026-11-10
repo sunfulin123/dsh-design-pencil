@@ -8,6 +8,7 @@
     "email": "xkayshen@gmail.com"
   },
   "workspaces": [
+    "dsh-node-runtime",
     "op-vscode",
     "op-web-sdk",
     "op-web-sdk-react",

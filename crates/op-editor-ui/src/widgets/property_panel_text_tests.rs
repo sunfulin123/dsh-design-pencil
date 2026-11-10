@@ -76,6 +76,7 @@ fn color_close(a: Color, b: Color) -> bool {
 #[test]
 fn focused_property_field_paints_text_input_state() {
     let mut state = EditorState::sample();
+    state.ui.position_advanced = true;
     state.ui.property_focus = Some(PropertyFocus::PositionX);
     state.ui.property_input.set_text("1234");
     state.ui.property_input.set_caret("1234".len(), 0);
@@ -355,6 +356,7 @@ fn overflowing_fill_and_stroke_variable_inputs_truncate_with_ellipsis() {
             0,
             Color::WHITE,
             Some(var_name),
+            None,
             true,
             0.0,
             0.0,

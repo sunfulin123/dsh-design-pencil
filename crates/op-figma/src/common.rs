@@ -278,6 +278,7 @@ pub fn common_props(figma: &FigValue, id: String) -> PenNodeBase {
             .map(NumberOrExpression::Number),
         enabled: None,
         visible: None,
+        preview_as_screen: None,
         locked: if figma.get_bool("locked") == Some(true) {
             Some(true)
         } else {

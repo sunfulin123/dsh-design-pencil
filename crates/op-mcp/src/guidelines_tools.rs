@@ -280,7 +280,7 @@ mod tests {
     fn style_args() -> BTreeMap<String, String> {
         BTreeMap::from([
             ("category".into(), "style".into()),
-            ("name".into(), "Atlas Grid".into()),
+            ("name".into(), "talkdesk-cobalt".into()),
             ("colorPalette".into(), "Alloy Blue".into()),
             ("roundness".into(), "medium".into()),
             ("elevation".into(), "low".into()),
@@ -312,18 +312,18 @@ mod tests {
 
     #[test]
     fn get_guidelines_style_roundtrips_our_style() {
-        let expected = match resolve_style("Atlas Grid", &style_params()) {
+        let expected = match resolve_style("talkdesk-cobalt", &style_params()) {
             ResolveOutcome::Hit(guide) => guide,
-            other => panic!("expected Atlas Grid hit, got {other:?}"),
+            other => panic!("expected Talkdesk Cobalt hit, got {other:?}"),
         };
 
         match get_guidelines_snapshot().call(&style_args()) {
             ToolOutcome::Ok(out) => {
                 assert_eq!(out.get("category").map(String::as_str), Some("style"));
-                assert_eq!(out.get("name").map(String::as_str), Some("Atlas Grid"));
+                assert_eq!(out.get("name").map(String::as_str), Some("talkdesk-cobalt"));
                 let content = out.get("content").expect("content field");
                 assert!(
-                    content.contains("Atlas Grid is a practical workspace style"),
+                    content.contains("Talkdesk Cobalt is the Talkdesk product design system"),
                     "style prose must be present: {content}"
                 );
                 assert!(content.contains("colorPalette:"), "{content}");

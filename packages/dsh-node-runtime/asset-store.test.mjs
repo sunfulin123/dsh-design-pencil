@@ -37,6 +37,24 @@ test('saved Markdown survives closing and reopening the same asset scope', async
   assert.equal((await reopened.snapshot()).revision, 1);
 });
 
+test('retired template rows do not block reopening and remain untouched', async (t) => {
+  const { directory, store } = await fixture(t);
+  const saved = await store.put('style-guide', { name: 'Brand', markdown: '# Brand' });
+  store.close();
+  const database = new DatabaseSync(join(directory, 'assets.sqlite'));
+  const oldId = 'user:00000000-0000-4000-8000-000000000001';
+  database.prepare('INSERT INTO assets VALUES (?,?,?,?)').run(oldId, 'scene-template', 'Old template', '{"name":"Old template"}');
+  database.close();
+  const reopened = await storeModule.AssetStore.open({ directory });
+  t.after(() => reopened.close());
+  assert.deepEqual((await reopened.snapshot()).assets.map((asset) => asset.id), [saved.asset.id]);
+  assert.equal((await reopened.get('style-guide', saved.asset.id)).payload.markdown, '# Brand');
+  await assert.rejects(reopened.get('scene-template', oldId), { code: 'asset-invalid' });
+  const check = new DatabaseSync(join(directory, 'assets.sqlite'));
+  t.after(() => check.close());
+  assert.equal(check.prepare('SELECT kind FROM assets WHERE id=?').get(oldId).kind, 'scene-template');
+});
+
 test('two stores in one scope preserve both writes and reject stale updates', async (t) => {
   const { directory, store } = await fixture(t);
   const other = await storeModule.AssetStore.open({ directory });

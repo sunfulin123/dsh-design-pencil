@@ -7,6 +7,37 @@
 use super::*;
 
 #[test]
+fn editor_root_outline_is_not_part_of_scene_preview() {
+    let state = sample_state();
+    let scene = sample_scene();
+    let rect = Rect::xywh(0.0, 0.0, 800.0, 600.0);
+    let paint = |viewport: CanvasViewport<'_>| {
+        let mut backend = RecordingBackend::default();
+        viewport.paint(
+            &mut PaintCx {
+                backend: &mut backend,
+            },
+            rect,
+        );
+        backend
+    };
+    let editor = paint(CanvasViewport::from_editor(&state, &scene));
+    let preview = paint(CanvasViewport::from_scene(
+        &scene,
+        state.viewport,
+        Theme::light(),
+    ));
+    let border = Color {
+        r: 0.68,
+        g: 0.68,
+        b: 0.68,
+        a: 0.8,
+    };
+    assert!(editor.stroke_colors.contains(&border));
+    assert!(!preview.stroke_colors.contains(&border));
+}
+
+#[test]
 fn pixel_grid_is_independent_of_background_dots_and_absent_in_viewers() {
     let mut state = sample_state();
     state.editor_ui.pixel_grid_visible = true;

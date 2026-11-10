@@ -15,6 +15,23 @@ use crate::widgets::property_panel::{
     LayoutAlignValue, LayoutJustifyValue, TextAlignValue, TextGrowthValue, TextVerticalAlignValue,
 };
 
+/// Route each size toggle through the same axis and fallback semantics.
+pub fn toggle_sizing_action(
+    state: &mut EditorState,
+    action: &crate::widgets::PropertyPanelAction,
+    resolved_fallback: Option<f64>,
+) {
+    use crate::widgets::PropertyPanelAction as A;
+    let (width, keyword) = match action {
+        A::ToggleSizeFillWidth => (true, SizingKeyword::FillContainer),
+        A::ToggleSizeFillHeight => (false, SizingKeyword::FillContainer),
+        A::ToggleSizeHugWidth => (true, SizingKeyword::FitContent),
+        A::ToggleSizeHugHeight => (false, SizingKeyword::FitContent),
+        _ => return,
+    };
+    toggle_selected_sizing(state, width, keyword, resolved_fallback);
+}
+
 /// Write the flex-layout mode onto the selected node.
 pub fn set_selected_layout_mode(state: &mut EditorState, mode: op_editor_core::FlexLayout) {
     let id = state.selection.anchor.clone();
@@ -205,11 +222,24 @@ pub fn set_selected_text_font_family(state: &mut EditorState, family: &str) {
     if family.trim().is_empty() {
         return;
     }
-    set_selected_layout_keyword(state, "fontFamily", family);
+    let style = op_editor_core::text_design::TextRangeStyle {
+        font_family: Some(family.into()),
+        ..Default::default()
+    };
+    if state.apply_text_selection_style(&style).is_none() {
+        set_selected_layout_keyword(state, "fontFamily", family);
+    }
 }
 
 /// Commit a named-weight choice from the typography weight dropdown.
 pub fn set_selected_font_weight(state: &mut EditorState, weight: u16) {
+    let style = op_editor_core::text_design::TextRangeStyle {
+        font_weight: Some(weight as u32),
+        ..Default::default()
+    };
+    if state.apply_text_selection_style(&style).is_some() {
+        return;
+    }
     let id = state.selection.anchor.clone();
     if !id.is_real() {
         return;

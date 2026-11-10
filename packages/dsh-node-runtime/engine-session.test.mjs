@@ -5,6 +5,51 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { convertHtmlToDocument, EngineSession, expandScriptWithVariables } from './engine-session.mjs'
 
+test('explicit node updates preserve exact values in direct and script commands', () => {
+  const session = new EngineSession({ version: '0.8.5', children: [
+    { type: 'frame', id: 'root', width: 120, height: 80, padding: [0, 4] },
+  ] })
+  try {
+    const direct = session.callTool('update_node', { nodeId: 'root', data: { padding: [0, 18, 0, 18], gap: 7 } })
+    assert.equal(direct.isError, false, JSON.stringify(direct))
+    assert.deepEqual(session.snapshot().document.children[0].padding, [0, 18, 0, 18])
+    assert.equal(session.snapshot().document.children[0].gap, 7)
+    const scripted = session.callTool('batch_design', { script: 'U("root", {padding:[0, 22, 0, 22], gap: 9});' })
+    assert.equal(scripted.isError, false, JSON.stringify(scripted))
+    assert.deepEqual(session.snapshot().document.children[0].padding, [0, 22, 0, 22])
+    assert.equal(session.snapshot().document.children[0].gap, 9)
+    assert.equal(session.callTool('undo', {}).isError, false)
+    assert.deepEqual(session.snapshot().document.children[0].padding, [0, 18, 0, 18])
+  } finally { session.close() }
+})
+
+test('password safety errors remain discoverable after many advisory lint findings', () => {
+  const children = Array.from({ length: 60 }, (_, index) => ({ type: 'text_input', id: `input-${index}` }))
+  children.push({ type: 'text_input', id: 'password', name: 'Password' })
+  const session = new EngineSession({ version: '0.8.5', children: [{ type: 'frame', id: 'root', children }] })
+  try {
+    const report = session.callTool('lint_document', { severity: 'error' })
+    assert.equal(report.isError, false, JSON.stringify(report))
+    assert.equal(report.structuredContent.count, 1)
+    assert.match(report.structuredContent.issues[0].reason, /secure to true/)
+  } finally { session.close() }
+})
+
+test('an empty seed root is replaced while additional screens remain editable and undoable', () => {
+  const session = new EngineSession({ version: '0.8.5', children: [] })
+  try {
+    const apply = script => session.callTool('batch_design', { script, postProcess: true })
+    assert.equal(apply(`I(null, { type: 'frame', name: 'Seed', width: 390, height: 844 });`).isError, false)
+    assert.equal(apply(`const page = I(null, { type: 'frame', name: 'List', width: 390, height: 844 });
+      I(page, { type: 'text', content: 'Items' });`).isError, false)
+    assert.deepEqual(session.snapshot().document.children.map(node => node.name), ['List'])
+    assert.equal(apply(`I(null, { type: 'frame', name: 'Detail', width: 390, height: 844 });`).isError, false)
+    assert.deepEqual(session.snapshot().document.children.map(node => node.name).sort(), ['Detail', 'List'])
+    assert.equal(session.callTool('undo', {}).isError, false)
+    assert.deepEqual(session.snapshot().document.children.map(node => node.name), ['List'])
+  } finally { session.close() }
+})
+
 test('EngineSession supports batch_design script expansion, finalize_design, and HTML file import', async context => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-engine-import-'))
   context.after(() => rm(root, { recursive: true, force: true }))
@@ -73,6 +118,48 @@ test('active range font-family tools preserve Unicode ranges across reopen and u
     assert.equal(session.callTool('redo', {}).isError, false)
     assert.deepEqual(read(session), styled)
   } finally { session.close() }
+})
+
+test('stale expected text rejects a range edit without changing the document', () => {
+  const session = new EngineSession({ version: '0.8.5', children: [
+    { type: 'text', id: 'text', content: 'A中🙂Z', fontSize: 18 },
+  ] })
+  try {
+    const before = session.snapshot().document
+    const args = { nodeId: 'text', start: 1, end: 3, style: { fontSize: 40 } }
+    const rejected = session.callTool('set_text_style', { ...args, expectedText: 'stale' })
+    assert.equal(rejected.isError, true)
+    assert.deepEqual(session.snapshot().document, before)
+    const accepted = session.callTool('set_text_style', { ...args, expectedText: 'A中🙂Z' })
+    assert.equal(accepted.isError, false, JSON.stringify(accepted))
+    assert.equal(session.callTool('undo', {}).isError, false)
+    assert.deepEqual(session.snapshot().document.children, before.children)
+  } finally { session.close() }
+})
+
+test('style initialization only applies to a blank document in one engine call', () => {
+  const session = new EngineSession({ version: '0.8.5', children: [] })
+  try {
+    const markdown = '# Design\n\nUse $--primary-9 when appropriate.'
+    const applied = session.callTool('set_design_md', { markdown, onlyIfBlank: true })
+    assert.equal(applied.isError, false, JSON.stringify(applied))
+    assert.equal(session.callTool('get_design_md', {}).structuredContent.markdown, markdown)
+    assert.equal(session.snapshot().document.variables, undefined)
+    const version = session.version()
+    const second = session.callTool('set_design_md', { markdown: '# Other', onlyIfBlank: true })
+    assert.equal(second.isError, true)
+    assert.equal(session.version(), version)
+    assert.equal(session.callTool('get_design_md', {}).structuredContent.markdown, markdown)
+  } finally { session.close() }
+  const authored = new EngineSession({ version: '0.8.5', children: [
+    { type: 'rectangle', id: 'existing', width: 40, height: 40 },
+  ] })
+  try {
+    const before = authored.snapshot().document
+    const rejected = authored.callTool('set_design_md', { markdown: '# New design', onlyIfBlank: true })
+    assert.equal(rejected.isError, true)
+    assert.deepEqual(authored.snapshot().document, before)
+  } finally { authored.close() }
 })
 
 test('AI design advances the version and rejects an older browser snapshot', () => {
@@ -290,7 +377,7 @@ test('convertHtmlToDocument renders complex flex/grid/icon HTML with auto-layout
   assert.ok(converted.variablesCount >= 2, `expected extracted color variables, got ${converted.variablesCount}`)
 })
 
-test('EngineSession snaps off-grid spacing/radius/fontSize and expands UI.* component macros', () => {
+test('EngineSession normalizes created UI macros and preserves exact later updates', () => {
   const session = new EngineSession({
     version: '0.8.5',
     children: [
@@ -328,8 +415,8 @@ test('EngineSession snaps off-grid spacing/radius/fontSize and expands UI.* comp
     })
     assert.equal(updated.isError, false, JSON.stringify(updated))
     const cardAfter = session.snapshot().document.children[0].children[0]
-    assert.equal(cardAfter.gap, 20, 'update_node gap 19 should snap to 20')
-    assert.equal(cardAfter.cornerRadius, 10, 'update_node cornerRadius 11 should snap to 10')
+    assert.equal(cardAfter.gap, 19, 'update_node must keep the requested gap')
+    assert.equal(cardAfter.cornerRadius, 11, 'update_node must keep the requested corner radius')
 
     const quality = session.callTool('get_design_quality', {})
     assert.equal(quality.isError, false, JSON.stringify(quality))

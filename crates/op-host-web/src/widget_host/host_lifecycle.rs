@@ -42,6 +42,7 @@ impl WidgetHost {
             image_crop_drag: None,
             effect_radius_drag: None,
             code_selection_drag: None,
+            text_edit_pointer: None,
             chat_input_selection_drag: None,
             image_input_selection_drag: None,
             image_input_geometry: None,

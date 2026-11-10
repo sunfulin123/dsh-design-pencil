@@ -7,6 +7,11 @@ use op_editor_core::{DesignMdSpec, EditorState};
 use super::{McpTool, ToolErrorCode, ToolOutcome};
 
 const PROMPT_SECTIONS: &[&str] = &[
+    "op-design",
+    "op-design-direction",
+    "op-design-composition",
+    "op-design-review",
+    "html-poc",
     "all",
     "schema",
     "layout",
@@ -165,6 +170,14 @@ impl McpTool for GetDesignPrompt {
 
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
         let section = args.get("section").map(String::as_str).unwrap_or("all");
+        if section.starts_with("op-design")
+            && op_ai_skills::synapse_op_design::resource(section).is_none()
+        {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                "Unknown OP design resource".into(),
+            );
+        }
         let available = match serde_json::to_string(PROMPT_SECTIONS) {
             Ok(json) => json,
             Err(e) => {
@@ -176,6 +189,12 @@ impl McpTool for GetDesignPrompt {
         };
         let mut out = BTreeMap::new();
         out.insert("section".into(), section.into());
+        if section.starts_with("op-design") {
+            out.insert(
+                "version".into(),
+                op_ai_skills::synapse_op_design::VERSION.into(),
+            );
+        }
         out.insert("availableSections".into(), available);
         out.insert(
             "designPrompt".into(),
@@ -214,6 +233,9 @@ fn build_design_prompt(section: Option<&str>, design_md_policy: Option<&str>) ->
 }
 
 fn section_content(section: &str) -> Option<String> {
+    if let Some(content) = op_ai_skills::synapse_op_design::resource(section) {
+        return Some(content.to_string());
+    }
     match section {
         "all" => Some(build_full_prompt()),
         "schema" => Some(skill_content("schema")),

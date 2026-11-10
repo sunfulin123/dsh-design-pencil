@@ -163,8 +163,11 @@ pub enum CodegenAction {
 /// than relying on an implicit bitwise copy.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PropertyPanelAction {
+    CopySharedStyleId,
+    TogglePositionAdvanced,
     ComponentInspector(crate::widgets::property_panel_components::ComponentInspectorAction),
     DesignSystem(op_editor_core::design_system_inspector_draft::DesignSystemAction),
+    ToggleTextAdvanced,
     ApplyTextMarkdown,
     ApplyTextRange,
     ApplyTextParagraph,
@@ -452,6 +455,8 @@ pub enum PropertyPanelAction {
     ToggleTextStrikethrough,
     /// Toggle node visibility (`visible`) from the node header.
     ToggleNodeVisible,
+    /// Include the selected top-level frame in the prototype screen list.
+    TogglePreviewAsScreen,
     /// Toggle node lock (`locked`) from the node header.
     ToggleNodeLocked,
     /// Code panel action — see `CodegenAction`.

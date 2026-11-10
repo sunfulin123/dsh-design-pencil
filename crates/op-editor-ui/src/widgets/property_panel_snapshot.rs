@@ -180,6 +180,10 @@ pub struct NodeSnapshot {
     pub visible: bool,
     /// Node lock state (`base.locked == Some(true)`).
     pub locked: bool,
+    /// Whether this frame is eligible as a standalone preview screen.
+    pub preview_as_screen: bool,
+    /// Whether the selected frame may be toggled as a preview screen.
+    pub can_preview_screen: bool,
     /// Semantic role (`base.role` or `semantics.role`).
     pub role: String,
     /// Design intent / AI explanation note (`base.explain` or `semantics.aiDescription`).

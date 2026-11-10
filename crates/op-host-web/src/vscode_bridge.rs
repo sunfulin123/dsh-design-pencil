@@ -36,10 +36,12 @@ mod document_snapshot;
 mod early_listener;
 mod external_relay;
 mod helpers;
+mod selection_history;
 mod startup;
 
 pub(crate) use early_listener::install_early;
-pub(crate) use startup::{await_init, in_iframe};
+pub(crate) use selection_history::record_selection;
+pub(crate) use startup::{await_init, emit_ready, in_iframe, register_late_init_hook};
 
 /// Hold an external-navigation request until the locked bridge proves it is
 /// attached to the token-authenticated managed daemon.
@@ -52,8 +54,8 @@ use crate::live_sync;
 use crate::live_sync_glue::SharedSync;
 use crate::repaint_ctx::RepaintContext;
 use op_editor_core::bridge_protocol::{
-    event_conflict_resolved, event_ready, event_snapshot_conflict, event_snapshot_result,
-    BridgeInbound, ConflictMode,
+    event_conflict_resolved, event_snapshot_conflict, event_snapshot_result, BridgeInbound,
+    ConflictMode,
 };
 use op_editor_core::web_sync::WebSyncClient;
 
@@ -221,6 +223,9 @@ fn route_message<C: RepaintContext + 'static>(
         }
         BridgeInbound::OpenDocument { json } => handle_open_document(inner, sync, json),
         BridgeInbound::Snapshot { request_id, .. } => handle_snapshot(inner, sync, request_id),
+        BridgeInbound::CaptureSelection { request_id, before } => {
+            selection_history::capture_selection(inner, request_id, before)
+        }
         BridgeInbound::SaveCommitted {
             generation,
             revision,
@@ -285,27 +290,6 @@ fn handle_init<C: RepaintContext + 'static>(
     if let Some(hook) = hook {
         hook();
     }
-}
-
-/// Register the one-shot late-init recovery hook (see [`LATE_INIT_HOOK`]).
-/// `canvaskit`'s fallback bootstrap calls this ONLY after its unmanaged
-/// sync-reset has completed, so the recovery reset the hook later triggers
-/// cannot interleave with the fallback reset. Overwrites any prior hook (only
-/// one bootstrap ever registers).
-pub(crate) fn register_late_init_hook<F: Fn() + 'static>(hook: F) {
-    LATE_INIT_HOOK.with(|h| *h.borrow_mut() = Some(Box::new(hook)));
-}
-
-/// Post the managed `ready` reply with the current `(generation, revision)` so
-/// the host learns the starter document's identity before it sends
-/// `open-document`. Called from `canvaskit`'s managed bootstrap ONLY after the
-/// sync-reset has completed (see [`handle_init`]). `ready` is a
-/// request/response-style reply — not one of the three edge/state events the
-/// tick observer owns — so a direct post here keeps single-point edge
-/// discipline intact while ordering `ready` strictly after the reset.
-pub(crate) fn emit_ready<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
-    let (gen, rev, _) = read_triple(inner).unwrap_or((0, 0, false));
-    post_to_parent(&event_ready(gen, rev));
 }
 
 /// `open-document`: SYNCHRONOUS PROLOGUE (fixed order, before the first await) —

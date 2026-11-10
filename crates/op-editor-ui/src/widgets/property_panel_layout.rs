@@ -29,32 +29,13 @@ pub const COLOR_VARIABLE_MENU_W: f32 = 210.0;
 pub const COLOR_VARIABLE_MENU_ROW_H: f32 = 32.0;
 pub const COLOR_VARIABLE_MENU_PAD_Y: f32 = 6.0;
 
-/// Total vertical space the Effects section consumes: the section
-/// header plus one block per effect (or an 8 px filler when the node
-/// has none). Paint (`paint_effects_section`) and the action-rect
-/// walker both consult this so their y-math can never drift.
-pub fn effects_section_height(effects: &[EffectSummary]) -> f32 {
-    SECTION_HEADER_HEIGHT
-        + if effects.is_empty() {
-            8.0
-        } else {
-            effects.len() as f32 * (EFFECT_ROW_HEIGHT + EFFECT_ROW_GAP)
-        }
-}
+#[path = "property_panel_layout_effects.rs"]
+mod effects_geometry;
+pub use effects_geometry::effects_section_height;
 
-/// Total vertical space the Fill section consumes: the section header
-/// plus one row per fill (head row + body), plus the 12 px trailing
-/// gap painted before the divider. `primary_stop_count` sizes the
-/// primary fill's gradient body (the gradient-stop editor keys off the
-/// primary fill). Mirrors the y-walk in `paint_fill_section`.
-pub fn fills_section_height(fills: &[FillSummary], primary_stop_count: usize) -> f32 {
-    let rows: f32 = fills
-        .iter()
-        .enumerate()
-        .map(|(i, f)| fill_row_height(f.fill_type, i == 0, primary_stop_count))
-        .sum();
-    SECTION_HEADER_HEIGHT + rows + 12.0
-}
+#[path = "property_panel_fill_geometry.rs"]
+mod fill_geometry;
+pub use fill_geometry::{fill_body_height, fill_body_height_with_stops, fills_section_height};
 
 /// State for the 5 Size checkboxes (fill / hug / clip).
 #[derive(Debug, Clone, Copy)]
@@ -64,35 +45,6 @@ pub struct SizeFlags {
     pub hug_width: bool,
     pub hug_height: bool,
     pub clip_content: bool,
-}
-
-/// Height of the body that follows the head row in the Fill
-/// section, per fill type. Used by every layout walker so the
-/// y-offset of sections after Fill stays aligned with paint when
-/// the user flips fill types.
-pub fn fill_body_height(fill_type: FillType) -> f32 {
-    // Legacy 2-stop assumption — kept for callers that don't yet
-    // thread `stop_count`. Prefer `fill_body_height_with_stops`.
-    fill_body_height_with_stops(fill_type, 2)
-}
-
-/// Stop-aware variant — accounts for the actual number of gradient
-/// stops so adding / removing a stop reflows the panel correctly.
-pub fn fill_body_height_with_stops(fill_type: FillType, stop_count: usize) -> f32 {
-    let stops = stop_count;
-    let stops_block = SECTION_HEADER_HEIGHT
-        + stops as f32 * (INPUT_HEIGHT + 4.0)
-        + if stops == 0 { 0.0 } else { 2.0 };
-    match fill_type {
-        FillType::Solid => INPUT_HEIGHT + 6.0,
-        FillType::LinearGradient => INPUT_HEIGHT + 6.0 + stops_block + 6.0,
-        FillType::RadialGradient => stops_block + 6.0,
-        // Mesh + Shader show head-row only (per-vertex editing / shader
-        // authoring deferred — shader is render-only in v1) — no body
-        // block, so they contribute nothing past the head row.
-        FillType::MeshGradient | FillType::Shader => 0.0,
-        FillType::Image => INPUT_HEIGHT + 6.0,
-    }
 }
 
 /// Height consumed by the Layer section. Polygon adds a same-row
@@ -259,6 +211,10 @@ pub fn action_button_rects_with_fill_picker(
         );
     }
     // Position section.
+    out.push((
+        PropertyPanelAction::TogglePositionAdvanced,
+        Rect::xywh(x0, y, w, SECTION_HEADER_HEIGHT),
+    ));
     y += SECTION_HEADER_HEIGHT;
     for (action, rect) in
         crate::widgets::align_toolbar::AlignToolbar::panel_action_rects(Rect::xywh(
@@ -271,8 +227,10 @@ pub fn action_button_rects_with_fill_picker(
         out.push((PropertyPanelAction::AlignSelection(action), rect));
     }
     y += crate::widgets::align_toolbar::POSITION_ACTION_HEIGHT;
-    y += INPUT_HEIGHT + 6.0;
-    if visible.corner_per_corner {
+    if visible.position_advanced {
+        y += INPUT_HEIGHT + 6.0;
+    }
+    if visible.corner_radius && visible.corner_per_corner {
         out.push((
             PropertyPanelAction::ToggleCornerExpand,
             crate::widgets::property_panel_corner::uniform_and_toggle_rects(x0, y, w).1,
@@ -281,7 +239,11 @@ pub fn action_button_rects_with_fill_picker(
     if visible.corner_radius && visible.corner_per_corner && visible.corner_expand {
         y += INPUT_HEIGHT + crate::widgets::property_panel_corner::CORNER_GRID_EXTRA_HEIGHT + 12.0;
     } else {
-        y += INPUT_HEIGHT + 12.0;
+        y += if visible.position_advanced || visible.corner_radius {
+            INPUT_HEIGHT
+        } else {
+            0.0
+        } + 12.0;
     }
     y += SECTION_GAP;
 
@@ -366,6 +328,7 @@ pub fn action_button_rects_with_fill_picker(
             y,
             usable_w,
             visible.touch_controls,
+            visible.text_advanced,
         ));
         // The font-family picker is an overlay now (searchable list,
         // `property_panel_typography.rs`) — its rows are hit-tested
@@ -381,7 +344,10 @@ pub fn action_button_rects_with_fill_picker(
                 ),
             );
         }
-        y += crate::widgets::property_panel_text::text_section_height(visible.touch_controls);
+        y += crate::widgets::property_panel_text::text_section_height(
+            visible.touch_controls,
+            visible.text_advanced,
+        );
         y += SECTION_GAP;
     }
 

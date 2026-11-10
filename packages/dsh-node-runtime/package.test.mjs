@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createInterface } from 'node:readline'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { stageRuntime } from '../../scripts/stage-dsh-runtime.mjs'
 
 test('stages only the Node/WASM runtime and required browser assets', async context => {
@@ -20,7 +20,10 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     'figma-rest-client.mjs', 'figma-images.mjs', 'figma-import-jobs.mjs', 'font-fetcher.mjs', 'font-inventory.mjs', 'headless-renderer.mjs',
     'figma-fidelity.mjs', 'png-diff.mjs', 'asset-directory.mjs', 'asset-store.mjs', 'host-http.mjs',
     'png-fixture.test-helper.mjs',
-    'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm',
+    'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm', 'wasm/design-skill.md',
+    'skills/synapse-design-html/SKILL.md', 'skills/synapse-design-html/scripts/capture-poc.mjs',
+    'skills/synapse-design-html/references/layout-sections-and-cards.md',
+    'skills/synapse-design-html/references/harden-and-edge-cases.md',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/snippets/bridge.js',
     'web-bundle/canvaskit/canvaskit.js', 'web-bundle/canvaskit/canvaskit.wasm',
@@ -39,9 +42,25 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     await writeFile(path, file === 'package.json' ? JSON.stringify({
       name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.4',
       type: 'commonjs', engines: { node: '>=24' },
+      dependencies: { 'quickjs-emscripten-core': '0.32.0', '@jitl/quickjs-wasmfile-release-sync': '0.32.0' },
     }) : file)
   }
+  for (const name of ['quickjs-emscripten-core', '@jitl/quickjs-wasmfile-release-sync', '@jitl/quickjs-ffi-types']) {
+    const path = join(runtime, 'node_modules', name)
+    await mkdir(join(path, 'dist'), { recursive: true })
+    await writeFile(join(path, 'package.json'), JSON.stringify({ name, version: '0.32.0', main: 'dist/index.js' }))
+    await writeFile(join(path, 'dist/index.js'), '')
+    await writeFile(join(path, 'dist/index.d.mts'), '')
+  }
   await writeFile(join(root, 'LICENSE'), 'fixture license')
+  const skillSource = join(root, 'crates/op-ai-skills/skills/synapse-design/SKILL.md')
+  await mkdir(dirname(skillSource), { recursive: true })
+  await writeFile(skillSource, 'wasm/design-skill.md')
+  for (const path of files.filter(file => file.startsWith('skills/synapse-design-html/'))) {
+    const source = join(root, 'crates/op-ai-skills', path)
+    await mkdir(dirname(source), { recursive: true })
+    await writeFile(source, path)
+  }
   const destination = join(root, 'output')
   const manifest = await stageRuntime({ root, destination, revision: '1'.repeat(40) })
   assert.equal(manifest.runtime, 'node-wasm')
@@ -50,6 +69,8 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.equal(manifest.node, '>=24')
   assert.equal(manifest.openPencilVersion, '0.8.5-synapse.4')
   assert.ok(manifest.files['wasm/op_dsh_engine_bg.wasm'])
+  assert.ok(manifest.files['wasm/design-skill.md'])
+  assert.ok(manifest.files['skills/synapse-design-html/scripts/capture-poc.mjs'])
   assert.ok(manifest.files['color-sampler.mjs'])
   assert.ok(manifest.files['screenshot-renderer.mjs'])
   assert.ok(manifest.files['draft-recovery.mjs'])
@@ -61,11 +82,21 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.ok(manifest.files['web-bundle/op_host_web_bg.wasm'])
   assert.ok(manifest.files['web-bundle/assets/i18n/ja.json'])
   assert.ok(manifest.files['web-bundle/snippets/bridge.js'])
+  assert.ok(manifest.files['node_modules/quickjs-emscripten-core/dist/index.js'])
+  assert.ok(manifest.files['node_modules/@jitl/quickjs-wasmfile-release-sync/dist/index.js'])
+  assert.ok(manifest.files['node_modules/@jitl/quickjs-ffi-types/dist/index.js'])
+  assert.equal(manifest.files['node_modules/quickjs-emscripten-core/dist/index.d.mts'], undefined)
   for (const path of Object.keys(manifest.files)) {
-    assert.doesNotMatch(path, /vendor|node_modules|target|\.test\.|\.d\.ts|build-web|prompt_center|op-host-web-server/)
+    assert.doesNotMatch(path, /vendor|target|\.test\.|\.d\.ts|build-web|prompt_center|op-host-web-server/)
+    if (path.startsWith('node_modules/')) {
+      assert.match(path, /^node_modules\/(?:quickjs-emscripten-core|@jitl\/(?:quickjs-wasmfile-release-sync|quickjs-ffi-types))\//)
+    }
   }
   const persisted = JSON.parse(await readFile(join(destination, 'openpencil-runtime.json')))
   assert.deepEqual(persisted, manifest)
+  await writeFile(join(runtime, 'skills/synapse-design-html/scripts/capture-poc.mjs'), 'stale')
+  await assert.rejects(stageRuntime({ root, destination, revision: '1'.repeat(40) }), /skill resource differs/)
+  assert.deepEqual(JSON.parse(await readFile(join(destination, 'openpencil-runtime.json'))), manifest)
 })
 test('the staged real runtime starts a managed host with every imported module', async context => {
   const root = await mkdtemp(join(tmpdir(), 'dsh-node-staged-'))
@@ -73,6 +104,14 @@ test('the staged real runtime starts a managed host with every imported module',
   const repo = fileURLToPath(new URL('../..', import.meta.url))
   const destination = join(root, 'runtime')
   await stageRuntime({ root: repo, destination, revision: '1'.repeat(40) })
+  const { EngineSession } = await import(pathToFileURL(join(destination, 'engine-session.mjs')).href)
+  const engine = new EngineSession({ version: '0.8.5', children: [] })
+  try {
+    assert.equal(engine.callTool('batch_design', { script: `I(null, { type: 'frame', name: 'Staged' })` }).isError, false)
+    assert.equal(engine.callTool('batch_design', { script: `__record.constructor('return process')()` }).isError, true)
+  } finally {
+    engine.close()
+  }
   const document = join(root, 'design.op')
   await writeFile(document, JSON.stringify({ version: '0.8.5', children: [] }))
   const child = spawn(process.execPath, [

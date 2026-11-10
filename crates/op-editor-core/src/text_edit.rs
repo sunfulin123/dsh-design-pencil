@@ -33,10 +33,22 @@ use crate::node_id::NodeId;
 use crate::state::EditorState;
 use jian_core::text_input::TextInputState;
 use jian_ops_schema::node::{PenNode, TextContent};
+use unicode_segmentation::UnicodeSegmentation;
+
+#[path = "text_edit_rich.rs"]
+mod rich;
 
 /// Coalesce window for text-edit history bursts (ms). A pause longer
 /// than this opens a fresh undo entry.
 const TEXT_COALESCE_MS: u64 = 500;
+
+pub(crate) fn replace_styled_input(
+    content: &TextContent,
+    before: &TextInputState,
+    after: &TextInputState,
+) -> Option<TextContent> {
+    rich::replace_input(content, before, after, None)
+}
 
 impl EditorState {
     /// Enter inline text-edit mode on `id`. `false` when the node
@@ -49,20 +61,34 @@ impl EditorState {
         if !matches!(node, PenNode::Text(_)) {
             return false;
         }
-        let content = text_content(node).unwrap_or("").to_owned();
+        let PenNode::Text(text) = node else {
+            return false;
+        };
+        let content = crate::text_design::plain_text(&text.content);
+        let retained_caret = self
+            .current_text_insertion()
+            .filter(|caret| caret.node_id == id);
+        self.ui.text_insertion = retained_caret.clone();
+        self.ui.text_selection = None;
         self.ui.text_editing = Some(id);
         self.ui.text_edit_input = TextInputState::with_text(content);
+        if let Some(caret) = retained_caret {
+            self.ui.text_edit_input.set_caret(caret.offset, 0);
+        }
+        self.ui.text_composition_seed = None;
         self.ui.text_edit_last_ms = 0;
         self.ui.pending_text_edit_history = None;
         true
     }
 
     /// The edited node's plain content, or `None` when no session is
-    /// active / the node vanished / the content is `Styled`.
+    /// active or the node vanished.
     pub fn text_edit_content(&self) -> Option<&str> {
         let id = self.ui.text_editing.as_ref()?;
         let node = crate::walkers::find_node(self.active_children(), id)?;
-        text_content(node)?;
+        if !matches!(node, PenNode::Text(_)) {
+            return None;
+        }
         Some(self.ui.text_edit_input.text())
     }
 
@@ -74,7 +100,9 @@ impl EditorState {
         let Some(id) = self.text_edit_plain_node_id() else {
             return false;
         };
-        let mut input = self.ui.text_edit_input.clone();
+        let before_input = self.ui.text_edit_input.clone();
+        self.ui.text_composition_seed = None;
+        let mut input = before_input.clone();
         input.clear_composition();
         let before = input.text().to_owned();
         input.insert_str(text, now_ms);
@@ -84,7 +112,11 @@ impl EditorState {
         }
         self.ui.text_edit_input = input;
         if changed {
-            if !self.text_edit_sync_input_to_node(&id) {
+            if !self.text_edit_sync_input_to_node(&id, &before_input, None) {
+                return false;
+            }
+            let after_input = self.ui.text_edit_input.clone();
+            if !self.apply_text_insertion(&id, &before_input, &after_input) {
                 return false;
             }
             self.ui.text_edit_last_ms = now_ms;
@@ -109,9 +141,20 @@ impl EditorState {
         let Some(id) = self.text_edit_plain_node_id() else {
             return false;
         };
-        let mut input = self.ui.text_edit_input.clone();
+        let before_input = self.ui.text_edit_input.clone();
+        self.ui.text_composition_seed = None;
+        let mut input = before_input.clone();
         input.clear_composition();
         let before = input.text().to_owned();
+        if input.highlight_range().is_none() {
+            let caret = input.caret();
+            let edge = if forward {
+                rich::next_boundary(&before, caret)
+            } else {
+                rich::previous_boundary(&before, caret)
+            };
+            input.drag_to(edge, now_ms);
+        }
         if forward {
             input.delete_forward(now_ms);
         } else {
@@ -123,7 +166,7 @@ impl EditorState {
             return false;
         }
         self.maybe_open_text_edit_history(now_ms);
-        if !self.text_edit_sync_input_to_node(&id) {
+        if !self.text_edit_sync_input_to_node(&id, &before_input, None) {
             return false;
         }
         self.ui.text_edit_last_ms = now_ms;
@@ -137,7 +180,16 @@ impl EditorState {
         let Some(id) = self.text_edit_plain_node_id() else {
             return false;
         };
-        let mut input = self.ui.text_edit_input.clone();
+        let before_input = self.ui.text_edit_input.clone();
+        if before_input.composition().is_none() {
+            self.ui.text_composition_seed = before_input.highlight_range().and_then(
+                |(start, _)| match crate::walkers::find_node(self.active_children(), &id) {
+                    Some(PenNode::Text(node)) => rich::selected_run(&node.content, start),
+                    _ => None,
+                },
+            );
+        }
+        let mut input = before_input.clone();
         let before = input.text().to_owned();
         input.set_composition(text, cursor, now_ms);
         let changed = input.text() != before;
@@ -146,7 +198,7 @@ impl EditorState {
         }
         self.ui.text_edit_input = input;
         if changed {
-            if !self.text_edit_sync_input_to_node(&id) {
+            if !self.text_edit_sync_input_to_node(&id, &before_input, None) {
                 return false;
             }
             self.ui.text_edit_last_ms = now_ms;
@@ -160,6 +212,7 @@ impl EditorState {
         }
         let had = self.ui.text_edit_input.composition().is_some();
         self.ui.text_edit_input.clear_composition();
+        self.ui.text_composition_seed = None;
         had
     }
 
@@ -170,7 +223,8 @@ impl EditorState {
         if self.ui.text_edit_input.composition().is_none() {
             return false;
         }
-        let mut input = self.ui.text_edit_input.clone();
+        let before_input = self.ui.text_edit_input.clone();
+        let mut input = before_input.clone();
         let before = input.text().to_owned();
         input.commit_composition(now_ms);
         let changed = input.text() != before;
@@ -178,8 +232,13 @@ impl EditorState {
             self.maybe_open_text_edit_history(now_ms);
         }
         self.ui.text_edit_input = input;
+        let seed = self.ui.text_composition_seed.take();
         if changed {
-            if !self.text_edit_sync_input_to_node(&id) {
+            if !self.text_edit_sync_input_to_node(&id, &before_input, seed.as_ref()) {
+                return false;
+            }
+            let after_input = self.ui.text_edit_input.clone();
+            if !self.apply_text_insertion(&id, &before_input, &after_input) {
                 return false;
             }
             self.ui.text_edit_last_ms = now_ms;
@@ -194,6 +253,7 @@ impl EditorState {
         self.ui.pending_text_edit_history = None;
         self.ui.text_edit_last_ms = 0;
         self.ui.text_edit_input = TextInputState::default();
+        self.ui.text_composition_seed = None;
         self.ui.text_editing.take().is_some()
     }
 
@@ -204,6 +264,7 @@ impl EditorState {
         if self.text_edit_plain_node_id().is_none() {
             return false;
         };
+        let offset = rich::floor_boundary(self.ui.text_edit_input.text(), offset);
         if extend {
             self.ui.text_edit_input.drag_to(offset, now_ms);
         } else {
@@ -218,6 +279,8 @@ impl EditorState {
         if self.text_edit_plain_node_id().is_none() {
             return false;
         };
+        let anchor = rich::floor_boundary(self.ui.text_edit_input.text(), anchor);
+        let focus = rich::floor_boundary(self.ui.text_edit_input.text(), focus);
         self.ui.text_edit_input.set_caret(anchor, now_ms);
         self.ui.text_edit_input.drag_to(focus, now_ms);
         true
@@ -241,11 +304,23 @@ impl EditorState {
         if self.text_edit_plain_node_id().is_none() {
             return false;
         };
-        if forward {
-            self.ui.text_edit_input.move_right(extend, now_ms);
+        let input = &self.ui.text_edit_input;
+        let next = if !extend {
+            input
+                .highlight_range()
+                .filter(|(a, b)| a != b)
+                .map(|(a, b)| if forward { b } else { a })
         } else {
-            self.ui.text_edit_input.move_left(extend, now_ms);
+            None
         }
+        .unwrap_or_else(|| {
+            if forward {
+                rich::next_boundary(input.text(), input.caret())
+            } else {
+                rich::previous_boundary(input.text(), input.caret())
+            }
+        });
+        self.text_edit_move_caret_to(next, extend, now_ms);
         true
     }
 
@@ -287,7 +362,9 @@ impl EditorState {
         }
         let line_idx = line_index_for_offset(line_ranges, caret);
         let (line_start, _) = line_ranges[line_idx];
-        let column = content[line_start.min(len)..caret.min(len)].chars().count();
+        let column = content[line_start.min(len)..caret.min(len)]
+            .graphemes(true)
+            .count();
         let next = if down {
             match line_ranges.get(line_idx + 1) {
                 Some(range) => offset_at_column(&content, *range, column),
@@ -361,22 +438,33 @@ impl EditorState {
     fn text_edit_plain_node_id(&self) -> Option<NodeId> {
         let id = self.ui.text_editing.as_ref()?;
         let node = crate::walkers::find_node(self.active_children(), id)?;
-        text_content(node)?;
+        let PenNode::Text(text) = node else {
+            return None;
+        };
+        if crate::text_design::plain_text(&text.content) != self.ui.text_edit_input.text() {
+            return None;
+        }
         Some(id.clone())
     }
 
-    fn text_edit_sync_input_to_node(&mut self, id: &NodeId) -> bool {
-        let text = self.ui.text_edit_input.text().to_owned();
-        let Some(content) = self.text_edit_content_mut(id) else {
+    fn text_edit_sync_input_to_node(
+        &mut self,
+        id: &NodeId,
+        before: &TextInputState,
+        seed: Option<&jian_ops_schema::style::StyledTextSegment>,
+    ) -> bool {
+        let after = self.ui.text_edit_input.clone();
+        let Some(PenNode::Text(node)) =
+            crate::walkers::find_node_mut(self.active_children_mut(), id)
+        else {
             return false;
         };
-        *content = text;
+        let Some(content) = rich::replace_input(&node.content, before, &after, seed) else {
+            return false;
+        };
+        node.content = content;
+        self.mark_document_changed();
         true
-    }
-
-    fn text_edit_content_mut(&mut self, id: &NodeId) -> Option<&mut String> {
-        let node = crate::walkers::find_node_mut(self.active_children_mut(), id)?;
-        text_content_node_mut(node)
     }
 
     /// Open a fresh history burst when the first keystroke since the
@@ -394,30 +482,6 @@ impl EditorState {
 }
 
 // --- Free helpers ----------------------------------------------------
-
-/// Read-only handle to a `Text` node's plain content. `None` for a
-/// non-Text node or a `Styled` content variant (the inline editor
-/// only handles plain text).
-fn text_content(node: &PenNode) -> Option<&str> {
-    match node {
-        PenNode::Text(t) => match &t.content {
-            TextContent::Plain(s) => Some(s),
-            TextContent::Styled(_) => None,
-        },
-        _ => None,
-    }
-}
-
-/// Mutable counterpart of [`text_content`].
-fn text_content_node_mut(node: &mut PenNode) -> Option<&mut String> {
-    match node {
-        PenNode::Text(t) => match &mut t.content {
-            TextContent::Plain(s) => Some(s),
-            TextContent::Styled(_) => None,
-        },
-        _ => None,
-    }
-}
 
 /// Index of the visual line containing byte `offset`. An offset in
 /// the gap between two lines (a wrap-dropped space or a `\n`) counts
@@ -441,7 +505,7 @@ fn line_index_for_offset(line_ranges: &[(usize, usize)], offset: usize) -> usize
 fn offset_at_column(content: &str, range: (usize, usize), column: usize) -> usize {
     let (start, end) = (range.0.min(content.len()), range.1.min(content.len()));
     let line = &content[start..end];
-    for (taken, (i, _)) in line.char_indices().enumerate() {
+    for (taken, (i, _)) in line.grapheme_indices(true).enumerate() {
         if taken == column {
             return start + i;
         }
@@ -453,6 +517,7 @@ fn offset_at_column(content: &str, range: (usize, usize), column: usize) -> usiz
 mod tests {
     use super::*;
     use crate::test_support::{rect, state_with, text};
+    use jian_ops_schema::node::TextContent;
 
     fn doc() -> EditorState {
         state_with(vec![
@@ -477,6 +542,94 @@ mod tests {
         let mut s = state_with(vec![text("n2", "Label", 0.0, 50.0, 100.0, 20.0, initial)]);
         assert!(s.start_text_edit(NodeId::new("n2")));
         s
+    }
+
+    #[test]
+    fn styled_text_can_be_reentered_and_replaced_without_losing_other_runs() {
+        let mut s = state_with(vec![serde_json::from_value(serde_json::json!({
+            "type":"text", "id":"n2", "content":[
+                {"text":"你好", "fontWeight":700},
+                {"text":"🙂世界", "fill":"#ff0000"}
+            ]
+        }))
+        .unwrap()]);
+        let original = s.doc.clone();
+        assert!(s.start_text_edit(NodeId::new("n2")));
+        assert_eq!(s.text_edit_content(), Some("你好🙂世界"));
+        assert!(s.text_edit_select_range("你".len(), "你好🙂".len(), 1));
+        assert!(s.text_edit_insert("新", 100));
+        let PenNode::Text(node) = &s.doc.children[0] else {
+            panic!("text")
+        };
+        let TextContent::Styled(runs) = &node.content else {
+            panic!("styled")
+        };
+        assert_eq!(
+            runs.iter().map(|r| r.text.as_str()).collect::<String>(),
+            "你新世界"
+        );
+        assert_eq!(runs[0].font_weight, Some(700));
+        assert_eq!(runs.last().unwrap().fill.as_deref(), Some("#ff0000"));
+        assert!(s.text_edit_commit());
+        assert!(s.undo());
+        assert_eq!(s.doc, original);
+    }
+
+    #[test]
+    fn styled_edit_rejects_a_stale_text_buffer() {
+        let mut s = edit("hello");
+        let PenNode::Text(node) = &mut s.doc.children[0] else {
+            panic!("text")
+        };
+        node.content = TextContent::Plain("changed by AI".into());
+        assert!(!s.text_edit_insert("!", 100));
+        assert_eq!(content(&s), "changed by AI");
+    }
+
+    #[test]
+    fn ime_replaces_a_styled_selection_without_borrowing_the_previous_run_style() {
+        let mut s = state_with(vec![serde_json::from_value(serde_json::json!({
+            "type":"text", "id":"n2", "content":[
+                {"text":"A", "fill":"#ff0000"}, {"text":"中", "fill":"#0000ff"}, {"text":"Z"}
+            ]
+        }))
+        .unwrap()]);
+        let before = s.doc.clone();
+        assert!(s.start_text_edit(NodeId::new("n2")));
+        assert!(s.text_edit_select_range(1, "A中".len(), 1));
+        assert!(s.text_edit_set_composition("新", "新".len(), 10));
+        assert!(s.text_edit_commit_composition(20));
+        let PenNode::Text(node) = &s.doc.children[0] else {
+            panic!("text")
+        };
+        let TextContent::Styled(runs) = &node.content else {
+            panic!("styled")
+        };
+        assert_eq!(
+            runs.iter().map(|r| r.text.as_str()).collect::<String>(),
+            "A新Z"
+        );
+        assert_eq!(
+            runs.iter()
+                .find(|run| run.text == "新")
+                .unwrap()
+                .fill
+                .as_deref(),
+            Some("#0000ff")
+        );
+        assert!(s.text_edit_commit());
+        assert!(s.undo());
+        assert_eq!(s.doc, before);
+    }
+
+    #[test]
+    fn caret_and_delete_keep_combining_and_emoji_sequences_together() {
+        let mut s = edit("Ae\u{301}👨‍👩‍👧‍👦Z");
+        assert!(s.text_edit_caret_horizontal(false, false, 1));
+        assert!(s.text_edit_backspace(100));
+        assert_eq!(content(&s), "Ae\u{301}Z");
+        assert!(s.text_edit_backspace(200));
+        assert_eq!(content(&s), "AZ");
     }
 
     #[test]

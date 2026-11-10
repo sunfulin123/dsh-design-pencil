@@ -1,5 +1,5 @@
-import vm from 'node:vm';
 import { SCRIPT_PRELUDE } from './script-prelude.mjs';
+import { runIsolatedDesignScript } from './quickjs-script-sandbox.mjs';
 
 const MAX_SCRIPT_BYTES = 262_144;
 const MAX_RECORDED_LINES = 4096;
@@ -16,21 +16,26 @@ export function expandScriptWithVariables(rawScript, options = {}) {
     throw new Error(`script exceeds ${MAX_SCRIPT_BYTES} byte limit`);
   }
   const lines = [];
-  const variables = {};
-  const themes = {};
+  const variables = Object.create(null);
+  const themes = Object.create(null);
   let counter = 0;
   let bytesUsed = 0;
-  const pushOp = (line) => {
-    if (lines.length >= MAX_RECORDED_LINES || bytesUsed >= MAX_RECORDED_BYTES) return;
-    if (bytesUsed + line.length <= MAX_RECORDED_BYTES) {
-      bytesUsed += line.length;
-      lines.push(line);
-    } else {
-      bytesUsed = MAX_RECORDED_BYTES;
+  let records = 0;
+  let limitExceeded = false;
+  const reserve = (content) => {
+    const size = Buffer.byteLength(content, 'utf8');
+    if (records >= MAX_RECORDED_LINES || bytesUsed + size > MAX_RECORDED_BYTES) {
+      limitExceeded = true;
+      throw new Error('Design script recorded too many operations or bytes');
     }
+    records += 1;
+    bytesUsed += size;
   };
-  const sandbox = {
-    __preserveAuthoredGeometry: Boolean(options.preserveAuthoredGeometry),
+  const pushOp = (line) => {
+    reserve(line);
+    lines.push(line);
+  };
+  const callbacks = {
     __record(parent, json) {
       const bind = `b${counter++}`;
       pushOp(`${bind}=I(${parent}, ${json})`);
@@ -58,6 +63,7 @@ export function expandScriptWithVariables(rawScript, options = {}) {
       return nodeId;
     },
     __recordV(name, json) {
+      reserve(name + json);
       try {
         variables[name] = JSON.parse(json);
       } catch {
@@ -66,6 +72,7 @@ export function expandScriptWithVariables(rawScript, options = {}) {
       return `$${name}`;
     },
     __recordT(axis, json) {
+      reserve(axis + json);
       try {
         themes[axis] = JSON.parse(json);
       } catch {
@@ -74,9 +81,8 @@ export function expandScriptWithVariables(rawScript, options = {}) {
       return axis;
     },
   };
-  const context = vm.createContext(sandbox);
-  vm.runInContext(SCRIPT_PRELUDE, context, { timeout: 2000 });
-  vm.runInContext(stripped, context, { timeout: 2000 });
+  runIsolatedDesignScript(SCRIPT_PRELUDE, stripped, callbacks, Boolean(options.preserveAuthoredGeometry));
+  if (limitExceeded) throw new Error('Design script recorded too many operations or bytes');
   if (
     lines.length === 0 &&
     Object.keys(variables).length === 0 &&
@@ -86,7 +92,7 @@ export function expandScriptWithVariables(rawScript, options = {}) {
   }
   return {
     operations: lines.join('\n'),
-    variables,
-    themes,
+    variables: { ...variables },
+    themes: { ...themes },
   };
 }

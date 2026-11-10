@@ -473,6 +473,7 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
             }
             drop(b);
             crate::live_sync_glue::flush_selection_if_changed(&inner);
+            crate::live_sync_glue::flush_document_if_changed(&inner);
         })?;
     }
     // wheel → pan / zoom
@@ -572,6 +573,11 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     if consumed {
                         crate::repaint_coalescer::request();
                     }
+                    drop(b);
+                    crate::live_sync_glue::flush_selection_if_changed(&inner);
+                    if consumed {
+                        crate::live_sync_glue::flush_document_if_changed(&inner);
+                    }
                 },
             )?;
         }
@@ -608,6 +614,11 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
                     }
                     if consumed {
                         crate::repaint_coalescer::request();
+                    }
+                    drop(b);
+                    crate::live_sync_glue::flush_selection_if_changed(&inner);
+                    if consumed {
+                        crate::live_sync_glue::flush_document_if_changed(&inner);
                     }
                 },
             )?;

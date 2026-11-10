@@ -64,6 +64,70 @@ fn mcp_range_style_roundtrip_preserves_text_and_supports_undo() {
 }
 
 #[test]
+fn range_style_rejects_stale_expected_text_without_writing() {
+    let mut state = state();
+    let before = state.doc.clone();
+    let stale = args(&[
+        ("nodeId", "t"),
+        ("expectedText", "changed"),
+        ("style", r#"{"fontWeight":700}"#),
+    ]);
+    assert!(matches!(
+        set_text_style_snapshot(&state).call(&stale),
+        ToolOutcome::Err(ToolErrorCode::InvalidArgument, _)
+    ));
+    assert_eq!(state.doc, before);
+    let matching = args(&[
+        ("nodeId", "t"),
+        ("expectedText", "A中🙂Z"),
+        ("style", r#"{"fontWeight":700}"#),
+    ]);
+    let outcome = set_text_style_snapshot(&state).call(&matching);
+    apply(&mut state, outcome);
+    assert!(state.undo());
+    assert_eq!(state.doc, before);
+}
+
+#[test]
+fn range_style_targets_an_explicit_page_without_switching_the_active_page() {
+    let mut state = state();
+    state.doc.pages = Some(serde_json::from_value(json!([
+        {"id":"page-a", "name":"A", "children":[{"type":"text","id":"shared","content":"First"}]},
+        {"id":"page-b", "name":"B", "children":[{"type":"text","id":"shared","content":"中🙂Z"}]}
+    ])).unwrap());
+    state.ui.active_page_index = 0;
+    let before = state.doc.clone();
+    let args = args(&[
+        ("nodeId", "shared"),
+        ("pageId", "page-b"),
+        ("start", "0"),
+        ("end", "2"),
+        ("style", r##"{"fill":"#ff0000"}"##),
+    ]);
+    let outcome = set_text_style_snapshot(&state).call(&args);
+    apply(&mut state, outcome);
+    let ToolOutcome::OkJson(json) = get_text_style_snapshot(&state).call(&args) else {
+        panic!("expected JSON")
+    };
+    let json: Value = serde_json::from_str(&json).unwrap();
+    assert_eq!(json["text"], "中🙂");
+    assert_eq!(json["runs"][0]["fill"], "#ff0000");
+    assert_eq!(
+        state.doc.pages.as_ref().unwrap()[0].children[0],
+        before.pages.as_ref().unwrap()[0].children[0]
+    );
+    assert_eq!(state.ui.active_page_index, 0);
+    assert!(state.undo());
+    assert_eq!(state.doc, before);
+    let bad = self::args(&[("nodeId", "shared"), ("pageId", "missing"), ("style", "{}")]);
+    assert!(matches!(
+        set_text_style_snapshot(&state).call(&bad),
+        ToolOutcome::Err(ToolErrorCode::InvalidArgument, _)
+    ));
+    assert_eq!(state.doc, before);
+}
+
+#[test]
 fn markdown_tool_produces_editable_canonical_nodes_with_unique_ids() {
     let mut state = state();
     let outcome = set_text_markdown_snapshot(&state).call(&args(&[

@@ -23,6 +23,27 @@ use crate::{Locale, ThemeMode};
 #[path = "ui_scale_bridge_tests.rs"]
 mod ui_scale_tests;
 
+#[cfg(test)]
+#[test]
+fn selection_capture_request_is_strictly_parsed() {
+    assert!(matches!(
+        BridgeInbound::parse(r#"{"type":"op-bridge/capture-selection","requestId":"request-1","before":42}"#),
+        Some(BridgeInbound::CaptureSelection { request_id, before }) if request_id == "request-1" && before == 42.0
+    ));
+    assert_eq!(
+        BridgeInbound::parse(
+            r#"{"type":"op-bridge/capture-selection","requestId":"","before":42}"#
+        ),
+        None
+    );
+    assert_eq!(
+        BridgeInbound::parse(
+            r#"{"type":"op-bridge/capture-selection","requestId":"a","before":-1}"#
+        ),
+        None
+    );
+}
+
 #[derive(Debug, PartialEq)]
 pub enum BridgeInbound {
     Init {
@@ -53,6 +74,10 @@ pub enum BridgeInbound {
     Snapshot {
         purpose: String,
         request_id: String,
+    },
+    CaptureSelection {
+        request_id: String,
+        before: f64,
     },
     SaveCommitted {
         generation: u64,
@@ -121,6 +146,21 @@ impl BridgeInbound {
                 Some(BridgeInbound::Snapshot {
                     purpose,
                     request_id,
+                })
+            }
+            "op-bridge/capture-selection" if value.as_object()?.len() == 3 => {
+                let request_id = value.get("requestId")?.as_str()?;
+                let before = value.get("before")?.as_f64()?;
+                if request_id.is_empty()
+                    || request_id.len() > 128
+                    || !before.is_finite()
+                    || before < 0.0
+                {
+                    return None;
+                }
+                Some(BridgeInbound::CaptureSelection {
+                    request_id: request_id.into(),
+                    before,
                 })
             }
             "op-bridge/save-committed" => {

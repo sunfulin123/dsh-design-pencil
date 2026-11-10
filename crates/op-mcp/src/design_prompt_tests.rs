@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use super::{get_design_prompt_snapshot, McpTool, ToolOutcome};
+use super::{get_design_prompt_snapshot, McpTool, ToolErrorCode, ToolOutcome};
 
 #[test]
 fn design_tools_guide_is_discoverable_and_included_in_full_prompt() {
@@ -53,6 +53,22 @@ fn get_design_prompt_defaults_to_all_and_lists_sections() {
         }
         other => panic!("expected prompt ok, got {other:?}"),
     }
+}
+
+#[test]
+fn op_skill_reference_is_addressable_and_unknown_resource_is_rejected() {
+    let state = op_editor_core::EditorState::new();
+    let args = BTreeMap::from([("section".into(), "op-design-review".into())]);
+    let ToolOutcome::Ok(out) = get_design_prompt_snapshot(&state).call(&args) else {
+        panic!("expected OP guidance");
+    };
+    assert!(out["designPrompt"].contains("real rendered screenshot"));
+    assert_eq!(out["version"], "synapse-design/1");
+    let args = BTreeMap::from([("section".into(), "op-design-missing".into())]);
+    assert!(matches!(
+        get_design_prompt_snapshot(&state).call(&args),
+        ToolOutcome::Err(ToolErrorCode::InvalidArgument, _)
+    ));
 }
 
 #[test]

@@ -10,7 +10,44 @@ use op_editor_core::design_system_inspector_draft::{
 };
 use op_editor_core::{EditorState, Locale, PropertyFocus};
 
+#[path = "property_panel_design_system_picker.rs"]
+mod picker;
+
 pub const HEIGHT: f32 = 1104.0;
+const HEADER_HEIGHT: f32 = 36.0;
+const SUMMARY_HEIGHT: f32 = 32.0;
+
+fn header_height(draft: &DesignSystemInspectorDraft) -> f32 {
+    HEADER_HEIGHT
+        + if draft.binding_summary.is_some() || draft.quick_mode.is_some() {
+            SUMMARY_HEIGHT
+        } else {
+            0.0
+        }
+}
+
+fn summary_mode_rect(x: f32, y: f32, width: f32, draft: &DesignSystemInspectorDraft) -> Rect {
+    let left = if draft.binding_summary.is_some() {
+        width * 0.48
+    } else {
+        PAD_X
+    };
+    Rect::xywh(
+        x + left,
+        y + HEADER_HEIGHT,
+        (width - left - PAD_X).max(0.0),
+        26.0,
+    )
+}
+
+pub fn height(draft: &DesignSystemInspectorDraft) -> f32 {
+    header_height(draft)
+        + if draft.expanded {
+            HEIGHT + picker::extra(draft)
+        } else {
+            0.0
+        }
+}
 const FIELD_KEYS: [&str; 8] = [
     "designSystem.styleId",
     "common.name",
@@ -22,43 +59,66 @@ const FIELD_KEYS: [&str; 8] = [
     "designSystem.tokens",
 ];
 
-fn field_rects(x: f32, y: f32, w: f32) -> Vec<(usize, Rect)> {
-    [
-        (0, 24.0),
-        (1, 60.0),
-        (2, 276.0),
-        (3, 312.0),
-        (4, 384.0),
-        (5, 544.0),
-        (6, 580.0),
-        (7, 704.0),
-    ]
-    .into_iter()
-    .map(|(i, offset)| {
-        (
-            i,
-            Rect::xywh(x, y + offset, w, if i == 7 { 78.0 } else { 28.0 }),
-        )
-    })
-    .collect()
+fn field_rects(x: f32, y: f32, w: f32, draft: &DesignSystemInspectorDraft) -> Vec<(usize, Rect)> {
+    [(1, 60.0), (2, 276.0), (3, 312.0), (4, 384.0), (7, 704.0)]
+        .into_iter()
+        .map(|(i, offset)| {
+            (
+                i,
+                Rect::xywh(
+                    x,
+                    y + picker::shift(offset, draft),
+                    w,
+                    if i == 7 { 78.0 } else { 28.0 },
+                ),
+            )
+        })
+        .collect()
 }
 
-pub fn push_input_rects(out: &mut Vec<(PropertyFocus, Rect)>, x: f32, y: f32, w: f32) {
+pub fn push_input_rects(
+    out: &mut Vec<(PropertyFocus, Rect)>,
+    x: f32,
+    y: f32,
+    w: f32,
+    draft: &DesignSystemInspectorDraft,
+) {
+    if !draft.expanded {
+        return;
+    }
     out.extend(
-        field_rects(x + PAD_X, y, w)
+        field_rects(x + PAD_X, y + header_height(draft), w, draft)
             .into_iter()
             .map(|(i, r)| (PropertyFocus::DesignSystem(i), r)),
     );
 }
 
-pub fn action_rects(x: f32, y: f32, w: f32) -> Vec<(A, Rect)> {
+pub fn action_rects(x: f32, y: f32, w: f32, draft: &DesignSystemInspectorDraft) -> Vec<(A, Rect)> {
+    let mut out = vec![(
+        A::DesignSystem(D::ToggleAdvanced),
+        Rect::xywh(x, y, w + PAD_X * 2.0, HEADER_HEIGHT),
+    )];
+    if draft.quick_mode.is_some() {
+        out.push((
+            A::DesignSystem(D::CycleQuickMode),
+            summary_mode_rect(x, y, w + PAD_X * 2.0, draft),
+        ));
+    }
+    if !draft.expanded {
+        return out;
+    }
+    let y = y + header_height(draft);
     let x = x + PAD_X;
-    let mut out = Vec::new();
+    if draft.styles.iter().any(|(id, _)| id == &draft.values[0]) {
+        out.push((
+            A::CopySharedStyleId,
+            Rect::xywh(x + w - 58.0, y + picker::shift(204.0, draft), 58.0, 28.0),
+        ));
+    }
     for (offset, actions) in [
         (96.0, vec![D::Kind(0), D::Kind(1), D::Kind(2)]),
-        (132.0, vec![D::BrowseStyle(false), D::BrowseStyle(true)]),
-        (168.0, vec![D::CaptureStyle]),
-        (204.0, vec![D::ApplyStyle, D::DetachStyle, D::DeleteStyle]),
+        (132.0, vec![D::CreateStyle, D::UpdateStyle]),
+        (168.0, vec![D::ApplyStyle, D::DetachStyle, D::DeleteStyle]),
         (348.0, vec![D::Bind, D::Unbind]),
         (420.0, vec![D::SetFormula]),
         (508.0, vec![D::Scope(0), D::Scope(1), D::Scope(2)]),
@@ -73,10 +133,16 @@ pub fn action_rects(x: f32, y: f32, w: f32) -> Vec<(A, Rect)> {
         out.extend(actions.into_iter().enumerate().map(|(i, action)| {
             (
                 A::DesignSystem(action),
-                Rect::xywh(x + i as f32 * (cell + 4.0), y + offset, cell, 28.0),
+                Rect::xywh(
+                    x + i as f32 * (cell + 4.0),
+                    y + picker::shift(offset, draft),
+                    cell,
+                    28.0,
+                ),
             )
         }));
     }
+    out.extend(picker::actions(x, y, w, draft));
     out
 }
 
@@ -97,7 +163,14 @@ pub(crate) fn dispatch(state: &mut EditorState, action: &A, now_ms: u64) {
     }
     let node_action = matches!(
         action,
-        D::CaptureStyle | D::ApplyStyle | D::DetachStyle | D::Bind | D::Unbind
+        D::CycleQuickMode
+            | D::CaptureStyle
+            | D::CreateStyle
+            | D::UpdateStyle
+            | D::ApplyStyle
+            | D::DetachStyle
+            | D::Bind
+            | D::Unbind
     ) || matches!(action, D::SetMode)
         && state.ui.design_system_inspector.scope == 0;
     let result = if node_action
@@ -153,15 +226,77 @@ pub fn paint(
 ) -> f32 {
     let t = |key| op_i18n::translate(locale, key);
     let w = width - PAD_X * 2.0;
+    paint_section_label(cx, theme, t("designSystem.advanced"), x, y, width);
+    let indicator = if draft.expanded { "−" } else { "+" };
+    cx.backend.draw_text(
+        &TextLayout::single_run(
+            indicator,
+            "system-ui",
+            14.0,
+            theme.foreground.to_jian(),
+            Point2D::new(0.0, 0.0),
+        ),
+        Point2D::new(x + width - PAD_X - 12.0, y + 20.0),
+    );
+    if let Some(binding) = &draft.binding_summary {
+        let available = if draft.quick_mode.is_some() {
+            width * 0.45 - PAD_X
+        } else {
+            width - PAD_X * 2.0
+        };
+        let label = super::text_metrics::fit_chrome(cx.backend, binding, available, 10.0);
+        cx.backend.draw_text(
+            &TextLayout::single_run(
+                &label,
+                "system-ui",
+                10.0,
+                theme.muted_foreground.to_jian(),
+                Point2D::new(0.0, 0.0),
+            ),
+            Point2D::new(x + PAD_X, y + HEADER_HEIGHT + 18.0),
+        );
+    }
+    if let Some(mode) = &draft.quick_mode {
+        let scope = t(if mode.explicit {
+            "designSystem.modeLocal"
+        } else {
+            "designSystem.modeInherited"
+        });
+        picker::paint_row(
+            cx,
+            theme,
+            summary_mode_rect(x, y, width, draft),
+            &format!("{scope} · {}", mode.current),
+            true,
+        );
+    }
+    if !draft.expanded {
+        super::property_panel_inputs::paint_section_divider(
+            cx,
+            theme,
+            x,
+            y + header_height(draft),
+            width,
+        );
+        return y + header_height(draft);
+    }
+    let y = y + header_height(draft);
     for (offset, key) in [
         (0.0, "designSystem.styles"),
         (248.0, "designSystem.bindings"),
         (480.0, "designSystem.modes"),
         (676.0, "designSystem.tokens"),
     ] {
-        paint_section_label(cx, theme, t(key), x, y + offset, width);
+        paint_section_label(
+            cx,
+            theme,
+            t(key),
+            x,
+            y + picker::shift(offset, draft),
+            width,
+        );
     }
-    for (i, rect) in field_rects(x + PAD_X, y, w) {
+    for (i, rect) in field_rects(x + PAD_X, y, w, draft) {
         let focus = PropertyFocus::DesignSystem(i);
         let value = edit.value_for(focus, &draft.values[i]);
         if i == 7 {
@@ -193,7 +328,7 @@ pub fn paint(
             );
         }
     }
-    for (action, rect) in action_rects(x, y, w) {
+    for (action, rect) in action_rects(x, y - header_height(draft), w, draft) {
         let A::DesignSystem(action) = action else {
             continue;
         };
@@ -228,6 +363,8 @@ pub fn paint(
                 false,
             ),
             D::CaptureStyle => ("designSystem.capture", false),
+            D::CreateStyle => ("designSystem.createStyle", false),
+            D::UpdateStyle => ("designSystem.updateStyle", false),
             D::ApplyStyle => ("designSystem.apply", false),
             D::DetachStyle => ("designSystem.detach", false),
             D::DeleteStyle => ("common.delete", false),
@@ -248,7 +385,12 @@ pub fn paint(
                 },
                 false,
             ),
-            D::LoadStyle(_) => continue,
+            D::CycleQuickMode
+            | D::ToggleAdvanced
+            | D::TogglePicker(_)
+            | D::SelectCollection(_)
+            | D::SelectMode(_)
+            | D::LoadStyle(_) => continue,
         };
         cx.backend
             .fill_round_rect(rect, 4.0, if active { theme.accent } else { theme.muted });
@@ -269,6 +411,7 @@ pub fn paint(
             ),
         );
     }
+    picker::paint_style_id(cx, theme, locale, draft, x, y, w);
     if let Some((id, reason)) = draft.lint_findings.get(draft.lint_index) {
         let text = format!(
             "{} / {} · {id}: {reason}",
@@ -302,7 +445,7 @@ pub fn paint(
                     theme.foreground.to_jian(),
                     Point2D::new(0.0, 0.0),
                 ),
-                Point2D::new(x + PAD_X, y + 946.0 + i as f32 * 14.0),
+                Point2D::new(x + PAD_X, y + picker::shift(946.0, draft) + i as f32 * 14.0),
             );
         }
     }
@@ -334,9 +477,16 @@ pub fn paint(
                 theme.muted_foreground.to_jian(),
                 Point2D::new(0.0, 0.0),
             ),
-            Point2D::new(x + PAD_X, y + offset),
+            Point2D::new(x + PAD_X, y + picker::shift(offset, draft)),
         );
     }
-    super::property_panel_inputs::paint_section_divider(cx, theme, x, y + HEIGHT, width);
-    y + HEIGHT + SECTION_GAP
+    picker::paint(cx, theme, locale, x + PAD_X, y, w, draft);
+    super::property_panel_inputs::paint_section_divider(
+        cx,
+        theme,
+        x,
+        y + HEIGHT + picker::extra(draft),
+        width,
+    );
+    y + HEIGHT + picker::extra(draft) + SECTION_GAP
 }

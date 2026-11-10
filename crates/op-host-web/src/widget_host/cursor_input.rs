@@ -325,7 +325,7 @@ impl WidgetHost {
                 }
             }
         }
-        if self.apply_image_input_selection_drag_cursor_move(x, y) {
+        if self.apply_design_text_selection_drag(x, y) {
             return true;
         }
         if self.apply_chat_text_selection_drag_cursor_move(x, y) {

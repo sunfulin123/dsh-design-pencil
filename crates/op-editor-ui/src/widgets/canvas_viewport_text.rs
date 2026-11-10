@@ -19,6 +19,13 @@ use jian_core::text_input::prev_char_boundary;
 mod layout;
 mod truncation;
 
+pub(super) fn text_edit_styled_layout(
+    backend: &mut dyn RenderBackend,
+    node: &SceneNode,
+) -> crate::widgets::canvas_text_edit::TextEditLayout {
+    layout::styled_layout(backend, node).0
+}
+
 /// Fully resolved paint style for one line slice.
 #[derive(Clone, Copy)]
 struct SliceStyle {
@@ -304,7 +311,10 @@ pub(crate) fn paint_text_node(
         }
         let mut clone = node.clone();
         clone.text = Some(rendered);
-        clone.text_runs.clear();
+        if composition_range.is_some() || node.text.as_deref() != Some(base) {
+            clone.text_runs.clear();
+        }
+        clone.text_truncation = false;
         edit_node = Some(clone);
     }
     let display = if editing.is_none() {

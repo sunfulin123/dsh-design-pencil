@@ -6,6 +6,9 @@
 
 use op_editor_core::EditorState;
 
+#[path = "property_panel_text_toggles.rs"]
+mod text_toggles;
+
 use crate::widgets::property_panel_action::CodegenAction;
 use crate::widgets::PropertyPanel;
 
@@ -407,7 +410,6 @@ pub(crate) fn apply_node_text_and_interaction_action(
     use crate::widgets::property_panel_dispatch::{
         PropertyActionFollowUp as F, PropertyActionOutcome,
     };
-    use crate::widgets::property_panel_layout_ops as layout_ops;
     use crate::widgets::PropertyPanelAction as A;
     use op_editor_core::PenNodeExt;
     match action {
@@ -477,51 +479,10 @@ pub(crate) fn apply_node_text_and_interaction_action(
             PropertyActionOutcome::Handled
         }
         A::CopyTextContent => PropertyActionOutcome::FollowUp(F::CopyTextContent),
-        A::ToggleTextBold => {
-            let sel = state.selection.anchor.clone();
-            if sel.is_real() {
-                let current_weight = state
-                    .selected_node()
-                    .and_then(op_editor_core::command_node_attrs::resolve_text_node)
-                    .and_then(|t| match t.font_weight.as_ref() {
-                        Some(jian_ops_schema::node::text::FontWeight::Number(n)) => Some(*n as u16),
-                        Some(jian_ops_schema::node::text::FontWeight::Keyword(s))
-                            if s == "bold" || s == "semibold" =>
-                        {
-                            Some(700)
-                        }
-                        _ => None,
-                    })
-                    .unwrap_or(400);
-                let next_weight = if current_weight >= 600 { 400 } else { 700 };
-                layout_ops::set_selected_font_weight(state, next_weight);
-            }
-            PropertyActionOutcome::Handled
-        }
-        A::ToggleTextItalic => {
-            let sel = state.selection.anchor.clone();
-            if sel.is_real() {
-                state.commit_history();
-                let _ = state.toggle_node_text_italic(&sel);
-            }
-            PropertyActionOutcome::Handled
-        }
-        A::ToggleTextUnderline => {
-            let sel = state.selection.anchor.clone();
-            if sel.is_real() {
-                state.commit_history();
-                let _ = state.toggle_node_text_underline(&sel);
-            }
-            PropertyActionOutcome::Handled
-        }
-        A::ToggleTextStrikethrough => {
-            let sel = state.selection.anchor.clone();
-            if sel.is_real() {
-                state.commit_history();
-                let _ = state.toggle_node_text_strikethrough(&sel);
-            }
-            PropertyActionOutcome::Handled
-        }
+        A::ToggleTextBold
+        | A::ToggleTextItalic
+        | A::ToggleTextUnderline
+        | A::ToggleTextStrikethrough => text_toggles::apply(state, action),
         A::ToggleNodeVisible => {
             let sel = state.selection.anchor.clone();
             if sel.is_real() {
@@ -533,6 +494,21 @@ pub(crate) fn apply_node_text_and_interaction_action(
                     node_id: sel,
                     flag: op_editor_core::NodeFlag::Hidden,
                     value: !hidden,
+                });
+            }
+            PropertyActionOutcome::Handled
+        }
+        A::TogglePreviewAsScreen => {
+            let node_id = state.selection.anchor.clone();
+            if node_id.is_real() {
+                let enabled = state
+                    .selected_node()
+                    .is_none_or(|n| n.base().preview_as_screen != Some(false));
+                state.commit_history();
+                let _ = state.apply(op_editor_core::EditorCommand::PatchNodeData {
+                    node_id,
+                    patch_json: format!(r#"{{"previewAsScreen":{}}}"#, !enabled),
+                    page_id: None,
                 });
             }
             PropertyActionOutcome::Handled

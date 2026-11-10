@@ -18,6 +18,44 @@ pub fn detect_unlabeled_inputs(root: &PenNode) -> Vec<Issue> {
     issues
 }
 
+/// Detect password inputs that would expose their contents while typing.
+pub fn detect_insecure_password_inputs(root: &PenNode) -> Vec<Issue> {
+    let mut issues = Vec::new();
+    walk_password_inputs(root, &mut issues);
+    issues
+}
+
+fn walk_password_inputs(node: &PenNode, issues: &mut Vec<Issue>) {
+    if let PenNode::TextInput(input) = node {
+        let label = input
+            .semantics
+            .as_ref()
+            .and_then(|value| value.label.as_deref());
+        let is_password = [
+            input.base.name.as_deref(),
+            input.placeholder.as_deref(),
+            label,
+        ]
+        .into_iter()
+        .flatten()
+        .any(|value| value.to_lowercase().contains("password") || value.contains("密码"));
+        if is_password && input.secure != Some(true) {
+            issues.push(Issue {
+                node_id: node_id(node).to_string(),
+                category: IssueCategory::WidgetA11y,
+                severity: IssueSeverity::Error,
+                property: FixProperty::None,
+                current_value: serde_json::Value::Null,
+                suggested_value: serde_json::Value::Null,
+                reason: "password text input must explicitly set secure to true".to_string(),
+            });
+        }
+    }
+    for child in children(node) {
+        walk_password_inputs(child, issues);
+    }
+}
+
 fn walk_unlabeled_inputs(node: &PenNode, issues: &mut Vec<Issue>) {
     // Only the two writable text-entry kinds carry both `placeholder` and
     // `semantics` in a way that makes "unlabeled" meaningful.
@@ -138,5 +176,21 @@ mod tests {
         let issues = detect_unlabeled_inputs(&root);
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].node_id, "deep");
+    }
+
+    #[test]
+    fn password_inputs_require_secure_entry() {
+        let root = node(json!({
+            "type": "frame", "id": "root", "children": [
+                {"type": "text_input", "id": "unsafe", "name": "Password"},
+                {"type": "text_input", "id": "safe", "name": "确认密码", "secure": true},
+                {"type": "text_input", "id": "ordinary", "name": "Email"}
+            ]
+        }));
+        let issues = detect_insecure_password_inputs(&root);
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].node_id, "unsafe");
+        assert_eq!(issues[0].severity, IssueSeverity::Error);
+        assert!(!issues[0].reason.contains("Password"));
     }
 }

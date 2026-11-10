@@ -177,6 +177,22 @@ impl PropertyPanel {
                 .iter()
                 .any(|n| n.id_str() == state.selection.anchor.as_str());
             let mut snapshot = NodeSnapshot::from_node(node, is_top_level);
+            let is_section_child = state.active_children().iter().any(|root| match root {
+                jian_ops_schema::node::PenNode::Frame(frame)
+                    if frame.base.section == Some(true) =>
+                {
+                    frame
+                        .children
+                        .as_deref()
+                        .unwrap_or_default()
+                        .iter()
+                        .any(|child| child.id_str() == state.selection.anchor.as_str())
+                }
+                _ => false,
+            });
+            snapshot.can_preview_screen = matches!(node, jian_ops_schema::node::PenNode::Frame(frame)
+                if (is_top_level || is_section_child) && frame.base.section != Some(true)
+                    && !(frame.base.id == "synapse-device-frame" && frame.base.locked == Some(true)));
             if !state.editor_ui.agent_settings.experimental_features_enabled {
                 // The Widget section is an experimental surface. Hide it
                 // unless opted in — the section's paint AND height both key
@@ -200,9 +216,45 @@ impl PropertyPanel {
                 fill_ref.as_deref(),
                 stroke_ref.as_deref(),
             );
+            let range_style = state.selected_text_style();
+            if let Some(style) = &range_style {
+                let color = style.fill.as_deref().and_then(|value| {
+                    value
+                        .strip_prefix('$')
+                        .and_then(|name| state.resolve_color_variable_hex(name))
+                        .or_else(|| Some(value.to_owned()))
+                        .and_then(|hex| color_from_hex(&hex))
+                });
+                snapshot.fill = color;
+                snapshot.fills = vec![super::FillSummary {
+                    mixed: color.is_none(),
+                    fill_type: op_editor_core::FillType::Solid,
+                    color: color.unwrap_or(crate::Color::BLACK),
+                    opacity: 1.0,
+                    blend_mode: None,
+                    variable_ref: None,
+                }];
+            }
             let mut panel = Self::build_from_snapshot(
-                state, snapshot, fill_type, now_ms, false, fill_ref, stroke_ref,
+                state,
+                snapshot,
+                if range_style.is_some() {
+                    op_editor_core::FillType::Solid
+                } else {
+                    fill_type
+                },
+                now_ms,
+                false,
+                if range_style.is_some() {
+                    None
+                } else {
+                    fill_ref
+                },
+                stroke_ref,
             );
+            if range_style.is_some() {
+                panel.color_variable_count = 0;
+            }
             if let Some(target) = authored_ref_target {
                 let options = state.components.sorted_options();
                 let has_alternative =
@@ -328,6 +380,7 @@ impl PropertyPanel {
             text_inspector: op_editor_core::text_inspector_draft::TextInspectorDraft::for_state(
                 state,
             ),
+            position_advanced: state.ui.position_advanced,
             text_inspector_enabled:
                 op_editor_core::text_inspector_draft::TextInspectorDraft::editable(state),
             id: WidgetId::new(2000),

@@ -189,12 +189,45 @@ impl WidgetHost {
         // Refresh the derived paint doc once up front — every hit-test
         // below reads `&self.layout_scene`, so it must be current.
         self.refresh_layout_scene();
+        if self.start_text_edit_pointer(x, y, viewport_width, viewport_height) {
+            return true;
+        }
         // 0-pre. Commit any in-flight rename + canvas text-edit on
         // first press anywhere. Tracked so the final return reports
         // the visible change.
         let rename_committed =
             self.editor_state.ui.layer_rename.is_some() && self.editor_state.rename_commit();
         let text_edit_was_active = self.editor_state.ui.text_editing.is_some();
+        let on_property_panel = self.editor_state.property_panel_visible()
+            && x >= viewport_width - self.editor_state.editor_ui.property_panel_width
+            && y >= op_editor_ui::widgets::TOP_BAR_HEIGHT
+            && y <= viewport_height;
+        if on_property_panel
+            && !text_edit_was_active
+            && ((self.editor_state.ui.text_selection.is_some()
+                && self.editor_state.current_text_selection().is_none())
+                || (self.editor_state.ui.text_insertion.is_some()
+                    && self.editor_state.current_text_insertion().is_none()))
+        {
+            self.editor_state.ui.text_selection = None;
+            self.editor_state.ui.text_insertion = None;
+            self.editor_state.editor_ui.show_toast(
+                "textInspector.staleSelection",
+                Vec::new(),
+                op_editor_core::editor_toast::EditorToastLevel::Warn,
+                self.now_ms,
+            );
+            self.mark_dirty();
+            return true;
+        }
+        if text_edit_was_active && on_property_panel {
+            self.editor_state.retain_text_selection();
+        } else if !on_property_panel
+            && self.editor_state.ui.color_picker.is_none()
+            && !self.editor_state.editor_ui.font_picker.open
+        {
+            self.editor_state.ui.text_selection = None;
+        }
         let text_edit_committed = self.editor_state.text_edit_commit();
         if rename_committed || text_edit_committed {
             self.mark_dirty();

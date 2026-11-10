@@ -21,6 +21,61 @@ fn call(engine: &mut DesignEngine, name: &str, args: Value) -> Value {
 }
 
 #[test]
+fn preview_eligibility_is_editable_and_preserves_screen_contents() {
+    let mut engine = DesignEngine::new();
+    engine.load_document(r#"{"version":"1.0","children":[
+        {"type":"frame","id":"shell","name":"Backdrop","previewAsScreen":false,"width":1440,"height":900},
+        {"type":"frame","id":"home","name":"Home","width":1440,"height":900,"children":[
+            {"type":"rectangle","id":"background","previewAsScreen":false,"width":1440,"height":900}
+        ]},
+        {"type":"frame","id":"synapse-device-frame","name":"Synapse Device Frame · Browser","locked":true,"width":1440,"height":940}
+    ]}"#).unwrap();
+    let screens = |engine: &mut DesignEngine| {
+        call(engine, "get_prototype", json!({}))["structuredContent"]["screens"].clone()
+    };
+    assert_eq!(
+        screens(&mut engine)
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["home"]
+    );
+    assert!(engine
+        .document_json()
+        .unwrap()
+        .contains("\"previewAsScreen\":false"));
+    assert_eq!(
+        call(
+            &mut engine,
+            "update_node",
+            json!({"nodeId":"home","data":{"previewAsScreen":false}})
+        )["isError"],
+        false
+    );
+    assert_eq!(screens(&mut engine).as_array().unwrap().len(), 0);
+    assert_eq!(call(&mut engine, "undo", json!({}))["isError"], false);
+    assert_eq!(screens(&mut engine).as_array().unwrap().len(), 1);
+    assert!(engine
+        .document_json()
+        .unwrap()
+        .contains("\"id\":\"background\""));
+}
+
+#[test]
+fn excluded_section_still_exposes_its_screen_children() {
+    let mut engine = DesignEngine::new();
+    engine.load_document(r#"{"version":"1.0","children":[
+        {"type":"frame","id":"section","section":true,"previewAsScreen":false,"width":1000,"height":900,"children":[
+            {"type":"frame","id":"screen","width":390,"height":844}
+        ]}
+    ]}"#).unwrap();
+    let graph = call(&mut engine, "get_prototype", json!({}));
+    assert_eq!(graph["structuredContent"]["screens"][0]["id"], "screen");
+}
+
+#[test]
 fn prototype_tools_set_flows_reactions_scroll_and_simulate_with_single_step_undo() {
     let mut engine = DesignEngine::new();
     engine

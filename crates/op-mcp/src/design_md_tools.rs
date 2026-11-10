@@ -16,6 +16,7 @@ pub struct GetDesignMd {
 
 pub struct SetDesignMd {
     extracted: op_editor_core::DesignMdSpec,
+    blank: bool,
 }
 
 pub struct ExportDesignMd {
@@ -56,6 +57,18 @@ impl McpTool for SetDesignMd {
     }
 
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
+        let only_if_blank = match parse_bool_arg(args, "onlyIfBlank") {
+            Ok(value) => value,
+            Err(error) => {
+                return ToolOutcome::Err(ToolErrorCode::InvalidArgument, error.to_string())
+            }
+        };
+        if only_if_blank && !self.blank {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                "The document is no longer blank; re-read it before selecting a style".into(),
+            );
+        }
         let auto_extract = match parse_bool_arg(args, "autoExtract") {
             Ok(v) => v,
             Err(e) => return ToolOutcome::Err(ToolErrorCode::InvalidArgument, e.to_string()),
@@ -124,6 +137,33 @@ pub fn get_design_md_snapshot(state: &EditorState) -> GetDesignMd {
 pub fn set_design_md_snapshot(state: &EditorState) -> SetDesignMd {
     SetDesignMd {
         extracted: extract_design_md_from_document(&state.doc),
+        blank: state.doc.design_md.is_none()
+            && state.doc.children.is_empty()
+            && state
+                .doc
+                .pages
+                .as_ref()
+                .is_none_or(|pages| pages.iter().all(|page| page.children.is_empty()))
+            && state
+                .doc
+                .variables
+                .as_ref()
+                .is_none_or(|items| items.is_empty())
+            && state
+                .doc
+                .themes
+                .as_ref()
+                .is_none_or(|items| items.is_empty())
+            && state
+                .doc
+                .variable_collections
+                .as_ref()
+                .is_none_or(|items| items.is_empty())
+            && state
+                .doc
+                .shared_styles
+                .as_ref()
+                .is_none_or(|items| items.is_empty()),
     }
 }
 

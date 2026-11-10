@@ -123,7 +123,7 @@ The zoom percentage menu includes **Import Mermaid / draw.io…**, including in 
 
 These additions do not establish complete feature parity. Markdown is a subset; inline text editing still uses a flat single-style caret/selection layout. Diagram imports support Mermaid flowcharts and single flat draw.io diagrams, including bounded compressed payloads (1 MiB compressed, 8 MiB inflated/source XML). Ambiguous multi-diagram files are rejected. Connectors are static and do not follow moved endpoints. Shared styles do not yet attach to virtual instance children. Tokens support colors, numbers, pixel dimensions, fontWeight, and aliases, not all DTCG composites/units. Variable bindings do not cover geometry, stroke width or unimplemented shadow spread. Behaviour export is supported in HTML/CSS and React Tailwind JSX, not every generator. The text inspector exposes Markdown, scalar-range and paragraph/list controls. Markdown input preserves pasted line breaks and tabs; Enter inserts a line break and Apply commits the conversion. Actual browser checks cover Unicode Markdown, range styling, mixed-font rendering and wrapping, paragraph geometry, undo, persistent recovery and its desktop/mobile dialog, the scale selector, interactive rendered-color sampling, token import, shared-style capture, variable binding, component-property authoring, individual lint repair with undo, and Mermaid/draw.io imports with visible labels. The diagram picker was also checked at a 390px viewport and 150% UI scale. Real HTTP MCP calls verify slot update/delete and instance-property reset against the rebuilt engine.
 
-Selection tools operate on engine selection; browser transient selection is not synchronized into it. AI callers must set their intended targets explicitly. Canonical node patches support existing layout and sizing fields, stacked fills and effects. Successful document mutations create an undo snapshot when their command does not already own history; commands that own history are not wrapped twice.
+The browser synchronizes its selection as temporary host context; a text range is returned only while its source text still matches. AI callers can also set intended targets explicitly. Canonical node patches support existing layout and sizing fields, stacked fills and effects. Successful document mutations create an undo snapshot when their command does not already own history; commands that own history are not wrapped twice.
 
 | Surface | Node/WASM coverage |
 | --- | --- |
@@ -131,9 +131,10 @@ Selection tools operate on engine selection; browser transient selection is not 
 | Selection, Position and history | Explicit selection, six alignment actions, two distributions, undo and redo |
 | Node structure and appearance | Canonical create/edit/move/copy/delete, grouping, ordering, clipboard, SVG insertion, text, paints, strokes and effects |
 | Pages, variables and components | Catalog-backed canonical tools |
-| Browser selection and overlay controls | Transient selection is not synchronized; camera metadata is synchronized and exposed through viewport tools |
+| Browser selection and overlay controls | Session selection and text range are synchronized as temporary context; camera metadata is exposed through viewport tools |
 | Code export | Read-only `export_code` for HTML/CSS, React Tailwind JSX and Design JSX |
 | Screenshots | `get_screenshot` renders the real CanvasKit output in a hidden headless Chrome started on demand (`DSH_CHROME_PATH` overrides discovery; `--no-headless` or `DSH_HEADLESS=0` disables it), falling back to an open editor tab or, without Chrome, an approximate server render; `structuredContent.renderer` says which was used |
+| Design scripts | `batch_design` expands design operations in a bounded QuickJS/WASM interpreter before the document transaction |
 | Arbitrary script execution | Not exposed through the active catalog |
 
 Each completed design capability requires a discoverable passive MCP schema and tests of its actual effect, invalid inputs and state preservation. Authored edits additionally require undo/redo and save/reopen evidence. UI-only completion or catalog registration alone does not satisfy this gate. DSH remains the only AI execution owner.
@@ -146,13 +147,14 @@ Debug switches on the editor URL: `?perf=1` logs per-frame section timings to th
 
 ## AI design loop
 
-`ai-design-loop.test.mjs` drives the MCP loop an agent runs (create page, design, screenshot, lint, fix and adjust, screenshot) on an empty and a ~20k-node document. `DSH_E2E_CHROME=1 DSH_E2E_OUT=<dir> node --test ai-design-loop.test.mjs` repeats it with real headless CanvasKit captures and keeps the PNGs.
+`ai-design-loop.test.mjs` drives predetermined MCP calls for a design loop (create page, design, screenshot, lint, fix and adjust, screenshot) on an empty and a ~20k-node document. `DSH_E2E_CHROME=1 DSH_E2E_OUT=<dir> node --test ai-design-loop.test.mjs` repeats it with real headless CanvasKit captures and keeps the PNGs. This does not establish autonomous model performance.
 
 ## Build and test
 
 Build in the source repository, not in the consumer plugin. Install Rust 1.96.0 with `wasm32-unknown-unknown`, Node.js 24 or newer, and `wasm-bindgen-cli` 0.2.117.
 
 ```sh
+(cd packages && bun install --frozen-lockfile)
 rustup target add wasm32-unknown-unknown --toolchain 1.96.0
 cargo +1.96.0 install wasm-bindgen-cli --version 0.2.117 --locked
 CARGO_TARGET_DIR=/tmp/dsh-design-pencil-wasm bash packages/dsh-node-runtime/build-engine.sh
@@ -163,8 +165,8 @@ node --test crates/op-host-web/tests/op_ck_bridge_*.test.mjs
 
 The builds emit ignored Node.js bindings into `wasm/` and browser assets into `web-bundle/`. They do not build an App, native daemon, or Skia. `op-mcp` retains native text measurement by default; this engine disables that feature. Cargo defaults to the two DSH WASM owners instead of the standalone App.
 
-`scripts/stage-dsh-runtime.mjs` stages a checksummed Node/WASM payload from a clean committed checkout. Its file whitelist excludes vendors, Rust source, build caches, tests, type declarations and Agent resources. GitHub webpage publication of `runtime-v0.8.5-synapse.4` runs the Node/WASM release workflow; it uploads validated assets without replacing the tag or overwriting existing assets. No release was published as part of this implementation.
+`scripts/stage-dsh-runtime.mjs` stages a checksummed Node/WASM payload from a clean committed checkout. It includes the locked QuickJS interpreter packages and excludes unrelated vendors, Rust source, build caches, tests, type declarations and Agent resources. GitHub webpage publication of `runtime-v0.8.5-synapse.4` runs the Node/WASM release workflow; it uploads validated assets without replacing the tag or overwriting existing assets. No release was published as part of this implementation.
 
 ## Delivery status
 
-Complete design and MCP parity, arbitrary script execution, full screenshot/image-export tools, headless PNG/PDF rendering, browser/engine transient-state synchronization, and consumer launch adaptation are not implemented here. Deterministic `export_code` is available independently of AI execution. Browser imports use the original editor path. The Node runtime and release pipeline are internal until the DSH plugin is adapted and verified end to end; they are not a drop-in replacement for the native consumer contract.
+Complete design and MCP parity, every sensitive host adapter, autonomous-model design acceptance, and full image-export parity are not yet verified. Deterministic `export_code` is available independently of AI execution. Browser imports use the original editor path. The Node runtime and release pipeline remain internal until the DSH plugin is adapted and verified end to end; they are not a drop-in replacement for the native consumer contract.

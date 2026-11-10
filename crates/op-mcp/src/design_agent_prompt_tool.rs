@@ -1,12 +1,11 @@
-//! Read-only MCP access to the complete, task-matched design-agent prompt.
+//! Read-only MCP access to the versioned OP design skill.
 //!
-//! `get_design_prompt` exposes individual reference sections. This tool
-//! exposes the actual host-aware system prompt used by OpenPencil's design
-//! loop, including the generation skills resolved from the user's request.
+//! Focused references remain available through `get_design_prompt`. Managed
+//! hosts can add the selected style from their authoritative asset store.
 
 use std::collections::BTreeMap;
 
-use op_ai_skills::{design_agent_system_prompt_with_skills_for, DesignVerifyProtocol};
+use op_ai_skills::synapse_op_design;
 
 use super::{McpTool, ToolErrorCode, ToolOutcome};
 
@@ -18,24 +17,33 @@ impl McpTool for GetDesignAgentPrompt {
     }
 
     fn call(&self, args: &BTreeMap<String, String>) -> ToolOutcome {
-        let user_message = match args.get("userMessage").map(String::as_str).map(str::trim) {
-            Some(message) if !message.is_empty() => message,
+        if args.contains_key("styleId")
+            || args.contains_key("expectedRevision")
+            || args.contains_key("useDocumentStyle")
+        {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                "Style assembly requires a managed Node host".into(),
+            );
+        }
+        match args.get("userMessage").map(String::as_str).map(str::trim) {
+            Some(message) if !message.is_empty() => (),
             _ => {
                 return ToolOutcome::Err(
                     ToolErrorCode::MissingArgument,
                     "userMessage is required".into(),
                 )
             }
-        };
-        let (verify, verify_name) = match args
+        }
+        let (screenshots, verify_name) = match args
             .get("verifyProtocol")
             .map(String::as_str)
             .map(str::trim)
             .filter(|value| !value.is_empty())
             .unwrap_or("screenshot")
         {
-            "screenshot" => (DesignVerifyProtocol::Screenshot, "screenshot"),
-            "layout" => (DesignVerifyProtocol::LayoutSnapshot, "layout"),
+            "screenshot" => (true, "screenshot"),
+            "layout" => (false, "layout"),
             other => {
                 return ToolOutcome::Err(
                     ToolErrorCode::InvalidArgument,
@@ -43,9 +51,18 @@ impl McpTool for GetDesignAgentPrompt {
                 )
             }
         };
+        let mode = args.get("mode").map(String::as_str).unwrap_or("full");
+        let Some(prompt) = synapse_op_design::prompt(mode, screenshots) else {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                "mode must be bootstrap, local or full".into(),
+            );
+        };
         let result = serde_json::json!({
-            "prompt": design_agent_system_prompt_with_skills_for(user_message, verify),
+            "version": synapse_op_design::VERSION,
+            "prompt": prompt,
             "verifyProtocol": verify_name,
+            "resources": ["op-design-direction", "op-design-composition", "op-design-review"],
         });
         ToolOutcome::OkJson(result.to_string())
     }
@@ -60,7 +77,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn task_message_resolves_domain_depth_and_defaults_to_screenshot() {
+    fn task_message_uses_op_skill_and_defaults_to_screenshot() {
         let args = BTreeMap::from([(
             "userMessage".to_string(),
             "Design an analytics dashboard with a client table".to_string(),
@@ -70,9 +87,15 @@ mod tests {
         };
         let value: serde_json::Value = serde_json::from_str(&json).expect("prompt JSON");
         assert_eq!(value["verifyProtocol"], "screenshot");
+        assert_eq!(value["version"], synapse_op_design::VERSION);
         assert!(value["prompt"]
             .as_str()
-            .is_some_and(|prompt| prompt.contains("DASHBOARD / ADMIN / DATA-TABLE DEPTH")));
+            .unwrap()
+            .contains("three-layer context funnel"));
+        assert!(value["prompt"]
+            .as_str()
+            .unwrap()
+            .contains("preselected recommendation is not consent"));
     }
 
     #[test]
@@ -91,7 +114,7 @@ mod tests {
         assert_eq!(value["verifyProtocol"], "layout");
         let prompt = value["prompt"].as_str().expect("prompt string");
         assert!(prompt.contains("This host cannot render screenshots"));
-        assert!(prompt.contains("THREE-SECTION ARCHITECTURE"));
+        assert!(prompt.contains("report visual verification as unavailable"));
     }
 
     #[test]
@@ -103,6 +126,14 @@ mod tests {
         let args = BTreeMap::from([
             ("userMessage".to_string(), "Design a page".to_string()),
             ("verifyProtocol".to_string(), "video".to_string()),
+        ]);
+        assert!(matches!(
+            get_design_agent_prompt_snapshot().call(&args),
+            ToolOutcome::Err(ToolErrorCode::InvalidArgument, _)
+        ));
+        let args = BTreeMap::from([
+            ("userMessage".to_string(), "Design a page".to_string()),
+            ("mode".to_string(), "unexpected".to_string()),
         ]);
         assert!(matches!(
             get_design_agent_prompt_snapshot().call(&args),

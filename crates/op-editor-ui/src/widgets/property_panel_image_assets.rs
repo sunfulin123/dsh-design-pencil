@@ -132,29 +132,9 @@ fn sizing_number(size: &Option<SizingBehavior>) -> Option<f64> {
     }
 }
 
-/// TS `isLocalAssetPath` (document-assets.ts:22-28): everything that
-/// is not a `data:` / `http(s):` / `blob:` URL or a same-origin
-/// runtime route is a file-system asset path.
-pub fn is_local_asset_path(path: &str) -> bool {
-    let t = path.trim();
-    if t.is_empty() {
-        return false;
-    }
-    let lower = t.to_ascii_lowercase();
-    if lower.starts_with("data:")
-        || lower.starts_with("http:")
-        || lower.starts_with("https:")
-        || lower.starts_with("blob:")
-    {
-        return false;
-    }
-    // Same-origin runtime endpoints, not fs paths (TS
-    // SAME_ORIGIN_ROUTE_RE).
-    if t.starts_with("/api/") || t.starts_with("/_/") {
-        return false;
-    }
-    true
-}
+#[path = "property_panel_image_source.rs"]
+mod image_source;
+pub use image_source::is_local_asset_path;
 
 /// Active image-generation profile summary (TS
 /// `getActiveImageGenProfile()`): the profile matching the active id,
@@ -189,7 +169,10 @@ pub(crate) fn image_section_top(panel_rect: Rect, visible: VisibleSections) -> O
     }
     let mut y = crate::widgets::property_panel_text::sections_top_before_text(panel_rect, visible);
     if visible.text {
-        y += crate::widgets::property_panel_text::text_section_height(visible.touch_controls);
+        y += crate::widgets::property_panel_text::text_section_height(
+            visible.touch_controls,
+            visible.text_advanced,
+        );
         y += SECTION_GAP;
     }
     Some(y)

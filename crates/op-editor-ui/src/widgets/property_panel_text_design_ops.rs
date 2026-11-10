@@ -7,6 +7,10 @@ use op_editor_core::text_design_command::TextDesignSnapshot;
 use op_editor_core::{EditorCommand, NodeId};
 
 pub(crate) fn dispatch(state: &mut EditorState, action: &A, now_ms: u64) {
+    if matches!(action, A::ToggleTextAdvanced) {
+        state.ui.text_inspector.expanded = !state.ui.text_inspector.expanded;
+        return;
+    }
     let authored_blocked = std::mem::take(&mut state.ui.text_inspector.authored_blocked);
     if authored_blocked || !TextInspectorDraft::editable(state) {
         warn(
@@ -169,7 +173,18 @@ fn prepare(state: &EditorState, action: &A) -> Result<EditorCommand, String> {
                 underline: draft.underline,
                 strikethrough: draft.strike,
             };
-            let content = styled_range(&text.content, integer(1)?, integer(2)?, &style)?;
+            let (start, end) = if let Some(range) = &state.ui.text_selection {
+                if range.node_id.as_str() != id
+                    || range.page_index != state.ui.active_page_index
+                    || op_editor_core::text_design::plain_text(&text.content) != range.text
+                {
+                    return Err("Text changed; select it again".into());
+                }
+                (range.start, range.end)
+            } else {
+                (integer(1)?, integer(2)?)
+            };
+            let content = styled_range(&text.content, start, end, &style)?;
             return Ok(EditorCommand::Batch {
                 commands: vec![EditorCommand::PatchNodeData {
                     node_id: NodeId::new(text.base.id),

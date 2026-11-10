@@ -74,8 +74,13 @@ impl PropertyPanel {
             self.logical_point(panel_rect, point),
         )
         .filter(|action| {
-            self.text_inspector_enabled
-                || !crate::widgets::property_panel_text_design::is_action(action)
+            (self.text_inspector_enabled
+                || !crate::widgets::property_panel_text_design::is_action(action))
+                && (!matches!(
+                    action,
+                    PropertyPanelAction::ApplyTextRange
+                        | PropertyPanelAction::ToggleTextRangeClearLink
+                ) || self.text_inspector.selected_text)
         })
     }
 
@@ -448,6 +453,7 @@ impl PropertyPanel {
                 bounds.origin.x,
                 bounds.origin.y,
                 bounds.size.x - crate::widgets::property_panel_inputs::PAD_X * 2.0,
+                &self.design_system_inspector,
             );
             if let Some((focus, _)) = inputs.into_iter().find(|(_, rect)| rect.contains(point)) {
                 return Some(focus);

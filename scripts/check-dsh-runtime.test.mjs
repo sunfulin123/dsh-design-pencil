@@ -69,7 +69,8 @@ test('runtime release has no native build or Agent SDK installation', async () =
   assert.equal(workflow.env.OPENPENCIL_DSH_RUNTIME_VERSION, '0.8.5-synapse.4')
   assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-engine.sh'))
   assert.ok(steps.some(step => step.run === 'bash packages/dsh-node-runtime/build-web.sh'))
-  assert.doesNotMatch(JSON.stringify(steps), /op-host-web-server|darwin-arm64|brew install|bun install|npm ci/)
+  assert.ok(steps.some(step => step.run === 'bun install --frozen-lockfile' && step['working-directory'] === 'packages'))
+  assert.doesNotMatch(JSON.stringify(steps), /op-host-web-server|darwin-arm64|brew install|npm ci/)
 })
 
 async function fixture(context, options = {}) {

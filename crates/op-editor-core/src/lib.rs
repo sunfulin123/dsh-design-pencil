@@ -90,7 +90,9 @@ pub mod shared_styles;
 pub mod size_class;
 pub mod text_design;
 pub mod text_design_command;
+pub mod text_insertion;
 pub mod text_inspector_draft;
+pub mod text_selection;
 // Runtime-fetched product assets for the browser bundle (native embeds them).
 pub mod asset_center_keyboard;
 pub mod design_scene;

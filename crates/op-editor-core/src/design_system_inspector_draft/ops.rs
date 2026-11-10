@@ -132,9 +132,64 @@ fn formula_command(
 }
 
 pub fn execute(state: &mut EditorState, action: A) -> Result<(), String> {
-    state.ui.design_system_inspector = DesignSystemInspectorDraft::for_state(state);
+    let previous = &state.ui.design_system_inspector;
+    let latest = DesignSystemInspectorDraft::for_state(state);
+    let stale = match action {
+        A::LoadStyle(_) if previous.picker == Some(0) => previous.styles != latest.styles,
+        A::SelectCollection(_) if previous.picker == Some(1) => {
+            previous.collections != latest.collections
+        }
+        A::SelectMode(_) if previous.picker == Some(2) => {
+            previous.collections != latest.collections
+        }
+        _ => false,
+    };
+    if stale {
+        state.ui.design_system_inspector.picker = None;
+        return Err("Choices changed; reopen the menu".into());
+    }
+    state.ui.design_system_inspector = latest;
     let draft = state.ui.design_system_inspector.clone();
+    let mut created_style_id = None;
     let command = match action {
+        A::ToggleAdvanced => {
+            state.ui.design_system_inspector.expanded = !draft.expanded;
+            state.ui.design_system_inspector.picker = None;
+            return Ok(());
+        }
+        A::TogglePicker(index) => {
+            if index > 2 {
+                return Err("Unknown design-system picker".into());
+            }
+            state.ui.design_system_inspector.picker =
+                (draft.picker != Some(index)).then_some(index);
+            return Ok(());
+        }
+        A::SelectCollection(index) => {
+            let (name, _) = draft
+                .collections
+                .get(index)
+                .ok_or("Collection is no longer available")?;
+            state.ui.design_system_inspector.values[5] = name.clone();
+            state.ui.design_system_inspector.values[6] = "auto".into();
+            state.ui.design_system_inspector.picker = None;
+            return Ok(());
+        }
+        A::SelectMode(index) => {
+            let (_, modes) = draft
+                .collections
+                .iter()
+                .find(|(name, _)| name == draft.values[5].trim())
+                .ok_or("Collection is no longer available")?;
+            let value = if index == 0 {
+                "auto"
+            } else {
+                modes.get(index - 1).ok_or("Mode is no longer available")?
+            };
+            state.ui.design_system_inspector.values[6] = value.into();
+            state.ui.design_system_inspector.picker = None;
+            return Ok(());
+        }
         A::Kind(index) => {
             state.ui.design_system_inspector.kind = *[
                 SharedStyleKind::Paint,
@@ -167,6 +222,7 @@ pub fn execute(state: &mut EditorState, action: A) -> Result<(), String> {
             draft.values[0] = id.clone();
             draft.values[1] = style.name.clone();
             draft.kind = style.kind;
+            draft.picker = None;
             return Ok(());
         }
         A::BrowseStyle(next) => {
@@ -189,6 +245,34 @@ pub fn execute(state: &mut EditorState, action: A) -> Result<(), String> {
             return execute(state, A::LoadStyle(index));
         }
         A::CaptureStyle => capture_style(state, &draft)?,
+        A::CreateStyle => {
+            let styles = state.doc.shared_styles.as_ref();
+            let mut number = 1usize;
+            let id = loop {
+                let candidate = format!("style-{number}");
+                if !styles.is_some_and(|styles| styles.contains_key(&candidate)) {
+                    break candidate;
+                }
+                number = number
+                    .checked_add(1)
+                    .ok_or("No shared style ID is available")?;
+            };
+            let mut new_style = draft.clone();
+            new_style.values[0] = id.clone();
+            created_style_id = Some(id);
+            capture_style(state, &new_style)?
+        }
+        A::UpdateStyle => {
+            if !state
+                .doc
+                .shared_styles
+                .as_ref()
+                .is_some_and(|styles| styles.contains_key(draft.values[0].trim()))
+            {
+                return Err("Select an existing shared style to update".into());
+            }
+            capture_style(state, &draft)?
+        }
         A::ApplyStyle => style_command(SharedStyleOperation::Apply {
             id: draft.values[0].trim().into(),
             node_ids: selected_ids(state),
@@ -226,6 +310,21 @@ pub fn execute(state: &mut EditorState, action: A) -> Result<(), String> {
                 state,
                 scope,
                 &BTreeMap::from([(draft.values[5].trim().into(), draft.values[6].trim().into())]),
+            )
+            .map_err(|error| error.to_string())?
+        }
+        A::CycleQuickMode => {
+            let quick = draft.quick_mode.ok_or("No switchable mode is available")?;
+            let current = quick
+                .modes
+                .iter()
+                .position(|mode| mode == &quick.current)
+                .ok_or("Mode is no longer available")?;
+            let next = quick.modes[(current + 1) % quick.modes.len()].clone();
+            variable_scope_mode_command(
+                state,
+                VariableModeScope::Node(state.selection.anchor.as_str().into()),
+                &BTreeMap::from([(quick.collection, next)]),
             )
             .map_err(|error| error.to_string())?
         }
@@ -300,6 +399,16 @@ pub fn execute(state: &mut EditorState, action: A) -> Result<(), String> {
     state.apply(command);
     if let Some(reason) = state.ui.design_reject.take() {
         return Err(reason);
+    }
+    if let Some(id) = created_style_id {
+        if state
+            .doc
+            .shared_styles
+            .as_ref()
+            .is_some_and(|styles| styles.contains_key(&id))
+        {
+            state.ui.design_system_inspector.values[0] = id;
+        }
     }
     Ok(())
 }

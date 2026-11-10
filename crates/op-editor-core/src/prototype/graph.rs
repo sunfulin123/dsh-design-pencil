@@ -72,7 +72,7 @@ impl PrototypeGraph {
                     let PenNode::Frame(frame) = node else {
                         continue;
                     };
-                    if !is_valid_screen_frame(frame) {
+                    if !is_valid_container_frame(frame) {
                         continue;
                     }
                     if frame.base.section == Some(true) {
@@ -124,7 +124,7 @@ impl PrototypeGraph {
                             screen_roots.insert(entry.id.clone(), (child.clone(), origin));
                             page_screens.push(entry);
                         }
-                    } else {
+                    } else if is_valid_screen_frame(frame) {
                         let (entry, origin) = build_screen_entry(
                             page_idx,
                             page_id,
@@ -299,10 +299,26 @@ impl PrototypeGraph {
     }
 }
 
-fn is_valid_screen_frame(frame: &FrameNode) -> bool {
+fn is_valid_container_frame(frame: &FrameNode) -> bool {
     frame.base.visible != Some(false)
         && frame.base.x.is_none_or(f64::is_finite)
         && frame.base.y.is_none_or(f64::is_finite)
+}
+
+pub(crate) fn is_valid_screen_frame(frame: &FrameNode) -> bool {
+    is_valid_container_frame(frame)
+        && frame.base.preview_as_screen != Some(false)
+        && !is_legacy_device_decoration(frame)
+}
+
+/// Older generated device shells were persisted before preview eligibility existed.
+fn is_legacy_device_decoration(frame: &FrameNode) -> bool {
+    frame.base.id == "synapse-device-frame"
+        && frame.base.locked == Some(true)
+        && matches!(
+            frame.base.name.as_deref(),
+            Some("Synapse Device Frame · Browser" | "Synapse Device Frame · Phone")
+        )
 }
 
 fn build_screen_entry(

@@ -201,6 +201,8 @@ impl LayoutPaddingSummary {
 /// independently. Built from `node_fills` in authored order.
 #[derive(Debug, Clone)]
 pub struct FillSummary {
+    /// A selected text range contains more than one effective colour.
+    pub mixed: bool,
     /// The fill kind — drives the per-row type dropdown + which body
     /// (solid hex / gradient stops / image) paints below the head row.
     pub fill_type: op_editor_core::FillType,

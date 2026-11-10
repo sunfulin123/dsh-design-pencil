@@ -62,6 +62,15 @@ impl EditorState {
     /// stroke colour. Editable-gated. Returns true when the write
     /// landed. Mirrors shell-core's `set_selected_color`.
     pub fn set_selected_color(&mut self, is_fill: bool, hex: &str) -> bool {
+        if is_fill {
+            let style = crate::text_design::TextRangeStyle {
+                fill: Some(hex.into()),
+                ..Default::default()
+            };
+            if let Some(result) = self.preview_text_selection_style(&style) {
+                return result.is_ok();
+            }
+        }
         let instance_scope = self.begin_instance_write_for_anchor();
         let sel = self.selection.anchor.clone();
         let wrote = if !sel.is_real() || !self.is_editable(&sel) {
@@ -75,6 +84,15 @@ impl EditorState {
         } else {
             false
         };
+        // A literal colour is a local override. Drop the stale paint-time
+        // binding cache so the selected node actually displays that colour.
+        if wrote {
+            if is_fill {
+                self.ui.variables.fill_refs.remove(&sel);
+            } else {
+                self.ui.variables.stroke_refs.remove(&sel);
+            }
+        }
         if let Some(scope) = instance_scope {
             self.finish_instance_write(scope);
         }
@@ -194,12 +212,17 @@ impl EditorState {
                 &display_node
             }
         };
-        let current_hex = match target {
+        let current_hex = if matches!(target, ColorTarget::Fill) && fill_index == 0 {
+            self.selected_text_style().and_then(|style| style.fill)
+        } else {
+            None
+        }
+        .or_else(|| match target {
             ColorTarget::Fill => indexed_solid_fill_hex(node, fill_index),
             ColorTarget::Stroke => first_solid_stroke_hex(node).map(str::to_string),
             ColorTarget::GradientStop(i) => gradient_stop_hex(node, i),
             ColorTarget::EffectColor(i) => effect_color_hex(node, i),
-        }
+        })
         .unwrap_or_else(|| "#000000".to_string());
         let (h, s, v) = rgb_to_hsv(parse_hex_rgb(&current_hex).unwrap_or((0.0, 0.0, 0.0)));
         // Preserve authored colour alpha across picker edits. Solid fills
@@ -452,6 +475,9 @@ impl EditorState {
             let before = snapshot_variable_hex(&snap, name, &self.ui.variables.active_theme);
             let after = self.resolve_variable(name).and_then(scalar_as_hex);
             before != after
+        } else if self.ui.text_selection.is_some() && matches!(state.target, ColorTarget::Fill) {
+            let id = self.selection.anchor.clone();
+            snapshot_find_node(&snap, &id) != crate::walkers::find_node(self.active_children(), &id)
         } else if let Some(ref_id) = match self.selected_node() {
             Some(jian_ops_schema::node::PenNode::Ref(_)) => Some(self.selection.anchor.clone()),
             _ => crate::instance_override::split_instance_child_anchor(

@@ -186,7 +186,19 @@ pub fn slideshow_for_document(state: &EditorState) -> Option<SlideshowState> {
     if state.editor_ui.scenario != Some(DesignScene::Slides) {
         return None;
     }
-    SlideshowState::new(active_page_boards(state))
+    let boards = state
+        .active_children()
+        .iter()
+        .filter_map(|node| match node {
+            jian_ops_schema::node::PenNode::Frame(frame)
+                if crate::prototype::graph::is_valid_screen_frame(frame) =>
+            {
+                Some(node.id_str().to_string())
+            }
+            _ => None,
+        })
+        .collect();
+    SlideshowState::new(boards)
 }
 
 impl EditorState {
@@ -322,6 +334,18 @@ mod tests {
         );
 
         assert_eq!(active_page_boards(&state), vec!["slide-1"]);
+    }
+
+    #[test]
+    fn preview_excludes_decorative_boards_without_changing_export_order() {
+        let state = deck_state(
+            r#"{"version":"1.0.0","children":[
+                {"type":"frame","id":"backdrop","previewAsScreen":false,"width":1920,"height":1080},
+                {"type":"frame","id":"slide","width":1920,"height":1080}
+            ]}"#,
+        );
+        assert_eq!(active_page_boards(&state), vec!["backdrop", "slide"]);
+        assert_eq!(slideshow_for_document(&state).unwrap().boards(), &["slide"]);
     }
 
     #[test]

@@ -7,7 +7,7 @@ use jian_ops_schema::sizing::{SizingBehavior, SizingKeyword};
 use jian_ops_schema::style::PenFill;
 use op_editor_core::codegen::{CodegenHover, CodegenPhase};
 use op_editor_core::image_panel_state::{ImageAssetCheck, ImageAssetStatus};
-use op_editor_core::{ButtonPressTarget, NodeId, PropertyFocus};
+use op_editor_core::{ButtonPressTarget, NodeId, PenNodeExt, PropertyFocus};
 use op_editor_core::{FlexLayout, PaddingEditMode, PropertyTab};
 use op_editor_ui::widgets::property_panel_action::CodegenAction;
 use op_editor_ui::widgets::property_panel_action::{
@@ -61,6 +61,44 @@ fn task9_effect_actions_dispatch_background_blur_and_visibility() {
     assert!(host.effect_radius_drag.is_some());
     assert!(host.apply_release_with_viewport(VIEWPORT_W, VIEWPORT_H));
     assert!(host.effect_radius_drag.is_none());
+}
+
+#[test]
+fn preview_screen_toggle_works_for_page_and_section_child_and_is_undoable() {
+    let mut host = WidgetHost::new();
+    seed(
+        &mut host,
+        r#"{"version":"1.0.0","children":[
+        {"type":"frame","id":"page","width":500,"height":500},
+        {"type":"frame","id":"section","section":true,"width":500,"height":500,"children":[
+            {"type":"frame","id":"detail","width":300,"height":400}
+        ]}
+    ]}"#,
+    );
+    for id in ["page", "detail"] {
+        host.editor_state.set_single_selection(NodeId::new(id));
+        let point = point_for_action(&host, |action| {
+            matches!(action, PropertyPanelAction::TogglePreviewAsScreen)
+        });
+        assert!(host.apply_press(point.x, point.y, VIEWPORT_W, VIEWPORT_H));
+        assert_eq!(
+            host.editor_state
+                .selected_node()
+                .unwrap()
+                .base()
+                .preview_as_screen,
+            Some(false)
+        );
+        assert!(host.editor_state.undo());
+        assert_ne!(
+            host.editor_state
+                .selected_node()
+                .unwrap()
+                .base()
+                .preview_as_screen,
+            Some(false)
+        );
+    }
 }
 
 #[test]

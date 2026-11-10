@@ -18,7 +18,11 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
         A::DesignSystem(action) => {
             use op_editor_core::design_system_inspector_draft::DesignSystemAction as S;
             match action {
-                S::Kind(_)
+                S::ToggleAdvanced
+                | S::TogglePicker(_)
+                | S::SelectCollection(_)
+                | S::SelectMode(_)
+                | S::Kind(_)
                 | S::Scope(_)
                 | S::LoadStyle(_)
                 | S::BrowseStyle(_)
@@ -99,11 +103,14 @@ pub fn collab_gate_action(action: &PropertyPanelAction) -> op_editor_core::Colla
         | A::ToggleTextItalic
         | A::ToggleTextUnderline
         | A::ToggleTextStrikethrough => G::Document(D::Unsupported(U::Typography)),
-        A::ToggleNodeVisible | A::ToggleNodeLocked => {
+        A::ToggleNodeVisible | A::ToggleNodeLocked | A::TogglePreviewAsScreen => {
             G::Document(D::Unsupported(U::VisibilityAndLocking))
         }
 
-        A::CycleTextRangeFlag(_)
+        A::CopySharedStyleId
+        | A::TogglePositionAdvanced
+        | A::ToggleTextAdvanced
+        | A::CycleTextRangeFlag(_)
         | A::ToggleTextRangeClearLink
         | A::SetTextParagraphList(_)
         | A::SetPropertyTab(_)

@@ -120,7 +120,14 @@ fn list_libraries() -> String {
 
 /// A working copy with the library variables `arguments` mention, or `None`
 /// when the call uses none.
-pub(crate) fn with_referenced_imports(state: &EditorState, arguments: &str) -> Option<EditorState> {
+pub(crate) fn with_referenced_imports(
+    state: &EditorState,
+    tool_name: &str,
+    arguments: &str,
+) -> Option<EditorState> {
+    if tool_name == "set_design_md" {
+        return None;
+    }
     let names = referenced_library_names(&state.doc, arguments);
     if names.is_empty() {
         return None;
