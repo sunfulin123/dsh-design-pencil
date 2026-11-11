@@ -100,6 +100,7 @@ pub fn detect_all_for_form(root: &PenNode, doc: &PenDocument, form: DesignForm) 
     // shadows an earlier detector under the `{node_id}:{property}` dedup.
     combined.extend(detect_unlabeled_inputs(root));
     combined.extend(detect_insecure_password_inputs(root));
+    combined.extend(detect_cramped_dropdown_chevrons(root));
     // Slop rules (open-design `impeccable-design-polish` "AI tells") —
     // report-only warnings, no auto-fix; they run last so a slop finding never
     // shadows a structural issue on the same node.

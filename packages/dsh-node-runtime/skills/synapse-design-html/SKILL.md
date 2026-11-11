@@ -1,30 +1,50 @@
 ---
 name: synapse-design-html
 metadata:
-  version: synapse-design-html/1
-description: Create and verify a standalone HTML proof of concept for a Synapse design task using the selected product style guide.
+  version: synapse-design-html/2
+description: Create, verify, and hand off a standalone HTML proof of concept for a Synapse design task using the selected product style guide and evidence ledger.
 ---
 
 # Synapse Design HTML POC
 
-This is the HTML branch of `synapse-design`. It creates a prototype for design review, not production React or application implementation. Respect a user's explicit request for an independent HTML prototype. Use the host's ordinary file and sandbox permissions; do not change application source unless the user expressly asks.
+This is the HTML proof-of-concept branch of `synapse-design`. Execute Stages A–E in order so every planned screen, state, style binding, and browser verification check completes before handoff. This workflow produces a standalone design prototype under `.synapse/html-design/tasks/<taskId>/`, never production React or application code unless the user expressly requests implementation.
 
-## Context and style
+**Rule Precedence:** User instructions > Selected DESIGN specification > This skill > Mandatory shared judgement (`references/judgement.md` and `references/direction/surface-modes.md`) > Optional supporting playbooks under `references/`.
 
-Use the same three-layer conversation, project/document, and requirements/style funnel as `synapse-design`. Call `synapse_design_discovery`, follow `needs_context`, `needs_questions`, and `needs_route` if returned, then use the user's actual style choice. Read the entire selected DESIGN returned by the product catalogue. Do not use another theme index, fallback palette, or separate visual-direction survey. Talkdesk Cobalt is a recommendation, not automatic consent.
+## Stage A — Three-Layer Context & Screen Plan
 
-## Create the prototype
+Follow the same three-layer conversation, project/document, and requirements/style funnel as `synapse-design`:
 
-Build a standalone HTML/CSS/JavaScript POC under `.synapse/html-design/tasks/<taskId>/`. Plan the complete requested scope before adding new elements. Reuse the selected guide's typography, colors, spacing and components, and preserve explicit user adjustments. Keep content truthful and label assumed data. Use semantic markup, keyboard focus, useful control states, responsive layouts, and the minimum interaction needed to test the user's scenario. Choose layout yourself from the requirements; ask only material unanswered business questions.
+1. Call `synapse_design_discovery` (`stage: "start"`).
+2. On `needs_context`, read relevant project/document files, ask only material unanswered business questions via `ask_user_question`, and call `synapse_design_discovery` (`stage: "context"`) with `taskId`, a substantive `contextSummary` (`>= 40` chars), verified `sourceReferences`, `openQuestions`, and the complete `screens` plan (`[{name, states?}]`).
+3. Wait for real answers when `needs_questions` or `needs_route` is returned. Never invent user answers or cite unread sources.
 
-Choose the surface mode from the user's task: operating an application, persuading, reading, or an immersive experience. For existing or reference-based designs, first preserve the complete requested content and measure the relevant structure, typography, states and viewport. Plan loading, empty, error, partial, success and permission states, marking inapplicable ones with reasons. Consult `references/direction/surface-modes.md`, `references/craft/layout-sections-and-cards.md`, `references/review/audit-and-critique.md` and the other bundled references only when relevant. They are optional supporting material: this skill, the user's instructions and the selected product DESIGN override legacy instructions for alternate palettes, themes, mandatory questions, agents, host tools and output paths.
+## Stage B — Style Binding & Mandatory Craft Floor
 
-## Verify and hand off
+- Obtain the user's real catalogue choice from resolved `synapse_design_discovery` (Talkdesk Cobalt is a recommendation, not automatic consent). Read the entire returned `DESIGN` specification; never use another theme index, fallback palette, or visual-direction survey.
+- Save the exact `design` markdown bytes to `<task-dir>/DESIGN.md` unchanged, then bind the task-local style context:
+  `node scripts/resolve-theme.mjs --style-id <guideId> --design-md <task-dir>/DESIGN.md --sha256 <contentHash> --out <task-dir>`
+  Set `SYNAPSE_DESIGN_TASK_DIR=<task-dir>` whenever invoking bundled helper scripts.
+- **Mandatory reading before authoring HTML:** Read `references/direction/surface-modes.md` and `references/judgement.md` in full to classify the surface mode (`Operate`, `Persuade`, `Read`, `Experience`), plan all six content states (`loading`, `empty`, `error`, `partial`, `success`, `permission`), and apply the 12-check Non-Negotiable Quality Floor. Load specialist files (`references/craft/layout-sections-and-cards.md`, `references/craft/craft-floor.md`, `references/review/audit-and-critique.md`, etc.) only when relevant; ignore any legacy instructions about alternate palettes, mandatory surveys, or other hosts.
 
-Save the exact complete `design` returned by resolved `synapse_design_discovery` in the task directory as `DESIGN.md`, without adding or changing bytes. Use the accompanying `guideId` and `contentHash` to run `node scripts/resolve-theme.mjs --style-id <id> --design-md <task-dir>/DESIGN.md --sha256 <contentHash> --out <task-dir>`; this checks the local guide bytes and creates task-local style context, but the host still verifies the actual user selection. Set `SYNAPSE_DESIGN_TASK_DIR` to the same task directory when running optional legacy tools.
+## Stage C — Build the Standalone Prototype
 
-Open the actual POC in a browser and capture real screenshots of the required pages and states at the relevant viewport sizes. `scripts/capture-poc.mjs --url <local-html-or-server> --out <task-dir>/shots/<name>.png --width 1440 --height 900` captures one local page. `scripts/verify-surface.mjs --url <local-html-or-server> --source <task-dir> --out <task-dir>` also performs the migrated source, browser, state and evidence checks. Use the target device sizes relevant to the task; never treat an unavailable detector, missing screenshot or source-only check as a pass. The evidence ledger requires a separate visual-review observation after an image-capable model has inspected the actual capture, interaction/accessibility observations, and pass or justified not-applicable status for each content state.
+- Author clean HTML/CSS/JavaScript inside `.synapse/html-design/tasks/<taskId>/` covering every planned screen from Stage A and applicable states from Stage B.
+- Apply the selected `DESIGN` typography, color roles, spacing scale, and component anatomy faithfully while preserving user-supplied content and labeling illustrative sample data honestly.
+- Use semantic markup, persistent form labels, keyboard focus states, overflow-safe flex/grid sizing (`min-width: 0`), language consistency (full CJK localization when requested), and the interactive state switching needed to exercise every planned screen and state in a real browser.
+- **Dropdown & `<select>` chevron inset:** Never leave a styled `<select>` on default browser `appearance` (which glues the disclosure arrow against the right border and lets text collide with it). Always set `appearance: none; -webkit-appearance: none;`, render a custom chevron inset `12px–16px` from the right border (`background-position: right 12px center; background-repeat: no-repeat; background-size: 16px 16px` or a `pointer-events: none` trailing icon at `right: 12px`), and reserve `padding-inline: 12px 38px` (`padding-right: 36px–40px`). Custom `[role="combobox"]` / `[aria-haspopup="listbox"]` triggers must likewise keep `12px–16px` right padding and `8px–12px` gap before the chevron.
 
-Check content fit, hierarchy, contrast, keyboard interaction, overflow and missing assets; evaluate aesthetic findings against the user's actual style, not a generic ban on a font, color or layout. Fix and retest, up to three rounds. Record the renderer, viewport, page/state and source version. Report unavailable fonts, browser failures, unreviewed images or unverified interactions rather than claiming success. Deterministic checks and heuristic critique do not constitute user testing or accessibility certification.
+## Stage D — Browser Capture, Surface Gate & Visual Review
 
-Save task-specific source and screenshots without overwriting other chats' work. Call `synapse_design_poc_handoff` with `action: "record"`, the discovery `taskId`, `entry`, `files` and `screenshots` to bind evidence to the selected style and current chat. Present the prototype and wait for feedback unless the user explicitly asked to continue automatically. On approval, call the same tool with `action: "resolve"` and the same `taskId`; the `synapse-design` skill reads the returned files and screenshots as reference data and constructs editable Synapse nodes. Do not use HTML import as a substitute for native Synapse design.
+1. Capture real Chromium screenshots for every planned screen and relevant state/viewport using `scripts/capture-poc.mjs --url <local-html-or-server> --out <task-dir>/shots/<name>.png --width <viewportWidth> --height <viewportHeight>` (for example `1440` desktop or `375` mobile) and run the verification scan:
+   `node scripts/verify-surface.mjs --url <local-html-or-server> --source <task-dir> --out <task-dir>`
+   Note: the initial scan seeds `accessibility`, `responsive`, `visualReview`, and `contentStates.*` as `"pending"` (exiting `GATE: OPEN`) and fingerprints every file in `<task-dir>` outside `shots/`, `review/`, `evidence-report.json`, `style-context.json`, and `baseline.json`. If you add or edit any file in `<task-dir>` later, re-run `verify-surface.mjs` so source fingerprints stay current.
+2. Inspect the actual captured PNGs with an image-capable tool (`read_image`) across all five rubric dimensions (`task_integrity`, `structure_overflow`, `hierarchy_density`, `style_consistency`, `content_states`), update `accessibility`, `responsive`, `visualReview` (`status: "pass"` + `evidence`), and all six `contentStates` entries (`status: "pass"` + `evidence` or `status: "not-applicable"` + `reason`) in `<task-dir>/evidence-report.json`, then confirm `GATE: PASS`:
+   `node scripts/verify-surface.mjs --check-evidence <task-dir>/evidence-report.json`
+3. Fix confirmed P0/P1 defects, layout overflow, contrast issues, or style drift and re-verify (at most three corrective rounds). Never treat source-only checks, missing/blank captures, or uninspected screenshots as passing evidence.
+
+## Stage E — Verified Handoff & Optional Synapse Continuation
+
+- Call `synapse_design_poc_handoff` with `action: "record"`, `taskId`, `discovery`, `entry`, `files`, `evidence` (`<task-dir>/evidence-report.json`), and structured `screenshots` (`[{path, screen, state?, viewport}]`) covering every planned screen so the host verifies `DESIGN.md`, the evidence ledger, source fingerprints, and PNG viewport widths.
+- Present the verified prototype and wait for user feedback unless automatic continuation was explicitly requested.
+- When the user approves continuing to editable high-fidelity design, call `synapse_design_poc_handoff` with `action: "resolve"` and `taskId`, then follow `synapse-design` Stages C–G using the returned source files and screenshots as reference data—never HTML import.

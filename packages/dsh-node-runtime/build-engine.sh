@@ -9,12 +9,14 @@ wasm-bindgen --target nodejs --out-dir packages/dsh-node-runtime/wasm \
   "$target_dir/wasm32-unknown-unknown/release/op_dsh_engine.wasm"
 cp crates/op-ai-skills/skills/synapse-design/SKILL.md packages/dsh-node-runtime/wasm/design-skill.md
 mkdir -p packages/dsh-node-runtime/skills
-node --input-type=module -e '
-  import { cp, rm } from "node:fs/promises";
-  import { basename } from "node:path";
-  const source = "crates/op-ai-skills/skills/synapse-design-html";
-  const destination = "packages/dsh-node-runtime/skills/synapse-design-html";
-  await rm(destination, { recursive: true, force: true });
-  await cp(source, destination, { recursive: true,
-    filter: path => basename(path) !== "__pycache__" && !/\.pyc$|\.DS_Store$/.test(path) });
-'
+node --input-type=module <<'EOF'
+import { cp, rm } from 'node:fs/promises';
+import { basename } from 'node:path';
+const source = 'crates/op-ai-skills/skills/synapse-design-html';
+const destination = 'packages/dsh-node-runtime/skills/synapse-design-html';
+await rm(destination, { recursive: true, force: true });
+await cp(source, destination, {
+  recursive: true,
+  filter: path => basename(path) !== '__pycache__' && !/\.pyc$|\.DS_Store$/.test(path),
+});
+EOF

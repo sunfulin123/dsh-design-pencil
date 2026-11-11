@@ -110,15 +110,19 @@ test('OP guidance selects from the live catalogue and injects the complete selec
     expectedRevision: pending.structuredContent.catalogRevision,
   });
   assert.equal(prompt.isError, false, JSON.stringify(prompt));
+  assert.equal(prompt.structuredContent.version, 'synapse-design/2');
   assert.equal(prompt.structuredContent.style.id, id);
   assert.ok(prompt.structuredContent.prompt.includes(markdown));
   assert.ok(prompt.structuredContent.prompt.includes('three-layer context funnel'));
+  assert.ok(prompt.structuredContent.prompt.includes('OP Engine Build Guide'));
+  assert.ok(prompt.structuredContent.prompt.includes('Non-Negotiable Quality Floor'));
   assert.equal((await call(host, 'set_design_md', { markdown })).isError, false);
   const inherited = await call(host, 'get_design_agent_prompt', {
     userMessage: '缩小卡片', mode: 'local', useDocumentStyle: true,
   });
   assert.equal(inherited.isError, false, JSON.stringify(inherited));
   assert.ok(inherited.structuredContent.prompt.includes(markdown));
+  assert.equal(inherited.structuredContent.prompt.includes('Non-Negotiable Quality Floor'), false);
   assert.equal(inherited.structuredContent.style.source, 'document');
   const caps = await call(host, 'get_design_capabilities');
   assert.equal(caps.structuredContent.version, 1);

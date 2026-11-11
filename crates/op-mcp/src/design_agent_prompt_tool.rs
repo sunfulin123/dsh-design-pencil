@@ -62,7 +62,13 @@ impl McpTool for GetDesignAgentPrompt {
             "version": synapse_op_design::VERSION,
             "prompt": prompt,
             "verifyProtocol": verify_name,
-            "resources": ["op-design-direction", "op-design-composition", "op-design-review"],
+            "resources": [
+                "op-design-build",
+                "op-design-direction",
+                "op-design-composition",
+                "op-design-review",
+                "op-design-judgement"
+            ],
         });
         ToolOutcome::OkJson(result.to_string())
     }
@@ -96,6 +102,9 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("preselected recommendation is not consent"));
+        let resources = value["resources"].as_array().expect("resources list");
+        assert!(resources.iter().any(|r| r == "op-design-build"));
+        assert!(resources.iter().any(|r| r == "op-design-judgement"));
     }
 
     #[test]

@@ -10,7 +10,7 @@
 
 ## 1. Implementation Detail for the 12 Laws
 
-The 12 Non-Negotiable Laws are stated once, in `SKILL.md` Stage 3; law numbers below refer to that list. This section adds only the values and rules those laws leave out. Each is a check on the built result:
+The 12 Non-Negotiable Quality Floor checks are defined in [`../judgement.md`](../judgement.md); law numbers below add HTML/CSS implementation detail where a browser surface applies. Each is a check on the built result:
 
 - **Law 1 (contrast):** Large text means `≥ 24px` or `≥ 19px bold`; active UI boundaries and icons also need `≥ 3:1`. On colored or dark surfaces, derive secondary text from the surface's hue (`oklch(from var(--ink) l c h / 0.68)`).
 - **Law 2 (measure and type):** Mobile measure `35–60ch`; display max `6rem`; tracking of `-0.02em` to `-0.03em` usually reads best; `text-wrap: balance` on headings and `text-wrap: pretty` on body copy; obvious scale and weight steps between type roles.
@@ -19,6 +19,7 @@ The 12 Non-Negotiable Laws are stated once, in `SKILL.md` Stage 3; law numbers b
 - **Laws 4–7 (second-order tells):** The full ban wording and what to build instead are in Section 2.
 - **Law 9 (browser surfaces):** Focus ring `2px solid var(--accent)` with `outline-offset: 2px`; links get `text-underline-offset: 0.2em` and a set `text-decoration-thickness`.
 - **Law 10 (touch and semantics):** `touch-action: manipulation`; `min-width: 0` on flex children; proper landmarks (`<header>`, `<main>`, `<nav>`, `<footer>`); `<button>` for actions and `<a href>` for navigation.
+- **Dropdown & `<select>` anatomy:** Never leave a bordered/filled `<select>` with default UA `appearance` (Chromium paints the built-in disclosure arrow ~3px from the right border and ignores `padding-right`). Always declare `appearance: none; -webkit-appearance: none;`, draw or position a `16px` chevron inset `12px–16px` from the right border (`background-position: right 12px center; background-repeat: no-repeat; background-size: 16px 16px` or an overlay SVG at `right: 12px; pointer-events: none`), and set `padding-inline: 12px 38px` (`text-overflow: ellipsis`) so option text never touches the chevron. Custom combobox/listbox buttons must also keep `12px–16px` right padding and `≥ 8px` gap before the trailing chevron.
 - **Control states (beyond the 12 laws):** Every control implements `default`, `hover` (gated by `@media (hover: hover)`), `focus-visible`, `active` (`0ms` press feedback), `disabled`, `loading`, and `error`.
 
 ---

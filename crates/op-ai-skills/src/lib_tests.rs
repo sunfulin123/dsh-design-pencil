@@ -20,16 +20,22 @@ fn embeds_the_skill_corpus() {
 #[test]
 fn guideline_for_web_app_returns_product_design_content() {
     let content = guideline_for("web-app").expect("web-app guideline must be present");
-    // Both source skills must be represented.
     assert!(
         content.contains("PURPOSE FIRST"),
         "web-app guideline must contain product-principles content"
     );
     assert!(
-        content.contains("DESIGN CRAFT"),
-        "web-app guideline must contain design-principles content"
+        content.contains("WEB APP — FUNCTIONAL PRODUCT DEPTH"),
+        "web-app guideline must contain web-app domain depth"
     );
-    assert!(!content.is_empty());
+    assert!(
+        !content.contains("DESIGN CRAFT"),
+        "operational web-app guideline must not inject marketing display/hex presets"
+    );
+    assert!(
+        content.contains("synapse_design_pipeline_finish"),
+        "completion guidance must name the DSH draft finish route alongside direct MCP"
+    );
 }
 
 #[test]

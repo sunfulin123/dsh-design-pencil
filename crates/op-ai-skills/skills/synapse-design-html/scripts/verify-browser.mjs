@@ -220,7 +220,55 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
               const cs = getComputedStyle(el);
               return parseFloat(cs.borderTopWidth) >= 1 && cs.borderTopStyle !== 'none' && cs.borderTopColor !== 'rgba(0, 0, 0, 0)';
             }).length;
-            return { overflowPx, brokenImgs, smallBorderedPills };
+            const describeCtrl = el => el.id ? '#' + el.id : (el.name ? el.tagName.toLowerCase() + '[name="' + el.name + '"]' : el.tagName.toLowerCase());
+            const selectChevronIssues = [];
+            for (const sel of document.querySelectorAll('select:not([multiple])')) {
+              const sz = parseInt(sel.getAttribute('size') || '1', 10);
+              if (sz > 1) continue;
+              const r = sel.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) continue;
+              const cs = getComputedStyle(sel);
+              if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) continue;
+              const bordered = parseFloat(cs.borderRightWidth) >= 1 && cs.borderRightStyle !== 'none' && cs.borderRightColor !== 'rgba(0, 0, 0, 0)';
+              const filled = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
+              if (!bordered && !filled) continue;
+              const appearance = cs.appearance || cs.webkitAppearance || 'auto';
+              const padR = parseFloat(cs.paddingRight) || 0;
+              const parentCs = sel.parentElement ? getComputedStyle(sel.parentElement) : null;
+              const hasOverlayIcon = parentCs && parentCs.position !== 'static'
+                && [...sel.parentElement.querySelectorAll('svg, [data-chevron], [aria-hidden="true"]')].some(ic => {
+                  const ir = ic.getBoundingClientRect();
+                  return ir.width > 0 && ir.right <= r.right && (r.right - ir.right) >= 8;
+                });
+              if (appearance !== 'none') {
+                selectChevronIssues.push(describeCtrl(sel) + ' uses native UA appearance ("' + appearance + '"), gluing the dropdown arrow to the right border');
+              } else if (cs.backgroundImage === 'none' && !hasOverlayIcon) {
+                selectChevronIssues.push(describeCtrl(sel) + ' sets appearance:none without a visible custom chevron indicator');
+              } else if (padR < 32) {
+                selectChevronIssues.push(describeCtrl(sel) + ' has padding-right=' + Math.round(padR) + 'px (< 32px), causing text to collide with the dropdown chevron');
+              } else if (cs.backgroundImage !== 'none') {
+                const posX = (cs.backgroundPositionX || cs.backgroundPosition || '').trim();
+                const rightPx = /^calc\\(\\s*100%\\s*-\\s*([\\d.]+)px\\s*\\)$/i.exec(posX) || /\\bright\\s+([\\d.]+)px\\b/i.exec(posX);
+                if (/^(?:100%|right)$/i.test(posX) || (rightPx && parseFloat(rightPx[1]) < 8)) {
+                  selectChevronIssues.push(describeCtrl(sel) + ' places its chevron flush with the right edge (' + posX + '); inset it 12px-16px from the right border');
+                }
+              }
+            }
+            for (const trig of document.querySelectorAll('[role="combobox"], button[aria-haspopup="listbox"], button[aria-haspopup="menu"]')) {
+              const r = trig.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) continue;
+              const cs = getComputedStyle(trig);
+              if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+              const icon = [...trig.querySelectorAll('svg, [data-chevron], i')].at(-1);
+              if (!icon) continue;
+              const ir = icon.getBoundingClientRect();
+              const borderR = parseFloat(cs.borderRightWidth) || 0;
+              const gapRight = (r.right - borderR) - ir.right;
+              if (ir.width > 0 && gapRight >= -2 && gapRight < 8) {
+                selectChevronIssues.push(describeCtrl(trig) + ' trailing chevron sits only ' + Math.round(gapRight) + 'px from the right border (need 12px-16px)');
+              }
+            }
+            return { overflowPx, brokenImgs, smallBorderedPills, selectChevronIssues };
           })()`,
         });
 
@@ -242,6 +290,15 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
             rule: 'broken-image',
             location: vp.label,
             message: `${geom.brokenImgs} broken image(s) (naturalWidth === 0) detected at ${vp.label}.`,
+          });
+        }
+        if (Array.isArray(geom.selectChevronIssues) && geom.selectChevronIssues.length > 0 && vp.width >= 1280) {
+          domFindings.push({
+            severity: 'P1',
+            category: 'craft-floor',
+            rule: 'dropdown-chevron-inset',
+            location: vp.label,
+            message: `Dropdown/select chevron inset defect: ${geom.selectChevronIssues.slice(0, 3).join('; ')}. Use appearance: none, inset the chevron 12px-16px from the right border, and set padding-right: 36px-40px.`,
           });
         }
         if (vp.width >= 1280 && geom.smallBorderedPills > 22) {

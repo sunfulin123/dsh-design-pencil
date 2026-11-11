@@ -386,10 +386,17 @@ mod tests {
                     content.contains("PURPOSE FIRST"),
                     "web-app guideline must contain PURPOSE FIRST: {content}"
                 );
-                // Verbatim phrase from design-principles.md.
                 assert!(
-                    content.contains("DESIGN CRAFT"),
-                    "web-app guideline must contain DESIGN CRAFT: {content}"
+                    content.contains("WEB APP — FUNCTIONAL PRODUCT DEPTH"),
+                    "web-app guideline must contain functional web-app depth: {content}"
+                );
+                assert!(
+                    !content.contains("DESIGN CRAFT"),
+                    "operational web-app guideline must not inject marketing display/hex presets: {content}"
+                );
+                assert!(
+                    content.contains("synapse_design_pipeline_finish"),
+                    "completion hint must name the DSH draft finish route: {content}"
                 );
             }
             other => panic!("expected Ok, got {other:?}"),

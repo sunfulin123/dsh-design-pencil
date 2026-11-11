@@ -15,7 +15,16 @@ OP 设计指导采用对话、现有文档和风格目录三层上下文。新�
 风格与文件指纹；缺失或变更的资料需要重新核实。插件的工具路由和记录行为需要宿主测试，
 不能以提示词代替独立模型验收。
 HTML POC 资源包含按需加载的旧检查方法、可选脚本和资源清单；旧主题库与备用配色不是
-风格来源。两种设计路径共享需求、风格、状态与评审规则，但分别使用浏览器和可编辑画布检查。
+风格来源。`synapse-design/2` 与 `synapse-design-html/2` 按编号阶段组织执行，共享引擎中立的
+[判断与底线规范](../../crates/op-ai-skills/skills/synapse-design-html/references/judgement.md)
+（界面类型取舍、六类内容状态、表单与下拉右侧箭头 12–16px 留白、文案、12 项质量底线及五维评审），新设计完整提示同时内联
+[引擎构建指南](../../crates/op-ai-skills/skills/synapse-design/build.md)（骨架到填充、Hug/Fill 契约、
+横向行宽与下拉箭头间距、中文字体与标点行距、关联组件与变量绑定），局部编辑提示不内联整套新设计底线。
+DSH 上下文阶段要求实质性需求摘要与显式页面清单；POC 交接拒绝任务目录内的符号链接，校验任务目录中的
+`DESIGN.md` 指纹、`evidence-report.json` 台账（含 `renderedEvidence` 截图哈希与源文件指纹）
+以及带页面与视口宽度的真实 PNG 截图；高保真发布前翻完交互目标分页并核对绑定当前截图哈希的结构化
+评审回执（每个计划页面映射独立的非空容器节点或省略原因、五维视觉观察、六类状态、组件复用说明，
+同一轮连续三次未通过则终止），视觉回执仍只证明绑定记录而非独立模型推理质量。
 大画布分区创建和按需浅层读取，避免将完整图层树反复加载到模型上下文；具体执行结果仍需实测。
 截图已采集不等于模型已经查看；改变原型或截图会使旧的评审证据失效。
 HTML POC 的 [capture-poc](../../crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs)
@@ -114,8 +123,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "a755115e-29da-4574-9654-487d397498d8",
-  "verified_at": "2026-11-11T06:05:08.769565+00:00",
+  "task_id": "3b743834-ca03-4c66-b62e-103711f1a9b4",
+  "verified_at": "2026-11-11T13:02:12.881558+00:00",
   "sources": {
     "ARCHITECTURE.md": "7e48dda7beb4d4a85a2d2d129d72f965011aabba5069567cbd896198db06114f",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -125,19 +134,19 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "c035838b5a76abd2077a1f4facff94e316a525d282c7a522157086e803786c49",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "3b3a0dc51442c4759696bb4e46e3101e4a47f836fddc27052ab1554d9a780ea2",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "d9c39a8bb75a580697619b1ae9b462760d6bf88f631505d0d8df141cb5014725",
     "packages/dsh-node-runtime/asset-tools.mjs": "5aef23a27f2165cda16647908a140e24c84f3653f03ec1601655fb1bc2fcbc80",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "6b54338f0f12dbfb897ccd2a1558f36d2da383e10a1008a9c9f5b73b869756f2",
-    "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "a06e391268dd0e86825fc8cae03af218315b2d9f65bca59d09d78bacb003bda2",
-    "crates/op-ai-skills/skills/synapse-design/review.md": "9fb6a6f24b858b4f438017d6e663bfe8dc8da62a7a182cb2f223f25b1fb3dd1e",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "3854686ccd861f10ae536585d6dcc1896bc37a8bc76ef21d501629dd2d9beb3d",
+    "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "ce0d957cc81269c2834354c9b103b11560144f9c47f492492fa73a1c3d5bcac4",
+    "crates/op-ai-skills/skills/synapse-design/review.md": "ea499d466143fd6a27b9647aaaae5f902806e7db98111270c9844960cc3f6046",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "fb3c90b015cc9ed3e1626cec2816a73e8f5677782e1ff300f83c677fbb58bda8"
   },
-  "reason": "Reviewed the private-draft lint route and shared design guidance against current implementation and tests",
-  "evidence": "crates/op-ai-skills/skills/synapse-design/SKILL.md"
+  "reason": "Documented dropdown/select trailing 12-16px chevron inset rules across shared judgement, HTML POC, and OP build guide",
+  "evidence": "crates/op-ai-skills/skills/synapse-design-html/SKILL.md,crates/op-ai-skills/skills/synapse-design/build.md,packages/dsh-node-runtime/html-skill-migration.test.mjs"
 }
 ```

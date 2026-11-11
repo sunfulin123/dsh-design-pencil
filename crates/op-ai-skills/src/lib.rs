@@ -78,11 +78,7 @@ pub fn append_image_self_check_scope(prompt: &mut String) {
 /// [`guideline_topics`] both read this table, so neither can go stale
 /// relative to the other.
 const GUIDELINE_TOPICS: &[(&str, &[&str], &[&str])] = &[
-    (
-        "web-app",
-        &["webapp"],
-        &["product-principles", "web-app", "design-principles"],
-    ),
+    ("web-app", &["webapp"], &["product-principles", "web-app"]),
     ("mobile", &["mobile-app"], &["mobile-app"]),
     ("code-to-design", &[], &["code-to-design"]),
     (
@@ -164,7 +160,7 @@ pub fn guideline_for(topic: &str) -> Option<String> {
         .iter()
         .find(|(name, aliases, _)| *name == topic || aliases.contains(&topic))?;
     compose_skills(skill_names).map(|mut guideline| {
-        guideline.push_str("\n\nWhen you are done, call finalize_design once — it runs the same repair passes the built-in pipeline applies.");
+        guideline.push_str("\n\nWhen you are done, complete final verification for your host (in a DSH private draft call synapse_design_pipeline_finish; on a direct MCP canvas call finalize_design once).");
         guideline
     })
 }

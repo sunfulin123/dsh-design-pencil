@@ -211,6 +211,7 @@ pub mod canvas_viewport_paint;
 mod canvas_viewport_paint_pop_tests;
 mod canvas_viewport_text;
 mod canvas_viewport_widget;
+mod canvas_viewport_widget_helpers;
 pub mod preview_device_switcher;
 pub mod preview_toolbar;
 pub mod scene_paint_options;

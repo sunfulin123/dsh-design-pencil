@@ -3,11 +3,14 @@
 //! `semantics.label` — an input with no visible or programmatic label is an
 //! a11y problem (screen readers announce it as an unnamed edit field).
 
-use jian_ops_schema::node::PenNode;
+use jian_ops_schema::node::container::LayoutMode;
+use jian_ops_schema::node::{Padding, PenNode};
 use jian_ops_schema::semantics::SemanticsMeta;
 
 use crate::issue::{FixProperty, Issue, IssueCategory, IssueSeverity};
-use crate::node_util::{children, node_id};
+use crate::node_util::{
+    children, first_fill_color, has_stroke, json_number, node_id, padding, raw_padding_value,
+};
 
 /// Flags every `text_input` / `text_area` whose `placeholder` is missing or
 /// empty AND whose `semantics.label` is missing or empty. A non-empty value
@@ -79,6 +82,99 @@ fn walk_unlabeled_inputs(node: &PenNode, issues: &mut Vec<Issue>) {
     }
     for child in children(node) {
         walk_unlabeled_inputs(child, issues);
+    }
+}
+
+/// Detect horizontal frame-built dropdown/select triggers whose trailing
+/// chevron sits flush against the right border (`paddingRight < 8px`).
+pub fn detect_cramped_dropdown_chevrons(root: &PenNode) -> Vec<Issue> {
+    let mut issues = Vec::new();
+    walk_cramped_dropdown_chevrons(root, &mut issues);
+    issues
+}
+
+fn walk_cramped_dropdown_chevrons(node: &PenNode, issues: &mut Vec<Issue>) {
+    if let PenNode::Frame(frame) = node {
+        let kids = children(node);
+        let is_horizontal = frame.container.layout == Some(LayoutMode::Horizontal);
+        let has_box = has_stroke(node) || first_fill_color(node).is_some();
+        let has_leading_text = kids
+            .iter()
+            .take(kids.len().saturating_sub(1))
+            .any(contains_text_node);
+        let has_trailing_chevron = kids.last().is_some_and(is_down_chevron_icon);
+        if is_horizontal && has_box && kids.len() >= 2 && has_leading_text && has_trailing_chevron {
+            let pad = padding(node);
+            if let Some(right) = numeric_padding_right(pad) {
+                if right < 8.0 {
+                    let top = numeric_padding_side(pad, 0);
+                    let bottom = numeric_padding_side(pad, 2);
+                    let left = numeric_padding_side(pad, 3).max(12.0);
+                    issues.push(Issue {
+                        node_id: node_id(node).to_string(),
+                        category: IssueCategory::WidgetA11y,
+                        severity: IssueSeverity::Warning,
+                        property: FixProperty::Padding,
+                        current_value: raw_padding_value(pad),
+                        suggested_value: serde_json::Value::Array(vec![
+                            json_number(top),
+                            json_number(12.0),
+                            json_number(bottom),
+                            json_number(left),
+                        ]),
+                        reason: format!(
+                            "dropdown/select trigger right padding is {}px (< 8px), gluing the trailing chevron to the right border; use 12px-16px horizontal padding",
+                            right.round() as i64
+                        ),
+                    });
+                }
+            }
+        }
+    }
+    for child in children(node) {
+        walk_cramped_dropdown_chevrons(child, issues);
+    }
+}
+
+fn contains_text_node(node: &PenNode) -> bool {
+    matches!(node, PenNode::Text(_)) || children(node).iter().any(contains_text_node)
+}
+
+fn is_down_chevron_icon(node: &PenNode) -> bool {
+    match node {
+        PenNode::IconFont(icon) => {
+            let lower = icon.icon_font_name.trim().to_ascii_lowercase();
+            lower.contains("chevron-down")
+                || lower.contains("chevrons-up-down")
+                || lower.contains("caret-down")
+                || lower == "arrow-drop-down"
+        }
+        _ => false,
+    }
+}
+
+fn numeric_padding_right(pad: Option<&Padding>) -> Option<f64> {
+    match pad {
+        Some(Padding::LtrB(p)) => Some(p[1]),
+        Some(Padding::XY([_, h])) => Some(*h),
+        Some(Padding::Uniform(v)) => Some(*v),
+        None => Some(0.0),
+        Some(Padding::Expression(_)) => None,
+    }
+}
+
+fn numeric_padding_side(pad: Option<&Padding>, side: usize) -> f64 {
+    match pad {
+        Some(Padding::LtrB(p)) => p[side],
+        Some(Padding::XY([v, h])) => {
+            if side % 2 == 0 {
+                *v
+            } else {
+                *h
+            }
+        }
+        Some(Padding::Uniform(v)) => *v,
+        Some(Padding::Expression(_)) | None => 0.0,
     }
 }
 
@@ -192,5 +288,43 @@ mod tests {
         assert_eq!(issues[0].node_id, "unsafe");
         assert_eq!(issues[0].severity, IssueSeverity::Error);
         assert!(!issues[0].reason.contains("Password"));
+    }
+
+    #[test]
+    fn cramped_dropdown_chevron_flags_zero_or_tiny_right_padding() {
+        let root = node(json!({
+            "type": "frame",
+            "id": "root",
+            "children": [
+                {
+                    "type": "frame",
+                    "id": "bad-select",
+                    "layout": "horizontal",
+                    "padding": [0, 2, 0, 12],
+                    "stroke": { "thickness": 1, "fill": [{ "type": "solid", "color": "#D6DADD" }] },
+                    "children": [
+                        { "type": "text", "id": "lbl", "content": "常规数据态（6 条示例客户）" },
+                        { "type": "icon_font", "id": "ic", "iconFontName": "chevron-down", "width": 16, "height": 16 }
+                    ]
+                },
+                {
+                    "type": "frame",
+                    "id": "good-select",
+                    "layout": "horizontal",
+                    "padding": [0, 12],
+                    "stroke": { "thickness": 1, "fill": [{ "type": "solid", "color": "#D6DADD" }] },
+                    "children": [
+                        { "type": "text", "id": "lbl2", "content": "常规数据态（6 条示例客户）" },
+                        { "type": "icon_font", "id": "ic2", "iconFontName": "chevron-down", "width": 16, "height": 16 }
+                    ]
+                }
+            ]
+        }));
+        let issues = detect_cramped_dropdown_chevrons(&root);
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].node_id, "bad-select");
+        assert_eq!(issues[0].severity, IssueSeverity::Warning);
+        assert_eq!(issues[0].property, FixProperty::Padding);
+        assert_eq!(issues[0].suggested_value, json!([0, 12, 0, 12]));
     }
 }

@@ -22,6 +22,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     'png-fixture.test-helper.mjs',
     'wasm/op_dsh_engine.js', 'wasm/op_dsh_engine_bg.wasm', 'wasm/design-skill.md',
     'skills/synapse-design-html/SKILL.md', 'skills/synapse-design-html/scripts/capture-poc.mjs',
+    'skills/synapse-design-html/references/judgement.md',
     'skills/synapse-design-html/references/layout-sections-and-cards.md',
     'skills/synapse-design-html/references/harden-and-edge-cases.md',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
@@ -71,6 +72,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.ok(manifest.files['wasm/op_dsh_engine_bg.wasm'])
   assert.ok(manifest.files['wasm/design-skill.md'])
   assert.ok(manifest.files['skills/synapse-design-html/scripts/capture-poc.mjs'])
+  assert.ok(manifest.files['skills/synapse-design-html/references/judgement.md'])
   assert.ok(manifest.files['color-sampler.mjs'])
   assert.ok(manifest.files['screenshot-renderer.mjs'])
   assert.ok(manifest.files['draft-recovery.mjs'])

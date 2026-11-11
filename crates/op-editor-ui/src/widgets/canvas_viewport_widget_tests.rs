@@ -500,8 +500,18 @@ fn select_paints_box_value_text_and_chevron() {
         "selected label painted, got {:?}",
         b.texts
     );
-    // Chevron = 2 line segments.
+    // Chevron = 2 line segments, inset >= 12px from the right border.
     assert_eq!(b.lines.len(), 2, "down chevron is 2 segments");
+    let chevron_right = b
+        .lines
+        .iter()
+        .map(|(_, p1, _)| p1.x)
+        .fold(0.0_f32, f32::max);
+    assert!(
+        rect.size.x - chevron_right >= 12.0,
+        "select chevron must keep >= 12px right gap, got {}",
+        rect.size.x - chevron_right
+    );
     assert_eq!(b.round_rects[0].1, DARK_PURPLE, "authored select surface");
     assert_eq!(
         b.stroke_round_rects[0].1, PURPLE_BORDER,

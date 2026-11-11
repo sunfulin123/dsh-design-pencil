@@ -65,7 +65,6 @@
     "crates/op-editor-ui/src/widgets/ai_chat_transcript_design.rs": 634,
     "crates/op-editor-ui/src/widgets/canvas_agent_cursor.rs": 590,
     "crates/op-editor-ui/src/widgets/canvas_viewport_paint.rs": 541,
-    "crates/op-editor-ui/src/widgets/canvas_viewport_widget.rs": 557,
     "crates/op-editor-ui/src/widgets/collab_panel.rs": 617,
     "crates/op-editor-ui/src/widgets/collab_ui.rs": 580,
     "crates/op-editor-ui/src/widgets/component_browser_panel.rs": 557,

@@ -8,9 +8,11 @@ use super::{McpTool, ToolErrorCode, ToolOutcome};
 
 const PROMPT_SECTIONS: &[&str] = &[
     "op-design",
+    "op-design-build",
     "op-design-direction",
     "op-design-composition",
     "op-design-review",
+    "op-design-judgement",
     "html-poc",
     "all",
     "schema",

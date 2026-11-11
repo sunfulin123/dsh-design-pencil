@@ -4110,8 +4110,8 @@
     },
     {
       "source": "data/stacks/html-tailwind.csv",
-      "sha256": "7aef38e75c53559470afcfa91580a9917ca8b7dbf8b92110389e23e93703ac52",
-      "status": "preserved",
+      "sha256": "79a6b29aab72c4a3a0d878f79c1c8954b6d370651340b5339eac1cca8611a793",
+      "status": "adapted",
       "destination": "data/stacks/html-tailwind.csv"
     },
     {
@@ -4213,8 +4213,8 @@
     },
     {
       "source": "data/ux-guidelines.csv",
-      "sha256": "1870ee048f2a2bdd60709f8f7adf7f3b6dcad560bc005c8b2915a8ac8639820d",
-      "status": "preserved",
+      "sha256": "ea73e1a9ebd81dfd96ec99612dcea158cd16a4f385fd4c7dfb3326354ec2bd40",
+      "status": "adapted",
       "destination": "data/ux-guidelines.csv"
     },
     {
@@ -4225,7 +4225,7 @@
     },
     {
       "source": "references/craft/craft-floor.md",
-      "sha256": "2f06612187338d04c2308ca16e06fbc55374b72244085e8bd9cd5c2b27a845bc",
+      "sha256": "2b429fc4d99dffa196562bd8271868ade588e809e0bae6a8f538d310539d38ee",
       "status": "adapted",
       "destination": "references/craft/craft-floor.md"
     },

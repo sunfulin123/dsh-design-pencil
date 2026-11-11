@@ -198,3 +198,33 @@ test('HTML diagnostics resolve scripts from installation paths containing spaces
     assert.notEqual(finding.category, 'verification-unavailable', finding.message)
   }
 })
+
+test('HTML guidance, datasets, and browser verifier cover dropdown chevron inset rules', async context => {
+  const skill = await read('SKILL.md')
+  const judgement = await read('references/judgement.md')
+  const craftFloor = await read('references/craft/craft-floor.md')
+  const uxCsv = await read('data/ux-guidelines.csv')
+  const tailwindCsv = await read('data/stacks/html-tailwind.csv')
+  assert.match(skill, /appearance:\s*none/)
+  assert.match(judgement, /12px–16px/)
+  assert.match(craftFloor, /background-position:\s*right 12px center/)
+  assert.match(uxCsv, /Select & Dropdown Chevron Inset/)
+  assert.match(tailwindCsv, /Select chevron inset/)
+
+  const { captureAndInspectViewports } = await import(new URL('scripts/verify-browser.mjs', source))
+  const root = await mkdtemp(join(tmpdir(), 'synapse-select-inset-'))
+  context.after(() => rm(root, { recursive: true, force: true }))
+  const badPage = join(root, 'bad.html')
+  await writeFile(badPage, '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>select{height:44px;padding:0 12px;border:1px solid #d6dadd;border-radius:8px;background:#fff}</style></head><body><label for="s">预览状态</label><select id="s"><option>常规数据态（6 条示例客户）</option></select></body></html>')
+  const badRes = await captureAndInspectViewports(badPage, root, [{ label: '1440px', width: 1440, height: 900, file: 'shots/bad-1440.png' }])
+  if (badRes.captured) {
+    assert.ok(badRes.domFindings.some(f => f.rule === 'dropdown-chevron-inset' && f.severity === 'P1'), JSON.stringify(badRes.domFindings))
+  }
+
+  const goodPage = join(root, 'good.html')
+  await writeFile(goodPage, `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>select{height:44px;padding:0 38px 0 12px;border:1px solid #d6dadd;border-radius:8px;background-color:#fff;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23606569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px 16px}</style></head><body><label for="s">预览状态</label><select id="s"><option>常规数据态（6 条示例客户）</option></select></body></html>`)
+  const goodRes = await captureAndInspectViewports(goodPage, root, [{ label: '1440px', width: 1440, height: 900, file: 'shots/good-1440.png' }])
+  if (goodRes.captured) {
+    assert.ok(!goodRes.domFindings.some(f => f.rule === 'dropdown-chevron-inset'), JSON.stringify(goodRes.domFindings))
+  }
+})

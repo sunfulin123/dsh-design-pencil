@@ -98,3 +98,4 @@ No,Category,Issue,Platform,Description,Do,Don't,Code Example Good,Code Example B
 97,Sustainability,Asset Weight,Web,Heavy 3D/Image assets increase carbon footprint,Compress and lazy load 3D models,Load 50MB textures,Draco compression,Raw .obj files,Medium
 98,AI Interaction,Feedback Loop,All,AI needs user feedback to improve,Thumps up/down or 'Regenerate',Static output only,Feedback component,Read-only text,Low
 99,Accessibility,Motion Sensitivity,All,Parallax/Scroll-jacking causes nausea,Respect prefers-reduced-motion,Force scroll effects,@media (prefers-reduced-motion),ScrollTrigger.create(),High
+100,Forms,Select & Dropdown Chevron Inset,All,Native UA select arrows hug the right border and collide with text,Set appearance:none with a 12-16px right-inset chevron and 36-40px right padding,Default native select appearance or 0-4px chevron right gap,appearance:none + right 12px chevron + padding-right:38px,select { padding: 0 12px } without appearance:none,High
