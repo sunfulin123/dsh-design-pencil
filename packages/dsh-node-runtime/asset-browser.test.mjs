@@ -80,16 +80,14 @@ async function browser(cleanups, url, profile) {
     return result.result.value;
   };
   for (let i = 0; i < 300; i++) {
-    const state = await evaluate('document.documentElement.dataset.opSmoke');
+    const state = await evaluate('document.documentElement?.dataset.opSmoke ?? ""');
     if (state === 'ok') break;
-    assert.notEqual(
-      state,
-      'error',
-      await evaluate('document.getElementById("op-error").textContent'),
-    );
+    if (state === 'error') {
+      assert.fail(await evaluate('document.getElementById("op-error")?.textContent ?? "Editor startup failed"'));
+    }
     await delay(100);
   }
-  assert.equal(await evaluate('document.documentElement.dataset.opSmoke'), 'ok');
+  assert.equal(await evaluate('document.documentElement?.dataset.opSmoke ?? ""'), 'ok');
   return { evaluate, events, send: (method, params) => send(method, params, sessionId) };
 }
 
@@ -158,7 +156,7 @@ test(
             item.response.url.startsWith(controlUrl) &&
             item.response.url !== previousClient &&
             item.response.status === 200,
-        ) && (await page.evaluate('document.documentElement.dataset.opSmoke')) === 'ok';
+        ) && (await page.evaluate('document.documentElement?.dataset.opSmoke ?? ""')) === 'ok';
       if (!ready) await delay(100);
     }
     assert.ok(ready, 'the reloaded editor registered a new live control client');

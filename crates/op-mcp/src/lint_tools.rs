@@ -231,6 +231,7 @@ impl McpTool for LintDocument {
                 .map(|issue| {
                     let mut value = serde_json::json!(issue);
                     value["issueId"] = serde_json::json!(issue_id(issue));
+                    value["autoFixEligible"] = serde_json::json!(issue.can_auto_fix());
                     value
                 })
                 .collect()

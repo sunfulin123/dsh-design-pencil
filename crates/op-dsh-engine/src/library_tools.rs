@@ -16,6 +16,8 @@ use std::collections::BTreeMap;
 
 use crate::{error_reply, ok_reply, DesignEngine};
 
+#[path = "prototype_simulation.rs"]
+mod prototype_simulation;
 #[path = "prototype_tools.rs"]
 pub(crate) mod prototype_tools;
 

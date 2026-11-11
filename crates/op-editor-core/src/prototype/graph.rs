@@ -305,9 +305,13 @@ fn is_valid_container_frame(frame: &FrameNode) -> bool {
         && frame.base.y.is_none_or(f64::is_finite)
 }
 
-pub(crate) fn is_valid_screen_frame(frame: &FrameNode) -> bool {
+/// Whether an authored frame is eligible to appear as a standalone preview screen.
+pub fn is_valid_screen_frame(frame: &FrameNode) -> bool {
     is_valid_container_frame(frame)
         && frame.base.preview_as_screen != Some(false)
+        && (frame.reusable != Some(true)
+            || frame.base.preview_as_screen == Some(true)
+            || frame.base.flow_starting_point.is_some())
         && !is_legacy_device_decoration(frame)
 }
 

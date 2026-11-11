@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 mod ai_prompt_catalog;
 #[path = "html_import_catalog.rs"]
 pub(crate) mod html_import_catalog;
+mod quality_catalog;
 pub(crate) use html_import_catalog::is_host_tool as is_html_host_tool;
 
 macro_rules! tools {
@@ -57,19 +58,7 @@ fn extra_schemas() -> Vec<Value> {
                 "additionalProperties": false
             }
         }),
-        json!({
-            "name": "get_design_quality",
-            "description": "Run non-destructive quality diagnostics over the active page. Pass rootId to check one board; each list holds at most `limit` entries (default 30) and `counts` reports the full totals.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "rootId": {"type": "string"},
-                    "limit": {"type": "integer", "minimum": 1, "maximum": 500}
-                },
-                "required": [],
-                "additionalProperties": false
-            }
-        }),
+        quality_catalog::schema(),
         json!({
             "name": "enrich_images",
             "description": "Resolve unresolved image slots on the active page.",
@@ -125,8 +114,8 @@ fn build_text_tool(name: &str, state: &EditorState) -> Option<Box<dyn McpTool>> 
 
 tools!(state;
     ("batch_design", op_mcp::batch_design_snapshot(state),
-     "Atomically insert, copy, replace, move, update or delete canonical design nodes.",
-     {"script":{"type":"string"},"operations":{"type":"string"},"nodes_json":{"type":"string"},"pageId":{"type":"string"},"postProcess":{"type":"boolean"},"canvasWidth":{"type":"number"},"strictParent":{"type":"boolean"}}, []),
+     "Atomically edit design nodes. Supply exactly one of script, operations, or nodes_json. For a canonical nested node tree use insert_node with data; nodes_json only supports flat leaf descriptors.",
+     {"script":{"type":"string","description":"JavaScript design operations, such as const board = I(null, { type: 'frame', name: 'Board', width: 800, height: 600 }); I(board, { type: 'text', content: 'Hello' });. Node host only; at most 262144 UTF-8 bytes. Split large designs into sections and use returned node IDs for later calls."},"operations":{"type":"string","description":"Design operation DSL such as board=I(null, {\"type\":\"frame\",\"name\":\"Board\"})."},"nodes_json":{"type":"string","description":"JSON string containing an array of flat leaf descriptors with kind, name, x, y, width and height; optionally fill or fill_hex. This is not a canonical node tree and does not accept type or children; use insert_node with data for a nested subtree."},"pageId":{"type":"string"},"postProcess":{"type":"boolean"},"canvasWidth":{"type":"number"},"strictParent":{"type":"boolean"}}, []),
     ("batch_get", op_mcp::batch_get_snapshot(state),
      "Read or search canonical nodes and their children.",
      {"nodeIds":{"type":"array","items":{"type":"string"}},"patterns":{"type":"array","items":{"type":"object"}},"parentId":{"type":"string"},"pageId":{"type":"string"},"readDepth":{"type":"number"},"searchDepth":{"type":"number"},"resolveRefs":{"type":"boolean"}}, []),
@@ -204,7 +193,7 @@ tools!(state;
     ("list_ui_kits", op_mcp::list_ui_kits_snapshot(state),
      "List available UI kits and their components.", {}, []),
     ("get_guidelines", op_mcp::get_guidelines_snapshot(),
-     "Read design guidelines by topic.", {"topic":{"type":"string"}}, []),
+     "Read design guidelines by topic.", {"topic":{"type":"string","description":"Guideline topic, such as web-app, mobile, dashboard, form, design-system, interactivity, or icons."}}, ["topic"]),
     ("get_style_guide_tags", op_mcp::get_style_guide_tags_snapshot(),
      "Read available style guide tags.", {}, []),
     ("get_style_guide", op_mcp::get_style_guide_snapshot(),
@@ -226,10 +215,10 @@ tools!(state;
     ("get_design_prompt", op_mcp::get_design_prompt_snapshot(state),
      "Read the design prompt guidance.", {"section":{"type":"string"}}, []),
     ("lint_document", op_mcp::lint_document_snapshot(state),
-     "Run structural and visual lint detectors. Scope with rootId/nodeId/nodeIds (only the boards holding them are linted). Replies carry count, byCategory and bySeverity totals plus one page of issues (limit, default 50); pass nextCursor as cursor for the next page. Recommended: summaryOnly:true first, then page through the categories you will fix.",
+     "Run structural and visual lint detectors. Scope with rootId/nodeId/nodeIds. Replies carry totals plus one page of issues; pass nextCursor as cursor. autoFixEligible indicates whether a finding may be submitted to the mechanical fixer, not whether its suggested edit is appropriate. Review context before changing a design.",
      {"rootId":{"type":"string"},"nodeId":{"type":"string"},"nodeIds":{"type":"array","items":{"type":"string"}},"rules":{"type":"array","items":{"type":"string"}},"severity":{"type":"string","enum":["error","warning","info"]},"limit":{"type":"integer","minimum":1,"maximum":500},"cursor":{"type":"string"},"summaryOnly":{"type":"boolean"}}, []),
     ("fix_lint_issues", op_mcp::lint_fix_tools::fix_lint_issues_snapshot(state),
-     "Apply safe automatic fixes for issueIds from lint_document, or all:true, in one undoable transaction. Advisory findings remain for explicit design decisions.",
+     "Apply eligible automatic fixes for selected issueIds, or all:true, in one undoable transaction. Sibling consistency and other review-only findings are never auto-fixed, even when severity is warning; inspect and edit confirmed defects deliberately.",
      {"issueIds":{"type":"array","items":{"type":"string"}},"all":{"type":"boolean"}}, []),
     ("search_all_unique_properties", op_mcp::search_all_unique_properties_snapshot(state),
      "Search unique property values across a subtree.",
@@ -488,7 +477,7 @@ tools!(state;
     ("create_component", op_mcp::create_component_snapshot(),
      "Promote an existing frame or group to a reusable component.", {"node_id":{"type":"string"},"name":{"type":"string"}}, ["node_id","name"]),
     ("instantiate_component", op_mcp::instantiate_component_snapshot(),
-     "Insert a registered component instance.", {"component_id":{"type":"string"}}, ["component_id"]),
+     "Insert an independent clone of a registered component at the page root. This is not a linked Ref instance and does not inherit later master changes. For a linked instance use insert_node or batch_design with {type:'ref',ref:component_id}.", {"component_id":{"type":"string"}}, ["component_id"]),
     ("delete_component", op_mcp::delete_component_snapshot(),
      "Remove a registered component.", {"component_id":{"type":"string"}}, ["component_id"]),
     ("rename_component", op_mcp::rename_component_snapshot(),

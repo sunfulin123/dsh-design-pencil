@@ -87,7 +87,10 @@ impl fmt::Display for WireParseError {
             WireParseError::ExpectedColonAfterKey(key) => {
                 write!(f, "expected `:` after key {key:?}")
             }
-            WireParseError::UnknownKey(key) => write!(f, "unknown key {key:?} in descriptor"),
+            WireParseError::UnknownKey(key) => write!(
+                f,
+                "unknown key {key:?} in descriptor; nodes_json accepts flat leaf descriptors with kind, name, x, y, width and height. Use insert_node with data for a nested canonical node tree"
+            ),
             WireParseError::MissingField(field) => write!(f, "descriptor missing `{field}`"),
             WireParseError::UnsupportedKind(kind) => write!(
                 f,

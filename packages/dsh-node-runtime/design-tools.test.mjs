@@ -21,6 +21,164 @@ function call(session, name, args) {
   return result.structuredContent
 }
 
+test('WASM lint keeps peer variants reviewable and permits a deliberate undoable repair', () => {
+  const engine = new EngineSession({ version: '0.8.5', children: [
+    { type: 'frame', id: 'board', children: [
+      { type: 'frame', id: 'a', role: 'button', cornerRadius: 4 },
+      { type: 'frame', id: 'b', role: 'button', cornerRadius: 4 },
+      { type: 'frame', id: 'c', role: 'button', cornerRadius: 8 },
+    ] },
+  ] })
+  try {
+    const before = engine.snapshot().document
+    const issue = call(engine, 'lint_document', { rootId: 'board' }).issues.find(item => item.nodeId === 'c')
+    assert.equal(issue.severity, 'warning')
+    assert.equal(issue.autoFixEligible, false)
+    assert.equal(call(engine, 'fix_lint_issues', { issueIds: [issue.issueId] }).fixed, 0)
+    assert.deepEqual(engine.snapshot().document, before)
+    call(engine, 'update_node', { nodeId: 'c', data: { cornerRadius: 4 } })
+    assert.equal(call(engine, 'lint_document', { rootId: 'board' }).issues.some(item => item.nodeId === 'c'), false)
+    call(engine, 'undo', {})
+    assert.deepEqual(engine.snapshot().document, before)
+  } finally { engine.close() }
+})
+
+test('WASM exposes independent edge padding beside a peer advisory and can undo its fix', () => {
+  const section = (id, padding) => ({ type: 'frame', id, layout: 'vertical', width: 'fill_container', height: 100,
+    padding, children: [{ type: 'text', id: `${id}-label`, content: id }] })
+  const engine = new EngineSession({ version: '0.8.5', children: [{ type: 'frame', id: 'screen', width: 390, height: 844,
+    layout: 'vertical', children: [section('a', 24), section('b', 24), section('c', 0)] }] })
+  try {
+    const before = engine.snapshot().document
+    const lint = call(engine, 'lint_document', { rootId: 'screen' })
+    assert.ok(lint.issues.some(issue => issue.nodeId === 'c' && issue.category === 'mixed-sibling-padding' && issue.autoFixEligible === false))
+    assert.ok(lint.issues.some(issue => issue.nodeId === 'c' && issue.category === 'edge-section-padding' && issue.autoFixEligible === true))
+    assert.equal(call(engine, 'lint_document', { rootId: 'screen', rules: ['edge-section-padding'] }).count, 1)
+    assert.equal(call(engine, 'fix_lint_issues', { all: true }).fixed, 1)
+    assert.deepEqual(engine.snapshot().document.children[0].children[2].padding, [0, 24, 0, 24])
+    call(engine, 'undo', {})
+    assert.deepEqual(engine.snapshot().document, before)
+  } finally { engine.close() }
+})
+
+test('WASM does not let locked null-suggestion advisories block a real repair', () => {
+  const bar = (id, x, height, locked = false) => ({ type: 'rectangle', id, x, y: 500, width: 80, height, locked,
+    fill: [{ type: 'solid', color: '#ff0000' }] })
+  const engine = new EngineSession({ version: '0.8.5', children: [{ type: 'frame', id: 'chart', width: 1920, height: 1080,
+    children: [bar('a', 100, 200, true), bar('b', 250, 250), bar('c', 400, 300),
+      { type: 'text', id: 'title', content: 'Chart', fontSize: 16, height: 40 }] }] })
+  try {
+    const before = engine.snapshot().document
+    const lint = call(engine, 'lint_document', { rules: ['top-anchored-bars'] })
+    assert.equal(lint.issues.length, 3)
+    assert.ok(lint.issues.every(issue => issue.suggestedValue === null && issue.autoFixEligible === false))
+    assert.equal(call(engine, 'fix_lint_issues', { all: true }).fixed, 1)
+    call(engine, 'undo', {})
+    assert.deepEqual(engine.snapshot().document, before)
+  } finally { engine.close() }
+})
+
+test('WASM quality reports token evidence without mutating the document', () => {
+  const engine = new EngineSession({ version: '0.8.5',
+    variables: { 'body-size': { type: 'number', value: 16 } },
+    children: [{ type: 'frame', id: 'board', width: 200, height: 100, children: [
+      { type: 'text', id: 'label', content: 'Hello', fontSize: 16 },
+      { type: 'text', id: 'other', content: 'Other', fontSize: 17 },
+    ] }],
+  })
+  try {
+    const before = engine.snapshot()
+    const result = call(engine, 'get_design_quality', { rootId: 'board' })
+    assert.equal(result.coverage.tokens.status, 'indeterminate')
+    assert.ok(result.tokenObservations.some(item => item.nodeId === 'label' && item.status === 'unbound-match' && item.candidates.includes('body-size')))
+    assert.ok(result.tokenObservations.some(item => item.nodeId === 'other' && item.status === 'indeterminate'))
+    assert.equal(result.tokenObservationsTruncated, false)
+    const limited = call(engine, 'get_design_quality', { rootId: 'board', limit: 1 })
+    assert.equal(limited.tokenObservationsTruncated, true)
+    assert.equal(limited.truncated, false)
+    assert.equal(limited.tokenObservations.length, 1)
+    assert.equal(limited.counts.tokenObservations, 2)
+    assert.deepEqual(engine.snapshot(), before)
+  } finally { engine.close() }
+})
+
+test('WASM quality exposes linked target fixes without changing shared components implicitly', () => {
+  const engine = new EngineSession({ version: '0.8.5', children: [
+    { type: 'frame', id: 'board', width: 400, height: 200, children: [
+      { type: 'frame', id: 'master', reusable: true, role: 'button', width: 80, height: 30,
+        children: [{ type: 'text', id: 'label', content: 'Save' }] },
+      { type: 'ref', id: 'instance', ref: 'master', x: 120 },
+    ] },
+  ] })
+  try {
+    const before = engine.snapshot()
+    const issue = call(engine, 'get_design_quality', { rootId: 'instance' }).navIssues[0]
+    assert.equal(issue.nodeId, 'instance')
+    assert.equal(issue.componentId, 'master')
+    assert.equal(issue.patchAvailable, false)
+    assert.deepEqual(engine.snapshot(), before)
+    call(engine, 'update_node', { nodeId: 'master', data: { height: 44 } })
+    assert.equal(call(engine, 'get_design_quality', { rootId: 'instance' }).navIssues.length, 0)
+    call(engine, 'undo', {})
+    assert.equal(call(engine, 'get_design_quality', { rootId: 'instance' }).navIssues.length, 1)
+  } finally { engine.close() }
+})
+
+test('sandboxed draft scripts create linked reusable components with independent labels', () => {
+  const engine = new EngineSession({ version: '0.8.5', children: [] })
+  try {
+    const result = call(engine, 'batch_design', { script: `
+      const board = I(null, {type:'frame', name:'Board', width:400, height:200});
+      const master = I(board, {type:'frame', name:'Button', reusable:true, role:'button', width:80, height:44,
+        children:[{type:'text', name:'Label', content:'Save'}]});
+      I(board, {type:'ref', name:'Linked button', ref:master});
+    ` })
+    const boardId = result.results[0].nodeId
+    const masterId = result.results[1].nodeId
+    const refId = result.results[2].nodeId
+    const board = engine.snapshot().document.children.find(item => item.id === boardId)
+    const master = board.children.find(item => item.id === masterId)
+    assert.equal(board.children.find(item => item.id === refId).ref, masterId)
+    const labelId = master.children[0].id
+    call(engine, 'batch_design', { script: `I('${boardId}', {type:'ref', ref:'${masterId}', descendants:{'${labelId}':{content:'Cancel'}}});` })
+    const instance = engine.snapshot().document.children[0].children.at(-1)
+    assert.equal(instance.ref, masterId)
+    assert.equal(instance.descendants[labelId].content, 'Cancel')
+    assert.equal(engine.snapshot().document.children[0].children.find(item => item.id === masterId).children[0].content, 'Save')
+  } finally { engine.close() }
+})
+
+test('sandboxed design reports a non-container parent without changing the document', () => {
+  const engine = new EngineSession({ version: '0.8.5', children: [
+    { type: 'text', id: 'label', content: 'Title' },
+  ] })
+  try {
+    const before = engine.snapshot()
+    const result = engine.callTool('batch_design', { script: `I('label', {type:'frame', name:'Button'});` })
+    assert.equal(result.isError, true)
+    assert.match(result.content[0].text, /label.*not a container/)
+    assert.deepEqual(engine.snapshot(), before)
+  } finally { engine.close() }
+})
+
+test('prototype simulation applies camelCase click targets and rejects targetless clicks', () => {
+  const engine = new EngineSession({ version: '0.8.5', children: [
+    { type: 'frame', id: 'home', width: 400, height: 300, children: [
+      { type: 'frame', id: 'cta', width: 80, height: 44, reactions: [
+        { trigger: { type: 'ON_CLICK' }, actions: [{ type: 'NODE', destinationId: 'detail', navigation: 'NAVIGATE' }] },
+      ] },
+    ] },
+    { type: 'frame', id: 'detail', x: 500, width: 400, height: 300 },
+  ] })
+  try {
+    const result = call(engine, 'simulate_prototype', { startNodeId: 'home', steps: [{ type: 'click', nodeId: 'cta' }] })
+    assert.equal(result.currentScreenId, 'detail')
+    const missing = engine.callTool('simulate_prototype', { steps: [{ type: 'click' }] })
+    assert.equal(missing.isError, true)
+    assert.match(missing.content[0].text, /nodeId/)
+  } finally { engine.close() }
+})
+
 test('property clipboard is transient and paste is reversible', () => {
   const engine = session()
   try {

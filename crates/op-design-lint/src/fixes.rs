@@ -4,7 +4,7 @@
 use jian_ops_schema::node::PenNode;
 use jian_ops_schema::PenDocument;
 
-use crate::issue::{FixProperty, FixReport, Issue, IssueSeverity};
+use crate::issue::{FixProperty, FixReport, Issue};
 use crate::node_mut;
 use crate::node_util;
 use serde_json::Value;
@@ -76,13 +76,13 @@ fn set_padding(node: &mut PenNode, suggested: &Value) -> bool {
 }
 
 /// Apply auto-fixable issues to the document in place. Mirrors TS
-/// `applyFixes` (`design-pre-validation.ts:47-83`): skips `Info` issues,
+/// `applyFixes` (`design-pre-validation.ts:47-83`): skips review-only issues,
 /// skips `Remove` on a `status-bar`-role node (protected pre-injected
 /// chrome), counts only fixes ACTUALLY applied.
 pub fn apply_fixes(doc: &mut PenDocument, issues: &[Issue]) -> FixReport {
     let mut report = FixReport::default();
     for issue in issues {
-        if issue.severity == IssueSeverity::Info {
+        if !issue.can_auto_fix() {
             continue;
         }
         let applied = if issue.property == FixProperty::Remove {
@@ -216,7 +216,7 @@ fn find_node_mut<'a>(root: &'a mut PenNode, node_id: &str) -> Option<&'a mut Pen
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::issue::IssueCategory;
+    use crate::issue::{IssueCategory, IssueSeverity};
     use jian_ops_schema::node::{CornerRadius, Padding};
     use jian_ops_schema::sizing::{SizingBehavior, SizingKeyword};
     use serde_json::json;

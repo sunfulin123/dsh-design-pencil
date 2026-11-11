@@ -37,6 +37,8 @@ docs/
 # The bare `docs/` pattern above also shadows this test-fixture dir, which
 # MUST be tracked (the CI diagnostics-golden drift guard reads it).
 !crates/op-design-lint/tests/fixtures/docs/
+!crates/op-ai-skills/skills/synapse-design-html/templates/docs/
+!crates/op-ai-skills/skills/synapse-design-html/templates/docs/**
 
 # Keep the Chrome Web Store policy alongside the extension source. The bare
 # `docs/` rule above also matches nested extension documentation directories.
@@ -47,6 +49,7 @@ packages/op-chrome-extension/docs/*
 # Build outputs
 out/
 dist/
+/packages/dsh-node-runtime/skills/synapse-design-html/**
 apps/cli/src/commands/skill-bundle.json
 dist-ssr/
 electron-dist/
@@ -85,3 +88,6 @@ packages/.toolchain/
 
 # Codex CLI local config
 .codex/
+
+# Local isolated model evaluation evidence
+/.synapse/op-design/evaluations/

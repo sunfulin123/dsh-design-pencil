@@ -15,11 +15,12 @@ use std::collections::HashSet;
 use jian_ops_schema::node::{Padding, PenNode};
 use serde_json::Value;
 
+use super::sibling_peers::{has_explicit_role, peer_key};
 use super::spacing::{is_full_bleed_section, numeric_width};
 use crate::issue::{FixProperty, Issue, IssueCategory, IssueSeverity};
 use crate::node_util::{
-    children, corner_radius_numeric, fmt_num, json_number, node_id, node_kind_str,
-    node_property_value, padding, raw_padding_value, role,
+    children, corner_radius_numeric, fmt_num, is_node_visible, json_number, node_id, node_kind_str,
+    node_property_value, padding, raw_padding_value,
 };
 
 /// Properties whose consistency is role-dependent (a fixed mobile-chrome
@@ -47,12 +48,10 @@ fn fix_property_for(property: &str) -> FixProperty {
 /// property inconsistencies among siblings (`>= 3` siblings, `>= 2/3`
 /// majority rule); each outlier gets an `Issue` to align with the majority.
 ///
-/// Two parallel passes:
-///   1. STRICT — groups by `type:role` and checks STRICT + LOOSE props.
-///      Severity `warning`. Divider / spacer roles are skipped (intentionally
-///      tiny layout primitives whose dimensions shouldn't match anything).
-///   2. LOOSE — groups by `type` only and checks LOOSE props. Catches
-///      singleton-role outliers (web landing-page sections). Severity `info`.
+/// Two parallel passes: explicit roles define strict peers; unlabelled peers
+/// are grouped by kind and child structure. The loose pass ignores role but
+/// still requires matching structure. Unlabelled/loose findings are `info`.
+/// A peer difference is advisory even when its severity is `warning`.
 ///
 /// Issues overlapping between passes are deduped on `(node_id, property)` —
 /// the strict-pass version wins because it is collected first.
@@ -71,6 +70,9 @@ pub fn detect_sibling_inconsistencies(root: &PenNode) -> Vec<Issue> {
 }
 
 fn walk_sibling_inconsistencies(node: &PenNode, raw: &mut Vec<Issue>) {
+    if !is_node_visible(node) {
+        return;
+    }
     let kids = children(node);
     if kids.len() >= 3 {
         // Insertion-ordered group lists so the strict / loose passes iterate
@@ -78,24 +80,15 @@ fn walk_sibling_inconsistencies(node: &PenNode, raw: &mut Vec<Issue>) {
         let mut strict_groups: Vec<(String, Vec<&PenNode>)> = Vec::new();
         let mut type_groups: Vec<(String, Vec<&PenNode>)> = Vec::new();
         for child in kids {
-            let child_role = role(child).unwrap_or("").to_lowercase();
-            // Skip divider / spacer — visual primitives whose dimensions are
-            // intentionally tiny; reporting them as outliers is always noise.
-            if child_role == "divider" || child_role == "spacer" {
-                continue;
+            if let Some(key) = peer_key(child, true) {
+                push_group(&mut strict_groups, key, child);
             }
-            let role_key = if child_role.is_empty() {
-                "__none__"
-            } else {
-                child_role.as_str()
-            };
-            let kind = node_kind_str(child);
-            push_group(&mut strict_groups, format!("{kind}:{role_key}"), child);
-            push_group(&mut type_groups, kind.to_string(), child);
+            if let Some(key) = peer_key(child, false) {
+                push_group(&mut type_groups, key, child);
+            }
         }
 
-        // Strict pass: same-type, same-role siblings, every applicable
-        // property (STRICT + LOOSE). Severity `warning`.
+        // Compare explicit-role peers or structurally similar unlabelled peers.
         for (strict_key, siblings) in &strict_groups {
             if siblings.len() < 3 {
                 continue;
@@ -110,18 +103,22 @@ fn walk_sibling_inconsistencies(node: &PenNode, raw: &mut Vec<Issue>) {
                     .copied()
                     .collect()
             };
+            let severity = if has_explicit_role(siblings[0]) {
+                IssueSeverity::Warning
+            } else {
+                IssueSeverity::Info
+            };
             for prop in props {
-                check_consistency(siblings, prop, IssueSeverity::Warning, raw);
+                check_consistency(siblings, prop, severity, raw);
             }
         }
 
-        // Loose pass: same-type-only siblings, role-independent props only.
-        // Catches singleton-role outliers. Severity `info`.
-        for (kind, siblings) in &type_groups {
+        // Loose pass: similar structure across roles, radius only, severity info.
+        for (_, siblings) in &type_groups {
             if siblings.len() < 3 {
                 continue;
             }
-            if kind == "text" {
+            if node_kind_str(siblings[0]) == "text" {
                 continue; // text has no role-independent props
             }
             for prop in FRAME_LOOSE_PROPS {
@@ -252,8 +249,8 @@ fn canonical_json(value: &Value) -> String {
     serde_json::to_string(value).unwrap_or_default()
 }
 
-/// Port of `detectMixedSiblingCornerRadius` (`detectors.ts:401-456`). Groups
-/// children `>= 3` by `type:role` (skipping divider / spacer); within a group
+/// Groups children `>= 3` by explicit role or similar unlabelled structure;
+/// skips invisible nodes and non-visual spacers; within a group
 /// counts `cornerRadius` values (absent → `0`), finds the modal, and — when
 /// the modal holds `>= 60%` of the group — flags every sibling whose value
 /// differs from the modal.
@@ -264,6 +261,9 @@ pub fn detect_mixed_sibling_corner_radius(root: &PenNode) -> Vec<Issue> {
 }
 
 fn walk_mixed_corner_radius(node: &PenNode, issues: &mut Vec<Issue>) {
+    if !is_node_visible(node) {
+        return;
+    }
     let kids = children(node);
     if kids.len() >= 3 {
         for (_, siblings) in role_kind_groups(kids) {
@@ -316,7 +316,11 @@ fn walk_mixed_corner_radius(node: &PenNode, issues: &mut Vec<Issue>) {
                     issues.push(Issue {
                         node_id: node_id(sibling).to_string(),
                         category: IssueCategory::MixedSiblingCornerRadius,
-                        severity: IssueSeverity::Warning,
+                        severity: if has_explicit_role(sibling) {
+                            IssueSeverity::Warning
+                        } else {
+                            IssueSeverity::Info
+                        },
                         property: FixProperty::CornerRadius,
                         current_value: json_number(num),
                         suggested_value: json_number(modal),
@@ -324,7 +328,7 @@ fn walk_mixed_corner_radius(node: &PenNode, issues: &mut Vec<Issue>) {
                             "cornerRadius {} doesn't match the {} other {} sibling(s) at {}",
                             fmt_num(num),
                             modal_count,
-                            kids.len() - 1,
+                            siblings.len() - 1,
                             fmt_num(modal),
                         ),
                     });
@@ -349,6 +353,9 @@ pub fn detect_mixed_sibling_padding(root: &PenNode) -> Vec<Issue> {
 }
 
 fn walk_mixed_padding(node: &PenNode, root_width: f64, issues: &mut Vec<Issue>) {
+    if !is_node_visible(node) {
+        return;
+    }
     let kids = children(node);
     if kids.len() >= 3 {
         for (_, grouped_siblings) in role_kind_groups(kids) {
@@ -396,7 +403,7 @@ fn walk_mixed_padding(node: &PenNode, root_width: f64, issues: &mut Vec<Issue>) 
                     issues.push(Issue {
                         node_id: node_id(sibling).to_string(),
                         category: IssueCategory::MixedSiblingPadding,
-                        severity: IssueSeverity::Warning,
+                        severity: if has_explicit_role(sibling) { IssueSeverity::Warning } else { IssueSeverity::Info },
                         property: FixProperty::Padding,
                         current_value: raw_padding_value(padding(sibling)),
                         suggested_value: suggested.clone(),
@@ -413,22 +420,13 @@ fn walk_mixed_padding(node: &PenNode, root_width: f64, issues: &mut Vec<Issue>) 
     }
 }
 
-/// Group children by `type:role`, skipping divider / spacer roles, in
-/// insertion order. Shared by the two mixed-sibling detectors.
+/// Group probable peers in insertion order. Shared by mixed-sibling detectors.
 fn role_kind_groups(kids: &[PenNode]) -> Vec<(String, Vec<&PenNode>)> {
     let mut groups: Vec<(String, Vec<&PenNode>)> = Vec::new();
     for child in kids {
-        let child_role = role(child).unwrap_or("").to_lowercase();
-        if child_role == "divider" || child_role == "spacer" {
-            continue;
+        if let Some(key) = peer_key(child, true) {
+            push_group(&mut groups, key, child);
         }
-        let role_key = if child_role.is_empty() {
-            "__none__"
-        } else {
-            child_role.as_str()
-        };
-        let key = format!("{}:{}", node_kind_str(child), role_key);
-        push_group(&mut groups, key, child);
     }
     groups
 }

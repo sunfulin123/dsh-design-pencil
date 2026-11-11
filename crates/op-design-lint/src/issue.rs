@@ -149,6 +149,44 @@ pub struct Issue {
     pub reason: String,
 }
 
+impl Issue {
+    /// Whether this finding may be submitted to a mechanical auto-fix. Peer
+    /// differences require design judgment even when they carry a warning.
+    pub fn can_auto_fix(&self) -> bool {
+        if self.severity == IssueSeverity::Info
+            || matches!(
+                self.category,
+                IssueCategory::SiblingInconsistency
+                    | IssueCategory::MixedSiblingCornerRadius
+                    | IssueCategory::MixedSiblingPadding
+            )
+        {
+            return false;
+        }
+        match self.property {
+            FixProperty::None | FixProperty::Fill | FixProperty::Label | FixProperty::Layout => {
+                false
+            }
+            FixProperty::Remove | FixProperty::Effects => true,
+            FixProperty::Height => self.suggested_value.as_str() == Some("fit_content"),
+            FixProperty::Y
+            | FixProperty::Rotation
+            | FixProperty::CornerRadius
+            | FixProperty::FontSize => self.suggested_value.as_f64().is_some(),
+            FixProperty::Padding => {
+                self.suggested_value.as_f64().is_some()
+                    || self.suggested_value.as_array().is_some_and(|values| {
+                        values.len() == 4 && values.iter().all(|value| value.as_f64().is_some())
+                    })
+            }
+            FixProperty::Stroke => serde_json::from_value::<jian_ops_schema::style::PenStroke>(
+                self.suggested_value.clone(),
+            )
+            .is_ok(),
+        }
+    }
+}
+
 /// Per-category count of fixes ACTUALLY applied by `apply_fixes` (Plan B).
 /// Defined here so the type model is complete in one place.
 /// `rename_all = "camelCase"` makes `by_category` serialize as `byCategory`,
@@ -163,6 +201,40 @@ pub struct FixReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn eligibility_requires_a_value_supported_by_the_corresponding_fixer() {
+        let mut issue = Issue {
+            node_id: "n".into(),
+            category: IssueCategory::SlopRoundedCardWall,
+            severity: IssueSeverity::Warning,
+            property: FixProperty::CornerRadius,
+            current_value: serde_json::Value::Null,
+            suggested_value: serde_json::Value::Null,
+            reason: "review".into(),
+        };
+        for property in [
+            FixProperty::CornerRadius,
+            FixProperty::FontSize,
+            FixProperty::Y,
+            FixProperty::Rotation,
+            FixProperty::Padding,
+            FixProperty::Stroke,
+        ] {
+            issue.property = property;
+            assert!(!issue.can_auto_fix(), "null suggestion for {property:?}");
+        }
+        issue.property = FixProperty::Padding;
+        issue.suggested_value = serde_json::json!([0, 24, 0, 24]);
+        assert!(issue.can_auto_fix());
+        issue.suggested_value = serde_json::json!([0, "invalid", 0, 24]);
+        assert!(!issue.can_auto_fix());
+        issue.property = FixProperty::Effects;
+        issue.suggested_value = serde_json::Value::Null;
+        assert!(issue.can_auto_fix());
+        issue.property = FixProperty::Remove;
+        assert!(issue.can_auto_fix());
+    }
 
     #[test]
     fn issue_category_serializes_kebab_case() {

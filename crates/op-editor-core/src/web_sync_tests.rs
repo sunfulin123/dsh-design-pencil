@@ -1,5 +1,54 @@
 use super::*;
 
+#[test]
+fn first_pull_uses_the_host_compatibility_loader_only_for_noncanonical_documents() {
+    let body = r##"{"document":{"version":"1.0.0","children":[
+        {"type":"frame","id":"master","reusable":true,"width":160,"height":48,"fill":"#ff0000"},
+        {"type":"frame","id":"screen","x":220,"width":400,"height":300,"fill":"#0000ff"}
+    ]},"version":0,"activePageIndex":0,"preserveAuthoredGeometry":false,"viewport":null,"metadataOnlyPush":true}"##;
+    let mut client = WebSyncClient::new();
+    let applied = client
+        .sync_with_view_state_force_with_loader(
+            body,
+            false,
+            |document| {
+                let mut canonical = document.clone();
+                for node in canonical["children"].as_array_mut().unwrap() {
+                    let color = node["fill"].take();
+                    node["fill"] = serde_json::json!([{ "type": "solid", "color": color }]);
+                }
+                serde_json::from_value(canonical).map_err(|error| error.to_string())
+            },
+            |next| {
+                assert_eq!(next.document.children.len(), 2);
+                true
+            },
+        )
+        .unwrap();
+    assert!(applied);
+    assert!(client.initialized());
+    assert_eq!(client.last_version(), 0);
+    let canonical = r#"{"document":{"version":"1.0","children":[]},"version":1}"#;
+    assert!(client
+        .sync_with_view_state_force_with_loader(
+            canonical,
+            false,
+            |_| { panic!("canonical documents must not require the compatibility loader") },
+            |_| true
+        )
+        .unwrap());
+    let mut rejected = WebSyncClient::new();
+    assert!(rejected
+        .sync_with_view_state_force_with_loader(
+            body,
+            false,
+            |_| Err("invalid compatibility data".to_string()),
+            |_| panic!("a failed load must never be applied"),
+        )
+        .is_err());
+    assert!(!rejected.initialized());
+}
+
 const V3: &str = r#"{"document":{"version":"1.0","children":[]},"version":3}"#;
 
 #[test]

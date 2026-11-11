@@ -137,6 +137,20 @@ impl BatchDesign {
         promoted: Vec<PromoteNote>,
     ) -> ToolOutcome {
         if parent_id.is_real()
+            && self
+                .resolve_page(args)
+                .and_then(|page| op_editor_core::walkers::find_node(&page.roots, &parent_id))
+                .is_some_and(|parent| !parent.is_container())
+        {
+            return ToolOutcome::Err(
+                ToolErrorCode::InvalidArgument,
+                format!(
+                    "Insert parent '{}' is not a container; read the target's parent and retry with a frame or group",
+                    parent_id.as_str()
+                ),
+            );
+        }
+        if parent_id.is_real()
             && !self.existing_ids.contains(&parent_id)
             && args
                 .get("strictParent")

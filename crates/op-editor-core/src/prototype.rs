@@ -6,6 +6,7 @@ pub mod behaviour;
 pub mod device;
 pub mod graph;
 pub mod player;
+pub mod simulate_types;
 pub mod smart_animate;
 pub mod transition;
 pub mod viewport;

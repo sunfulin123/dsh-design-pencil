@@ -69,11 +69,11 @@ fn walk_redundant_wrappers(node: &PenNode, depth: usize, issues: &mut Vec<Issue>
                                     node_id: node_id(node).to_string(),
                                     category: IssueCategory::RedundantWrapper,
                                     severity: IssueSeverity::Info,
-                                    property: FixProperty::Remove,
+                                    property: FixProperty::None,
                                     current_value: Value::Null,
-                                    suggested_value: Value::Bool(true),
+                                    suggested_value: Value::Null,
                                     reason: format!(
-                                        "frame wraps a single {} with no visual properties (redundant nesting)",
+                                        "frame wraps a single {}; inspect whether it can be simplified without changing layout or deleting content",
                                         node_kind_name(child)
                                     ),
                                 });
@@ -106,11 +106,11 @@ pub fn detect_excessive_nesting_depth(root: &PenNode) -> Vec<Issue> {
                         node_id: node_id(node).to_string(),
                         category: IssueCategory::ExcessiveNestingDepth,
                         severity: IssueSeverity::Info,
-                        property: FixProperty::Remove,
+                        property: FixProperty::None,
                         current_value: Value::Null,
                         suggested_value: Value::Null,
                         reason: format!(
-                            "node at depth {} under {} (threshold: {}); deepest in screen",
+                            "node at depth {} under {} (threshold: {}); review the path before simplifying, never delete the deepest node based on depth alone",
                             depth,
                             node_id(screen),
                             MAX_NESTING_DEPTH
@@ -161,7 +161,7 @@ pub fn detect_absolute_positioning_share(root: &PenNode) -> Vec<Issue> {
                         node_id: node_id(screen).to_string(),
                         category: IssueCategory::AbsolutePositioningShare,
                         severity: IssueSeverity::Info,
-                        property: FixProperty::Remove,
+                        property: FixProperty::None,
                         current_value: Value::Null,
                         suggested_value: Value::Null,
                         reason: format!(
@@ -539,6 +539,12 @@ mod tests {
         let issues = detect_excessive_nesting_depth(&root);
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].category, IssueCategory::ExcessiveNestingDepth);
+        assert_eq!(
+            issues[0].property,
+            FixProperty::None,
+            "depth is not permission to remove the deepest node"
+        );
+        assert_eq!(issues[0].severity, IssueSeverity::Info);
     }
 
     #[test]

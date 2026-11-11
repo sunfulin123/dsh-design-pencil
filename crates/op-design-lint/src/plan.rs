@@ -2,7 +2,7 @@
 //! expressed as a data type rather than a direct mutation.
 //!
 //! `detect_and_plan` runs the same filter logic that `apply_fixes` uses
-//! (skip `Info`-severity issues, skip the no-op `Fill` property, skip
+//! (skip review-only issues, skip the no-op `Fill` property, skip
 //! `Remove` on `status-bar`-role nodes), then emits a `PlannedFix` per
 //! issue that would have been applied. The final document produced by
 //! applying every `PlannedFix` is byte-identical to the final document
@@ -15,7 +15,7 @@
 //! and isolates the `FixProperty → EditorCommand` translation table to a
 //! single host module.
 
-use crate::issue::{FixProperty, IssueCategory, IssueSeverity};
+use crate::issue::{FixProperty, IssueCategory};
 use crate::node_util;
 use jian_ops_schema::PenDocument;
 
@@ -102,8 +102,8 @@ pub fn detect_and_plan(doc: &PenDocument) -> Vec<PlannedFix> {
     let mut plan = Vec::new();
 
     for issue in &issues {
-        // Mirror `apply_fixes`: skip Info-severity.
-        if issue.severity == IssueSeverity::Info {
+        // Mirror the shared policy used by `apply_fixes`.
+        if !issue.can_auto_fix() {
             continue;
         }
 

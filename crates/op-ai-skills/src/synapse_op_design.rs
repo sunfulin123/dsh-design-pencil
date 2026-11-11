@@ -45,6 +45,10 @@ mod tests {
         assert!(skill.contains("at most three corrective rounds"));
         assert!(skill.contains("rather than inserting a second page root"));
         assert!(resource("op-design-review").unwrap().contains("screenshot"));
+        for guidance in [skill, resource("op-design-review").unwrap()] {
+            assert!(guidance.contains("synapse_design_pipeline_context"));
+            assert!(guidance.contains("value.nextCursor"));
+        }
         assert!(resource("../../secret").is_none());
         assert!(!skill.contains("Three.js"));
         assert!(!skill.contains("DOM"));

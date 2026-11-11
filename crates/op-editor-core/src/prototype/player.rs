@@ -2,6 +2,7 @@
 
 use super::behaviour::PropertyOverrideValue;
 use super::graph::{HotspotEntry, PrototypeFlow, PrototypeGraph, PrototypeScreen};
+pub use super::simulate_types::{SimulateReport, SimulateStep};
 use super::smart_animate::SmartAnimateLayer;
 use super::transition::{compute_transition_frame, TransitionFrame};
 use crate::PenNodeExt;
@@ -10,7 +11,6 @@ use jian_ops_schema::prototype::{
     OverflowDirection, OverlayPositionType, PrototypeAction, PrototypeTransition, TriggerType,
 };
 use jian_ops_schema::PenDocument;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 
@@ -49,42 +49,6 @@ pub(super) struct PendingTimer {
     pub screen_id: String,
     pub fire_at_ms: u64,
     pub actions: Vec<PrototypeAction>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum SimulateStep {
-    Click {
-        #[serde(default)]
-        node_id: Option<String>,
-        #[serde(default)]
-        x: Option<f32>,
-        #[serde(default)]
-        y: Option<f32>,
-    },
-    Hover {
-        node_id: String,
-    },
-    KeyDown {
-        key_code: u32,
-    },
-    Wait {
-        ms: u64,
-    },
-    Back,
-    Restart,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SimulateReport {
-    pub start_screen_id: String,
-    pub current_screen_id: String,
-    pub visited_screens: Vec<String>,
-    pub overlays: Vec<String>,
-    pub variant_overrides: BTreeMap<String, String>,
-    pub variable_overrides: BTreeMap<String, Value>,
-    pub opened_urls: Vec<String>,
 }
 
 #[derive(Debug, Clone)]

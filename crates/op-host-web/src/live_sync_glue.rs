@@ -424,7 +424,12 @@ fn apply_document_response<C: RepaintContext + 'static>(
                 }
                 None => s
                     .client
-                    .sync_with_view_state_force(body, force_view, apply_next)
+                    .sync_with_view_state_force_with_loader(
+                        body,
+                        force_view,
+                        live_sync_document::load_compatible,
+                        apply_next,
+                    )
                     .ok(),
             }
         })
@@ -704,35 +709,16 @@ pub(crate) fn flush_document_if_changed<C: RepaintContext + 'static>(inner: &Rc<
     }
 }
 
-/// Ensure a document's persisted `design_md` is also registered and pinned
-/// in the in-memory style-guide catalogue when opened or synced.
-pub(crate) fn sync_style_guide_from_design_md(state: &mut op_editor_core::EditorState) {
-    op_editor_ui::widgets::press_flow::sync_style_guide_from_design_md(state);
-}
+pub(crate) use op_editor_ui::widgets::press_flow::sync_style_guide_from_design_md;
 
-/// Immediately push the current selection to the daemon if it changed since
-/// the last push, eliminating the poll-interval delay after a canvas or layer click.
-pub(crate) fn flush_selection_if_changed<C: RepaintContext + 'static>(inner: &Rc<RefCell<C>>) {
-    let key_cell = ACTIVE_SELECTION_KEY.with(|slot| slot.borrow().clone());
-    let base = ACTIVE_BASE_URL.with(|slot| slot.borrow().clone());
-    if let (Some(last_selection_key), Some(base)) = (key_cell, base) {
-        push_selection_if_changed(inner, &base, &last_selection_key);
-    }
-}
-
-/// Force the next selection flush to re-push even if the selection key matches.
-pub(crate) fn mark_selection_dirty() {
-    ACTIVE_SELECTION_KEY.with(|slot| {
-        if let Some(cell) = slot.borrow().as_ref() {
-            if let Ok(mut last) = cell.try_borrow_mut() {
-                *last = None;
-            }
-        }
-    });
-}
+#[path = "live_sync_selection.rs"]
+mod live_sync_selection;
+pub(crate) use live_sync_selection::{flush_selection_if_changed, mark_selection_dirty};
 
 #[path = "live_sync_controller.rs"]
 mod live_sync_controller;
+#[path = "live_sync_document.rs"]
+mod live_sync_document;
 pub(crate) use live_sync_controller::{
     acknowledge_daemon_save, daemon_save_version, daemon_synced_version, SharedSync, SyncController,
 };

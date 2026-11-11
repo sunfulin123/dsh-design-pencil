@@ -7,7 +7,7 @@ use jian_ops_schema::prototype::{
     PrototypeAction, PrototypeDeviceSpec, PrototypeScrollBehavior, Reaction,
 };
 use jian_ops_schema::PenDocument;
-use op_editor_core::prototype::{PrototypeGraph, PrototypePlayer, SimulateStep};
+use op_editor_core::prototype::{PrototypeGraph, PrototypePlayer};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
 
@@ -72,20 +72,7 @@ pub(crate) fn schemas() -> Vec<Value> {
                 }
             }
         }),
-        json!({
-            "name": "simulate_prototype",
-            "description": "Headlessly simulate prototype interactions (click, hover, key_down, wait, back, restart) and return visited screens, active overlays, variant overrides, and variable changes.",
-            "inputSchema": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [],
-                "properties": {
-                    "startNodeId": {"type": "string"},
-                    "flowIndex": {"type": "integer", "minimum": 0},
-                    "steps": {"type": "array", "items": {"type": "object"}}
-                }
-            }
-        }),
+        super::prototype_simulation::schema(),
     ]
 }
 
@@ -329,12 +316,9 @@ impl DesignEngine {
             .get("startNodeId")
             .map(String::as_str)
             .filter(|s| !s.trim().is_empty());
-        let steps: Vec<SimulateStep> = match args.get("steps") {
-            Some(raw) if !raw.trim().is_empty() => match serde_json::from_str(raw) {
-                Ok(s) => s,
-                Err(e) => return error_reply(&format!("invalid steps: {e}")),
-            },
-            _ => Vec::new(),
+        let steps = match super::prototype_simulation::parse_steps(args.get("steps")) {
+            Ok(steps) => steps,
+            Err(message) => return error_reply(&message),
         };
         let Some(mut player) = PrototypePlayer::enter(
             &self.state.doc,

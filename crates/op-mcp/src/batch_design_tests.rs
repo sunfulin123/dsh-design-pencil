@@ -35,6 +35,24 @@ fn batch_design_rejects_empty_array() {
 }
 
 #[test]
+fn batch_design_rejects_tree_with_actionable_descriptor_guidance() {
+    let tool = batch_design_snapshot(&sample());
+    let mut args = BTreeMap::new();
+    args.insert(
+        "nodes_json".into(),
+        r#"[{"type":"frame","children":[]}]"#.into(),
+    );
+    match tool.call(&args) {
+        ToolOutcome::Err(ToolErrorCode::InvalidArgument, message) => {
+            assert!(message.contains("unknown key \"type\""));
+            assert!(message.contains("flat"));
+            assert!(message.contains("insert_node"));
+        }
+        other => panic!("expected actionable invalid descriptor error, got {other:?}"),
+    }
+}
+
+#[test]
 fn batch_design_parses_minimal_two_node_array() {
     let tool = batch_design_snapshot(&sample());
     let mut args = BTreeMap::new();

@@ -72,7 +72,7 @@ mod purple_glow_gradient_tests {
         assert_eq!(issues[0].severity, IssueSeverity::Warning);
         assert_eq!(issues[0].property, FixProperty::Fill);
         assert_eq!(issues[0].suggested_value, json!(null));
-        assert_eq!(issues[0].reason, "purple-blue gradient wash covering 25% of the board — the AI-default look; use the style guide's accent on one element instead");
+        assert_eq!(issues[0].reason, "saturated gradient covering 25% of the board — review its visual priority and consistency with the selected style");
         // The category's wire code keeps the `slop/` prefix.
         assert_eq!(
             serde_json::to_value(issues[0].category).unwrap(),

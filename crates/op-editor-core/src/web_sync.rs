@@ -16,6 +16,8 @@
 
 use jian_ops_schema::PenDocument;
 
+#[path = "web_sync_document.rs"]
+mod web_sync_document;
 #[path = "web_sync_error.rs"]
 mod web_sync_error;
 pub use web_sync_error::WebSyncError;
@@ -43,17 +45,6 @@ pub struct WebSyncDocument {
     /// the content version has not advanced.
     pub viewport_changed: bool,
     pub metadata_only_push: bool,
-}
-
-#[derive(Debug, Default, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct WireEditorMeta {
-    #[serde(default, alias = "active_page_index")]
-    active_page_index: Option<usize>,
-    #[serde(default, alias = "preserve_authored_geometry")]
-    preserve_authored_geometry: Option<bool>,
-    #[serde(default, deserialize_with = "crate::Viewport::deserialize_optional")]
-    viewport: Option<crate::Viewport>,
 }
 
 /// Tracks the last document version this client has applied, so a poll/SSE
@@ -145,76 +136,6 @@ impl WebSyncClient {
         self.next_document_with_view_force(body, false)
     }
 
-    fn next_document_with_view_force(
-        &self,
-        body: &str,
-        force: bool,
-    ) -> Result<Option<WebSyncDocument>, WebSyncError> {
-        let value: serde_json::Value =
-            serde_json::from_str(body).map_err(|e| WebSyncError::ResponseParse(e.to_string()))?;
-        let document = value.get("document").ok_or(WebSyncError::MissingDocument)?;
-        self.next_document_from_value(&value, document.get("editorMeta"), force, || {
-            serde_json::from_value(document.clone())
-                .map_err(|e| WebSyncError::DocumentParse(e.to_string()))
-        })
-    }
-
-    /// Shared tail of a document pull: staleness check, wrapper metadata,
-    /// and `build_document` only when the reply is newer than what was applied.
-    pub(crate) fn next_document_from_value(
-        &self,
-        value: &serde_json::Value,
-        editor_meta: Option<&serde_json::Value>,
-        force: bool,
-        build_document: impl FnOnce() -> Result<PenDocument, WebSyncError>,
-    ) -> Result<Option<WebSyncDocument>, WebSyncError> {
-        let version = value
-            .get("version")
-            .and_then(serde_json::Value::as_u64)
-            .ok_or(WebSyncError::MissingVersion)?;
-        if self.initialized && version < self.applied_version {
-            return Ok(None);
-        }
-        let nested_meta = editor_meta
-            .and_then(|meta| serde_json::from_value::<WireEditorMeta>(meta.clone()).ok())
-            .unwrap_or_default();
-        let viewport = value
-            .get("viewport")
-            .map(|value| crate::Viewport::deserialize_optional(value).ok().flatten())
-            .unwrap_or(nested_meta.viewport);
-        let viewport_changed = viewport != self.applied_viewport;
-        if self.initialized && version == self.applied_version && !viewport_changed && !force {
-            return Ok(None);
-        }
-        let active_page_index = value
-            .get("activePageIndex")
-            .and_then(serde_json::Value::as_u64)
-            .and_then(|index| usize::try_from(index).ok())
-            .or(nested_meta.active_page_index)
-            .unwrap_or(0);
-        let preserve_authored_geometry = value
-            .get("preserveAuthoredGeometry")
-            .and_then(serde_json::Value::as_bool)
-            .or(nested_meta.preserve_authored_geometry)
-            .unwrap_or(false);
-        let doc = build_document()?;
-        let scenario = value
-            .get("scenario")
-            .and_then(serde_json::Value::as_str)
-            .and_then(|name| std::str::FromStr::from_str(name).ok());
-        Ok(Some(WebSyncDocument {
-            document: doc,
-            version,
-            active_page_index,
-            preserve_authored_geometry,
-            scenario,
-            viewport,
-            viewport_changed,
-            metadata_only_push: value.get("metadataOnlyPush").and_then(|v| v.as_bool())
-                == Some(true),
-        }))
-    }
-
     /// Record that `version` has been applied AND repainted. Call this only
     /// after a successful apply+repaint so a failed repaint leaves the version
     /// un-committed (and thus retried on the next poll). Prefer [`sync`](Self::sync),
@@ -294,6 +215,25 @@ impl WebSyncClient {
         F: FnOnce(WebSyncDocument) -> bool,
     {
         let next = self.next_document_with_view_force(body, force)?;
+        self.commit_next_document(next, apply)
+    }
+
+    /// Apply a full response using the host's compatibility loader only if
+    /// canonical deserialization fails. Normal live snapshots keep the fast path.
+    pub fn sync_with_view_state_force_with_loader<F, L>(
+        &mut self,
+        body: &str,
+        force: bool,
+        loader: L,
+        apply: F,
+    ) -> Result<bool, WebSyncError>
+    where
+        F: FnOnce(WebSyncDocument) -> bool,
+        L: FnOnce(&serde_json::Value) -> Result<PenDocument, String>,
+    {
+        let next = self.next_document_with_view_force_using(body, force, |value, _| {
+            loader(value).map_err(WebSyncError::DocumentParse)
+        })?;
         self.commit_next_document(next, apply)
     }
 

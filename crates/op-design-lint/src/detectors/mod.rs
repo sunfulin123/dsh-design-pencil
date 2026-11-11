@@ -12,11 +12,12 @@ use jian_ops_schema::node::PenNode;
 use jian_ops_schema::PenDocument;
 
 use crate::design_form::{classify_root_form_node, DesignForm};
-use crate::issue::{Issue, IssueCategory};
+use crate::issue::Issue;
 
 pub mod empty_filled_panel;
 pub mod motion_budget;
 pub mod shader_budget;
+mod sibling_peers;
 pub mod siblings;
 pub mod slop;
 pub mod spacing;
@@ -48,13 +49,11 @@ pub use typography::*;
 pub use widget_a11y::*;
 
 /// Port of `detectAllIssues` (`detectors.ts:698-724`). Runs the detectors
-/// in the exact TS call order, concatenates their issue lists, and dedups on
-/// `{node_id}:{property}` — the first occurrence (in detector order, then
-/// tree-walk order) wins.
+/// in detector order and deduplicates equivalent mutation targets. Independent
+/// report-only rules remain visible even when they share a node and property.
 ///
 /// The dedup key reuses [`crate::issue::FixProperty::wire_str`] so the
-/// `{node_id}:{property}` string is byte-identical to the TS
-/// `` `${issue.nodeId}:${issue.property}` `` key.
+/// property name is shared with the public wire representation.
 pub fn detect_all(root: &PenNode, doc: &PenDocument) -> Vec<Issue> {
     detect_all_for_form(root, doc, classify_root_form_node(root))
 }
@@ -112,10 +111,18 @@ pub fn detect_all_for_form(root: &PenNode, doc: &PenDocument, form: DesignForm) 
     combined
         .into_iter()
         .filter(|issue| {
-            let key = if issue.category == IssueCategory::MotionBudget {
-                format!("{}:{:?}:{}", issue.node_id, issue.category, issue.reason)
+            let key = if issue.can_auto_fix() {
+                // One mechanical write per target avoids competing auto-fixes.
+                format!("{}:{}:auto", issue.node_id, issue.property.wire_str())
             } else {
-                format!("{}:{}", issue.node_id, issue.property.wire_str())
+                format!(
+                    "{}:{}:{:?}:{}:{}",
+                    issue.node_id,
+                    issue.property.wire_str(),
+                    issue.category,
+                    issue.current_value,
+                    issue.reason
+                )
             };
             seen.insert(key)
         })
@@ -153,13 +160,10 @@ mod detect_all_tests {
         assert!(detect_all(&root, &doc(json!({"version": "1.0", "children": []}))).is_empty());
     }
 
-    /// A `cornerRadius` outlier among same-role frames is caught by BOTH
-    /// `detect_sibling_inconsistencies` (4th, `warning`) and
-    /// `detect_mixed_sibling_corner_radius` (7th, `warning`) on the same
-    /// `(node_id, "cornerRadius")` key. `detect_all` dedups to the
-    /// sibling-inconsistency issue — it runs earlier in TS order.
+    /// Both peer rules must stay discoverable: their comparison groups and
+    /// suggested values can differ even for the same node and property.
     #[test]
-    fn detect_all_dedups_collision_keeping_earlier_detector() {
+    fn detect_all_keeps_distinct_peer_radius_rules() {
         let root = node(json!({
             "type": "frame", "id": "root",
             "children": [
@@ -169,21 +173,15 @@ mod detect_all_tests {
             ]
         }));
         let issues = detect_all(&root, &doc(json!({"version": "1.0", "children": []})));
-        // Exactly one issue for node `c` — the earlier sibling-inconsistency
-        // detector wins; the mixed-corner-radius duplicate is dropped.
-        assert_eq!(
-            issues
-                .iter()
-                .filter(|i| i.node_id == "c" && i.property == FixProperty::CornerRadius)
-                .count(),
-            1
-        );
-        let c_issue = issues
-            .iter()
-            .find(|i| i.node_id == "c")
-            .expect("node c flagged");
-        assert_eq!(c_issue.category, IssueCategory::SiblingInconsistency);
-        assert_eq!(c_issue.severity, IssueSeverity::Warning);
+        for category in [
+            IssueCategory::SiblingInconsistency,
+            IssueCategory::MixedSiblingCornerRadius,
+        ] {
+            assert!(issues.iter().any(|i| i.node_id == "c"
+                && i.property == FixProperty::CornerRadius
+                && i.category == category
+                && i.severity == IssueSeverity::Warning));
+        }
     }
 
     /// `detect_all` classifies the root itself so every existing caller

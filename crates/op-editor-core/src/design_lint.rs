@@ -1,12 +1,13 @@
 //! Shared diagnostic snapshots for inspector and MCP authoring.
 use crate::{EditorCommand, EditorState, NodeId, PenNodeExt};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use jian_ops_schema::{node::PenNode, PenDocument};
 use op_design_lint::{apply_fixes, detect_all, FixProperty, FixReport, Issue};
 use serde_json::{json, Value};
 use std::collections::BTreeSet;
 
 pub fn issue_id(issue: &Issue) -> String {
-    format!(
+    let base = format!(
         "{}:{}:{}:{}",
         issue.node_id,
         json!(issue.category)
@@ -14,7 +15,13 @@ pub fn issue_id(issue: &Issue) -> String {
             .expect("lint category is a string"),
         issue.property.wire_str(),
         issue.current_value
-    )
+    );
+    if issue.can_auto_fix() {
+        base
+    } else {
+        // Independent observations can share category, property and value.
+        format!("{base}:{}", URL_SAFE_NO_PAD.encode(issue.reason.as_bytes()))
+    }
 }
 
 pub struct DesignLintSnapshot {
@@ -79,7 +86,7 @@ impl DesignLintSnapshot {
             .collect();
         if let Some(issue) = issues
             .iter()
-            .find(|issue| !self.editable.contains(&issue_id(issue)))
+            .find(|issue| issue.can_auto_fix() && !self.editable.contains(&issue_id(issue)))
         {
             return Err(format!("node {} is locked or not editable", issue.node_id));
         }

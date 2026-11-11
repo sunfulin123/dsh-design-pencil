@@ -146,6 +146,381 @@ fn lint_fixes_use_reported_ids_and_undo_as_one_step() {
 }
 
 #[test]
+fn unlabelled_peer_lint_is_review_only_but_manual_correction_is_undoable() {
+    let mut engine = DesignEngine::new();
+    let item = |id: &str, radius: i32| {
+        json!({"type":"frame","id":id,
+        "layout":"horizontal","height":44,"cornerRadius":radius,"children":[
+            {"type":"text","id":format!("{id}-icon"),"content":"•"},
+            {"type":"text","id":format!("{id}-label"),"content":id}
+        ]})
+    };
+    engine
+        .load_document(
+            &json!({"version":"1.0","children":[
+                {"type":"frame","id":"root","children":[item("a",4),item("b",4),item("c",8)]}
+            ]})
+            .to_string(),
+        )
+        .unwrap();
+    let before = engine.document_json().unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "lint_document",
+                r#"{"rules":["sibling-inconsistency","mixed-sibling-corner-radius"]}"#,
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    let candidate = lint["structuredContent"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|issue| issue["nodeId"] == "c" && issue["property"] == "cornerRadius")
+        .unwrap();
+    let fix: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "fix_lint_issues",
+                &json!({"issueIds":[candidate["issueId"]]}).to_string(),
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        fix["structuredContent"]["fixed"], 0,
+        "heuristic findings require review"
+    );
+    assert_eq!(engine.document_json().unwrap(), before);
+    let update: Value = serde_json::from_str(
+        &engine
+            .call_tool("update_node", r#"{"nodeId":"c","data":{"cornerRadius":4}}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(update["isError"], false, "{update}");
+    let after: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "lint_document",
+                r#"{"rules":["sibling-inconsistency","mixed-sibling-corner-radius"]}"#,
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(!after["structuredContent"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|issue| issue["nodeId"] == "c"));
+    engine.call_tool("undo", "{}").unwrap();
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
+fn labelled_peer_lint_requires_review_before_restyling() {
+    let mut engine = DesignEngine::new();
+    engine
+        .load_document(
+            r##"{"version":"1.0","children":[{"type":"frame","id":"root","children":[
+        {"type":"frame","id":"a","role":"button","cornerRadius":4},
+        {"type":"frame","id":"b","role":"button","cornerRadius":4},
+        {"type":"frame","id":"c","role":"button","cornerRadius":8}
+    ]}]}"##,
+        )
+        .unwrap();
+    let before = engine.document_json().unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool("lint_document", r#"{"rules":["sibling-inconsistency"]}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let issue = &lint["structuredContent"]["issues"][0];
+    assert_eq!(issue["severity"], "warning");
+    assert_eq!(issue["autoFixEligible"], false);
+    let fix: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "fix_lint_issues",
+                &json!({"issueIds":[issue["issueId"]]}).to_string(),
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        fix["structuredContent"]["fixed"], 0,
+        "a role alone does not prove the visual variant is accidental"
+    );
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
+fn advisory_peer_padding_does_not_hide_independent_edge_padding_fix() {
+    let mut engine = DesignEngine::new();
+    let section = |id: &str, padding: i32| {
+        json!({
+            "type":"frame", "id":id, "layout":"vertical", "width":"fill_container",
+            "height":100, "padding":padding,
+            "children":[{"type":"text","id":format!("{id}-label"),"content":id}]
+        })
+    };
+    let document = json!({"version":"0.8.5","children":[{
+        "type":"frame","id":"screen","width":390,"height":844,"layout":"vertical",
+        "children":[section("a",24),section("b",24),section("c",0)]
+    }]});
+    engine.load_document(&document.to_string()).unwrap();
+    let before = engine.document_json().unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool("lint_document", r#"{"rootId":"screen"}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let issues = lint["structuredContent"]["issues"].as_array().unwrap();
+    assert!(issues.iter().any(|i| i["nodeId"] == "c"
+        && i["category"] == "mixed-sibling-padding"
+        && i["autoFixEligible"] == false));
+    assert!(
+        issues.iter().any(|i| i["nodeId"] == "c"
+            && i["category"] == "edge-section-padding"
+            && i["autoFixEligible"] == true),
+        "an advisory must not hide an independent actionable finding: {lint}"
+    );
+    let filtered: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "lint_document",
+                r#"{"rootId":"screen","rules":["edge-section-padding"]}"#,
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(filtered["structuredContent"]["count"], 1);
+    let fixed: Value = serde_json::from_str(
+        &engine
+            .call_tool("fix_lint_issues", r#"{"all":true}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(fixed["structuredContent"]["fixed"], 1);
+    let after: Value = serde_json::from_str(&engine.document_json().unwrap()).unwrap();
+    assert_eq!(
+        after["children"][0]["children"][2]["padding"],
+        json!([0.0, 24.0, 0.0, 24.0])
+    );
+    engine.call_tool("undo", "{}").unwrap();
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
+fn independent_advisories_for_the_same_property_remain_discoverable() {
+    let mut engine = DesignEngine::new();
+    let section = |id: &str, padding: i32| {
+        json!({
+            "type":"frame", "id":id, "layout":"vertical", "width":"fill_container",
+            "height":100, "padding":padding,
+            "children":[{"type":"text","id":format!("{id}-label"),"content":id}]
+        })
+    };
+    let document = json!({"version":"0.8.5","children":[{
+        "type":"frame","id":"screen","width":390,"height":844,"layout":"vertical","padding":24,
+        "children":[section("a",8),section("b",8),section("c",16)]
+    }]});
+    engine.load_document(&document.to_string()).unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool("lint_document", r#"{"rootId":"screen"}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let issues = lint["structuredContent"]["issues"].as_array().unwrap();
+    for category in ["mixed-sibling-padding", "stacked-horizontal-padding"] {
+        assert!(
+            issues.iter().any(|i| i["nodeId"] == "c"
+                && i["category"] == category
+                && i["autoFixEligible"] == false),
+            "missing independent {category}: {lint}"
+        );
+    }
+    let filtered: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "lint_document",
+                r#"{"rootId":"screen","rules":["stacked-horizontal-padding"]}"#,
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(filtered["structuredContent"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|i| i["nodeId"] == "c"));
+}
+
+#[test]
+fn independent_shader_faults_survive_same_property_advisories_with_unique_ids() {
+    let mut engine = DesignEngine::new();
+    let document = json!({"version":"0.8.5","children":[{
+        "type":"frame","id":"board","width":1000,"height":1000,"children":[{
+            "type":"frame","id":"panel","width":200,"height":200,"fill":[
+                {"type":"solid","color":"#ff0000"},
+                {"type":"shader","preset":"unknown","uniforms":{"alpha":[1],"beta":[2]}}
+            ]
+        }]
+    }]});
+    engine.load_document(&document.to_string()).unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool("lint_document", r#"{"rootId":"board","limit":100}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let issues = lint["structuredContent"]["issues"].as_array().unwrap();
+    assert!(issues
+        .iter()
+        .any(|i| i["nodeId"] == "panel" && i["category"] == "empty-filled-panel"));
+    let shaders: Vec<_> = issues
+        .iter()
+        .filter(|i| i["nodeId"] == "panel" && i["category"] == "shader-invalid")
+        .collect();
+    assert_eq!(
+        shaders.len(),
+        3,
+        "independent shader faults must not disappear: {lint}"
+    );
+    let ids: std::collections::BTreeSet<_> = shaders
+        .iter()
+        .map(|i| i["issueId"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        ids.len(),
+        shaders.len(),
+        "each distinct shader fault needs a unique issue ID"
+    );
+    let alpha = shaders
+        .iter()
+        .find(|i| i["reason"].as_str().unwrap().contains("`alpha`"))
+        .unwrap();
+    let selected: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "fix_lint_issues",
+                &json!({"issueIds":[alpha["issueId"]]}).to_string(),
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        selected["structuredContent"]["remaining"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1,
+        "an issue ID must not select other shader faults"
+    );
+    let filtered: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "lint_document",
+                r#"{"rootId":"board","rules":["shader-invalid"]}"#,
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(filtered["structuredContent"]["count"], 3);
+}
+
+#[test]
+fn peer_radius_findings_keep_different_comparison_groups_and_suggestions() {
+    let mut engine = DesignEngine::new();
+    let mut children: Vec<_> = [4, 4, 4, 8, 8].into_iter().enumerate().map(|(index, radius)| {
+        json!({"type":"frame","id":format!("button{index}"),"role":"button","cornerRadius":radius})
+    }).collect();
+    children.extend((0..12).map(
+        |index| json!({"type":"frame","id":format!("tag{index}"),"role":"tag","cornerRadius":16}),
+    ));
+    engine.load_document(&json!({"version":"0.8.5","children":[{"type":"frame","id":"board","children":children}]}).to_string()).unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool("lint_document", r#"{"rootId":"board","limit":100}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let issues = lint["structuredContent"]["issues"].as_array().unwrap();
+    assert!(issues.iter().any(|i| i["nodeId"] == "button3"
+        && i["category"] == "sibling-inconsistency"
+        && i["severity"] == "info"
+        && i["suggestedValue"] == 16));
+    assert!(
+        issues.iter().any(|i| i["nodeId"] == "button3"
+            && i["category"] == "mixed-sibling-corner-radius"
+            && i["severity"] == "warning"
+            && i["suggestedValue"] == 4),
+        "same-role warning must not be hidden by a different loose comparison: {lint}"
+    );
+    let filtered: Value = serde_json::from_str(
+        &engine
+            .call_tool(
+                "lint_document",
+                r#"{"rootId":"board","rules":["mixed-sibling-corner-radius"],"limit":100}"#,
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    assert!(filtered["structuredContent"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|i| i["nodeId"] == "button3"));
+}
+
+#[test]
+fn null_suggestions_are_not_eligible_or_allowed_to_block_real_repairs() {
+    let mut engine = DesignEngine::new();
+    let bar = |id: &str, x: i32, height: i32, locked: bool| {
+        json!({
+            "type":"rectangle","id":id,"x":x,"y":500,"width":80,"height":height,
+            "locked":locked,"fill":[{"type":"solid","color":"#ff0000"}]
+        })
+    };
+    let document = json!({"version":"0.8.5","children":[{
+        "type":"frame","id":"chart","width":1920,"height":1080,"children":[
+            bar("a",100,200,true),bar("b",250,250,false),bar("c",400,300,false),
+            {"type":"text","id":"title","content":"Chart","fontSize":16,"height":40}
+        ]
+    }]});
+    engine.load_document(&document.to_string()).unwrap();
+    let before = engine.document_json().unwrap();
+    let lint: Value = serde_json::from_str(
+        &engine
+            .call_tool("lint_document", r#"{"rules":["top-anchored-bars"]}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let issues = lint["structuredContent"]["issues"].as_array().unwrap();
+    assert_eq!(issues.len(), 3);
+    assert!(
+        issues
+            .iter()
+            .all(|i| i["suggestedValue"].is_null() && i["autoFixEligible"] == false),
+        "a missing numeric target cannot be auto-fixed: {lint}"
+    );
+    let fixed: Value = serde_json::from_str(
+        &engine
+            .call_tool("fix_lint_issues", r#"{"all":true}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(fixed["isError"], false, "{fixed}");
+    assert_eq!(fixed["structuredContent"]["fixed"], 1);
+    engine.call_tool("undo", "{}").unwrap();
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
 fn tool_search_discovers_registered_design_capabilities() {
     let mut engine = DesignEngine::new();
     let result: serde_json::Value = serde_json::from_str(
@@ -293,6 +668,221 @@ fn design_quality_is_scoped_and_bounded() {
     .unwrap();
     assert_eq!(scoped["structuredContent"]["counts"]["iconIssues"], 1);
     assert_eq!(scoped["structuredContent"]["truncated"], false);
+}
+
+#[test]
+fn design_quality_distinguishes_coverage_and_exposes_actionable_findings() {
+    let mut engine = DesignEngine::new();
+    engine
+        .load_document(
+            &json!({"version":"1.0.0","children":[
+                {"type":"frame","id":"board","width":200,"height":120,"children":[
+                    {"type":"path","id":"empty"},
+                    {"type":"frame","id":"button","role":"button","width":20,"height":20}
+                ]}
+            ]})
+            .to_string(),
+        )
+        .unwrap();
+    let before = engine.document_json().unwrap();
+    let response: Value = serde_json::from_str(
+        &engine
+            .call_tool("get_design_quality", r#"{"rootId":"board"}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let quality = &response["structuredContent"];
+    assert_eq!(quality["coverage"]["icons"]["status"], "checked");
+    assert_eq!(quality["coverage"]["variables"]["status"], "indeterminate");
+    assert_eq!(quality["coverage"]["imageSlots"]["status"], "unsupported");
+    assert_eq!(quality["coverage"]["contrast"]["status"], "indeterminate");
+    assert!(quality["coverage"]["variables"]["reason"]
+        .as_str()
+        .is_some());
+    let findings = quality["findings"].as_array().unwrap();
+    let icon = findings
+        .iter()
+        .find(|issue| issue["nodeId"] == "empty")
+        .unwrap();
+    assert_eq!(icon["category"], "icons");
+    assert!(icon["evidence"].as_str().is_some());
+    assert!(icon["severity"].is_string());
+    assert!(icon["suggestion"].is_string());
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
+fn design_quality_reports_unresolved_typed_variable_bindings_in_scope() {
+    let mut engine = DesignEngine::new();
+    engine.load_document(&json!({"version":"1.0.0", "variables": {
+        "body-size":{"type":"number","value":16}
+    }, "children":[
+        {"type":"frame","id":"board","width":400,"height":200,"children":[
+            {"type":"text","id":"good","content":"Valid","variableBindings":{"fontSize":"$body-size"}},
+            {"type":"text","id":"bad","content":"Missing","variableBindings":{"fontSize":"$missing-size"}}
+        ]},
+        {"type":"text","id":"outside","content":"Other","variableBindings":{"fontSize":"$other-missing"}}
+    ]}).to_string()).unwrap();
+    let before = engine.document_json().unwrap();
+    let response: Value = serde_json::from_str(
+        &engine
+            .call_tool("get_design_quality", r#"{"rootId":"board"}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let quality = &response["structuredContent"];
+    let issues = quality["variableIssues"].as_array().unwrap();
+    assert_eq!(issues.len(), 1);
+    assert_eq!(issues[0]["nodeId"], "bad");
+    assert_eq!(issues[0]["property"], "fontSize");
+    assert_eq!(issues[0]["reference"], "$missing-size");
+    assert!(quality["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|issue| issue["nodeId"] == "bad" && issue["category"] == "variables"));
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
+fn design_quality_distinguishes_unbound_values_overrides_and_uncertainty() {
+    let mut engine = DesignEngine::new();
+    engine.load_document(&json!({"version":"1.0.0", "variables": {
+        "body-size":{"type":"number","value":16},
+        "space-small":{"type":"number","value":8},
+        "brand":{"type":"color","value":"#6633CC"}
+    }, "children":[{"type":"frame","id":"board","width":400,"height":200,
+        "gap":8,"fill":"#6633CC","children":[
+            {"type":"text","id":"same","content":"Matches","fontSize":16},
+            {"type":"text","id":"unknown","content":"Unknown","fontSize":17},
+            {"type":"text","id":"bound","content":"Bound","fontSize":16,"variableBindings":{"fontSize":"$body-size"}},
+            {"type":"ref","id":"instance","ref":"component","descendants":{"label":{"fontSize":14}}}
+        ]}]}).to_string()).unwrap();
+    let before = engine.document_json().unwrap();
+    let reply: Value = serde_json::from_str(
+        &engine
+            .call_tool("get_design_quality", r#"{"rootId":"board"}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let items = reply["structuredContent"]["tokenObservations"]
+        .as_array()
+        .unwrap();
+    let has = |node: &str, property: &str, status: &str| {
+        items.iter().any(|item| {
+            item["nodeId"] == node && item["property"] == property && item["status"] == status
+        })
+    };
+    assert!(has("board", "gap", "unbound-match"));
+    assert!(has("board", "fill.0.color", "unbound-match"));
+    assert!(has("same", "fontSize", "unbound-match"));
+    assert!(has("unknown", "fontSize", "indeterminate"));
+    assert!(has("instance", "descendants.label", "local-override"));
+    assert!(!items
+        .iter()
+        .any(|item| item["nodeId"] == "bound" && item["property"] == "fontSize"));
+    assert_eq!(engine.document_json().unwrap(), before);
+}
+
+#[test]
+fn design_quality_token_matches_use_the_inherited_variable_mode() {
+    let mut engine = DesignEngine::new();
+    engine
+        .load_document(
+            &json!({"version":"1.0.0", "themes":{"Mode":["Light","Dark"]},
+            "variables":{"brand":{"type":"color","value":[
+                {"value":"#111111","theme":{"Mode":"Light"}},
+                {"value":"#eeeeee","theme":{"Mode":"Dark"}}
+            ]}}, "children":[{"type":"frame","id":"dark","width":200,"height":100,
+                "theme":{"Mode":"Dark"}, "children":[
+                    {"type":"rectangle","id":"match","width":20,"height":20,"fill":"#EEEEEE"},
+                    {"type":"rectangle","id":"other","width":20,"height":20,"fill":"#111111"}
+                ]}]})
+            .to_string(),
+        )
+        .unwrap();
+    let reply: Value =
+        serde_json::from_str(&engine.call_tool("get_design_quality", "{}").unwrap()).unwrap();
+    let items = reply["structuredContent"]["tokenObservations"]
+        .as_array()
+        .unwrap();
+    assert!(items
+        .iter()
+        .any(|item| item["nodeId"] == "match" && item["status"] == "unbound-match"));
+    assert!(items
+        .iter()
+        .any(|item| item["nodeId"] == "other" && item["status"] == "indeterminate"));
+}
+
+#[test]
+fn design_quality_reports_observation_truncation_separately_from_issues() {
+    let mut engine = DesignEngine::new();
+    engine
+        .load_document(
+            &json!({"version":"1.0.0", "children":[
+                {"type":"frame","id":"board","width":400,"height":200,"children":[
+                    {"type":"text","id":"first","content":"A","fontSize":16},
+                    {"type":"text","id":"second","content":"B","fontSize":16}
+                ]}
+            ]})
+            .to_string(),
+        )
+        .unwrap();
+    let reply: Value = serde_json::from_str(
+        &engine
+            .call_tool("get_design_quality", r#"{"limit":1}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    let quality = &reply["structuredContent"];
+    assert_eq!(
+        quality["truncated"], false,
+        "non-issue observations must not imply missing diagnostics"
+    );
+    assert_eq!(quality["tokenObservationsTruncated"], true);
+    assert_eq!(quality["tokenObservations"].as_array().unwrap().len(), 1);
+    assert_eq!(quality["counts"]["tokenObservations"], 2);
+}
+
+#[test]
+fn batch_design_catalog_distinguishes_flat_descriptors_from_editable_subtrees() {
+    let schemas = tool_catalog::schemas();
+    let batch = schemas
+        .iter()
+        .find(|item| item["name"] == "batch_design")
+        .unwrap();
+    let node_description = batch["inputSchema"]["properties"]["nodes_json"]["description"]
+        .as_str()
+        .unwrap();
+    assert!(node_description.contains("flat"));
+    assert!(node_description.contains("kind"));
+    assert!(node_description.contains("insert_node"));
+    assert!(batch["inputSchema"]["properties"]["script"]["description"]
+        .as_str()
+        .unwrap()
+        .contains("I("));
+}
+
+#[test]
+fn guidelines_catalog_requires_the_topic_its_runtime_requires() {
+    let schemas = tool_catalog::schemas();
+    let guidelines = schemas
+        .iter()
+        .find(|item| item["name"] == "get_guidelines")
+        .unwrap();
+    assert!(guidelines["inputSchema"]["required"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|entry| entry == "topic"));
+    let mut engine = DesignEngine::new();
+    let reply: Value = serde_json::from_str(
+        &engine
+            .call_tool("get_guidelines", r#"{"topic":"web-app"}"#)
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(reply["isError"], false, "{reply}");
 }
 
 #[test]

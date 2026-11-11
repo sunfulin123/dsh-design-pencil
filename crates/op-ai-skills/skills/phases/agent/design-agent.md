@@ -77,7 +77,7 @@ When you create your OWN variables in a shadcn-vocabulary document, use the same
 
 ### Step 5 — Read components and existing structure
 
-Call `batch_get` to read the structure of any component or section you plan to reuse or modify. Prefer component instances (`C(id, parent, overrides)`) over rebuilding primitives from scratch.
+Call `batch_get` to read the structure of any component or section you plan to reuse or modify. Prefer linked component instances (`I(parent, {type:"ref", ref:componentId})`) over rebuilding repeated primitives. `C(id, parent, overrides)` creates an independent copy, not a linked instance; do not treat it as component reuse.
 
 ### Step 6 — Understand the canvas layout
 
@@ -85,7 +85,7 @@ Call `snapshot_layout` to inspect the current bounding boxes, hierarchy, and fre
 
 ### Step 7 — Generate nodes with `batch_design`'s `script` mode (THE build protocol)
 
-BUILD PROTOCOL: JAVASCRIPT PROGRAM. Every `batch_design` call that CREATES nodes MUST pass a `script` argument — a real JavaScript program (no prose, no markdown fences) that builds the section by calling the global function `I(parent, obj)`. Do NOT hand-write `operations` `I(...)` lines for new content — that is the wrong protocol for building: use `operations` ONLY to edit existing nodes (`U`/`R`/`D`/`M`), set image fills (`G`), instantiate component copies (`C`), or retry after a `script` attempt was rejected with an error:
+BUILD PROTOCOL: JAVASCRIPT PROGRAM. Every `batch_design` call that CREATES nodes MUST pass a `script` argument — a real JavaScript program (no prose, no markdown fences) that builds the section by calling the global function `I(parent, obj)`. Do NOT hand-write `operations` `I(...)` lines for new content — that is the wrong protocol for building: use `operations` ONLY to edit existing nodes (`U`/`R`/`D`/`M`), set image fills (`G`), make independent copies (`C`), or retry after a `script` attempt was rejected with an error:
 
 ```
 const id = I(parent, { ...node... });   // inserts a node, RETURNS its new id (a string)
@@ -222,7 +222,7 @@ Edit component instances via their `instanceId/childId` path. Do not rebuild com
 When the canvas already holds one or more screens, a new screen (a profile page after a home page, a detail view after a list) is a SIBLING in the same product — never a fresh design:
 
 1. **Read before designing.** `batch_get` the most recent existing screen root (readDepth 3) and `get_variables` FIRST. The established palette, typography, spacing, radius, and card treatment are now constraints, not suggestions. Do not invent a second design system.
-2. **Shared chrome is copied, not rebuilt.** Navigation bars, sidebars, bottom tab bars, and headers must be `C()`-copied from the existing screen into the new screen root, then updated with `U()` ONLY for state: the active tab/nav item highlight moves to the new screen's destination, the page title changes. A rebuilt navbar always drifts (different paddings, icon sizes, order) and reads as a different product. A deterministic pass also unifies bottom-nav/sidebar chrome across screens after generation as a backstop — a minimal chrome placeholder on a later screen, or even NO chrome at all (a nav-shaped subtask that failed outright), is safe as long as the screen's name matches one of the first screen's nav tabs: the real chrome is copied/injected onto it automatically, with the matching tab set active. Still prefer copying it yourself when you can, since that costs nothing extra and reads correctly immediately.
+2. **Reuse shared chrome.** Prefer linked instances of existing navigation bars, sidebars and headers, with supported per-instance properties, variants or overrides for the active item and title. When no reusable master exists, create one if the screens genuinely share its structure and behavior. A `C()` copy is independent and is a fallback only when linked reuse is inappropriate or unsupported; verify each screen's navigation and local differences rather than relying on a later automatic pass.
 3. **Same identity everywhere.** Brand name, logo treatment, user avatar/name in the chrome, and data continuity (the same user's data) carry over verbatim.
 4. **Same frame contract.** The new screen root uses the SAME width/height class as its siblings and opens to the RIGHT (`find_empty_space`).
 5. **Different content, same skeleton vocabulary.** Vary the content architecture to the screen's purpose, but compose it from the same component vocabulary (same card style, same list-row anatomy, same button hierarchy) the first screen established.
@@ -255,7 +255,7 @@ When the canvas holds **2 or more screens**, the preview engine can turn them in
 When the user asks for 2+ new screens in one request AND their parallel-agents setting allows it — look for a `User's parallel-agents setting: N` fact earlier in this prompt; `N > 1` means the user opted into parallel work — prefer `spawn_agents` to build the screens concurrently. When no such fact is present (the setting is 1, the default) or it doesn't cover every new screen, design them sequentially instead, one at a time, following the "Designing Additional Screens (Screen 2+)" protocol above.
 
 1. Create the container frames yourself using `batch_design` (one frame per screen, positioned with `find_empty_space`).
-   - **Pre-copy the shared chrome.** If the screens share chrome (navbar / sidebar / bottom tab bar), build it ONCE (or take it from an existing screen) and `C()`-copy it into EVERY container before spawning. Sub-agents restyle only its active state; they never rebuild chrome. N agents each inventing a navbar is how a product stops looking like one product. If you skip this, a deterministic pass unifies it after the fact — but every sub-agent that still invents its own nav burns generation budget on content that gets thrown away, so pre-copying is strictly cheaper.
+   - **Prepare shared chrome.** If screens share navigation or headers, reuse an existing master or create one and place linked refs in the relevant containers. Preserve each screen's active state and actions with appropriate overrides. Use independent copies only where the host cannot support linked reuse or the structures are genuinely different.
 2. Call `spawn_agents` with one config item per container. Each config item MUST carry:
    - `prompt` — the detailed design brief for that sub-screen.
    - `containerNodes` — the id(s) of the container frame you created.

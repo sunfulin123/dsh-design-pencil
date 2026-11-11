@@ -104,18 +104,19 @@ async function runDesignLoop({ call }, { minRendered = 0, save } = {}) {
   const operations = [
     'board=I(null, {"type":"frame","name":"Login","width":390,"height":844,"layout":"vertical","gap":12,"padding":24,"fill":"#ffffff"})',
     'title=I(board, {"type":"text","name":"Title","content":"Welcome back","fontSize":24,"fontWeight":700,"height":40})',
-    'email=I(board, {"type":"frame","name":"Email","width":"fill_container","height":48,"cornerRadius":8,"fill":"#e4e6eb"})',
-    'password=I(board, {"type":"frame","name":"Password","width":"fill_container","height":48,"cornerRadius":8,"fill":"#e4e6eb"})',
+    'email=I(board, {"type":"frame","role":"form-field","name":"Email","width":"fill_container","height":48,"cornerRadius":8,"fill":"#e4e6eb"})',
+    'password=I(board, {"type":"frame","role":"form-field","name":"Password","width":"fill_container","height":48,"cornerRadius":8,"fill":"#e4e6eb"})',
+    'confirmation=I(board, {"type":"frame","role":"form-field","name":"Confirm password","width":"fill_container","height":48,"cornerRadius":20,"fill":"#e4e6eb"})',
     'button=I(board, {"type":"frame","name":"Sign in","width":"fill_container","height":48,"cornerRadius":20,"fill":"#888888","layout":"horizontal","justifyContent":"center","alignItems":"center","children":[{"type":"text","name":"Label","content":"Sign in","fontSize":16,"fill":"#ffffff"}]})',
     'forgot=I(board, {"type":"text","name":"Forgot","content":"Forgot password?","fontSize":14})',
   ].join('\n')
   const design = (await call('batch_design', { operations }, BUDGET_MS.write)).structuredContent
   const ids = Object.fromEntries(design.results.map(item => [item.binding, item.nodeId]))
-  for (const binding of ['board', 'title', 'email', 'password', 'button', 'forgot']) {
+  for (const binding of ['board', 'title', 'email', 'password', 'confirmation', 'button', 'forgot']) {
     assert.ok(ids[binding], `${binding} was created`)
   }
   const children = (await call('get_node_children', { node_id: ids.board }, BUDGET_MS.read)).structuredContent
-  assert.equal(Number(children.count), 5, 'the board holds the designed controls')
+  assert.equal(Number(children.count), 6, 'the board holds the designed controls')
 
   // 3. First screenshot.
   const before = screenshotPng(await call('get_screenshot', { nodeId: ids.board, maxSize: 800 }))
@@ -131,9 +132,15 @@ async function runDesignLoop({ call }, { minRendered = 0, save } = {}) {
   assert.ok(JSON.stringify(lint).length < 64 * 1024, 'the lint reply stays small')
   assert.ok(lint.count >= minRendered)
 
-  // 5. Fix the findings, then adjust the UI the way a reviewer would.
+  // 5. The automatic fixer handles the title but leaves peer comparison for review.
+  const peerIssue = lint.issues.find(issue => issue.nodeId === ids.confirmation && issue.category === 'sibling-inconsistency')
+  assert.equal(peerIssue?.autoFixEligible, false, 'a similar role is not proof that the differing radius is accidental')
   const fixed = await call('fix_lint_issues', { issueIds: lint.issues.map(issue => issue.issueId) }, BUDGET_MS.write)
-  assert.equal(fixed.isError, false)
+  assert.equal(fixed.structuredContent.fixed, 1, 'only the eligible clipped-title fix is applied')
+  const remaining = (await call('lint_document', { rootId: ids.board, limit: 20 }, BUDGET_MS.lint)).structuredContent
+  assert.ok(remaining.issues.some(issue => issue.issueId === peerIssue.issueId), 'the peer candidate remains for review')
+  // After comparing the three form fields, explicitly repair the confirmed variant.
+  await call('update_node', { nodeId: ids.confirmation, data: { cornerRadius: 8 } }, BUDGET_MS.write)
   await call('set_node_fill_hex', { node_id: ids.button, hex: '#4F46E5' }, BUDGET_MS.write)
   await call('update_node', { nodeId: ids.title, data: { fontSize: 28 } }, BUDGET_MS.write)
   await call('update_node', { nodeId: ids.board, data: { gap: 16 } }, BUDGET_MS.write)
@@ -199,4 +206,22 @@ test('the loop renders through the headless CanvasKit browser', {
   const capture = await loop.call('get_screenshot', { maxSize: 400 })
   assert.equal(capture.structuredContent.renderer, 'canvaskit-headless')
   if (out) writeFileSync(join(out, 'timings.json'), JSON.stringify(loop.timings, null, 2))
+})
+
+test('default CanvasKit capture prefers the screen over a reusable master', {
+  skip: process.env.DSH_E2E_CHROME === '1' && existsSync(join(webRoot, 'op_host_web_bg.wasm'))
+    ? false : 'set DSH_E2E_CHROME=1 with a built web-bundle',
+  timeout: 90_000,
+}, async context => {
+  const loop = await loopHost(context, { document: { version: '1.0.0', children: [
+    { type: 'frame', id: 'master', reusable: true, width: 160, height: 48, fill: '#ff0000' },
+    { type: 'frame', id: 'screen', x: 220, width: 400, height: 300, fill: '#0000ff' },
+  ] }, headless: true, webRoot })
+  const implicit = await loop.call('get_screenshot', {})
+  assert.equal(implicit.structuredContent.renderer, 'canvaskit-headless')
+  assert.equal(implicit.structuredContent.targetId, 'screen')
+  assert.equal(screenshotPng(implicit).width, 400)
+  const explicit = await loop.call('get_screenshot', { nodeId: 'master' })
+  assert.equal(explicit.structuredContent.targetId, 'master')
+  assert.equal(screenshotPng(explicit).width, 160)
 })

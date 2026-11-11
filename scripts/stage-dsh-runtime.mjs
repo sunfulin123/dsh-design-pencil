@@ -10,6 +10,7 @@ async function skillFiles(directory, prefix = '') {
   const files = []
   for (const entry of await readdir(join(directory, prefix), { withFileTypes: true })) {
     const path = join(prefix, entry.name)
+    if (entry.name === '__pycache__' || entry.name === '.DS_Store' || entry.name.endsWith('.pyc')) continue
     if (entry.isDirectory()) files.push(...await skillFiles(directory, path))
     else if (entry.isFile()) files.push(path)
     else throw new Error(`Unexpected HTML skill resource: ${path}`)

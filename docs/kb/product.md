@@ -14,8 +14,21 @@ OP 设计指导采用对话、现有文档和风格目录三层上下文。新�
 `.synapse/html-design`，与可编辑设计读取同一产品风格目录。POC 交接绑定会话、任务、
 风格与文件指纹；缺失或变更的资料需要重新核实。插件的工具路由和记录行为需要宿主测试，
 不能以提示词代替独立模型验收。
+HTML POC 资源包含按需加载的旧检查方法、可选脚本和资源清单；旧主题库与备用配色不是
+风格来源。两种设计路径共享需求、风格、状态与评审规则，但分别使用浏览器和可编辑画布检查。
+大画布分区创建和按需浅层读取，避免将完整图层树反复加载到模型上下文；具体执行结果仍需实测。
+截图已采集不等于模型已经查看；改变原型或截图会使旧的评审证据失效。
+HTML POC 的 [capture-poc](../../crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs)
+可从核心 Skill 源码或已打包运行时调用，并使用真实 Chromium 生成截图。
 提问或比较某种风格并不等于选择；只让 AI 决定布局或颜色，也不等于委托其选择主题。
 AI 按需检查布局和真实截图、修复并复测；不可用的检查必须如实说明。
+Skill 要求 AI 分页读取目标画板的 lint，结合角色、布局和截图区分确认的问题与建议，
+只修改已确认的问题；同级差异和嵌套深度不是批量改写或删除节点的授权。
+DSH 私有草稿通过 `synapse_design_pipeline_context` 转发 `lint_document` 及其分页游标；
+质量面板的单页结果不代表已读完全部 lint。
+对于结构和语义相同的重复设计，Skill 提示 AI 发现或创建真正关联的组件实例，保留文本、
+样式和交互差异；独立复制不等同于关联复用。检查结果只是候选，是否抽取仍由设计上下文决定。
+交互区域检查按实际布局给出分级建议，AI 需要结合设备、相邻控件和裁剪情况修复并重新检查。
 
 ## 产品边界与能力
 
@@ -48,7 +61,9 @@ AI 通过 Node host 调用 WASM 引擎；浏览器 CanvasKit 展示设计并提�
 浅色外观的编辑器画布默认使用 `#F4F4F4`，深色外观默认使用白色；页面显式背景优先。
 未选中的顶层画板和分组有编辑器边界提示，提示不进入文档或文档截图。
 系统设备外框只作画布装饰，预览页面来自实际设计；`previewAsScreen` 可控制一个画板
-是否作为独立预览页，而不会隐藏页面内部的背景，也不改变普通导出页列表。
+是否作为独立预览页，而不会隐藏页面内部的背景，也不改变普通导出页列表。可复用组件
+主定义默认不作为预览页面；显式启用 `previewAsScreen` 或设置该画板的 flow 起点可将其纳入，
+显式禁用 `previewAsScreen` 时仍排除。
 
 ## AI 可复用设计资产
 
@@ -99,25 +114,30 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "b6721655-aac8-44fd-9c80-b538ced3ac29",
-  "verified_at": "2026-11-10T13:58:43.940693+00:00",
+  "task_id": "a755115e-29da-4574-9654-487d397498d8",
+  "verified_at": "2026-11-11T06:05:08.769565+00:00",
   "sources": {
     "ARCHITECTURE.md": "7e48dda7beb4d4a85a2d2d129d72f965011aabba5069567cbd896198db06114f",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
     "COMMANDS.md": "b61536e66d1ce87d818a48e69e104329603101e3f70ec481cbb28c034fae11f4",
-    "crates/op-dsh-engine/src/tool_catalog.rs": "328a762641bfc6e199e2c95b0ebafe5fddb34387393118ea94cdda1098e83001",
+    "crates/op-dsh-engine/src/tool_catalog.rs": "2453cce3b0c9f8c336fd92bc6397f2653272e2ae21c76b528063ab4a6e033785",
     "crates/op-editor-core/src/text_selection.rs": "270195a858b26d0a27ece525db94258ecc543877cd7b60b913499ae34a9a7956",
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "5111cb87e2fd2bbc5af66f1782e1dfff5b297706914a45429751c1866f8fe2e4",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "c035838b5a76abd2077a1f4facff94e316a525d282c7a522157086e803786c49",
+    "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "d9c39a8bb75a580697619b1ae9b462760d6bf88f631505d0d8df141cb5014725",
     "packages/dsh-node-runtime/asset-tools.mjs": "5aef23a27f2165cda16647908a140e24c84f3653f03ec1601655fb1bc2fcbc80",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
-    "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6"
+    "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "6b54338f0f12dbfb897ccd2a1558f36d2da383e10a1008a9c9f5b73b869756f2",
+    "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "a06e391268dd0e86825fc8cae03af218315b2d9f65bca59d09d78bacb003bda2",
+    "crates/op-ai-skills/skills/synapse-design/review.md": "9fb6a6f24b858b4f438017d6e663bfe8dc8da62a7a182cb2f223f25b1fb3dd1e",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "fb3c90b015cc9ed3e1626cec2816a73e8f5677782e1ff300f83c677fbb58bda8"
   },
-  "reason": "Interactive private drafts and message-bound selection change the product editing behavior.",
-  "evidence": "Isolated real runtime and Chrome checks exercised selected-node capture and human draft writes; plugin lifecycle tests checked version conflicts and publication barriers."
+  "reason": "Reviewed the private-draft lint route and shared design guidance against current implementation and tests",
+  "evidence": "crates/op-ai-skills/skills/synapse-design/SKILL.md"
 }
 ```

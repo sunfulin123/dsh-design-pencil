@@ -170,6 +170,29 @@ fn strict_parent_rejects_a_missing_parent_without_emitting_a_command() {
 }
 
 #[test]
+fn batch_insert_explains_when_the_selected_parent_is_not_a_container() {
+    let doc = jian_ops_schema::load_str(
+        r#"{"version":"1.0","children":[{"type":"text","id":"label","content":"Title"}]}"#,
+    )
+    .unwrap()
+    .value;
+    let state = op_editor_core::EditorState::from_document(doc);
+    let tool = batch_design_snapshot(&state);
+    let args = BTreeMap::from([(
+        "operations".into(),
+        r#"child=I("label", {"type":"frame","name":"Button"})"#.into(),
+    )]);
+    let ToolOutcome::Err(_, message) = tool.call(&args) else {
+        panic!("a text node cannot contain the new frame");
+    };
+    assert!(
+        message.contains("label") && message.contains("container"),
+        "{message}"
+    );
+    assert_eq!(state.active_children().len(), 1);
+}
+
+#[test]
 fn batch_design_operations_hoists_node_state() {
     // An I()-program insert whose root frame declares node-level
     // `state` must yield TWO sibling commands — MergeAppState(unplanned)

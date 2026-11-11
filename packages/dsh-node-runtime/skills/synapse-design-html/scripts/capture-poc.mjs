@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 /** Capture a local POC using the runtime's real Chromium renderer. */
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { pathToFileURL } from 'node:url';
-import { launchHeadlessPage } from '../../../chrome-cdp.mjs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const renderer = [
+  new URL('../../../chrome-cdp.mjs', import.meta.url),
+  new URL('../../../../../packages/dsh-node-runtime/chrome-cdp.mjs', import.meta.url),
+].find(candidate => existsSync(fileURLToPath(candidate)));
+if (!renderer) throw new Error('The Synapse Chromium renderer is unavailable');
+const { launchHeadlessPage } = await import(renderer.href);
 
 const args = new Map();
 for (let i = 2; i < process.argv.length; i += 2) {

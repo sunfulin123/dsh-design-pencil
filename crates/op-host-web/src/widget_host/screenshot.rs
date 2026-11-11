@@ -155,8 +155,27 @@ impl WidgetHost {
             ));
         }
         let scene = self.screenshot_scene.as_ref().unwrap_or(&self.layout_scene);
-        let (bounds, only_root) = capture_target(scene, node_id, isolate)?;
-        let target_id = match node_id {
+        let preferred = if node_id.is_none() {
+            use jian_ops_schema::node::PenNode;
+            use op_editor_core::PenNodeExt;
+            self.editor_state
+                .active_children()
+                .iter()
+                .find(|node| {
+                    let permitted = matches!(node, PenNode::Frame(frame)
+                    if op_editor_core::prototype::graph::is_valid_screen_frame(frame));
+                    permitted
+                        && scene
+                            .active_page()
+                            .is_some_and(|page| visible(&page.children, node.id_str()))
+                })
+                .map(|node| node.id_str().to_owned())
+        } else {
+            None
+        };
+        let capture_node = node_id.or(preferred.as_deref());
+        let (bounds, only_root) = capture_target(scene, capture_node, isolate)?;
+        let target_id = match capture_node {
             Some(PAGE_TARGET) => None,
             Some(id) => Some(id.to_owned()),
             None => only_root.clone(),
@@ -280,6 +299,56 @@ mod tests {
         let (bounds, only_root) = capture_target(&scene(), None, false).unwrap();
         assert_eq!(bounds, Rect::xywh(100.0, 50.0, 400.0, 200.0));
         assert_eq!(only_root.as_deref(), Some("screen"));
+    }
+
+    #[test]
+    fn default_capture_prefers_screen_to_component_master_but_explicit_target_works() {
+        let mut host = WidgetHost::new();
+        let doc = jian_ops_schema::load_str(
+            r#"{"version":"1.0.0","children":[
+            {"type":"frame","id":"master","reusable":true,"width":200,"height":50},
+            {"type":"frame","id":"screen","x":300,"width":800,"height":600}
+        ]}"#,
+        )
+        .unwrap()
+        .value;
+        host.editor_state = op_editor_core::EditorState::from_document(doc);
+        host.editor_state_dirty = true;
+        assert_eq!(
+            host.prepare_screenshot(None, 1.0, 1600, false)
+                .unwrap()
+                .target_id
+                .as_deref(),
+            Some("screen")
+        );
+        assert_eq!(
+            host.prepare_screenshot(Some("master"), 1.0, 1600, false)
+                .unwrap()
+                .target_id
+                .as_deref(),
+            Some("master")
+        );
+    }
+
+    #[test]
+    fn default_capture_falls_back_when_only_a_component_master_exists() {
+        let doc = jian_ops_schema::load_str(
+            r#"{"version":"1.0.0","children":[
+            {"type":"frame","id":"master","reusable":true,"width":200,"height":50}
+        ]}"#,
+        )
+        .unwrap()
+        .value;
+        let mut host = WidgetHost::new();
+        host.editor_state = op_editor_core::EditorState::from_document(doc);
+        host.editor_state_dirty = true;
+        assert_eq!(
+            host.prepare_screenshot(None, 1.0, 1600, false)
+                .unwrap()
+                .target_id
+                .as_deref(),
+            Some("master")
+        );
     }
 
     #[test]

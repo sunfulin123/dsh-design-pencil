@@ -1,0 +1,162 @@
+No,UI_Category,Recommended_Pattern,Severity
+1,SaaS (General),Hero + Features + CTA,HIGH
+2,Micro SaaS,Hero-Centric + Trust,HIGH
+3,E-commerce,Feature-Rich Showcase,HIGH
+4,E-commerce Luxury,Feature-Rich Showcase,HIGH
+5,B2B Service,Feature-Rich Showcase + Trust,HIGH
+6,Financial Dashboard,Data-Dense Dashboard,HIGH
+7,Analytics Dashboard,Data-Dense + Drill-Down,HIGH
+8,Healthcare App,Social Proof-Focused,HIGH
+9,Educational App,Feature-Rich Showcase,MEDIUM
+10,Creative Agency,Storytelling-Driven,HIGH
+11,Portfolio/Personal,Storytelling-Driven,MEDIUM
+12,Gaming,Feature-Rich Showcase,HIGH
+13,Government/Public Service,Minimal & Direct,HIGH
+14,Fintech/Crypto,Trust & Authority,HIGH
+15,Social Media App,Feature-Rich Showcase,MEDIUM
+16,Productivity Tool,Interactive Demo + Feature-Rich,HIGH
+17,Design System/Component Library,Feature-Rich + Documentation,HIGH
+18,AI/Chatbot Platform,Interactive Demo + Minimal,HIGH
+19,NFT/Web3 Platform,Feature-Rich Showcase,HIGH
+20,Creator Economy Platform,Social Proof + Feature-Rich,MEDIUM
+21,Remote Work/Collaboration Tool,Feature-Rich + Real-Time,HIGH
+22,Mental Health App,Social Proof-Focused,HIGH
+23,Pet Tech App,Storytelling + Feature-Rich,MEDIUM
+24,Smart Home/IoT Dashboard,Real-Time Monitoring,HIGH
+25,EV/Charging Ecosystem,Hero-Centric + Feature-Rich,HIGH
+26,Subscription Box Service,Feature-Rich + Conversion,HIGH
+27,Podcast Platform,Storytelling + Feature-Rich,HIGH
+28,Dating App,Social Proof + Feature-Rich,HIGH
+29,Micro-Credentials/Badges Platform,Trust & Authority + Feature,MEDIUM
+30,Knowledge Base/Documentation,FAQ + Minimal,HIGH
+31,Hyperlocal Services,Conversion + Feature-Rich,HIGH
+32,Beauty/Spa/Wellness Service,Hero-Centric + Social Proof,HIGH
+33,Luxury/Premium Brand,Storytelling + Feature-Rich,HIGH
+34,Restaurant/Food Service,Hero-Centric + Conversion,HIGH
+35,Fitness/Gym App,Feature-Rich + Data,HIGH
+36,Real Estate/Property,Hero-Centric + Feature-Rich,HIGH
+37,Travel/Tourism Agency,Storytelling-Driven + Hero,HIGH
+38,Hotel/Hospitality,Hero-Centric + Social Proof,HIGH
+39,Wedding/Event Planning,Storytelling + Social Proof,HIGH
+40,Legal Services,Trust & Authority + Minimal,HIGH
+41,Insurance Platform,Conversion + Trust,HIGH
+42,Banking/Traditional Finance,Trust & Authority + Feature,HIGH
+43,Online Course/E-learning,Feature-Rich + Social Proof,HIGH
+44,Non-profit/Charity,Storytelling + Trust,HIGH
+45,Music Streaming,Feature-Rich Showcase,HIGH
+46,Video Streaming/OTT,Hero-Centric + Feature-Rich,HIGH
+47,Job Board/Recruitment,Conversion-Optimized + Feature-Rich,HIGH
+48,Marketplace (P2P),Feature-Rich Showcase + Social Proof,HIGH
+49,Logistics/Delivery,Feature-Rich Showcase + Real-Time,HIGH
+50,Agriculture/Farm Tech,Feature-Rich Showcase,MEDIUM
+51,Construction/Architecture,Hero-Centric + Feature-Rich,HIGH
+52,Automotive/Car Dealership,Hero-Centric + Feature-Rich,HIGH
+53,Photography Studio,Storytelling-Driven + Hero-Centric,HIGH
+54,Coworking Space,Hero-Centric + Feature-Rich,MEDIUM
+55,Home Services (Plumber/Electrician),Conversion-Optimized + Trust,HIGH
+56,Childcare/Daycare,Social Proof-Focused + Trust,HIGH
+57,Senior Care/Elderly,Trust & Authority + Accessible,HIGH
+58,Medical Clinic,Trust & Authority + Conversion,HIGH
+59,Pharmacy/Drug Store,Conversion-Optimized + Trust,HIGH
+60,Dental Practice,Social Proof-Focused + Conversion,HIGH
+61,Veterinary Clinic,Social Proof-Focused + Trust,MEDIUM
+62,Florist/Plant Shop,Hero-Centric + Conversion,MEDIUM
+63,Bakery/Cafe,Hero-Centric + Conversion,HIGH
+64,Brewery/Winery,Storytelling + Hero-Centric,HIGH
+65,Airline,Conversion + Feature-Rich,HIGH
+66,News/Media Platform,Hero-Centric + Feature-Rich,HIGH
+67,Magazine/Blog,Storytelling + Hero-Centric,HIGH
+68,Freelancer Platform,Feature-Rich + Conversion,HIGH
+69,Marketing Agency,Storytelling + Feature-Rich,HIGH
+70,Event Management,Hero-Centric + Feature-Rich,HIGH
+71,Membership/Community,Social Proof + Conversion,HIGH
+72,Newsletter Platform,Minimal + Conversion,MEDIUM
+73,Digital Products/Downloads,Feature-Rich + Conversion,HIGH
+74,Church/Religious Organization,Hero-Centric + Social Proof,MEDIUM
+75,Sports Team/Club,Hero-Centric + Feature-Rich,HIGH
+76,Museum/Gallery,Storytelling + Feature-Rich,HIGH
+77,Theater/Cinema,Hero-Centric + Conversion,HIGH
+78,Language Learning App,Feature-Rich + Social Proof,HIGH
+79,Coding Bootcamp,Feature-Rich + Social Proof,HIGH
+80,Cybersecurity Platform,Trust & Authority + Real-Time,HIGH
+81,Developer Tool / IDE,Minimal + Documentation,HIGH
+82,Biotech / Life Sciences,Storytelling + Data,HIGH
+83,Space Tech / Aerospace,Immersive + Feature-Rich,HIGH
+84,Architecture / Interior,Portfolio + Hero-Centric,HIGH
+85,Quantum Computing Interface,Immersive + Interactive,HIGH
+86,Biohacking / Longevity App,Data-Dense + Storytelling,HIGH
+87,Autonomous Drone Fleet Manager,Real-Time + Feature-Rich,HIGH
+88,Generative Art Platform,Showcase + Feature-Rich,HIGH
+89,Spatial Computing OS / App,Immersive + Interactive,HIGH
+90,Sustainable Energy / Climate Tech,Data + Trust,HIGH
+91,Personal Finance Tracker,Interactive Product Demo,HIGH
+92,Chat & Messaging App,Feature-Rich Showcase + Demo,HIGH
+93,Notes & Writing App,Minimal & Direct,HIGH
+94,Habit Tracker,Social Proof-Focused + Demo,HIGH
+95,Food Delivery / On-Demand,Hero-Centric Design + Feature-Rich,HIGH
+96,Ride Hailing / Transportation,Conversion-Optimized + Demo,HIGH
+97,Recipe & Cooking App,Hero-Centric Design + Feature-Rich,HIGH
+98,Meditation & Mindfulness,Storytelling-Driven + Social Proof,HIGH
+99,Weather App,Hero-Centric Design,HIGH
+100,Diary & Journal App,Storytelling-Driven,HIGH
+101,CRM & Client Management,Feature-Rich Showcase + Demo,HIGH
+102,Inventory & Stock Management,Feature-Rich Showcase,HIGH
+103,Flashcard & Study Tool,Feature-Rich Showcase + Demo,HIGH
+104,Booking & Appointment App,Conversion-Optimized,HIGH
+105,Invoice & Billing Tool,Conversion-Optimized + Trust,HIGH
+106,Grocery & Shopping List,Minimal & Direct + Demo,HIGH
+107,Timer & Pomodoro,Minimal & Direct,HIGH
+108,Parenting & Baby Tracker,Social Proof-Focused + Trust,HIGH
+109,Scanner & Document Manager,Feature-Rich Showcase + Demo,HIGH
+110,Calendar & Scheduling App,Feature-Rich Showcase + Demo,HIGH
+111,Password Manager,Trust & Authority + Feature-Rich,HIGH
+112,Expense Splitter / Bill Split,Minimal & Direct + Demo,HIGH
+113,Voice Recorder & Memo,Interactive Product Demo + Minimal,HIGH
+114,Bookmark & Read-Later,Minimal & Direct + Demo,HIGH
+115,Translator App,Feature-Rich Showcase + Interactive Demo,HIGH
+116,Calculator & Unit Converter,Minimal & Direct,HIGH
+117,Alarm & World Clock,Minimal & Direct,HIGH
+118,File Manager & Transfer,Feature-Rich Showcase + Demo,HIGH
+119,Email Client,Feature-Rich Showcase + Demo,HIGH
+120,Casual Puzzle Game,Feature-Rich Showcase + Social Proof,HIGH
+121,Trivia & Quiz Game,Feature-Rich Showcase + Social Proof,HIGH
+122,Card & Board Game,Feature-Rich Showcase,HIGH
+123,Idle & Clicker Game,Feature-Rich Showcase,HIGH
+124,Word & Crossword Game,Minimal & Direct + Demo,HIGH
+125,Arcade & Retro Game,Feature-Rich Showcase + Hero-Centric,HIGH
+126,Photo Editor & Filters,Feature-Rich Showcase + Interactive Demo,HIGH
+127,Short Video Editor,Feature-Rich Showcase + Hero-Centric,HIGH
+128,Drawing & Sketching Canvas,Interactive Product Demo + Storytelling,HIGH
+129,Music Creation & Beat Maker,Interactive Product Demo + Storytelling,HIGH
+130,Meme & Sticker Maker,Feature-Rich Showcase + Social Proof,HIGH
+131,AI Photo & Avatar Generator,Feature-Rich Showcase + Social Proof,HIGH
+132,Link-in-Bio Page Builder,Conversion-Optimized + Social Proof,HIGH
+133,Wardrobe & Outfit Planner,Storytelling-Driven + Feature-Rich,HIGH
+134,Plant Care Tracker,Storytelling-Driven + Social Proof,HIGH
+135,Book & Reading Tracker,Social Proof-Focused + Feature-Rich,HIGH
+136,Couple & Relationship App,Storytelling-Driven + Social Proof,HIGH
+137,Family Calendar & Chores,Feature-Rich Showcase + Social Proof,HIGH
+138,Mood Tracker,Storytelling-Driven + Social Proof,HIGH
+139,Gift & Wishlist,Minimal & Direct + Conversion,HIGH
+140,Running & Cycling GPS,Feature-Rich Showcase + Social Proof,HIGH
+141,Yoga & Stretching Guide,Storytelling-Driven + Social Proof,HIGH
+142,Sleep Tracker,Feature-Rich Showcase + Social Proof,HIGH
+143,Calorie & Nutrition Counter,Feature-Rich Showcase + Social Proof,HIGH
+144,Period & Cycle Tracker,Social Proof-Focused + Trust,HIGH
+145,Medication & Pill Reminder,Trust & Authority + Feature-Rich,HIGH
+146,Water & Hydration Reminder,Minimal & Direct + Demo,HIGH
+147,Fasting & Intermittent Timer,Feature-Rich Showcase + Social Proof,HIGH
+148,Anonymous Community / Confession,Social Proof-Focused + Feature-Rich,HIGH
+149,Local Events & Discovery,Hero-Centric Design + Feature-Rich,HIGH
+150,Study Together / Virtual Coworking,Social Proof-Focused + Feature-Rich,HIGH
+151,Coding Challenge & Practice,Feature-Rich Showcase + Social Proof,HIGH
+152,Kids Learning (ABC & Math),Social Proof-Focused + Trust,HIGH
+153,Music Instrument Learning,Interactive Product Demo + Social Proof,HIGH
+154,Parking Finder,Conversion-Optimized + Feature-Rich,HIGH
+155,Public Transit Guide,Feature-Rich Showcase + Interactive Demo,HIGH
+156,Road Trip Planner,Storytelling-Driven + Hero-Centric,HIGH
+157,VPN & Privacy Tool,Trust & Authority + Conversion-Optimized,HIGH
+158,Emergency SOS & Safety,Trust & Authority + Social Proof,HIGH
+159,Wallpaper & Theme App,Feature-Rich Showcase + Social Proof,HIGH
+160,White Noise & Ambient Sound,Minimal & Direct + Social Proof,HIGH
+161,Home Decoration & Interior Design,Storytelling-Driven + Feature-Rich,HIGH

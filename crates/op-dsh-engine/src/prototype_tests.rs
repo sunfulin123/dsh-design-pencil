@@ -194,4 +194,21 @@ fn prototype_tools_set_flows_reactions_scroll_and_simulate_with_single_step_undo
         sim["structuredContent"]["visitedScreens"],
         json!(["home", "detail"])
     );
+
+    // AI clients commonly use the other tools' camelCase nodeId spelling.
+    let camel = call(
+        &mut engine,
+        "simulate_prototype",
+        json!({"steps": [{"type": "click", "nodeId": "cta"}]}),
+    );
+    assert_eq!(camel["isError"], false, "{camel}");
+    assert_eq!(camel["structuredContent"]["currentScreenId"], "detail");
+
+    let missing = call(
+        &mut engine,
+        "simulate_prototype",
+        json!({"steps": [{"type": "click"}]}),
+    );
+    assert_eq!(missing["isError"], true, "{missing}");
+    assert!(missing.to_string().contains("nodeId"), "{missing}");
 }

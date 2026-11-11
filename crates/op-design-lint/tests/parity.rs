@@ -31,6 +31,8 @@
 //! guarded against TS-side drift by a CI job (spec §8, Risk R4).
 //! `edge-section-padding` intentionally follows the newer per-section 24px
 //! mobile-rail policy and is maintained as a Rust regression fixture.
+//! `mixed-sibling` retains the original TS oracle and separately checks the
+//! newer Rust behavior that reports independent radius diagnostics.
 
 use jian_ops_schema::PenDocument;
 use op_design_lint::detect_all;
@@ -116,7 +118,7 @@ fn assert_fixture_parity(name: &str, doc_json: &str, golden_json: &str) {
         actual.len(),
         golden.len(),
         "fixture `{name}`: issue count mismatch — Rust produced {} issue(s), \
-         TS golden has {}.\n  Rust:   {:#?}\n  Golden: {:#?}",
+         golden has {}.\n  Rust:   {:#?}\n  Golden: {:#?}",
         actual.len(),
         golden.len(),
         actual,
@@ -183,7 +185,21 @@ parity_case!(
     parity_invisible_container_with_var,
     "invisible-container-with-var"
 );
-parity_case!(parity_mixed_sibling, "mixed-sibling");
+#[test]
+fn parity_mixed_sibling() {
+    let historical: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/golden/mixed-sibling.json")).unwrap();
+    let mut rust_expected: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/rust-golden/mixed-sibling.json")).unwrap();
+    let extra = rust_expected.remove(1);
+    assert_eq!(extra["category"], "mixed-sibling-corner-radius");
+    assert_eq!(rust_expected, historical);
+    assert_fixture_parity(
+        "mixed-sibling",
+        include_str!("fixtures/docs/mixed-sibling.json"),
+        include_str!("fixtures/rust-golden/mixed-sibling.json"),
+    );
+}
 parity_case!(parity_sibling_inconsistency, "sibling-inconsistency");
 parity_case!(
     parity_stacked_horizontal_padding,

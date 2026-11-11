@@ -17,7 +17,10 @@ mod figma_file_import;
 mod figma_rest_import;
 mod html_resources;
 mod library_tools;
+mod quality_reuse;
+mod quality_tokens;
 mod quality_tools;
+mod quality_variables;
 mod replies;
 mod tool_catalog;
 mod tool_search;
@@ -489,3 +492,5 @@ mod design_workflow_tests;
 mod figma_rest_import_tests;
 #[cfg(test)]
 mod prompt_example_tests;
+#[cfg(test)]
+mod quality_reuse_tests;

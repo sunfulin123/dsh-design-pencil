@@ -66,8 +66,8 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 {
   "version": 1,
   "status": "verified",
-  "task_id": "0c6dd4c3-f1ac-406c-ad30-23291f2081f4",
-  "verified_at": "2026-11-10T11:59:32.415752+00:00",
+  "task_id": "b04ae5d2-cd8b-40f0-9761-bd78abf26477",
+  "verified_at": "2026-11-11T03:46:18.427696+00:00",
   "sources": {
     "packages/dsh-node-runtime/html-import-tool.mjs": "42ab3b44fcadc6669d64a4c2382218b3daa2f3a3cb3b617842fd36cb7e9feb69",
     "packages/dsh-node-runtime/html-browser-capture.mjs": "d794de1e13082e19e77c9f50970e1e06edc629815e167ceeaa4971868e787a81",
@@ -75,7 +75,7 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
     "packages/dsh-node-runtime/html-snapshot-augment.mjs": "50012369534a256d887cd006487e3072100c9f86f785000919527b9d7dd176f0",
     "packages/dsh-node-runtime/html-fidelity.mjs": "55c6c80512f3258d5ec0d81168dc6bd3b548145b325fb632254cdbc0f0c8b097",
     "packages/dsh-node-runtime/html-fonts.mjs": "b52f5b6b2b43c5fddb1b884429df3ae996f0d55df596370eeb824a25c3b0c679",
-    "crates/op-dsh-engine/src/lib.rs": "514f850d4811514dcc6ffa09fc9990d4f2b30e8345ee2f3fce9a338f4f277591",
+    "crates/op-dsh-engine/src/lib.rs": "3610d050386b7a649db82f2a0701c3e10077b51f488e1f92c6bb07f9de487ddf",
     "crates/op-mcp/src/import_common.rs": "b739cbb501f4371d2273a20936a2159fd551d2659aae745d5767b41a9ae9ebc2",
     "crates/op-html/src/lib.rs": "aa9f80ddff873a62334d845dbcac283037740466981bbbde5047f4c285a7e6ad",
     "crates/op-html/src/snapshot_controls.rs": "cb8a1ebdde5eb5eac79d748d6f5922c2d2154b3cb8731332d992a32d91a34980",
@@ -83,7 +83,7 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
     "crates/op-pen-loader/src/authored_geometry.rs": "64d1cb457ef5c4aab8d386811ebad6b7eb070d70f9df85571be1c40cb88b9a8d",
     "crates/op-editor-ui/src/widgets/canvas_viewport_layer_bounds.rs": "57cd63c964627896ded9c66cb5a8dd2a22918cd7086a6b2c13225c0721a1c408"
   },
-  "reason": "The engine entry file now delegates quality inspection to a sibling module; HTML import and authored-geometry dispatch remain unchanged.",
-  "evidence": "cargo test -p op-dsh-engine --lib: 72 passed including geometry-complete and static HTML import; Node runtime tests verified HTML file import and authored geometry."
+  "reason": "The engine entry registers reuse quality analysis and tests; HTML import and authored geometry handling are unchanged.",
+  "evidence": "Reviewed the lib.rs diff and the authored-import commit path; the engine test suite passed."
 }
 ```

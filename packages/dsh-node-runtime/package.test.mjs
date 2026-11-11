@@ -87,7 +87,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.ok(manifest.files['node_modules/@jitl/quickjs-ffi-types/dist/index.js'])
   assert.equal(manifest.files['node_modules/quickjs-emscripten-core/dist/index.d.mts'], undefined)
   for (const path of Object.keys(manifest.files)) {
-    assert.doesNotMatch(path, /vendor|target|\.test\.|\.d\.ts|build-web|prompt_center|op-host-web-server/)
+    assert.doesNotMatch(path, /(?:^|\/)(?:vendor|target)(?:\/|$)|\.test\.|\.d\.ts|build-web|prompt_center|op-host-web-server/)
     if (path.startsWith('node_modules/')) {
       assert.match(path, /^node_modules\/(?:quickjs-emscripten-core|@jitl\/(?:quickjs-wasmfile-release-sync|quickjs-ffi-types))\//)
     }

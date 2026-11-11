@@ -68,3 +68,25 @@ fn shared_lint_rejects_children_of_locked_or_hidden_ancestors() {
         assert!(!state.history.can_undo());
     }
 }
+
+#[test]
+fn advisory_on_locked_node_does_not_block_other_fixable_nodes() {
+    let mut state = state();
+    state.doc.children = vec![serde_json::from_value(json!({
+        "type":"frame","id":"root","children":[
+            {"type":"path","id":"broken"},
+            {"type":"frame","id":"a","role":"button","cornerRadius":4},
+            {"type":"frame","id":"b","role":"button","cornerRadius":4},
+            {"type":"frame","id":"c","role":"button","cornerRadius":8,"locked":true}
+        ]
+    }))
+    .unwrap()];
+    let before = state.doc.clone();
+    let snapshot = DesignLintSnapshot::new(&state);
+    assert!(snapshot.issues.iter().any(|issue| issue.node_id == "c"));
+    let (command, report) = snapshot.prepare(None).unwrap();
+    assert_eq!(report.total, 1);
+    assert!(state.apply(command.unwrap()));
+    assert!(state.undo());
+    assert_eq!(state.doc, before);
+}

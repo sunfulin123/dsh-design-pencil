@@ -349,6 +349,34 @@ mod tests {
     }
 
     #[test]
+    fn preview_skips_component_masters_unless_explicitly_enabled() {
+        let state = deck_state(
+            r#"{"version":"1.0.0","children":[
+            {"type":"frame","id":"master","reusable":true,"width":200,"height":50},
+            {"type":"frame","id":"screen","width":1200,"height":800},
+            {"type":"frame","id":"intentional","reusable":true,"previewAsScreen":true,"width":200,"height":50}
+        ]}"#,
+        );
+        assert_eq!(
+            active_page_boards(&state),
+            vec!["master", "screen", "intentional"]
+        );
+        assert_eq!(
+            slideshow_for_document(&state).unwrap().boards(),
+            &["screen", "intentional"]
+        );
+        let graph = crate::prototype::PrototypeGraph::from_document(&state.doc);
+        assert_eq!(
+            graph
+                .screens
+                .iter()
+                .map(|screen| screen.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["screen", "intentional"]
+        );
+    }
+
+    #[test]
     fn only_a_deck_document_presents() {
         let mut ordinary = deck_state(THREE_BOARDS);
         ordinary.editor_ui.scenario = None;

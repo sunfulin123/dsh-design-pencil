@@ -90,7 +90,7 @@ fn walk_purple_glow(
                 current_value: json_number(percent as f64),
                 suggested_value: Value::Null,
                 reason: format!(
-                    "purple-blue gradient wash covering {percent}% of the board — the AI-default look; use the style guide's accent on one element instead"
+                    "saturated gradient covering {percent}% of the board — review its visual priority and consistency with the selected style"
                 ),
             });
         }
