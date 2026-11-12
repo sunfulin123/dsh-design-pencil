@@ -180,8 +180,8 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 {
   "version": 1,
   "status": "verified",
-  "task_id": "c6742fe1-95ed-4d96-a9e5-66814297e374",
-  "verified_at": "2026-11-12T09:18:20.870419+00:00",
+  "task_id": "3be8f564-270a-4d24-81d1-e1d18920c6d2",
+  "verified_at": "2026-11-12T09:57:30.371476+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -197,7 +197,7 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "2af27e544f9042e11b2bd6ac1f17a498ac4fb98252db40cb77d98602d375853d",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "904f7d67cda57d5767df5e9c3ec6dc221da1559810db4a3bfdbde6e4c7ffab60",
+    "packages/bun.lock": "377168e3785ac2323fe54122c1511936c8476f15c35fa5639e4374880f7cdc4c",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -273,7 +273,7 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "packages/dsh-node-runtime/managed-daemon-client.mjs": "4477fa8eb6cce9aa5148b19e80cb446e0787cd336db476f87efee784ac1b2ca4",
     "packages/dsh-node-runtime/plugin-domain-migration.test.mjs": "7e5dae8d115c7729623e45789d773580b825ba6bbf897fd4b266c1b51d38d675"
   },
-  "reason": "Verified TLA-free ESM runtime domain modules, dual web-bundle layout discovery, and staged host integration",
-  "evidence": "node --test packages/dsh-node-runtime/plugin-domain-migration.test.mjs packages/dsh-node-runtime/package.test.mjs"
+  "reason": "Bumped DSH Node/WASM runtime package version to 0.8.5-synapse.5 in bun.lock; runtime MCP invariants unchanged",
+  "evidence": "node --test packages/dsh-node-runtime/package.test.mjs scripts/check-dsh-runtime.test.mjs"
 }
 ```

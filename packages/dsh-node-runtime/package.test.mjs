@@ -41,7 +41,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     const path = join(runtime, file)
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, file === 'package.json' ? JSON.stringify({
-      name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.4',
+      name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.5',
       type: 'commonjs', engines: { node: '>=24' },
       dependencies: { 'quickjs-emscripten-core': '0.32.0', '@jitl/quickjs-wasmfile-release-sync': '0.32.0' },
     }) : file)
@@ -68,7 +68,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.equal(manifest.entrypoint, 'cli.mjs')
   assert.ok(manifest.files['offline-cli.mjs'])
   assert.equal(manifest.node, '>=24')
-  assert.equal(manifest.openPencilVersion, '0.8.5-synapse.4')
+  assert.equal(manifest.openPencilVersion, '0.8.5-synapse.5')
   assert.ok(manifest.files['wasm/op_dsh_engine_bg.wasm'])
   assert.ok(manifest.files['wasm/design-skill.md'])
   assert.ok(manifest.files['skills/synapse-design-html/scripts/capture-poc.mjs'])

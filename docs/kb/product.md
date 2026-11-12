@@ -131,8 +131,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "c6742fe1-95ed-4d96-a9e5-66814297e374",
-  "verified_at": "2026-11-12T09:18:20.479784+00:00",
+  "task_id": "3be8f564-270a-4d24-81d1-e1d18920c6d2",
+  "verified_at": "2026-11-12T09:57:29.136055+00:00",
   "sources": {
     "ARCHITECTURE.md": "4b7ac79add132b8160cd941228eeb6c41a6307c8a5a36cb582ee57f6268f4d7c",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -150,7 +150,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
     "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "541b5eb094c56dff52baf3b3147662e6337f4146fca4c020c1f8fce73b6f1acd",
-    "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "ce0d957cc81269c2834354c9b103b11560144f9c47f492492fa73a1c3d5bcac4",
+    "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "6eb8c4570fbf4a69c22b596a0560ccc2ce01aa7cbf733111bdd9f1895534ad8a",
     "crates/op-ai-skills/skills/synapse-design/review.md": "ea499d466143fd6a27b9647aaaae5f902806e7db98111270c9844960cc3f6046",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "fb3c90b015cc9ed3e1626cec2816a73e8f5677782e1ff300f83c677fbb58bda8",
     "packages/dsh-node-runtime/selection-visual-evidence.mjs": "edc871f259adb1b329a91b3b373ecffe1c4d2f4ed3d1fc1e2bf459510773b57e",
@@ -158,7 +158,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/dsh-node-runtime/draft-review-gate.mjs": "ec234eeeebdc5391b96cc3518916f523c17e403b5bdafad2419a9c860d0889bd",
     "packages/dsh-node-runtime/poc-evidence-validator.mjs": "4a3b31ca6fee925c79a68f5584baca7b3a429c99f2614a6ccc90174ee5f2f9ae"
   },
-  "reason": "Documented runtime ownership of pure visual evidence, device frame, draft review, and POC validator domain modules",
-  "evidence": "node --test packages/dsh-node-runtime/plugin-domain-migration.test.mjs"
+  "reason": "Normalized 4 preserved CSV LF hashes in migration-manifest.json; product design invariants unchanged",
+  "evidence": "node --test packages/dsh-node-runtime/html-skill-migration.test.mjs"
 }
 ```

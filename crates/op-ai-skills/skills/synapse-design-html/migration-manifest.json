@@ -29,7 +29,7 @@
     },
     {
       "source": "data/charts.csv",
-      "sha256": "ebb565308115f955791b0431797a89d9b3587c25d5babb9428d10712c4924817",
+      "sha256": "a70ef7460b0eaaea8614f86a0d09a4bc38b467804179762464b5ca45b491baac",
       "status": "preserved",
       "destination": "data/charts.csv"
     },
@@ -59,7 +59,7 @@
     },
     {
       "source": "data/google-fonts.csv",
-      "sha256": "2c03a3cd134d126bd9d6a7dc2a6360dc5272219ad6df3eb9315b031f806e1487",
+      "sha256": "3fd2898fb0fdd31ba758bf05cfcd2b58cd0f038a20cf08e417d09e5a8a4a509e",
       "status": "preserved",
       "destination": "data/google-fonts.csv"
     },
@@ -2711,7 +2711,7 @@
     },
     {
       "source": "data/landing.csv",
-      "sha256": "080cedbcd61ff8ec9520f33929baa76bee9589e783f83b2f8d824a466b6a46d7",
+      "sha256": "121a2cac7cf21050234b5f80e7b4e182f10123536032e0f9ad862ad3aec9677d",
       "status": "preserved",
       "destination": "data/landing.csv"
     },
@@ -4146,7 +4146,7 @@
     },
     {
       "source": "data/stacks/react-native.csv",
-      "sha256": "a08ca77fcf6b6d9531982dce465366296013bfcf12d2938ac72ad57cf0c4f085",
+      "sha256": "077aefc81d194895ecf7936b3ed298b978e36961f183e3a275f8acda19b5f621",
       "status": "preserved",
       "destination": "data/stacks/react-native.csv"
     },
