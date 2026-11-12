@@ -1,6 +1,7 @@
 import { AssetStoreError } from './asset-store.mjs';
 
 function dimensionsOf(text) {
+  if (typeof text !== 'string' || text.length === 0) return undefined;
   const match = /(?:^|\D)(\d{3,4})\s*(?:x|×|✕|\*)\s*(\d{3,5})(?:\D|$)/iu.exec(text);
   const width = match ? Number(match[1]) : undefined;
   const height = match ? Number(match[2]) : undefined;
@@ -8,25 +9,36 @@ function dimensionsOf(text) {
     ? { width, height } : undefined;
 }
 
-function deviceOf(text) {
-  if (/\b(?:mobile|phone|iphone|ios|android)\b|移动(?:端|应用|界面)?|手机(?:端|应用|界面)?/iu.test(text)) return 'mobile';
-  if (/\b(?:desktop|web|website|webapp)\b|桌面|电脑|网页|网站|官网/iu.test(text)) return 'web';
-  return undefined;
+function validDimension(value, min, max, label) {
+  if (value === undefined) return undefined;
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new AssetStoreError('asset-invalid', `${label} must be an integer between ${min} and ${max}`);
+  }
+  return value;
 }
 
-export function planDesignCanvas({ userMessage, context = '' }) {
-  if (Buffer.byteLength(userMessage, 'utf8') + Buffer.byteLength(context, 'utf8') > 64 * 1024)
+export function planDesignCanvas({ platform, width, height, userMessage = '', context = '' } = {}) {
+  const messageText = String(userMessage ?? '');
+  const contextText = String(context ?? '');
+  if (Buffer.byteLength(messageText, 'utf8') + Buffer.byteLength(contextText, 'utf8') > 64 * 1024)
     throw new AssetStoreError('asset-invalid', 'Design request exceeds 64 KiB');
-  const directDevice = deviceOf(userMessage);
-  const dimensions = dimensionsOf(userMessage) ?? (directDevice ? undefined : dimensionsOf(context));
-  const device = directDevice ?? (dimensions ? (dimensions.width <= 500 ? 'mobile' : 'web') : deviceOf(context));
-  const mobile = device === 'mobile';
-  const explicit = dimensions !== undefined;
+  if (platform !== undefined && platform !== 'web' && platform !== 'mobile')
+    throw new AssetStoreError('asset-invalid', 'Canvas platform must be "web" or "mobile"');
+  const explicitWidth = validDimension(width, 240, 3840, 'width');
+  const explicitHeight = validDimension(height, 240, 20000, 'height');
+  const parsed = explicitWidth !== undefined && explicitHeight !== undefined
+    ? { width: explicitWidth, height: explicitHeight }
+    : dimensionsOf(messageText) ?? (platform ? undefined : dimensionsOf(contextText));
+  const resolvedWidth = explicitWidth ?? parsed?.width;
+  const resolvedHeight = explicitHeight ?? parsed?.height;
+  const resolvedPlatform = platform ?? (resolvedWidth !== undefined ? (resolvedWidth <= 500 ? 'mobile' : 'web') : 'web');
+  const mobile = resolvedPlatform === 'mobile';
+  const explicit = resolvedWidth !== undefined && resolvedHeight !== undefined;
   const canvas = {
     platform: mobile ? 'mobile' : 'web',
-    width: dimensions?.width ?? (mobile ? 390 : 1440),
-    seedHeight: dimensions?.height ?? (mobile ? 844 : 900),
-    finalHeight: dimensions?.height ?? 'fit_content',
+    width: resolvedWidth ?? (mobile ? 390 : 1440),
+    seedHeight: resolvedHeight ?? (mobile ? 844 : 900),
+    finalHeight: explicit ? resolvedHeight : 'fit_content',
     fixedViewport: explicit,
     rootCount: 1,
     rootType: 'frame',

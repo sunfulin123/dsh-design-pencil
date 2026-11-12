@@ -90,7 +90,17 @@ embedding host override > 临时 MCP override > 设备偏好。
 `plan_design_style` 使用同一个资产目录提供候选、推荐 id 和 revision；
 `plan_design_canvas` 只创建不含预置配色的中性画布计划。
 `get_design_capabilities` 根据实际注册工具返回访问分类，未知工具默认要求宿主单独授权。
-`ss-dsh-design` 负责会话、用户选择 UI、授权和注入，设计指导不在插件重复维护。
+宿主无关的设计领域模块——[选区精确视觉证据与字形墨迹测量](packages/dsh-node-runtime/selection-visual-evidence.mjs)、
+[RGBA PNG 编解码](packages/dsh-node-runtime/png-rgba-codec.mjs)、
+[系统设备外框与根节点识别](packages/dsh-node-runtime/device-frame.mjs)、
+[代码上下文过滤与回退](packages/dsh-node-runtime/design-code-context.mjs)、
+[草稿画布契约](packages/dsh-node-runtime/draft-canvas-contract.mjs)、
+[分页质量与 lint 门禁](packages/dsh-node-runtime/draft-quality-gate.mjs)、
+[发布评审回执门禁](packages/dsh-node-runtime/draft-review-gate.mjs)、
+[POC 证据台账校验](packages/dsh-node-runtime/poc-evidence-validator.mjs) 以及
+[受管守护进程/MCP 客户端协议辅助](packages/dsh-node-runtime/managed-mcp-client.mjs)——均归属
+`packages/dsh-node-runtime` 并随运行时打包发布；`ss-dsh-design` 仅负责 DSH 会话、沙箱文件权限、
+用户选择 UI、HTTP 授权和注入，设计指导与领域门禁不在插件中重复实现。
 运行时构建将核心 skill 复制到 wasm 构建产物；发布 staging 校验源码一致并写入哈希清单。
 
 ## 变量集合与内置库

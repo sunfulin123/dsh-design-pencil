@@ -25,6 +25,7 @@ test('HTML skill packages its original review, prototype, and research resources
     await assert.rejects(access(new URL(path, source)), { code: 'ENOENT' })
   }
   const skill = await read('SKILL.md')
+  assert.match(skill, /^user-invocable:\s*false$/m)
   assert.match(skill, /three-layer/i)
   assert.match(skill, /selected DESIGN/i)
   assert.match(skill, /verify-surface\.mjs/)

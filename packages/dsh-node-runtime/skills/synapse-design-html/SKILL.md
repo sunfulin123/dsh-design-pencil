@@ -2,7 +2,8 @@
 name: synapse-design-html
 metadata:
   version: synapse-design-html/2
-description: Create, verify, and hand off a standalone HTML proof of concept for a Synapse design task using the selected product style guide and evidence ledger.
+user-invocable: false
+description: Internal HTML proof-of-concept sub-skill loaded by synapse-design after context, style, and route selection, using the selected product style guide and evidence ledger.
 ---
 
 # Synapse Design HTML POC
@@ -45,6 +46,6 @@ Follow the same three-layer conversation, project/document, and requirements/sty
 
 ## Stage E — Verified Handoff & Optional Synapse Continuation
 
-- Call `synapse_design_poc_handoff` with `action: "record"`, `taskId`, `discovery`, `entry`, `files`, `evidence` (`<task-dir>/evidence-report.json`), and structured `screenshots` (`[{path, screen, state?, viewport}]`) covering every planned screen so the host verifies `DESIGN.md`, the evidence ledger, source fingerprints, and PNG viewport widths.
-- Present the verified prototype and wait for user feedback unless automatic continuation was explicitly requested.
-- When the user approves continuing to editable high-fidelity design, call `synapse_design_poc_handoff` with `action: "resolve"` and `taskId`, then follow `synapse-design` Stages C–G using the returned source files and screenshots as reference data—never HTML import.
+- Call `synapse_design_poc_handoff` with `action: "record"`, `taskId`, `discovery`, `entry`, `files`, `evidence` (`<task-dir>/evidence-report.json`), and structured `screenshots` (`[{path, screen, state?, viewport}]`, where `viewport` is the integer pixel width such as `1440` or `375`) covering every planned screen so the host verifies `DESIGN.md`, the evidence ledger, source fingerprints, and PNG viewport widths.
+- Present the verified prototype and ask how the user wants to proceed via `ask_user_question` (question ID `synapse-design-poc:<taskId>`, phrased in the user's conversation language with `options[0]`: continue from this POC to high-fidelity Synapse design, `options[1]`: revise the HTML POC first, `options[2]`: keep only the HTML POC for now), unless `autoContinue: true` was explicitly requested up front.
+- As soon as the user selects `options[0]` (or approves in chat or custom text), call `synapse_design_poc_handoff` with `action: "resolve"` and `taskId` immediately in the same turn, then follow `synapse-design` Stages C–G using the returned source files and screenshots as reference data—never HTML import.

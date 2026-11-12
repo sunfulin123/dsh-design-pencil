@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 use crate::color::{color_contrast, parse_hex_color, relative_luminance};
 use crate::issue::{FixProperty, Issue, IssueCategory, IssueSeverity};
 use crate::node_util::{
-    children, first_fill_color, has_stroke, json_number, node_id, node_kind, node_kind_str,
+    children, first_fill_color, has_stroke, json_number, node_id, node_kind, node_kind_str, role,
     rotation, NodeKind,
 };
 
@@ -218,39 +218,76 @@ fn walk_invisible_containers(
 }
 
 fn is_chart_visual_container(node: &PenNode, in_chart_context: bool) -> bool {
-    if !in_chart_context {
+    if !in_chart_context || has_surface_role(node) {
         return false;
     }
-    let label = node_identity_label(node);
-    if ["card", "panel", "section", "sidebar", "container"]
-        .iter()
-        .any(|needle| label.contains(needle))
-    {
-        return false;
-    }
-    if is_chart_context_node(node) {
+    if is_chart_context_node(node) || has_chart_mark_role(node) {
         return true;
     }
-    let barish = label.contains("bar")
-        || label.contains("track")
-        || label.contains("column")
-        || label.contains("柱");
-    barish || (children(node).len() <= 3 && is_slender_chart_mark(node))
+    children(node).len() <= 3 && is_slender_chart_mark(node)
 }
 
 fn is_chart_context_node(node: &PenNode) -> bool {
-    let label = node_identity_label(node);
-    label.contains("chart")
-        || label.contains("graph")
-        || label.contains("histogram")
-        || label.contains("sparkline")
-        || label.contains("bar chart")
-        || label.contains("weekly bars")
-        || label.contains("activity chart")
-        || label.contains("activity graph")
-        || label.contains("activity bars")
-        || label.contains("图表")
-        || label.contains("柱状")
+    has_chart_role(node) || is_geometric_bar_series(node)
+}
+
+fn has_surface_role(node: &PenNode) -> bool {
+    role(node).is_some_and(|r| {
+        matches!(
+            r.trim().to_ascii_lowercase().as_str(),
+            "card" | "panel" | "section" | "sidebar" | "container" | "dialog" | "sheet"
+        )
+    })
+}
+
+fn has_chart_role(node: &PenNode) -> bool {
+    role(node).is_some_and(|r| {
+        matches!(
+            r.trim().to_ascii_lowercase().as_str(),
+            "chart" | "chart-plot" | "sparkline" | "histogram" | "data-visualization"
+        )
+    })
+}
+
+fn has_chart_mark_role(node: &PenNode) -> bool {
+    role(node).is_some_and(|r| {
+        matches!(
+            r.trim().to_ascii_lowercase().as_str(),
+            "chart-bar" | "chart-track" | "chart-column" | "bar-track"
+        )
+    })
+}
+
+fn is_geometric_bar_series(node: &PenNode) -> bool {
+    if !matches!(node, PenNode::Frame(f) if f.container.layout.is_some()) || has_surface_role(node)
+    {
+        return false;
+    }
+    let kids = children(node);
+    if kids.len() < 3 {
+        return false;
+    }
+    let slender_marks: Vec<(f64, f64)> = kids
+        .iter()
+        .filter(|child| children(child).len() <= 3 && is_slender_chart_mark(child))
+        .filter_map(|child| {
+            Some((
+                numeric_node_prop(child, "width")?,
+                numeric_node_prop(child, "height")?,
+            ))
+        })
+        .collect();
+    if slender_marks.len() < 3 || slender_marks.len() * 2 < kids.len() * 2 {
+        return false;
+    }
+    let (first_w, first_h) = slender_marks[0];
+    let uniform_w = slender_marks
+        .iter()
+        .all(|(w, _)| (*w - first_w).abs() <= 2.0);
+    let uniform_h = slender_marks
+        .iter()
+        .all(|(_, h)| (*h - first_h).abs() <= 2.0);
+    uniform_w || uniform_h
 }
 
 fn is_slender_chart_mark(node: &PenNode) -> bool {
@@ -268,19 +305,6 @@ fn is_slender_chart_mark(node: &PenNode) -> bool {
 
 fn numeric_node_prop(node: &PenNode, key: &str) -> Option<f64> {
     serde_json::to_value(node).ok()?.get(key)?.as_f64()
-}
-
-fn node_identity_label(node: &PenNode) -> String {
-    let mut label = node_id(node).to_ascii_lowercase();
-    if let Ok(value) = serde_json::to_value(node) {
-        for key in ["role", "name"] {
-            if let Some(text) = value.get(key).and_then(Value::as_str) {
-                label.push(' ');
-                label.push_str(&text.to_ascii_lowercase());
-            }
-        }
-    }
-    label
 }
 
 /// Port of `getBorderStroke` (`detectors.ts:27-34`). Prefers the

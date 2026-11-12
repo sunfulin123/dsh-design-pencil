@@ -14,15 +14,17 @@ test('capabilities expose actual schemas and default unknown operations to sensi
   assert.deepEqual(result.tools[0].inputSchema, { type: 'object' });
 });
 
-test('canvas plan respects device and explicit sizes without adding a style', () => {
-  const mobile = planDesignCanvas({ userMessage: '设计手机应用' });
+test('canvas plan respects structured platform and explicit sizes without adding a style', () => {
+  const mobile = planDesignCanvas({ platform: 'mobile', userMessage: 'モバイルアプリを設計する' });
   assert.equal(mobile.canvas.width, 390);
   assert.equal(mobile.canvas.finalHeight, 'fit_content');
   assert.doesNotMatch(mobile.seedScript, /fill|#[0-9a-f]{6}/i);
-  const fixed = planDesignCanvas({ userMessage: '画板 1024×768' });
+  const fixed = planDesignCanvas({ width: 1024, height: 768 });
   assert.equal(fixed.canvas.width, 1024);
   assert.equal(fixed.canvas.finalHeight, 768);
   assert.equal(fixed.canvas.fixedViewport, true);
-  assert.equal(planDesignCanvas({ userMessage: '你决定', context: '设计手机应用' }).canvas.width, 390);
-  assert.equal(planDesignCanvas({ userMessage: '改成桌面', context: '手机 390×844' }).canvas.width, 1440);
+  const numeric = planDesignCanvas({ userMessage: '1024×768' });
+  assert.equal(numeric.canvas.width, 1024);
+  assert.equal(numeric.canvas.fixedViewport, true);
+  assert.equal(planDesignCanvas({ platform: 'web', context: '390×844' }).canvas.width, 1440);
 });

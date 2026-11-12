@@ -15,26 +15,6 @@ use crate::node_util::{
 const MIN_RING_SIZE: f64 = 48.0;
 const MAX_RING_SIZE: f64 = 480.0;
 const MAX_ASPECT_RATIO: f64 = 1.2;
-const METRIC_CONTEXT_WORDS: &[&str] = &[
-    "activity",
-    "calorie",
-    "calories",
-    "chart",
-    "completion",
-    "distance",
-    "fitness",
-    "goal",
-    "kcal",
-    "kpi",
-    "metric",
-    "percent",
-    "percentage",
-    "progress",
-    "score",
-    "step",
-    "steps",
-    "workout",
-];
 
 /// A metric container that strongly signals a progress ring but contains no
 /// visible circle, arc, or painted circular frame.
@@ -45,11 +25,10 @@ pub struct MissingProgressRing {
 }
 
 /// Find generated progress-ring wrappers that contain a numeric metric but no
-/// ring visual. The heuristic is deliberately conservative:
+/// ring visual. The check is language-agnostic and strictly structural:
 ///
 /// - the wrapper must have explicit, near-square numeric dimensions;
-/// - its name/role must explicitly signal ring/donut/gauge/radial geometry;
-/// - its subtree must explicitly identify a progress/activity metric;
+/// - its `role` must explicitly declare a progress-ring / radial-gauge schema role;
 /// - its subtree must contain a numeric text metric; and
 /// - its own subtree must not contain visible ring geometry.
 ///
@@ -93,29 +72,27 @@ fn subtree_has_ring_metric_candidate(node: &PenNode) -> bool {
 
 fn is_ring_metric_candidate(node: &PenNode) -> bool {
     near_square_numeric_size(node).is_some()
-        && contains_ring_visual_word(&semantic_label(node))
-        && subtree_contains_metric_context(node)
+        && has_progress_ring_role(node)
         && subtree_contains_numeric_text(node)
 }
 
-fn contains_ring_visual_word(label: &str) -> bool {
-    contains_semantic_word(label, &["ring", "donut", "doughnut", "gauge", "radial"])
+fn has_progress_ring_role(node: &PenNode) -> bool {
+    role(node).is_some_and(|r| {
+        matches!(
+            r.trim().to_ascii_lowercase().as_str(),
+            "progress-ring" | "ring-meter" | "donut-chart" | "radial-gauge" | "gauge"
+        )
+    })
 }
 
-fn contains_semantic_word(label: &str, words: &[&str]) -> bool {
-    label
-        .split(|character: char| !character.is_ascii_alphanumeric())
-        .filter(|token| !token.is_empty())
-        .any(|token| words.contains(&token))
-}
-
-fn semantic_label(node: &PenNode) -> String {
-    [node_name(node), role(node)]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .to_ascii_lowercase()
+fn has_ring_visual_role(node: &PenNode) -> bool {
+    has_progress_ring_role(node)
+        || role(node).is_some_and(|r| {
+            matches!(
+                r.trim().to_ascii_lowercase().as_str(),
+                "ring-arc" | "ring-track" | "progress-arc"
+            )
+        })
 }
 
 fn subtree_contains_numeric_text(node: &PenNode) -> bool {
@@ -129,24 +106,6 @@ fn subtree_contains_numeric_text(node: &PenNode) -> bool {
         _ => false,
     };
     own_text_has_number || children(node).iter().any(subtree_contains_numeric_text)
-}
-
-fn subtree_contains_metric_context(node: &PenNode) -> bool {
-    let own_label_matches = contains_semantic_word(&semantic_label(node), METRIC_CONTEXT_WORDS);
-    let own_text_matches = match node {
-        PenNode::Text(text) => match &text.content {
-            TextContent::Plain(content) => {
-                contains_semantic_word(&content.to_ascii_lowercase(), METRIC_CONTEXT_WORDS)
-            }
-            TextContent::Styled(segments) => segments.iter().any(|segment| {
-                contains_semantic_word(&segment.text.to_ascii_lowercase(), METRIC_CONTEXT_WORDS)
-            }),
-        },
-        _ => false,
-    };
-    own_label_matches
-        || own_text_matches
-        || children(node).iter().any(subtree_contains_metric_context)
 }
 
 fn has_ring_visual(node: &PenNode, candidate_min_size: f64) -> bool {
@@ -218,11 +177,7 @@ fn is_visible_ring_visual(node: &PenNode, candidate_min_size: f64) -> bool {
                 || ellipse.inner_radius.unwrap_or(0.0) > 0.0
                 || ellipse.sweep_angle.is_some_and(|angle| angle.abs() < 359.5)
         }
-        PenNode::Path(_) => {
-            let label = semantic_label(node);
-            contains_ring_visual_word(&label)
-                || contains_semantic_word(&label, &["arc", "track", "progress"])
-        }
+        PenNode::Path(_) => has_ring_visual_role(node) || has_stroke(node),
         PenNode::Frame(_) | PenNode::Group(_) | PenNode::Rectangle(_) => {
             has_stroke(node) && corner_radius_numeric(node) >= width.min(height) * 0.4
         }
@@ -302,13 +257,13 @@ mod tests {
     #[test]
     fn detects_0714_numeric_wrapper_without_ring_geometry() {
         let fixture = nodes(json!([{
-            "type": "frame", "id": "card", "name": "Today Activity Ring",
+            "type": "frame", "id": "card", "name": "歩数リング",
             "width": 342, "height": 376, "children": [{
-                "type": "frame", "id": "steps-ring", "name": "Steps Ring",
+                "type": "frame", "id": "steps-ring", "name": "歩数", "role": "progress-ring",
                 "width": 124, "height": 124, "layout": "vertical",
                 "alignItems": "center", "justifyContent": "center", "children": [
                     {"type": "text", "id": "value", "content": "8,432"},
-                    {"type": "text", "id": "label", "content": "steps"}
+                    {"type": "text", "id": "label", "content": "歩"}
                 ]
             }]
         }]));
@@ -317,7 +272,7 @@ mod tests {
             detect_missing_progress_rings(&fixture),
             vec![MissingProgressRing {
                 node_id: "steps-ring".into(),
-                node_name: "Steps Ring".into(),
+                node_name: "歩数".into(),
             }]
         );
     }
@@ -325,7 +280,7 @@ mod tests {
     #[test]
     fn accepts_ring_with_visible_ellipse_geometry() {
         let fixture = nodes(json!([{
-            "type": "frame", "id": "steps-ring", "name": "Steps Ring",
+            "type": "frame", "id": "steps-ring", "name": "Steps Ring", "role": "progress-ring",
             "width": 124, "height": 124, "layout": "none", "children": [
                 {"type": "ellipse", "id": "track", "name": "Ring Track",
                  "width": 124, "height": 124,
@@ -343,9 +298,9 @@ mod tests {
     #[test]
     fn valid_child_ring_suppresses_larger_semantic_wrapper() {
         let fixture = nodes(json!([{
-            "type": "frame", "id": "card", "name": "Today Activity Ring",
-            "width": 342, "height": 376, "children": [{
-                "type": "frame", "id": "steps-ring", "name": "Steps Ring",
+            "type": "frame", "id": "card", "name": "Today Activity Ring", "role": "progress-ring",
+            "width": 160, "height": 160, "children": [{
+                "type": "frame", "id": "steps-ring", "name": "Steps Ring", "role": "progress-ring",
                 "width": 124, "height": 124, "layout": "none", "children": [
                     {"type": "ellipse", "id": "track", "name": "Ring Track",
                      "width": 124, "height": 124,
@@ -361,7 +316,7 @@ mod tests {
     #[test]
     fn accepts_donut_built_from_two_filled_discs() {
         let fixture = nodes(json!([{
-            "type": "frame", "id": "steps-ring", "name": "Steps Ring",
+            "type": "frame", "id": "steps-ring", "name": "Steps Ring", "role": "donut-chart",
             "width": 124, "height": 124, "layout": "none", "children": [
                 {"type": "ellipse", "id": "outer", "name": "Outer Disc",
                  "width": 124, "height": 124,
@@ -458,7 +413,7 @@ mod tests {
     #[test]
     fn unrelated_small_ellipse_does_not_hide_a_missing_ring() {
         let fixture = nodes(json!([{
-            "type": "frame", "id": "steps-ring", "name": "Steps Ring",
+            "type": "frame", "id": "steps-ring", "name": "Anneau d'objectif", "role": "progress-ring",
             "width": 124, "height": 124, "layout": "vertical",
             "alignItems": "center", "justifyContent": "center", "children": [
                 {"type": "ellipse", "id": "avatar", "name": "Avatar",
@@ -472,7 +427,7 @@ mod tests {
             detect_missing_progress_rings(&fixture),
             vec![MissingProgressRing {
                 node_id: "steps-ring".into(),
-                node_name: "Steps Ring".into(),
+                node_name: "Anneau d'objectif".into(),
             }]
         );
     }
@@ -483,7 +438,7 @@ mod tests {
             "type": "frame", "id": "activity-card", "name": "Activity Ring Group",
             "width": 300, "height": 160, "children": [
                 {
-                    "type": "frame", "id": "calorie-ring", "name": "Calories Ring",
+                    "type": "frame", "id": "calorie-ring", "name": "Calories Ring", "role": "progress-ring",
                     "width": 124, "height": 124, "children": [
                         {"type": "ellipse", "id": "calorie-track", "width": 124, "height": 124,
                          "stroke": {"thickness": 10}},
@@ -491,7 +446,7 @@ mod tests {
                     ]
                 },
                 {
-                    "type": "frame", "id": "steps-ring", "name": "Steps Ring",
+                    "type": "frame", "id": "steps-ring", "name": "Steps Ring", "role": "progress-ring",
                     "width": 124, "height": 124, "layout": "vertical",
                     "alignItems": "center", "justifyContent": "center", "children": [
                         {"type": "text", "id": "steps-value", "content": "8,432"},

@@ -9,10 +9,15 @@ OP 设计指导采用对话、现有文档和风格目录三层上下文。新�
 核心运行时提供 `synapse-design` Skill，DSH 宿主在创建新草稿前收集已有对话和所选 Project 的相关资料，
 只就影响设计的未知业务事实补问；模型仍需如实说明读取了哪些资料及哪些资料不可用。
 未完成的设计草稿按聊天隔离保存在工作区 `.synapse/op-design`，模型切换后可恢复。
-统一 `synapse-design` 在需求上下文充分后允许用户选择 HTML POC 或直接制作可编辑设计；
-已明确指定的流程不重复询问。内置 `synapse-design-html` 负责 HTML POC，使用
+统一 `synapse-design` 默认跟随用户当前会话语言提问与生成界面文案（目标脚本为中日韩时启用 CJK 排版规则），
+在需求上下文充分后通过固定选项顺序（`options[0]` 先做 HTML POC、`options[1]` 直接制作高保真设计）或显式结构化
+`route` 参数确认路线，并通过结构化 `styleMode`、`styleId`、`platform`、`newTask` 与 `autoContinue` 参数驱动
+风格与画布规划，不在宿主或运行时中硬编码特定自然语言词表。内置 `synapse-design-html` 作为 `synapse-design` 的内部子 Skill
+（`user-invocable: false`，仅模型可加载而不暴露为独立斜杠命令）负责 HTML POC，使用
 `.synapse/html-design`，与可编辑设计读取同一产品风格目录。POC 交接绑定会话、任务、
-风格与文件指纹；缺失或变更的资料需要重新核实。插件的工具路由和记录行为需要宿主测试，
+风格与文件指纹；录制完成后既支持下一轮直接用户消息确认，也支持同一轮内通过 `ask_user_question`
+（含规范问题 ID `synapse-design-poc:<taskId>` 的固定选项顺序或会话内后续问答确认）立即衔接
+`resolve` 进入高保真设计，无需用户额外补发单独聊天消息；缺失或变更的资料需要重新核实。插件的工具路由和记录行为需要宿主测试，
 不能以提示词代替独立模型验收。
 HTML POC 资源包含按需加载的旧检查方法、可选脚本和资源清单；旧主题库与备用配色不是
 风格来源。`synapse-design/2` 与 `synapse-design-html/2` 按编号阶段组织执行，共享引擎中立的
@@ -24,7 +29,10 @@ DSH 上下文阶段要求实质性需求摘要与显式页面清单；POC 交接
 `DESIGN.md` 指纹、`evidence-report.json` 台账（含 `renderedEvidence` 截图哈希与源文件指纹）
 以及带页面与视口宽度的真实 PNG 截图；高保真发布前翻完交互目标分页并核对绑定当前截图哈希的结构化
 评审回执（每个计划页面映射独立的非空容器节点或省略原因、五维视觉观察、六类状态、组件复用说明，
-同一轮连续三次未通过则终止），视觉回执仍只证明绑定记录而非独立模型推理质量。
+同一轮连续三次未通过则终止），视觉回执仍只证明绑定记录而非独立模型推理质量。上述无宿主依赖的选区
+CanvasKit 精确渲染与墨迹测量、PNG 编解码、系统设备外框、代码上下文净化、草稿画布/质量/评审门禁、POC
+台账 schema 校验及受管 MCP/守护进程客户端协议统一由 `packages/dsh-node-runtime` 实现并随运行时分发，
+DSH 插件仅保留宿主会话、沙箱文件边界与前端交互适配。
 大画布分区创建和按需浅层读取，避免将完整图层树反复加载到模型上下文；具体执行结果仍需实测。
 截图已采集不等于模型已经查看；改变原型或截图会使旧的评审证据失效。
 HTML POC 的 [capture-poc](../../crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs)
@@ -123,10 +131,10 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "3b743834-ca03-4c66-b62e-103711f1a9b4",
-  "verified_at": "2026-11-11T13:02:12.881558+00:00",
+  "task_id": "c6742fe1-95ed-4d96-a9e5-66814297e374",
+  "verified_at": "2026-11-12T09:18:20.479784+00:00",
   "sources": {
-    "ARCHITECTURE.md": "7e48dda7beb4d4a85a2d2d129d72f965011aabba5069567cbd896198db06114f",
+    "ARCHITECTURE.md": "4b7ac79add132b8160cd941228eeb6c41a6307c8a5a36cb582ee57f6268f4d7c",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
     "COMMANDS.md": "b61536e66d1ce87d818a48e69e104329603101e3f70ec481cbb28c034fae11f4",
     "crates/op-dsh-engine/src/tool_catalog.rs": "2453cce3b0c9f8c336fd92bc6397f2653272e2ae21c76b528063ab4a6e033785",
@@ -134,19 +142,23 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "3b3a0dc51442c4759696bb4e46e3101e4a47f836fddc27052ab1554d9a780ea2",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "aee9478d50cc63ee3ae77782e518e507960b748060bffb29f8e2aa79ecdc59fb",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
-    "packages/dsh-node-runtime/design-style-plan.mjs": "d9c39a8bb75a580697619b1ae9b462760d6bf88f631505d0d8df141cb5014725",
+    "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "5aef23a27f2165cda16647908a140e24c84f3653f03ec1601655fb1bc2fcbc80",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "3854686ccd861f10ae536585d6dcc1896bc37a8bc76ef21d501629dd2d9beb3d",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "541b5eb094c56dff52baf3b3147662e6337f4146fca4c020c1f8fce73b6f1acd",
     "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "ce0d957cc81269c2834354c9b103b11560144f9c47f492492fa73a1c3d5bcac4",
     "crates/op-ai-skills/skills/synapse-design/review.md": "ea499d466143fd6a27b9647aaaae5f902806e7db98111270c9844960cc3f6046",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "fb3c90b015cc9ed3e1626cec2816a73e8f5677782e1ff300f83c677fbb58bda8"
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "fb3c90b015cc9ed3e1626cec2816a73e8f5677782e1ff300f83c677fbb58bda8",
+    "packages/dsh-node-runtime/selection-visual-evidence.mjs": "edc871f259adb1b329a91b3b373ecffe1c4d2f4ed3d1fc1e2bf459510773b57e",
+    "packages/dsh-node-runtime/device-frame.mjs": "dd38bfa8577554ad9be31ff6a4e29110d992603214be70be4b50890c64ed11ea",
+    "packages/dsh-node-runtime/draft-review-gate.mjs": "ec234eeeebdc5391b96cc3518916f523c17e403b5bdafad2419a9c860d0889bd",
+    "packages/dsh-node-runtime/poc-evidence-validator.mjs": "4a3b31ca6fee925c79a68f5584baca7b3a429c99f2614a6ccc90174ee5f2f9ae"
   },
-  "reason": "Documented dropdown/select trailing 12-16px chevron inset rules across shared judgement, HTML POC, and OP build guide",
-  "evidence": "crates/op-ai-skills/skills/synapse-design-html/SKILL.md,crates/op-ai-skills/skills/synapse-design/build.md,packages/dsh-node-runtime/html-skill-migration.test.mjs"
+  "reason": "Documented runtime ownership of pure visual evidence, device frame, draft review, and POC validator domain modules",
+  "evidence": "node --test packages/dsh-node-runtime/plugin-domain-migration.test.mjs"
 }
 ```

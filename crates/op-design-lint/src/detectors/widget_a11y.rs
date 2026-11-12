@@ -30,19 +30,20 @@ pub fn detect_insecure_password_inputs(root: &PenNode) -> Vec<Issue> {
 
 fn walk_password_inputs(node: &PenNode, issues: &mut Vec<Issue>) {
     if let PenNode::TextInput(input) = node {
-        let label = input
-            .semantics
-            .as_ref()
-            .and_then(|value| value.label.as_deref());
-        let is_password = [
-            input.base.name.as_deref(),
-            input.placeholder.as_deref(),
-            label,
-        ]
-        .into_iter()
-        .flatten()
-        .any(|value| value.to_lowercase().contains("password") || value.contains("密码"));
-        if is_password && input.secure != Some(true) {
+        let secret_role = input.base.role.as_deref().is_some_and(|role| {
+            matches!(
+                role.trim().to_ascii_lowercase().as_str(),
+                "password" | "password-input" | "secret" | "secret-input"
+            )
+        });
+        let reveal_icon = input.trailing_icon.as_deref().is_some_and(|icon| {
+            matches!(icon.trim().to_ascii_lowercase().as_str(), "eye" | "eye-off")
+        });
+        let masked_sample = [input.placeholder.as_deref(), input.value.as_deref()]
+            .into_iter()
+            .flatten()
+            .any(is_mask_glyph_run);
+        if (secret_role || reveal_icon || masked_sample) && input.secure != Some(true) {
             issues.push(Issue {
                 node_id: node_id(node).to_string(),
                 category: IssueCategory::WidgetA11y,
@@ -57,6 +58,22 @@ fn walk_password_inputs(node: &PenNode, issues: &mut Vec<Issue>) {
     for child in children(node) {
         walk_password_inputs(child, issues);
     }
+}
+
+fn is_mask_glyph_run(text: &str) -> bool {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return false;
+    }
+    let mut glyph_count = 0usize;
+    for ch in trimmed.chars() {
+        if matches!(ch, '•' | '●' | '⚫' | '✱' | '*' | '·') {
+            glyph_count += 1;
+        } else if !ch.is_whitespace() {
+            return false;
+        }
+    }
+    glyph_count >= 4
 }
 
 fn walk_unlabeled_inputs(node: &PenNode, issues: &mut Vec<Issue>) {
@@ -278,16 +295,22 @@ mod tests {
     fn password_inputs_require_secure_entry() {
         let root = node(json!({
             "type": "frame", "id": "root", "children": [
-                {"type": "text_input", "id": "unsafe", "name": "Password"},
-                {"type": "text_input", "id": "safe", "name": "确认密码", "secure": true},
-                {"type": "text_input", "id": "ordinary", "name": "Email"}
+                {"type": "text_input", "id": "unsafe-role", "role": "password", "name": "パスワード"},
+                {"type": "text_input", "id": "unsafe-mask", "name": "Mot de passe", "placeholder": "••••••••"},
+                {"type": "text_input", "id": "unsafe-icon", "name": "비밀번호", "trailingIcon": "eye"},
+                {"type": "text_input", "id": "safe", "role": "password", "placeholder": "••••••••", "secure": true},
+                {"type": "text_input", "id": "ordinary", "name": "Email", "placeholder": "user@example.com"}
             ]
         }));
         let issues = detect_insecure_password_inputs(&root);
-        assert_eq!(issues.len(), 1);
-        assert_eq!(issues[0].node_id, "unsafe");
-        assert_eq!(issues[0].severity, IssueSeverity::Error);
-        assert!(!issues[0].reason.contains("Password"));
+        assert_eq!(
+            issues
+                .iter()
+                .map(|i| i.node_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["unsafe-role", "unsafe-mask", "unsafe-icon"]
+        );
+        assert!(issues.iter().all(|i| i.severity == IssueSeverity::Error));
     }
 
     #[test]

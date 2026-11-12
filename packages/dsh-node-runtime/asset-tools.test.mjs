@@ -100,10 +100,12 @@ test('OP guidance selects from the live catalogue and injects the complete selec
   assert.ok(builtinPreview.swatches.length > 0);
   assert.equal(typeof builtinPreview.summary, 'string');
   assert.equal(JSON.stringify(pending).includes(markdown), false);
-  const canvas = await call(host, 'plan_design_canvas', { userMessage: '你决定', context: '设计手机应用' });
+  const canvas = await call(host, 'plan_design_canvas', { platform: 'mobile', userMessage: 'モバイルアプリ' });
   assert.equal(canvas.isError, false, JSON.stringify(canvas));
   assert.equal(canvas.structuredContent.canvas.platform, 'mobile');
-  const selected = await call(host, 'plan_design_style', { userMessage: '使用 My Brand 风格', taskKind: 'new' });
+  const selected = await call(host, 'plan_design_style', {
+    taskKind: 'new', styleMode: 'explicit', styleId: 'My Brand',
+  });
   assert.equal(selected.structuredContent.guideId, id);
   const prompt = await call(host, 'get_design_agent_prompt', {
     userMessage: '设计一个应用', mode: 'full', styleId: id,

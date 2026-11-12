@@ -25,7 +25,7 @@ test('explicit node updates preserve exact values in direct and script commands'
 
 test('password safety errors remain discoverable after many advisory lint findings', () => {
   const children = Array.from({ length: 60 }, (_, index) => ({ type: 'text_input', id: `input-${index}` }))
-  children.push({ type: 'text_input', id: 'password', name: 'Password' })
+  children.push({ type: 'text_input', id: 'password', role: 'password', name: 'パスワード' })
   const session = new EngineSession({ version: '0.8.5', children: [{ type: 'frame', id: 'root', children }] })
   try {
     const report = session.callTool('lint_document', { severity: 'error' })

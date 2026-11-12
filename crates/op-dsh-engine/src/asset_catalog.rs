@@ -11,15 +11,15 @@ pub fn schemas() -> Vec<Value> {
         ),
         (
             "plan_design_canvas",
-            "Plan a neutral editable canvas from the user's stated device or dimensions.",
-            json!({"userMessage":{"type":"string","minLength":1},"context":{"type":"string"}}),
-            json!(["userMessage"]),
+            "Plan a neutral editable canvas from structured platform or explicit dimensions.",
+            json!({"platform":{"type":"string","enum":["web","mobile"]},"width":{"type":"integer","minimum":240,"maximum":3840},"height":{"type":"integer","minimum":240,"maximum":20000},"userMessage":{"type":"string"},"context":{"type":"string"}}),
+            json!([]),
         ),
         (
             "plan_design_style",
-            "Resolve style selection from the actual user request and document context; list current catalogue choices without changing a document.",
-            json!({"userMessage":{"type":"string","minLength":1},"taskKind":{"type":"string","enum":["new","continue","local","restyle"]},"documentStyleId":{"type":"string","minLength":1},"documentHasStyle":{"type":"boolean"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":100},"query":{"type":"string"},"locale":{"type":"string","enum":["zh","en"]}}),
-            json!(["userMessage","taskKind"]),
+            "Resolve style selection from structured style parameters and document context; list current catalogue choices without changing a document.",
+            json!({"taskKind":{"type":"string","enum":["new","continue","local","restyle"]},"styleMode":{"type":"string","enum":["ask_user","explicit","default","existing","reselect"]},"styleId":{"type":"string","minLength":1},"userMessage":{"type":"string"},"documentStyleId":{"type":"string","minLength":1},"documentHasStyle":{"type":"boolean"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":100},"query":{"type":"string"}}),
+            json!(["taskKind"]),
         ),
         (
             "import_design_md",
