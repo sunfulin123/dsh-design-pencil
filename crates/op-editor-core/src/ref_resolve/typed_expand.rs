@@ -122,10 +122,14 @@ fn remap(
         // the subtree, otherwise the original typed children are kept.
         let mut map = object(&node)?;
         for (key, value) in over {
-            map.insert(key.clone(), value.clone());
+            if value.is_null() {
+                map.remove(key);
+            } else {
+                map.insert(key.clone(), value.clone());
+            }
         }
         node = serde_json::from_value(Value::Object(map)).ok()?;
-        if over.contains_key("children") {
+        if over.contains_key("children") && !over.get("children").is_some_and(Value::is_null) {
             children = take_children(&mut node);
         }
     }

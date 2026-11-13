@@ -184,7 +184,7 @@ function evaluateScreens(plannedScreens, pocScreens, latestReview, stats) {
   for (const screen of declared) {
     const key = screen.toLowerCase()
     const entry = reviewEntries.find(r => isRecord(r) && String(r.name ?? '').trim().toLowerCase() === key)
-    if (entry && typeof entry.omittedReason === 'string' && entry.omittedReason.trim().length >= 8) {
+    if (entry && typeof entry.omittedReason === 'string' && entry.omittedReason.trim().length > 0) {
       omitted.push(screen)
       continue
     }
@@ -205,11 +205,24 @@ function evaluateScreens(plannedScreens, pocScreens, latestReview, stats) {
   for (const screen of requiredPoc) {
     const key = screen.toLowerCase()
     const entry = reviewEntries.find(r => isRecord(r) && String(r.name ?? '').trim().toLowerCase() === key)
-    const omittedOk = isRecord(entry) && typeof entry.omittedReason === 'string' && entry.omittedReason.trim().length >= 8
+    const hasConfirmation = isRecord(entry?.confirmation)
+      && typeof entry.confirmation.questionId === 'string'
+      && entry.confirmation.questionId.trim().startsWith('synapse-design-deviation:')
+    const omittedOk = isRecord(entry)
+      && typeof entry.omittedReason === 'string'
+      && entry.omittedReason.trim().length > 0
+      && hasConfirmation
     const builtNode = isRecord(entry) && typeof entry.nodeId === 'string' ? stats.byId.get(entry.nodeId.trim()) : undefined
-    const mappedOk = isRecord(entry) && nonEmptyScreenContainer(builtNode)
-      && typeof entry.pocScreenshot === 'string' && entry.pocScreenshot.trim().length > 0
-      && typeof entry.differences === 'string' && entry.differences.trim().length >= 8
+    const deviation = isRecord(entry) && typeof entry.deviation === 'string' ? entry.deviation.trim() : ''
+    const hasDiffNote = isRecord(entry) && typeof entry.differences === 'string' && entry.differences.trim().length > 0
+    const validDeviation = deviation === 'none'
+      || (deviation === 'minor' && hasDiffNote)
+      || (deviation === 'substantive' && hasDiffNote && hasConfirmation)
+    const mappedOk = isRecord(entry)
+      && nonEmptyScreenContainer(builtNode)
+      && typeof entry.pocScreenshot === 'string'
+      && entry.pocScreenshot.trim().length > 0
+      && validDeviation
     if (omittedOk || mappedOk) mappedPoc.push(screen)
     else missingPoc.push(screen)
   }

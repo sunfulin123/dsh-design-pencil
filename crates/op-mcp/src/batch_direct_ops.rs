@@ -80,7 +80,7 @@ fn parse_update_operation(body: &str) -> Result<EditorCommand> {
     let node_id = NodeId::new(&parse_ref_token(body[..comma].trim())?);
     let mut value: serde_json::Value = serde_json::from_str(body[comma + 1..].trim())
         .map_err(|e| ProgramError::Json(format!("invalid U JSON: {e}")))?;
-    normalize_node_shape(&mut value);
+    super::batch_design::normalize_patch_shape(&mut value);
     update_command_from_value(node_id, &value)
 }
 

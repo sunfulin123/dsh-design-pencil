@@ -40,7 +40,7 @@
     "crates/op-editor-core/src/collab_gate.rs": 504,
     "crates/op-editor-core/src/command_apply.rs": 717,
     "crates/op-editor-core/src/command_layout_prop.rs": 556,
-    "crates/op-editor-core/src/command_node/state_ops.rs": 573,
+    "crates/op-editor-core/src/command_node/state_ops.rs": 549,
     "crates/op-editor-core/src/command_node_attrs/semantics_ops.rs": 798,
     "crates/op-editor-core/src/command_node_attrs/state_ops.rs": 586,
     "crates/op-editor-core/src/command_refine.rs": 687,
@@ -229,7 +229,7 @@
     "crates/op-preview-core/src/debug_trace.rs": 666,
     "crates/op-preview-core/src/motion.rs": 691,
     "crates/op-preview-core/src/session_paint.rs": 606,
-    "packages/dsh-node-runtime/engine-session.mjs": 1233,
+    "packages/dsh-node-runtime/engine-session.mjs": 1226,
     "packages/dsh-node-runtime/figma-import-jobs.mjs": 577,
     "packages/op-chrome-extension/design-capture.js": 599,
     "packages/scripts/sync-version.mjs": 502

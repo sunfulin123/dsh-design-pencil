@@ -49,12 +49,18 @@ pub(crate) fn execute_copy(binding: &str, args: &str, ctx: &mut ProgramCtx) -> R
             "C() overrides JSON must be an object".into(),
         ));
     };
+    let explicit_x = overrides.contains_key("x");
+    let explicit_y = overrides.contains_key("y");
     if let Some(obj) = cloned_value.as_object_mut() {
         for (key, value) in overrides {
             if key == "id" || key == "descendants" {
                 continue;
             }
-            obj.insert(key.clone(), value.clone());
+            if value.is_null() {
+                obj.remove(key);
+            } else {
+                obj.insert(key.clone(), value.clone());
+            }
         }
     }
     normalize_node_shape(&mut cloned_value);
@@ -62,6 +68,11 @@ pub(crate) fn execute_copy(binding: &str, args: &str, ctx: &mut ProgramCtx) -> R
         ProgramError::InvalidNode(format!("C() overrides produce an invalid node: {e}"))
     })?;
     let parent = resolve_parent_ref(parent_raw, &ctx.bindings);
+    if parent.is_none() && !explicit_x && !explicit_y {
+        node.base_mut().x = None;
+        node.base_mut().y = None;
+        super::batch_program_placement::auto_place_root_frame(&mut node, ctx);
+    }
     if ctx.post_process {
         if parent.is_none() {
             let _ = op_editor_core::command_refine::refine_subtree(&mut node);
@@ -82,7 +93,7 @@ pub(crate) fn execute_copy(binding: &str, args: &str, ctx: &mut ProgramCtx) -> R
         .map(|(_, new)| new.clone())
         .ok_or(ProgramError::ProducedNoNode("Copy"))?;
     ctx.emit(
-        EditorCommand::InsertAuthoredSubtree {
+        EditorCommand::InsertAuthoredSubtreePreservingRoots {
             nodes,
             parent_id: parent_node_id(parent.as_deref()),
             page_id: ctx.page_id.clone(),

@@ -33,9 +33,15 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 
 ## 浏览器绘制但 DOM 不含的部分要额外采集
 
-- canvas/WebGL/video：Chrome 以 `--use-angle=swiftshader --enable-unsafe-swiftshader`
-  启动（[chrome-cdp.mjs](../../packages/dsh-node-runtime/chrome-cdp.mjs)），否则 headless WebGL
-  不出图；像素用 CDP 截图按元素隔离截取并替换占位图（数量/尺寸/字节有上限）。
+- canvas/WebGL/video：非 macOS 环境（或显式开启 `OPENPENCIL_FORCE_SWIFTSHADER=1`）下 Chrome 以
+  `--use-angle=swiftshader --enable-unsafe-swiftshader` 启动，macOS 直接走原生 Metal ANGLE 以避免
+  SwiftShader 阻塞 `Page.enable`，默认保持系统沙箱开启（`OPENPENCIL_CHROME_NO_SANDBOX=1` 显式关闭，或检测到外层系统沙箱如 macOS Seatbelt
+  导致 Chromium 子进程报告 `Failed to initialize sandbox` / `sandbox initialization failed` 时自动回退 `--no-sandbox` 重启并通过
+  `Runtime.evaluate` 探针确认渲染进程就绪），
+  并以不小于 `800×600` 的底层窗口配合 CDP 视口覆盖与 `clip` 规避
+  macOS 500px 最小窗口宽度限制（[chrome-cdp.mjs](../../packages/dsh-node-runtime/chrome-cdp.mjs)，启动等待按 `timeoutMs`
+  分配并在首次启动失败时换新临时 profile 重试一次，错误附带 Chrome `stderr` 尾部，且关闭与 `SIGTERM`/`SIGINT`/进程退出均按进程组清理全部 Chrome helper 子进程与临时目录）；
+  像素用 CDP 截图按元素隔离截取并替换占位图（数量/尺寸/字节有上限）。
   `toDataURL` 在没有 `preserveDrawingBuffer` 时只会拿到空白。
 - 原生控件：Node 侧附加 `control` 记录，按 tag + rect 匹配回快照节点
   （[html-snapshot-augment.mjs](../../packages/dsh-node-runtime/html-snapshot-augment.mjs)），
@@ -66,12 +72,12 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 {
   "version": 1,
   "status": "verified",
-  "task_id": "b04ae5d2-cd8b-40f0-9761-bd78abf26477",
-  "verified_at": "2026-11-11T03:46:18.427696+00:00",
+  "task_id": "bf5c658f-654d-4a2c-9f83-76230be5a0b4",
+  "verified_at": "2026-11-13T05:58:37.654683+00:00",
   "sources": {
     "packages/dsh-node-runtime/html-import-tool.mjs": "42ab3b44fcadc6669d64a4c2382218b3daa2f3a3cb3b617842fd36cb7e9feb69",
     "packages/dsh-node-runtime/html-browser-capture.mjs": "d794de1e13082e19e77c9f50970e1e06edc629815e167ceeaa4971868e787a81",
-    "packages/dsh-node-runtime/chrome-cdp.mjs": "bce158c09d04abd90007dc7ff65091b896b56c340206a2b97de5c2df380f05c8",
+    "packages/dsh-node-runtime/chrome-cdp.mjs": "848fd7514fe6ec07f8440e9606b7b1194c17dfff1cefcddbba9922157b6fd233",
     "packages/dsh-node-runtime/html-snapshot-augment.mjs": "50012369534a256d887cd006487e3072100c9f86f785000919527b9d7dd176f0",
     "packages/dsh-node-runtime/html-fidelity.mjs": "55c6c80512f3258d5ec0d81168dc6bd3b548145b325fb632254cdbc0f0c8b097",
     "packages/dsh-node-runtime/html-fonts.mjs": "b52f5b6b2b43c5fddb1b884429df3ae996f0d55df596370eeb824a25c3b0c679",
@@ -83,7 +89,7 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
     "crates/op-pen-loader/src/authored_geometry.rs": "64d1cb457ef5c4aab8d386811ebad6b7eb070d70f9df85571be1c40cb88b9a8d",
     "crates/op-editor-ui/src/widgets/canvas_viewport_layer_bounds.rs": "57cd63c964627896ded9c66cb5a8dd2a22918cd7086a6b2c13225c0721a1c408"
   },
-  "reason": "The engine entry registers reuse quality analysis and tests; HTML import and authored geometry handling are unchanged.",
-  "evidence": "Reviewed the lib.rs diff and the authored-import commit path; the engine test suite passed."
+  "reason": "Documented automatic nested OS sandbox (macOS Seatbelt) detection and --no-sandbox fallback with Runtime.evaluate renderer readiness verification in chrome-cdp.mjs.",
+  "evidence": "DSH_VERIFY_FINGERPRINT=1 DSH_E2E_CHROME=1 node --test --test-concurrency=1 packages/dsh-node-runtime/*.test.mjs (273 passed, 0 failed, including real sandbox-exec Seatbelt E2E test on Chrome and Edge)"
 }
 ```

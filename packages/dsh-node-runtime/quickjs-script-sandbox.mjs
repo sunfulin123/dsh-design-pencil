@@ -29,7 +29,18 @@ function evaluate(context, source) {
   result.value.dispose();
 }
 
-export function runIsolatedDesignScript(prelude, script, callbacks, preserveAuthoredGeometry) {
+export function runIsolatedDesignScript(prelude, script, callbacks, options = {}) {
+  const normalizedOptions =
+    typeof options === 'boolean' ? { preserveAuthoredGeometry: options } : (options ?? {});
+  const preserveAuthoredGeometry = Boolean(normalizedOptions.preserveAuthoredGeometry);
+  const defaultFontFamily =
+    typeof normalizedOptions.defaultFontFamily === 'string' && normalizedOptions.defaultFontFamily.trim()
+      ? normalizedOptions.defaultFontFamily.trim()
+      : '';
+  const headingFontFamily =
+    typeof normalizedOptions.headingFontFamily === 'string' && normalizedOptions.headingFontFamily.trim()
+      ? normalizedOptions.headingFontFamily.trim()
+      : '';
   const runtime = quickJS.newRuntime();
   runtime.setMemoryLimit(MEMORY_LIMIT);
   runtime.setMaxStackSize(STACK_LIMIT);
@@ -39,6 +50,12 @@ export function runIsolatedDesignScript(prelude, script, callbacks, preserveAuth
   try {
     context.setProp(context.global, '__preserveAuthoredGeometry',
       preserveAuthoredGeometry ? context.true : context.false);
+    const defaultFontHandle = context.newString(defaultFontFamily);
+    context.setProp(context.global, '__defaultFontFamily', defaultFontHandle);
+    defaultFontHandle.dispose();
+    const headingFontHandle = context.newString(headingFontFamily);
+    context.setProp(context.global, '__headingFontFamily', headingFontHandle);
+    headingFontHandle.dispose();
     for (const [name, callback] of Object.entries(callbacks)) {
       const fn = context.newFunction(name, (...handles) => {
         const result = callback(...handles.map((handle) => readArgument(context, handle)));
@@ -48,7 +65,7 @@ export function runIsolatedDesignScript(prelude, script, callbacks, preserveAuth
       fn.dispose();
     }
     evaluate(context, prelude);
-    evaluate(context, `for (const name of ['I', 'K']) Object.defineProperty(globalThis, name, { writable: false, configurable: false });`);
+    evaluate(context, `for (const name of ['I', 'K', 'C', 'R']) Object.defineProperty(globalThis, name, { writable: false, configurable: false });`);
     evaluate(context, `'use strict';\n${script}`);
   } finally {
     context.dispose();

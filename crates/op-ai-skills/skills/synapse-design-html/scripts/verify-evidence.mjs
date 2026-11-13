@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { collectEvidenceFiles } from './verify-source.mjs';
 
 const CONTENT_STATES = ['loading', 'empty', 'error', 'partial', 'success', 'permission'];
+const ACTION_KINDS = ['verifiable', 'visual-only', 'not-implemented'];
 
 export function checkEvidenceLedger(report, reportDir) {
   const errors = [];
@@ -39,12 +40,18 @@ export function checkEvidenceLedger(report, reportDir) {
     } catch (error) { errors.push(`Cannot verify source inventory: ${error.message}`); }
   }
 
+  // `unverified` is an honest result: a check proves only what it covered, so
+  // the ledger accepts it with a statement of what was not checked.
+  const honestlyUnverified = item => isObj(item) && item.status === 'unverified' && nonEmptyText(item.uncovered);
+
   for (const vp of targets) {
     const match = renders.find(r => isObj(r) && String(r.viewport).trim().toLowerCase() === String(vp).trim().toLowerCase());
     if (!match) {
       errors.push(`renderedEvidence is missing target viewport ${vp}`);
+    } else if (honestlyUnverified(match)) {
+      continue;
     } else if (match.status !== 'captured' || !nonEmptyText(match.artifact)) {
-      errors.push(`renderedEvidence for ${vp} must name a captured artifact`);
+      errors.push(`renderedEvidence for ${vp} must name a captured artifact or status="unverified" + uncovered`);
     } else if (reportDir) {
       const fullArtifact = path.resolve(reportDir, match.artifact);
       if (!fs.existsSync(fullArtifact) || fs.statSync(fullArtifact).size === 0) {
@@ -66,8 +73,9 @@ export function checkEvidenceLedger(report, reportDir) {
 
   for (const key of ['accessibility', 'responsive', 'visualReview']) {
     const item = report[key];
-    if (!isObj(item) || item.status !== 'pass' || !nonEmptyText(item.evidence)) {
-      errors.push(`${key} requires status="pass" and a non-empty evidence observation`);
+    const validPass = isObj(item) && item.status === 'pass' && nonEmptyText(item.evidence);
+    if (!validPass && !honestlyUnverified(item)) {
+      errors.push(`${key} requires status="pass" + the observed evidence OR status="unverified" + uncovered (what was not checked)`);
     }
   }
 
@@ -75,8 +83,20 @@ export function checkEvidenceLedger(report, reportDir) {
     const st = report.contentStates?.[state];
     const validPass = isObj(st) && st.status === 'pass' && nonEmptyText(st.evidence);
     const validNA = isObj(st) && st.status === 'not-applicable' && nonEmptyText(st.reason);
-    if (!validPass && !validNA) {
-      errors.push(`contentStates.${state} requires status="pass" + evidence OR status="not-applicable" + reason`);
+    if (!validPass && !validNA && !honestlyUnverified(st)) {
+      errors.push(`contentStates.${state} requires status="pass" + evidence, status="not-applicable" + reason, OR status="unverified" + uncovered`);
+    }
+  }
+
+  if (!Array.isArray(report.actions)) {
+    errors.push(`actions must list each primary action as ${ACTION_KINDS.join(', ')} ([] states that the prototype has no actions)`);
+  } else {
+    for (const action of report.actions) {
+      if (!isObj(action) || !nonEmptyText(action.label) || !ACTION_KINDS.includes(action.kind)) {
+        errors.push(`actions entries require a label and kind (${ACTION_KINDS.join(', ')})`);
+      } else if (action.kind === 'verifiable' && !nonEmptyText(action.evidence)) {
+        errors.push(`action "${action.label}" is verifiable and requires evidence of the observed result; a "not available" notice makes it not-implemented`);
+      }
     }
   }
 

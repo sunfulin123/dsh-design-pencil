@@ -55,20 +55,21 @@ impl McpTool for GetDesignAgentPrompt {
         let Some(prompt) = synapse_op_design::prompt(mode, screenshots) else {
             return ToolOutcome::Err(
                 ToolErrorCode::InvalidArgument,
-                "mode must be bootstrap, local or full".into(),
+                format!(
+                    "mode must be bootstrap, local, full or one of {}",
+                    synapse_op_design::STAGE_MODES.join(", ")
+                ),
             );
         };
         let result = serde_json::json!({
             "version": synapse_op_design::VERSION,
             "prompt": prompt,
             "verifyProtocol": verify_name,
-            "resources": [
-                "op-design-build",
-                "op-design-direction",
-                "op-design-composition",
-                "op-design-review",
-                "op-design-judgement"
-            ],
+            "mode": mode,
+            "resources": synapse_op_design::RESOURCES
+                .iter()
+                .filter(|id| **id != "op-design")
+                .collect::<Vec<_>>(),
         });
         ToolOutcome::OkJson(result.to_string())
     }
@@ -105,6 +106,21 @@ mod tests {
         let resources = value["resources"].as_array().expect("resources list");
         assert!(resources.iter().any(|r| r == "op-design-build"));
         assert!(resources.iter().any(|r| r == "op-design-judgement"));
+        assert!(resources.iter().any(|r| r == "op-design-feedback"));
+        assert!(!resources.iter().any(|r| r == "op-design"));
+        assert_eq!(value["mode"], "full");
+
+        let staged = BTreeMap::from([
+            ("userMessage".to_string(), "Review the draft".to_string()),
+            ("mode".to_string(), "review".to_string()),
+        ]);
+        let ToolOutcome::OkJson(json) = get_design_agent_prompt_snapshot().call(&staged) else {
+            panic!("expected staged prompt result");
+        };
+        let staged: serde_json::Value = serde_json::from_str(&json).expect("prompt JSON");
+        let review = staged["prompt"].as_str().unwrap();
+        assert!(review.contains("Completeness before appearance"));
+        assert!(!review.contains("three-layer context funnel"));
     }
 
     #[test]

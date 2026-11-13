@@ -163,11 +163,20 @@ impl EditorState {
         if !node_id.is_real() {
             return false;
         }
-        let Ok(serde_json::Value::Object(patch)) =
+        let Ok(serde_json::Value::Object(raw_patch)) =
             serde_json::from_str::<serde_json::Value>(patch_json)
         else {
             return false;
         };
+        let Some((resolved_id, patch)) = super::patch_merge::resolve_patch_target(
+            self.active_children(),
+            &self.doc,
+            node_id,
+            raw_patch,
+        ) else {
+            return false;
+        };
+        let node_id = &resolved_id;
         let replaces_structure = ["children", "id", "type"]
             .iter()
             .any(|key| patch.contains_key(*key));
@@ -221,44 +230,11 @@ impl EditorState {
         if outer_patch.is_empty() && text_patch.is_empty() {
             return false;
         }
-        let mut replacement = current.clone();
-        if !outer_patch.is_empty() {
-            let Ok(mut value) = serde_json::to_value(current) else {
-                return false;
-            };
-            let Some(obj) = value.as_object_mut() else {
-                return false;
-            };
-            for (key, val) in outer_patch {
-                obj.insert(key, val);
-            }
-            let Ok(candidate) = serde_json::from_value::<PenNode>(value) else {
-                return false;
-            };
-            if candidate.id_str().is_empty() {
-                return false;
-            }
-            replacement = candidate;
-        }
-        if !text_patch.is_empty() {
-            let Some(inner) = crate::command_node_attrs::resolve_text_node_mut(&mut replacement)
-            else {
-                return false;
-            };
-            let Ok(mut value) = serde_json::to_value(&*inner) else {
-                return false;
-            };
-            let Some(obj) = value.as_object_mut() else {
-                return false;
-            };
-            for (key, val) in text_patch {
-                obj.insert(key, val);
-            }
-            let Ok(candidate) = serde_json::from_value(value) else {
-                return false;
-            };
-            *inner = candidate;
-        }
+        let Some(replacement) =
+            super::patch_merge::build_patched_replacement(current, outer_patch, text_patch)
+        else {
+            return false;
+        };
         let mut taken = self.collect_node_ids();
         let mut old_ids = HashSet::new();
         walkers::collect_ids(std::slice::from_ref(current), &mut old_ids);

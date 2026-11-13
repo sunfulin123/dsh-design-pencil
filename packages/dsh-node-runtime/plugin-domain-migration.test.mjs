@@ -43,6 +43,7 @@ import {
   groupPocScreens,
   parseAndValidateEvidenceLedgerJson,
   parsePocScreenshotInputs,
+  verifyPlannedScreensCovered,
 } from './poc-evidence-validator.mjs';
 import {
   allowedRuntimeTool,
@@ -193,6 +194,7 @@ test('draft contract, quality pagination, review receipt, and POC ledger validat
         accessibility: { status: 'pass', evidence: 'ok' },
         responsive: { status: 'pass', evidence: 'ok' },
         visualReview: { status: 'pass', evidence: 'ok' },
+        actions: [],
         contentStates: Object.fromEntries(
           ['loading', 'empty', 'error', 'partial', 'success', 'permission'].map((s) => [
             s,
@@ -204,6 +206,57 @@ test('draft contract, quality pagination, review receipt, and POC ledger validat
   );
   assert.equal(validLedger.requiredRenders.length, 1);
   assert.equal(validLedger.sourceEntries.length, 1);
+  assert.deepEqual(validLedger.unverified, []);
+  assert.deepEqual(validLedger.actions, []);
+  const ledgerWith = (extra) => Buffer.from(JSON.stringify({
+    targetViewports: ['1440px'],
+    renderedEvidence: [{ viewport: '1440px', status: 'captured', artifact: 'shot.png', sha256: 'a'.repeat(64) }],
+    sourceFiles: [{ path: 'index.html', sha256: 'b'.repeat(64) }],
+    accessibility: { status: 'pass', evidence: 'ok' },
+    responsive: { status: 'pass', evidence: 'ok' },
+    visualReview: { status: 'pass', evidence: 'ok' },
+    actions: [],
+    contentStates: Object.fromEntries(
+      ['loading', 'empty', 'error', 'partial', 'success', 'permission'].map((s) => [s, { status: 'not-applicable', reason: 'fixture' }]),
+    ),
+    ...extra,
+  }));
+  const honestLedger = parseAndValidateEvidenceLedgerJson(ledgerWith({
+    accessibility: { status: 'unverified', uncovered: 'Only tab order was exercised.' },
+    actions: [{ screen: 'Home', label: 'Export', kind: 'not-implemented' }],
+  }));
+  assert.deepEqual(honestLedger.unverified, [{ check: 'accessibility', uncovered: 'Only tab order was exercised.' }]);
+  assert.deepEqual(honestLedger.actions, [{ label: 'Export', kind: 'not-implemented', screen: 'Home' }]);
+  assert.throws(() => parseAndValidateEvidenceLedgerJson(ledgerWith({ accessibility: { status: 'unverified' } })), /accessibility requires/);
+  assert.throws(() => parseAndValidateEvidenceLedgerJson(ledgerWith({ actions: undefined })), /actions must list/);
+  assert.throws(
+    () => parseAndValidateEvidenceLedgerJson(ledgerWith({ actions: [{ label: 'Export', kind: 'verifiable' }] })),
+    /requires evidence of the result observed/,
+  );
+
+  // Degraded browser capture: renderedEvidence with status="unverified" + uncovered is accepted and surfaced in unverified.
+  const degradedLedger = parseAndValidateEvidenceLedgerJson(
+    ledgerWith({
+      renderedEvidence: [{ viewport: '1440px', status: 'unverified', uncovered: 'Chromium timed out after retry' }],
+      visualReview: { status: 'unverified', uncovered: 'No fresh screenshot due to Chromium timeout' },
+    }),
+  );
+  assert.deepEqual(degradedLedger.requiredRenders, []);
+  assert.ok(
+    degradedLedger.unverified.some(
+      (item) => item.check === 'renderedEvidence.1440px' && /Chromium timed out/.test(item.uncovered),
+    ),
+  );
+  assert.throws(
+    () => parseAndValidateEvidenceLedgerJson(ledgerWith({ renderedEvidence: [{ viewport: '1440px', status: 'unverified' }] })),
+    /renderedEvidence/,
+  );
+  assert.deepEqual(parsePocScreenshotInputs([]), []);
+  assert.doesNotThrow(() => verifyPlannedScreensCovered([], [{ name: 'Home' }]));
+  assert.throws(
+    () => verifyPlannedScreensCovered([{ screen: 'Home' }], [{ name: 'Home' }, { name: 'Settings' }]),
+    /Settings/,
+  );
 });
 
 test('managed-mcp-client parses envelopes, skill metadata, capabilities, and blank-document state', () => {
@@ -216,8 +269,8 @@ test('managed-mcp-client parses envelopes, skill metadata, capabilities, and bla
     undefined,
   );
   assert.equal(
-    runtimeSkillVersion('---\nname: synapse-design\nmetadata:\n  version: synapse-design/2\n---\n'),
-    'synapse-design/2',
+    runtimeSkillVersion('---\nname: synapse-design\nmetadata:\n  version: synapse-design/3\n---\n'),
+    'synapse-design/3',
   );
   assert.equal(
     runtimeSkillDescription('---\nname: synapse-design\ndescription: "Clean skill"\n---\n'),

@@ -34,7 +34,7 @@ Node 展开的脚本对父容器启用严格校验：引用不存在的父节点
 包含变量或主题前置操作的脚本先在隔离引擎中预检，失败不能留下变量或文档改动。
 对已有节点的 [update_node](../../packages/dsh-node-runtime/engine-session.mjs) 与
 [脚本 U](../../packages/dsh-node-runtime/script-prelude.mjs) 写入必须保留传入的精确数值；
-只对新节点沿用现有审美尺度归一化，不能把精确修复再次吸附到相邻间距。
+只对新节点沿用现有审美尺度归一化（并在绑定 `DESIGN.md` 时为 `I()`/`R()` 未显式指定 `fontFamily` 的新文本节点含嵌套 `children` 自动写入规范标题/正文字体），不能把精确修复再次吸附到相邻间距。QuickJS 脚本支持 `I()`、`K()`、`C()`、`R()`、`M()`、`D()` 与 `U()`：顶层画板未传 `x`/`y` 时自动向右排布（`reusable:true` 主组件排在画板上方独立行），`U(ref, {descendants})` 按子节点字段深度合并覆盖而非整表替换，`U("inst__child", patch)` 可直接寻址展开实例子节点，`stroke: null` 清除描边并支持单边描边归一化，`visible: false` 子节点不占 flex 布局空间与间距；显式固定视口（`fixedViewport` 带 `clipContent:true`）根画板保持声明高度而不随字形微差膨胀，未开启 `clipContent` 的根画板仍随溢出内容自动增高以避免裁切。
 传统 operations DSL 不启用严格选项时仍保留原有的根节点回退兼容行为。
 `batch_design` 向已存在的非容器节点插入时会拒绝并指出父节点 ID；失败不会提交部分结果。
 [控件 lint](../../crates/op-design-lint/src/detectors/widget_a11y.rs) 将声明密码/密钥 `role`、掩码字符占位或
@@ -131,19 +131,28 @@ user id 不由名称推导，同名导入不会覆盖旧资产。更新/删除�
 目录的 `contentHash` 基于完整 Markdown，用于确认选择后检测正文变化；内置应用场景分类来自同一风格清单。
 OP 设计 skill 与按需资料位于 `op-ai-skills`；`plan_design_style`（消费结构化 `styleMode` / `styleId`）与资产 UI 共享目录和
 revision，`plan_design_canvas` 消费结构化 `platform` 与宽高参数，主机可通过 `get_design_agent_prompt` 按 id 注入完整原文（`full` 模式同时内联
-`op-design-build` 与 `op-design-judgement`，两者也可由 `get_design_prompt` 单独读取；`web-app`
-指南不再拼入带营销页字号与色值的 `design-principles`）。过期 revision 拒绝
+`op-design-build` 与 `op-design-judgement`；`plan`、`build`、`review`、`revise`、`deliver` 只返回该阶段的指导且不重复 Skill 正文，
+`includeStyle:false` 只校验风格 revision 而不再拼入风格正文；`op-design-craft`、`op-design-feedback` 等分区可由
+`get_design_prompt` 单独读取；`web-app` 指南不再拼入带营销页字号与色值的 `design-principles`）。
+受管宿主的 `get_design_quality` 追加 `fontResolution`：在当前活动页或 `rootId` 作用域内（展开 `ref` 实例引用的主组件字体）逐个文字字面比较指定字族字重与渲染器已注册的字面
+（随包字体与宿主字体缓存），未注册的字族只有在截图机器装有该字体时才会被画出；直接 MCP 下显式传布尔 `fetchFonts:true` 才会联网下载（受超时约束，隔离草稿上下文禁止传 `fetchFonts`）。
+引擎的质量结果含 `contentIssues`（阻断）与 `spacingLeads`（纵向容器下同级分组标题缩进/间距、小尺寸角标贴边，仅作线索）。过期 revision 拒绝
 组装，不能仅用目录摘要替代风格正文。无文档时可在隔离 host 查询，但用户资产目录必须
 与真实宿主一致。`get_design_capabilities` 使用实际 schema，未知或外部操作默认 sensitive。
 统一设计 Skill 和 HTML POC Skill 均随运行时分发；后者的截图脚本、共享 `judgement.md` 及引用资料也是必需文件。
 运行时同时分发无宿主耦合的设计领域模块（`selection-visual-evidence.mjs`、`png-rgba-codec.mjs`、
-`device-frame.mjs`、`design-code-context.mjs`、`draft-canvas-contract.mjs`、`draft-quality-gate.mjs`、
-`draft-review-gate.mjs`、`poc-evidence-validator.mjs`、`managed-mcp-client.mjs`、`managed-daemon-client.mjs`）；
+`device-frame.mjs`、`design-code-context.mjs`、`design-discovery-gate.mjs`、`draft-canvas-contract.mjs`、`draft-quality-gate.mjs`、
+`draft-review-gate.mjs`、`draft-review-checks.mjs`、`poc-evidence-validator.mjs`、`font-resolution.mjs`、
+`design-workflow-text.mjs`、`design-tool-text.mjs`、`managed-mcp-client.mjs`、`managed-daemon-client.mjs`）；
+后两个文本模块是面向模型措辞的唯一来源，宿主按版本号校验后读取，版本不符即拒绝加载；
 这些模块保持无顶层 `await`（按需动态加载 `engine-session.mjs`），以支持 Node >= 24 宿主通过 `createRequire` 同步桥接，
 且 `canvaskit-scene-env.mjs` 同时兼容源码目录 `./web-bundle` 与发布目录 `./bin/web-bundle`。
 离线评分脚本 [eval-synapse-design](../../scripts/eval-synapse-design.mjs) 可对企业列表、聊天界面、
 POC 转高保真三类样例的调用轨迹和生成文档统计步骤完成度、关联 `ref`、变量绑定占比、阻断 lint、
 临界点击目标及 POC 页面映射。
+[eval-synapse-acceptance](../../scripts/eval-synapse-acceptance.mjs) 定义新设计、含已知缺陷、模糊修改意见三类验收场景，
+并离线检查生产引擎能否指出含缺陷样例中每个缺陷所在的节点；实际模型输出仍需人工阅读。
+字形墨迹诊断是测量结果而非指令：与同级上下堆叠的文字以自身文本框为参照，不以父容器中心为参照。
 最终用户确认的风格正文以目录读取结果为准；POC 交接记录并再次校验文件和风格指纹，
 文件指纹本身不能证明截图内容或实际视觉质量。
 HTML Skill 的迁移清单记录源文件、摘要和风格排除项；`resolve-theme.mjs` 校验任务目录中
@@ -180,8 +189,8 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 {
   "version": 1,
   "status": "verified",
-  "task_id": "3be8f564-270a-4d24-81d1-e1d18920c6d2",
-  "verified_at": "2026-11-12T09:57:30.371476+00:00",
+  "task_id": "ef08f5ab-a364-4926-ad54-cb375445f031",
+  "verified_at": "2026-11-13T06:58:38.674069+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -189,25 +198,25 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-dsh-engine/src/tool_catalog.rs": "2453cce3b0c9f8c336fd92bc6397f2653272e2ae21c76b528063ab4a6e033785",
     "crates/op-dsh-engine/src/lib.rs": "3610d050386b7a649db82f2a0701c3e10077b51f488e1f92c6bb07f9de487ddf",
     "crates/op-mcp/Cargo.toml": "1d260158e5a08f8287175910ab205e2a7fd9abc3a15a780abbcd20e6b635e2bd",
-    "crates/op-mcp/src/batch_design.rs": "dec04c3a39db844599d5b13fc0352814662dbaff97323152fc0b59220a417199",
+    "crates/op-mcp/src/batch_design.rs": "76fcf2e9dd71d83265b71be440df951228b94e43a719c9b74feda3661883e8a4",
     "crates/op-mcp/src/batch_design_wire.rs": "c8d207b5b12df9dd4265d86d27eaff5f84e678fd8be8b61e52ba158321139bf6",
     "crates/op-mcp/src/batch_design_wire_error.rs": "5d6cd20c06623d5df2d9af63e950a0b9620be66360a12e5f14a6cafe9eeda565",
-    "packages/dsh-node-runtime/engine-session.mjs": "aba6edd0d9a44f8a642fe7eae2ed08f4e070df1b7a56c976ea7154380387c213",
-    "packages/dsh-node-runtime/script-expansion.mjs": "7543df99a007a5f036aa5f86009b0b96aca0b59a5b91a317eb91aa470bfe2dd3",
-    "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "2af27e544f9042e11b2bd6ac1f17a498ac4fb98252db40cb77d98602d375853d",
+    "packages/dsh-node-runtime/engine-session.mjs": "769400e8332e1e4b268858402a2e709de111aca84636ab689e3f4bcbc1fe7086",
+    "packages/dsh-node-runtime/script-expansion.mjs": "38b6c412741da72b277cd8a0193cfba70f248430ff62b87d1e313e759a479d23",
+    "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "377168e3785ac2323fe54122c1511936c8476f15c35fa5639e4374880f7cdc4c",
+    "packages/bun.lock": "42fe41837c9683c3a5477fa0d2c2567ab2ef3a9bbf9d1a91fffb749f1c1c599e",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
     "packages/dsh-node-runtime/host-http.mjs": "43d6a480c630a30e78205e489058c02c8081ee1e6f8c835f7940cf3d65d3eca9",
-    "packages/dsh-node-runtime/host-render-tools.mjs": "5b2c35117471753aff5c55a8121c227a8e573c90b5137e19f53d1496b2614b63",
+    "packages/dsh-node-runtime/host-render-tools.mjs": "a7ccb2d2689e4920c8a76d9e044399b5a2dd5337181322c98945bc088f1d14b7",
     "packages/dsh-node-runtime/node-host.mjs": "e6f04fb8b2db3bbd61ff6f69bb67bfe4b7fc8db140b88c8bd6bbe1b16dd3243a",
     "packages/dsh-node-runtime/asset-store.mjs": "b6c5a3a2d9b284e6399cc0cb8942d3973982c45c300d2f92092c35385114ef68",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "packages/dsh-node-runtime/asset-directory.test.mjs": "db59adb6bc09e94d512c86d91bb78ad58a0ec7a176cddffd0eb18917c2f515a0",
-    "packages/dsh-node-runtime/asset-tools.mjs": "5aef23a27f2165cda16647908a140e24c84f3653f03ec1601655fb1bc2fcbc80",
+    "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
     "packages/dsh-node-runtime/editor-control.mjs": "8fb0da89f7e860384a4e3ff4f935446295dc0877ddbe93c403834d3cd50b0d09",
     "packages/dsh-node-runtime/asset-browser.test.mjs": "8f6db793c69a259589e49618c3125902f7fc911bd945110a99ab14594952138d",
     "crates/op-host-web/src/managed_assets_sync.rs": "a4e4b0beeadd128ca933ccaa37b3d53984ce7a5311ad85664e43e99d6be316ec",
@@ -216,25 +225,25 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-editor-core/src/variables_resolve/evaluation.rs": "63949c106e12b274f5f7a095f30a58e531ca4d520a4dc077dc0708313edd89ac",
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
-    "crates/op-ai-skills/src/synapse_op_design.rs": "e9a955465bfc006e5c258aec6b356f672815b683f29db771c960e98c637892b1",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "aee9478d50cc63ee3ae77782e518e507960b748060bffb29f8e2aa79ecdc59fb",
-    "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "2a307331d4d48508b488e35c9c7bdf4b8501e7842b223674112e2318f4a8c972",
+    "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "531d51a07f79ba87e0a6a9cf3dadfeab2c4a69b7e3c502f00b1b92dfd08475f3",
+    "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
-    "crates/op-mcp/src/design_agent_prompt_tool.rs": "67966b9a8b3c7bea78d29b653f8036471d931d6d2cc4a43068b9f54e990db564",
+    "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
-    "packages/dsh-node-runtime/design-canvas-plan.mjs": "393ca86904976d925304aba36906f8f5831ce6db18167fa057e69f049344381b",
+    "packages/dsh-node-runtime/design-canvas-plan.mjs": "677299d1011b953f99363c542981d7dfc98a7a6feb3d890e48e479bfa550a41e",
     "packages/dsh-node-runtime/design-tool-capabilities.mjs": "9670bbe2356f9b4d0b5d091b97cd1dbaad2650b8ba477b18e5c9c73d829d7e3a",
     "scripts/stage-dsh-runtime.mjs": "0920c3a65f0926e554b1d4f80426e667edef70a0e872c74a6370bf9ae9f40dc5",
     "crates/op-mcp/src/design_md_tools.rs": "3c64ae93c0342d6e553390057b876b8f1359e1651edd7930330342c131ee4fca",
     "crates/op-dsh-engine/src/library_tools.rs": "51d6b1361b6cffe37480b339dff1d7548f73c7e0ad31558479504cc47d67be37",
-    "crates/op-dsh-engine/src/quality_tools.rs": "1095a19f8c89efef6e8ee0bb0f6951b7c68d08992e90572db801bc0e186390de",
+    "crates/op-dsh-engine/src/quality_tools.rs": "3cae4bf76ec15f74b8e7748d556d7588fbc464445bb3fea53caaff33b35549d5",
     "crates/op-dsh-engine/src/touch_target_quality.rs": "39e1373caecefb8aef60ae8f2853da860227aa864c73cd10bab4e265d42e0a79",
     "crates/op-dsh-engine/src/quality_reuse.rs": "660a9ac3c3668ac7974e39af915c920e7f95641b5b175f40b18a3f5babc464e4",
-    "crates/op-dsh-engine/src/tool_catalog/quality_catalog.rs": "da2f71381fabd64fd75d819c5b40ecfb7e003523452e66b5a5f31be32ab3d566",
+    "crates/op-dsh-engine/src/tool_catalog/quality_catalog.rs": "5062a8e9929c434621d7bae4a3d7d9917f333641968dd57162fefcce086ce15b",
     "crates/op-dsh-engine/src/prototype_simulation.rs": "6cc243135be5857eadfd0a34e2b501ef1f6963e9d8c7fbf05c9fc0457480814e",
     "crates/op-editor-core/src/prototype/simulate_types.rs": "5021fd46904cd494d8b845e224ee91dd45e79bfe75724f25884007bfa658dc9c",
     "crates/op-mcp/src/batch_design_result.rs": "3d0b2def64a696774d7cb55d79560eef0e48536d409d0e3561d1e0aa2df80898",
-    "crates/op-mcp/src/design_prompt.rs": "b3125032adb70746becde64c24e7ec2695f69b602c77361d62a3c1c7f39dd3a8",
+    "crates/op-mcp/src/design_prompt.rs": "a79eb0efa6ced607a2f1792016d32017606951b9baca2c359f0fc84ab7766b6d",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "crates/op-host-web/src/widget_host/screenshot.rs": "7f6a4dd70f24900fac96149e837fa93643991e08f85dbc688c534fcd2012550a",
     "crates/op-editor-core/src/web_sync.rs": "1254e5f3362166ae586a41d6b6fccaedc3d1c215e21fc9306a080bf258fd6b37",
@@ -242,25 +251,25 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-host-web/src/live_sync_document.rs": "fc5605742a47aeef1628bcd2b05e376281b9c8f8e72412b4f13216fd0871a25f",
     "crates/op-host-web/src/live_sync_selection.rs": "168e1bded56d037a6f8f4d883b9e9626024cf44aef63c8ff763eea2b7e9ccec6",
     "crates/op-pen-loader/src/adapter/pages.rs": "f3f9e6778af3881674efa26a2264fdd289e8df6e00bca3605be522f099aa9371",
-    "packages/dsh-node-runtime/script-prelude.mjs": "b0ed377de4e8192325aeac120e5f75d918cec4198e305e0900a7eb4817c0ead2",
+    "packages/dsh-node-runtime/script-prelude.mjs": "f93cf95742f25d7bc18fd039404cfd626b146e41b61d7b7b0a21e37126bfa057",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
     "crates/op-host-web/src/vscode_bridge.rs": "c946a25829b0fee6890c63ef47b820c2e5cb3c0bca351560dc4dfde72604669b",
     "crates/op-host-web/src/canvaskit/mount_keyboard.rs": "14733985448414a0eeaa03eecc167cf2b364b658b2c36f15f2c730fcf63b98ad",
     "crates/op-editor-core/src/bridge_protocol.rs": "7797cc7ac863d799a8358049a334dfbfea052fbd78e56eb4aa2bad55aec409be",
     "crates/op-dsh-engine/src/quality_variables.rs": "a609755711312f70becd1602b5ab1af179962eb2b0b69366a45fd889de501209",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "09ceee198400ae958c061d10c8433f2198219c38a4dddf093ce87806ec4854b8",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "3354d25276378bc2890227e286fc8deb734b61b7b00117ae35e992f4aa421180",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/resolve-theme.mjs": "45978c4de0de9de54e12a77ccd1f67df649ed94c48feee68719634423c012206",
-    "packages/dsh-node-runtime/html-skill-migration.test.mjs": "4cd7b683911c62f3b070db2d7e9437898f0d62795da251d6e49f6b9faafde087",
-    "packages/dsh-node-runtime/html-skill-browser.test.mjs": "997a38a2b972bf2b2cac8df0bdf38ce267aad329aba8d9122d588c6f25fa03e3",
+    "packages/dsh-node-runtime/html-skill-migration.test.mjs": "ef79b9bfa67fbed8214547aeab1f5531550f69908dd1b86faa1a7c45a53ae86a",
+    "packages/dsh-node-runtime/html-skill-browser.test.mjs": "215b53b2725e63e8f3757cd49914b2306a0485493b3e14967ccbf6a7ea9f268b",
     "crates/op-dsh-engine/src/quality_tokens.rs": "7bd6c5cc1830589f880b68ccc3d7b88df6f0a15c328ffb166f92a03a19680756",
     "packages/dsh-node-runtime/design-tools.test.mjs": "0d94b121da0c600ab01a83d18e74e076fe37e1a3ef795140eec8378f8aa65a3c",
     "crates/op-design-lint/src/detectors/sibling_peers.rs": "d02106737287006a49229fb702b2f4301304bf63368bc0bc88dd14e239089253",
     "crates/op-design-lint/src/detectors/siblings.rs": "c7574aebeee045e55f29db8abdab8e33e3d1f69e6d8cb446178b61deab349262",
     "crates/op-design-lint/src/detectors/siblings_tests.rs": "a3b733a883eab7b17414b25043c5d2243a9b96968196a2ee5b0d929d2f131ff3",
     "crates/op-design-lint/src/detectors/structural_quality.rs": "a97d94a9d3c21b020cddb5c8787d5c88b29df798987b469e2e9370ac0811fc32",
-    "crates/op-design-lint/src/detectors/mod.rs": "50d062427839dbd1c35d42d46b28d3d9798645781e26fd908cb816d66be0ab6b",
-    "crates/op-design-lint/src/issue.rs": "000c50ec5f47d1bb2ebf46d155cc0189b9f106c9f3da959be551cdb36d5f0873",
+    "crates/op-design-lint/src/detectors/mod.rs": "5d25e0ada54ca082aee3260961e1c530fb0367ee47473456866e2688448bed83",
+    "crates/op-design-lint/src/issue.rs": "88e7b7fe4bcbf319f7d41281ed14e90b3b84a25178c8991152240b2e258e1ed6",
     "crates/op-design-lint/src/fixes.rs": "8b5c907f30334a2e08bc14c32e078d01152068029923f78c7f4e331c7cb0649e",
     "crates/op-design-lint/src/plan.rs": "20e08721244d61653739e53524067585d1624b1fb808c81b0057c7c78e8816ba",
     "crates/op-editor-core/src/design_lint.rs": "73e85617429abc1abc5750a5ab11e31f5cbcdca3a2a569a169c41457eb3e2bb0",
@@ -268,12 +277,12 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
     "crates/op-mcp/src/lint_tools.rs": "64021f8f9e51105e71f76b4f1ed68973673c493af9681e25ff6f96d21ce05a55",
     "packages/dsh-node-runtime/canvaskit-scene-env.mjs": "6d8ce6115d9d6ca0605289f8b672bc39cb4229d9e6d00616a5f128c5294e9131",
     "packages/dsh-node-runtime/device-frame.mjs": "dd38bfa8577554ad9be31ff6a4e29110d992603214be70be4b50890c64ed11ea",
-    "packages/dsh-node-runtime/draft-quality-gate.mjs": "89382aaa79a14a7dfd29c9141b3c9538804c81a1c208540f2b83be2dec9c2f62",
+    "packages/dsh-node-runtime/draft-quality-gate.mjs": "0a1bf50c9e769c11802e6a6f345ac69a3ed7ee325e78b9b2616103da3e10ce2a",
     "packages/dsh-node-runtime/managed-mcp-client.mjs": "786ecf166cd5f6d31a02f313f20d5215c76e68fb05263c70430fb2a2474779b6",
     "packages/dsh-node-runtime/managed-daemon-client.mjs": "4477fa8eb6cce9aa5148b19e80cb446e0787cd336db476f87efee784ac1b2ca4",
-    "packages/dsh-node-runtime/plugin-domain-migration.test.mjs": "7e5dae8d115c7729623e45789d773580b825ba6bbf897fd4b266c1b51d38d675"
+    "packages/dsh-node-runtime/plugin-domain-migration.test.mjs": "593b5f2dfb9c085a8ebdb88f925efb399a1d73bfe89be0188150d07e3ab9a444"
   },
-  "reason": "Bumped DSH Node/WASM runtime package version to 0.8.5-synapse.5 in bun.lock; runtime MCP invariants unchanged",
-  "evidence": "node --test packages/dsh-node-runtime/package.test.mjs scripts/check-dsh-runtime.test.mjs"
+  "reason": "Bumped @sunfulin123/dsh-design-pencil-runtime version to 0.8.5-synapse.6 in packages/bun.lock; runtime and MCP invariants in runtime-mcp.md are unchanged.",
+  "evidence": "node --test packages/dsh-node-runtime/package.test.mjs scripts/check-dsh-runtime.test.mjs (17 passed) && bash tools/check-maintenance.sh --lint-js"
 }
 ```

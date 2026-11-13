@@ -122,16 +122,28 @@ function __canonicalIconFontName(name) {
     default: return name;
   }
 }
-globalThis.I = function (parent, obj) {
-  var recorded = __normalizeAestheticProps(obj, false);
-  if (recorded != null && typeof recorded === "object" && recorded.type === "frame" && recorded.layout === "center") {
+function __applyNodeDefaults(node) {
+  if (node == null || typeof node !== "object" || Array.isArray(node)) return node;
+  var recorded = node;
+  if (recorded.type === "frame" && recorded.layout === "center") {
     var centeredFrame = {layout: "vertical"};
     if (!__hasOwn(recorded, "alignItems")) centeredFrame.alignItems = "center";
     if (!__hasOwn(recorded, "justifyContent")) centeredFrame.justifyContent = "center";
     recorded = Object.assign({}, recorded, centeredFrame);
-  } else if (recorded != null && typeof recorded === "object" && recorded.type === "text") {
+  } else if (recorded.type === "text") {
     var defaults = {};
-    if (!__hasOwn(recorded, "fontFamily") || recorded.fontFamily === "Inter") defaults.fontFamily = "Inter, system-ui, sans-serif";
+    var bodyFallback = (typeof __defaultFontFamily === "string" && __defaultFontFamily)
+      ? __defaultFontFamily
+      : "Inter, system-ui, sans-serif";
+    var headingFallback = (typeof __headingFontFamily === "string" && __headingFontFamily)
+      ? __headingFontFamily
+      : bodyFallback;
+    var resolvedFontSize = __hasOwn(recorded, "fontSize") && typeof recorded.fontSize === "number" ? recorded.fontSize : 16;
+    if (!__hasOwn(recorded, "fontFamily")) {
+      defaults.fontFamily = resolvedFontSize >= 24 ? headingFallback : bodyFallback;
+    } else if (recorded.fontFamily === "Inter") {
+      defaults.fontFamily = "Inter, system-ui, sans-serif";
+    }
     if (!__hasOwn(recorded, "fontSize")) defaults.fontSize = 16;
     if (!__hasOwn(recorded, "lineHeight")) {
       defaults.lineHeight = 1.5;
@@ -142,7 +154,7 @@ globalThis.I = function (parent, obj) {
       defaults.height = "fit_content";
     }
     if (Object.keys(defaults).length > 0) recorded = Object.assign({}, recorded, defaults);
-  } else if (recorded != null && typeof recorded === "object" && recorded.type === "icon_font") {
+  } else if (recorded.type === "icon_font") {
     var iconDefaults = {};
     if (typeof recorded.iconFontName === "string") {
       var canonical = __canonicalIconFontName(recorded.iconFontName);
@@ -152,6 +164,15 @@ globalThis.I = function (parent, obj) {
     if (typeof recorded.height !== "number" || !(recorded.height > 0)) iconDefaults.height = 20;
     if (Object.keys(iconDefaults).length > 0) recorded = Object.assign({}, recorded, iconDefaults);
   }
+  if (Array.isArray(recorded.children)) {
+    recorded = Object.assign({}, recorded, {
+      children: recorded.children.map(__applyNodeDefaults)
+    });
+  }
+  return recorded;
+}
+globalThis.I = function (parent, obj) {
+  var recorded = __applyNodeDefaults(__normalizeAestheticProps(obj, false));
   var effectiveParent = parent == null ? "null" : JSON.stringify(String(parent));
   return __record(effectiveParent, JSON.stringify(recorded));
 };
@@ -432,13 +453,24 @@ globalThis.T = function (axis, values) {
   __recordT(rawAxis, JSON.stringify(values.map(String)));
   return rawAxis;
 };
+globalThis.C = function (sourceId, parent, overrides) {
+  return __recordC(
+    JSON.stringify(String(sourceId)),
+    parent == null ? "null" : JSON.stringify(String(parent)),
+    JSON.stringify(overrides == null ? {} : __normalizeAestheticProps(overrides, true))
+  );
+};
+globalThis.R = function (targetId, nodeObj) {
+  return __recordR(
+    JSON.stringify(String(targetId)),
+    JSON.stringify(nodeObj == null ? {} : __applyNodeDefaults(__normalizeAestheticProps(nodeObj, false)))
+  );
+};
 function __unsupported(op) {
   return function () {
-    throw new Error("OP_SCRIPT_MODE_UNSUPPORTED: " + op + "() is unavailable in direct QuickJS; use only I(), K(), and authorized U() calls");
+    throw new Error("OP_SCRIPT_MODE_UNSUPPORTED: " + op + "() is unavailable in direct QuickJS; use I(), K(), C(), R(), M(), D(), and U()");
   };
 }
-globalThis.C = __unsupported("C");
-globalThis.R = __unsupported("R");
 globalThis.G = __unsupported("G");
 var __noop = function () {};
 globalThis.console = { log: __noop, warn: __noop, error: __noop, info: __noop, debug: __noop };

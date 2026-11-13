@@ -2,19 +2,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { collectSourceFiles, collectEvidenceFiles, extractInteractiveBaseline, scanAnimationAndCraftFlags,
+import { collectSourceFiles, collectEvidenceFiles, extractInteractiveBaseline, inferSurfaceScope, scanAnimationAndCraftFlags,
   scanCopyAndSlop, runImpeccableDetect, runCopyLint, runSloplint, scanCssTrackedCaps } from './verify-source.mjs';
 import { captureAndInspectViewports } from './verify-browser.mjs';
 import { checkEvidenceLedger, checkStyleContext } from './verify-evidence.mjs';
 export { checkEvidenceLedger } from './verify-evidence.mjs';
 
-const VIEWPORTS = [
-  { label: '375px', width: 375, height: 812, file: 'shots/375.png' },
-  { label: '768px', width: 768, height: 1024, file: 'shots/768.png' },
-  { label: '1440px', width: 1440, height: 900, file: 'shots/1440.png' },
-];
+function buildViewports(mobileWidth = 390) {
+  const mobileHeight = mobileWidth === 375 ? 812 : 844;
+  return [
+    { label: `${mobileWidth}px`, width: mobileWidth, height: mobileHeight, file: `shots/${mobileWidth}.png` },
+    { label: '768px', width: 768, height: 1024, file: 'shots/768.png' },
+    { label: '1440px', width: 1440, height: 900, file: 'shots/1440.png' },
+  ];
+}
 
-const QUICK_VIEWPORTS = [VIEWPORTS[0], VIEWPORTS[2]];
 function parseArgs(argv) {
   const opts = {
     url: null,
@@ -24,6 +26,9 @@ function parseArgs(argv) {
     baseline: null,
     snapshotBefore: null,
     checkEvidence: null,
+    scope: null,
+    mobileWidth: 390,
+    timeoutMs: undefined,
     quick: false,
     help: false,
   };
@@ -36,6 +41,9 @@ function parseArgs(argv) {
     else if (arg === '--baseline') opts.baseline = argv[++i];
     else if (arg === '--snapshot-before') opts.snapshotBefore = argv[++i];
     else if (arg === '--check-evidence') opts.checkEvidence = argv[++i];
+    else if (arg === '--scope' || arg === '--mode') opts.scope = argv[++i];
+    else if (arg === '--mobile-width') opts.mobileWidth = Number(argv[++i] ?? 390) || 390;
+    else if (arg === '--timeout-ms') opts.timeoutMs = Number(argv[++i]);
     else if (arg === '--quick') opts.quick = true;
     else if (arg === '--help' || arg === '-h') opts.help = true;
   }
@@ -93,14 +101,15 @@ async function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
   const sourceTarget = opts.source || (opts.url && !/^https?:\/\//i.test(opts.url) ? path.dirname(path.resolve(opts.url)) : process.cwd());
-  const files = collectSourceFiles(sourceTarget);
+  const files = collectSourceFiles(sourceTarget, outDir);
   const sourceFiles = collectEvidenceFiles(sourceTarget, outDir)
     .map(file => ({ path: file, sha256: createHash('sha256').update(fs.readFileSync(file)).digest('hex') }));
+  const surfaceScope = inferSurfaceScope(files, reviewRootFor(outDir, opts.reviewRoot), opts.scope);
 
   // 1. Animation & Craft-Floor Static Scan
   const animScan = scanAnimationAndCraftFlags(files);
   // 2. Copy-Lint Scan
-  const copyFindings = scanCopyAndSlop(files);
+  const copyFindings = scanCopyAndSlop(files, surfaceScope);
   // 3. Impeccable Detector Bridge
   const impeccableScan = runImpeccableDetect(sourceTarget);
 
@@ -108,8 +117,8 @@ async function main() {
     ...checkStyleContext(reviewRootFor(outDir, opts.reviewRoot)),
     ...animScan.findings,
     ...copyFindings,
-    ...runCopyLint(files),
-    ...runSloplint(files),
+    ...runCopyLint(files, surfaceScope),
+    ...runSloplint(files, surfaceScope),
     ...scanCssTrackedCaps(files),
     ...impeccableScan.findings,
   ];
@@ -143,8 +152,11 @@ async function main() {
   }
 
   // 5. Multi-Viewport Browser Screenshots
-  const activeViewports = opts.quick ? QUICK_VIEWPORTS : VIEWPORTS;
-  const renderResult = await captureAndInspectViewports(opts.url, outDir, activeViewports);
+  const viewports = buildViewports(opts.mobileWidth);
+  const activeViewports = opts.quick ? [viewports[0], viewports[2]] : viewports;
+  const renderResult = await captureAndInspectViewports(opts.url, outDir, activeViewports, {
+    timeoutMs: opts.timeoutMs,
+  });
   allFindings.push(...renderResult.domFindings);
 
   // 6. Write / Merge Evidence Report
@@ -187,6 +199,8 @@ async function main() {
       success: { status: 'pending', evidence: '' },
       permission: { status: 'pending', evidence: '' },
     },
+    // Left unset on purpose: the primary actions must be classified by review, not defaulted.
+    actions: (preserveReview && existingReport.actions) || null,
     renderedEvidence: renderResult.renderedEvidence,
     findings: allFindings,
   };

@@ -1,58 +1,124 @@
 #!/usr/bin/env node
-/** Capture a local POC using the runtime's real Chromium renderer. */
-import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { setTimeout as delay } from 'node:timers/promises';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+/**
+ * Capture local POC screenshots and run declarative multi-viewport interaction
+ * checks in a single bounded Chromium session.
+ */
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import {
+  PocStageError,
+  normalizeCapturePlan,
+  resolveLocalCaptureUrl,
+  runPocCapturePlan,
+} from './poc-browser-runner.mjs';
 
-const renderer = [
-  new URL('../../../chrome-cdp.mjs', import.meta.url),
-  new URL('../../../../../packages/dsh-node-runtime/chrome-cdp.mjs', import.meta.url),
-].find(candidate => existsSync(fileURLToPath(candidate)));
-if (!renderer) throw new Error('The Synapse Chromium renderer is unavailable');
-const { launchHeadlessPage } = await import(renderer.href);
-
-const args = new Map();
-for (let i = 2; i < process.argv.length; i += 2) {
-  if (!process.argv[i].startsWith('--') || process.argv[i + 1] === undefined) throw new Error('Use --url <local page> --out <png> [--width <px>] [--height <px>]');
-  args.set(process.argv[i], process.argv[i + 1]);
-}
-const source = args.get('--url');
-const output = args.get('--out');
-const width = Number(args.get('--width') ?? 1440);
-const height = Number(args.get('--height') ?? 900);
-if (!source || !output || !/\.png$/i.test(output) || !Number.isInteger(width) || !Number.isInteger(height)
-  || width < 200 || width > 4096 || height < 200 || height > 4096) throw new Error('A local URL, PNG output, and viewport between 200 and 4096 pixels are required');
-let url;
-if (/^https?:/i.test(source)) {
-  url = new URL(source);
-  if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('Only local POC servers may be captured');
-} else url = pathToFileURL(resolve(source));
-const page = await launchHeadlessPage({ width, height });
-if (!page) throw new Error('Chrome or Chromium is unavailable; the POC screenshot was not captured');
-try {
-  await page.send('Page.enable');
-  await page.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
-  const navigation = await page.send('Page.navigate', { url: url.href });
-  if (navigation.errorText) throw new Error(`POC navigation failed: ${navigation.errorText}`);
-  let ready = false;
-  for (let attempt = 0; attempt < 150; attempt += 1) {
-    try { ready = await page.evaluate("document.readyState === 'complete' && location.href !== 'about:blank'"); } catch { /* Navigation may still be in progress. */ }
-    if (ready) break;
-    await delay(100);
+function parseCliArgs(argv) {
+  const opts = {
+    url: undefined,
+    out: undefined,
+    steps: undefined,
+    width: 1440,
+    height: 900,
+    timeoutMs: undefined,
+    allowUnverified: false,
+  };
+  for (let i = 0; i < argv.length; i += 1) {
+    const flag = argv[i];
+    if (flag === '--allow-unverified') {
+      opts.allowUnverified = true;
+      continue;
+    }
+    const next = argv[i + 1];
+    if (!flag.startsWith('--') || next === undefined) {
+      throw new PocStageError(
+        'Use --url <local page> (--out <png> [--width <px>] [--height <px>] | --steps <plan.json>) [--timeout-ms <ms>] [--allow-unverified]',
+        { kind: 'validation', stage: 'parse-args', elapsedMs: 0 },
+      );
+    }
+    i += 1;
+    if (flag === '--url') opts.url = next;
+    else if (flag === '--out') opts.out = next;
+    else if (flag === '--steps') opts.steps = next;
+    else if (flag === '--width') opts.width = Number(next);
+    else if (flag === '--height') opts.height = Number(next);
+    else if (flag === '--timeout-ms') opts.timeoutMs = Number(next);
+    else {
+      throw new PocStageError(`Unknown option: ${flag}`, {
+        kind: 'validation',
+        stage: 'parse-args',
+        elapsedMs: 0,
+      });
+    }
   }
-  if (!ready) throw new Error('The POC did not finish loading');
-  await page.evaluate('document.fonts ? document.fonts.ready.then(() => true) : true', { awaitPromise: true });
-  const result = await page.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
-  const png = Buffer.from(result.data, 'base64');
-  if (png.length < 24) throw new Error('The browser returned an empty screenshot');
-  const path = resolve(output);
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, png);
-  console.log(JSON.stringify({ path, renderer: 'Chromium', url: url.href, width, height,
-    sha256: createHash('sha256').update(png).digest('hex'), capturedAt: new Date().toISOString() }));
-} finally {
-  await page.close();
+  return opts;
+}
+
+const baseDir = process.env.SYNAPSE_DESIGN_TASK_DIR
+  ? resolve(process.env.SYNAPSE_DESIGN_TASK_DIR)
+  : process.cwd();
+
+let cli;
+try {
+  cli = parseCliArgs(process.argv.slice(2));
+  let plan;
+  const singleShot = !cli.steps;
+  if (cli.steps) {
+    const rawJson = JSON.parse(await readFile(resolve(baseDir, cli.steps), 'utf8'));
+    plan = normalizeCapturePlan(rawJson, cli.url);
+  } else {
+    if (!cli.url || !cli.out || !/\.png$/i.test(cli.out)
+      || !Number.isInteger(cli.width) || !Number.isInteger(cli.height)
+      || cli.width < 200 || cli.width > 4096 || cli.height < 200 || cli.height > 4096) {
+      throw new PocStageError(
+        'A local URL, PNG output, and viewport between 200 and 4096 pixels are required',
+        { kind: 'validation', stage: 'validate-args', elapsedMs: 0 },
+      );
+    }
+    resolveLocalCaptureUrl(cli.url);
+    plan = normalizeCapturePlan(
+      {
+        sessions: [{
+          name: `${cli.width}x${cli.height}`,
+          width: cli.width,
+          height: cli.height,
+          steps: [{ action: 'screenshot', out: cli.out }],
+        }],
+      },
+      cli.url,
+    );
+  }
+
+  const result = await runPocCapturePlan({
+    sessions: plan.sessions,
+    timeoutMs: cli.timeoutMs ?? plan.timeoutMs ?? 35_000,
+    baseDir,
+  });
+
+  if (singleShot) {
+    const primary = result.screenshots[0];
+    console.log(JSON.stringify({
+      ...primary,
+      totalMs: result.totalMs,
+      stages: result.stages,
+    }));
+  } else {
+    console.log(JSON.stringify(result));
+  }
+} catch (error) {
+  const stageError = error instanceof PocStageError
+    ? error
+    : new PocStageError(error?.message || String(error), { kind: 'browser', stage: 'unknown', elapsedMs: 0 });
+  if (cli?.allowUnverified && stageError.kind === 'browser') {
+    console.log(JSON.stringify({
+      status: 'unverified',
+      renderer: 'unavailable',
+      uncovered: stageError.message,
+      diagnostics: stageError.toDiagnostics(),
+      stages: stageError.stages,
+      totalMs: stageError.elapsedMs,
+    }));
+    process.exit(0);
+  }
+  console.error(JSON.stringify(stageError.toDiagnostics()));
+  process.exit(1);
 }

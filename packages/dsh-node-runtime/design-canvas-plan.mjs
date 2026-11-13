@@ -46,7 +46,7 @@ export function planDesignCanvas({ platform, width, height, userMessage = '', co
   const root = {
     type: 'frame', name: 'Generated Page', width: canvas.width,
     height: canvas.finalHeight,
-    ...(explicit ? {} : { minHeight: canvas.seedHeight }),
+    ...(explicit ? { clipContent: true } : { minHeight: canvas.seedHeight }),
     layout: 'vertical', padding: 0, gap: 0,
   };
   return { canvas, seedScript: `I(null, ${JSON.stringify(root)});` };

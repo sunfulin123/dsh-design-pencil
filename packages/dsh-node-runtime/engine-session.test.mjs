@@ -478,3 +478,73 @@ test('EngineSession lays out CJK text one em per character', () => {
     session.dispose?.()
   }
 })
+
+test('QuickJS batch_design supports C(), deep-merged descendants, inst__child updates, stroke:null, per-side strokes, and DESIGN fonts', () => {
+  const session = new EngineSession({ version: '1.0.0', children: [] })
+  try {
+    const md = session.callTool('set_design_md', {
+      markdown: '# Design System\n## Typography\n- **Heading Font**: Space Grotesk\n- **Body Font**: DM Sans\n',
+    })
+    assert.equal(md.isError, false, JSON.stringify(md))
+
+    const built = session.callTool('batch_design', {
+      script: `
+        const master = I(null, {
+          type: 'frame',
+          name: 'Component/MsgRow',
+          reusable: true,
+          previewAsScreen: false,
+          width: 360,
+          height: 'fit_content',
+          layout: 'horizontal',
+          justifyContent: 'space_between',
+          clipContent: true,
+          stroke: { bottom: 1, color: '#E5E7EB' },
+          children: [
+            { id: 'sender', type: 'text', content: 'Sender', fontSize: 14 },
+            { id: 'body', type: 'text', content: 'Default body', fontSize: 14 },
+            { id: 'badge', type: 'frame', width: 18, height: 18 }
+          ]
+        });
+        const s1 = I(null, { type: 'frame', name: 'Chat 1', width: 1440, height: 900, layout: 'vertical', gap: 12, padding: 16 });
+        const s2 = I(null, { type: 'frame', name: 'Chat 2', width: 1440, height: 900, layout: 'vertical' });
+        const s3 = C(s1, null, { name: 'Chat 3' });
+        const h1 = I(s1, { type: 'text', content: 'Workspace Heading', fontSize: 28 });
+        const inst = I(s1, {
+          type: 'ref',
+          ref: master,
+          descendants: {
+            sender: { content: 'Ada' },
+            body: { content: 'Preserved message text' }
+          }
+        });
+        U(inst, { descendants: { badge: { visible: false, fill: '#EF4444' } } });
+        U(inst + '__sender', { content: 'Ada Lovelace' });
+        U(master, { stroke: null });
+      `,
+    })
+    assert.equal(built.isError, false, JSON.stringify(built))
+
+    const doc = session.snapshot().document
+    const byName = name => doc.children.find(n => n.name === name)
+    assert.equal(byName('Chat 1').x, 0)
+    assert.equal(byName('Chat 2').x, 1560)
+    assert.equal(byName('Chat 3').x, 3120)
+    assert.equal(byName('Component/MsgRow').stroke, undefined)
+
+    const heading = byName('Chat 1').children.find(n => n.type === 'text')
+    assert.equal(heading.fontFamily, 'Space Grotesk')
+    const senderMaster = byName('Component/MsgRow').children[0]
+    assert.equal(senderMaster.fontFamily, 'DM Sans')
+
+    const layout = session.callTool('snapshot_layout', { maxDepth: 6 })
+    assert.equal(layout.isError, false)
+    const dump = JSON.stringify(session.callTool('batch_get', { resolveRefs: true }).structuredContent)
+    assert.match(dump, /Preserved message text/)
+    assert.match(dump, /Ada Lovelace/)
+  } finally {
+    session.close?.()
+    session.dispose?.()
+  }
+})
+

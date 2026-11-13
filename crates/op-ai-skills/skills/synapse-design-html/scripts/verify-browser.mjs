@@ -1,25 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
-import os from 'node:os';
-import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-
-function findChromeBinary() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-  ];
-  for (const c of candidates) {
-    if (c && fs.existsSync(c)) return c;
-  }
-  return null;
-}
+import { loadHeadlessLauncher } from './poc-browser-runner.mjs';
 
 function startStaticServer(rootDir, entryFile) {
   const mimeTypes = {
@@ -63,48 +46,48 @@ function startStaticServer(rootDir, entryFile) {
   });
 }
 
-function launchChromeWithCDP(chromeBin, profileDir) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      chromeBin,
-      [
-        '--headless=new',
-        '--no-sandbox',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-background-networking',
-        '--disable-extensions',
-        '--hide-scrollbars',
-        '--remote-debugging-port=0',
-        `--user-data-dir=${profileDir}`,
-        'about:blank',
-      ],
-      { stdio: ['ignore', 'ignore', 'pipe'] }
-    );
-    let stderr = '';
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL');
-      reject(new Error('Timed out waiting for Chrome DevTools endpoint'));
-    }, 15000);
-
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-      const m = stderr.match(/DevTools listening on (ws:\/\/[^\s]+)/);
-      if (m) {
-        clearTimeout(timer);
-        resolve({ child, wsEndpoint: m[1] });
-      }
-    });
-    child.on('error', (err) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-  });
-}
-
-export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewports) {
+export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewports, options = {}) {
+  const totalTimeoutMs = Math.max(500, Math.min(120_000, Number(options.timeoutMs) || 45_000));
+  const startedAt = Date.now();
+  const deadline = startedAt + totalTimeoutMs;
+  const stages = [];
+  let currentStage = 'init';
   let serverObj = null;
   let liveUrl = targetUrlOrFile;
+
+  const elapsed = () => Date.now() - startedAt;
+  const remaining = (stage) => {
+    const rem = deadline - Date.now();
+    if (rem <= 50) throw new Error(`Timed out at stage "${stage}" after ${elapsed()}ms (budget ${totalTimeoutMs}ms)`);
+    return rem;
+  };
+  const markStage = async (stage, fn) => {
+    currentStage = stage;
+    const t0 = Date.now();
+    try {
+      const result = await fn();
+      stages.push({ stage, durationMs: Date.now() - t0, elapsedMs: elapsed() });
+      return result;
+    } catch (error) {
+      stages.push({ stage, durationMs: Date.now() - t0, elapsedMs: elapsed(), failed: true });
+      throw error;
+    }
+  };
+  const fillUnverifiedRenders = (existing, reason) => {
+    const covered = new Set(existing.map((r) => r.viewport));
+    const list = [...existing];
+    for (const vp of viewports) {
+      if (!covered.has(vp.label)) {
+        list.push({
+          viewport: vp.label,
+          status: 'unverified',
+          renderer: 'unavailable',
+          uncovered: reason,
+        });
+      }
+    }
+    return list;
+  };
 
   try {
     if (targetUrlOrFile && !/^https?:\/\//i.test(targetUrlOrFile)) {
@@ -112,7 +95,7 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
       if (fs.existsSync(resolvedFile)) {
         const rootDir = fs.statSync(resolvedFile).isDirectory() ? resolvedFile : path.dirname(resolvedFile);
         const entryFile = fs.statSync(resolvedFile).isDirectory() ? 'index.html' : path.basename(resolvedFile);
-        serverObj = await startStaticServer(rootDir, entryFile);
+        serverObj = await markStage('static-server', () => startStaticServer(rootDir, entryFile));
         liveUrl = serverObj.url;
       }
     }
@@ -122,90 +105,88 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
 
     const renderedEvidence = [];
     const domFindings = [];
-    const chromeBin = findChromeBinary();
-
-    if (!chromeBin || !liveUrl) {
+    if (!liveUrl) {
+      const reason = 'No --url provided for browser verification';
       return {
         captured: false,
-        reason: !chromeBin ? 'No local Chrome/Chromium/Edge binary found' : 'No --url provided',
-        renderedEvidence,
+        degraded: true,
+        reason,
+        stages,
+        renderedEvidence: fillUnverifiedRenders([], reason),
         domFindings,
       };
     }
 
-    const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'synapse-chrome-'));
-    let chromeProc = null;
-
+    let page = null;
     try {
-      chromeProc = await launchChromeWithCDP(chromeBin, profileDir);
-      const u = new URL(chromeProc.wsEndpoint);
-      const targetsRes = await fetch(`http://${u.host}/json/list`);
-      const targets = await targetsRes.json();
-      const pageTarget = targets.find(t => t.type === 'page') || targets[0];
+      const launchHeadlessPage = await loadHeadlessLauncher();
+      const maxWidth = Math.max(...viewports.map((vp) => vp.width), 1440);
+      const maxHeight = Math.max(...viewports.map((vp) => vp.height), 900);
+      page = await markStage('launch', () =>
+        launchHeadlessPage({ width: maxWidth, height: maxHeight, timeoutMs: remaining('launch') }),
+      );
+      if (!page) {
+        const reason = 'No local Chrome/Chromium/Edge binary found; browser verification unverified';
+        return {
+          captured: false,
+          degraded: true,
+          reason,
+          stages,
+          renderedEvidence: fillUnverifiedRenders([], reason),
+          domFindings,
+        };
+      }
 
-      const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
-      await new Promise((res, rej) => {
-        ws.addEventListener('open', res, { once: true });
-        ws.addEventListener('error', rej, { once: true });
+      const sendCDP = (method, params = {}) => page.send(method, params, remaining(currentStage));
+
+      await markStage('cdp-enable', async () => {
+        await sendCDP('Page.enable');
+        await sendCDP('Runtime.enable');
       });
-
-      let msgId = 0;
-      const pending = new Map();
-      ws.addEventListener('message', (ev) => {
-        const data = JSON.parse(String(ev.data));
-        if (data.id && pending.has(data.id)) {
-          const { resolve, reject, timer } = pending.get(data.id);
-          clearTimeout(timer);
-          pending.delete(data.id);
-          if (data.error) reject(new Error(data.error.message));
-          else resolve(data.result);
-        }
-      });
-      ws.addEventListener('close', () => {
-        for (const { reject, timer } of pending.values()) {
-          clearTimeout(timer);
-          reject(new Error('Chrome debugging connection closed'));
-        }
-        pending.clear();
-      });
-
-      const sendCDP = (method, params = {}) =>
-        new Promise((resolve, reject) => {
-          const id = ++msgId;
-          const timer = setTimeout(() => {
-            pending.delete(id);
-            reject(new Error(`Chrome debugging timed out: ${method}`));
-          }, 15000);
-          pending.set(id, { resolve, reject, timer });
-          ws.send(JSON.stringify({ id, method, params }));
-        });
-
-      await sendCDP('Page.enable');
-      await sendCDP('Runtime.enable');
 
       for (const vp of viewports) {
+        currentStage = `viewport:${vp.label}`;
+        // oxlint-disable-next-line no-await-in-loop -- sequential multi-viewport reuse in one browser
         await sendCDP('Emulation.setDeviceMetricsOverride', {
           width: vp.width,
           height: vp.height,
           deviceScaleFactor: 1,
-          mobile: vp.width < 600,
+          mobile: false,
         });
+        // oxlint-disable-next-line no-await-in-loop -- touch media query emulation for narrow boards
+        await sendCDP('Emulation.setTouchEmulationEnabled', { enabled: vp.width < 600 });
+        currentStage = `navigate:${vp.label}`;
+        // oxlint-disable-next-line no-await-in-loop -- sequential viewport navigation
         const navigation = await sendCDP('Page.navigate', { url: liveUrl });
         if (navigation.errorText) throw new Error(`Navigation failed: ${navigation.errorText}`);
+        currentStage = `ready:${vp.label}`;
         let ready = false;
-        for (let attempt = 0; attempt < 150; attempt++) {
+        const readyDeadline = Math.min(deadline, Date.now() + 15_000);
+        while (Date.now() < readyDeadline) {
           try {
-            const state = await sendCDP('Runtime.evaluate', { returnByValue: true,
-              expression: "document.readyState === 'complete' && location.href !== 'about:blank'" });
+            // oxlint-disable-next-line no-await-in-loop -- sequential readiness poll
+            const state = await page.send(
+              'Runtime.evaluate',
+              { returnByValue: true, expression: "document.readyState === 'complete' && location.href !== 'about:blank'" },
+              Math.min(2000, remaining(currentStage)),
+            );
             ready = state?.result?.value === true;
           } catch { /* Navigation can temporarily reset the JavaScript context. */ }
           if (ready) break;
-          await new Promise(r => setTimeout(r, 100));
+          // oxlint-disable-next-line no-await-in-loop -- backoff between polls
+          await new Promise(r => setTimeout(r, 80));
         }
         if (!ready) throw new Error(`Page did not finish loading at ${vp.label}`);
-        const fonts = await sendCDP('Runtime.evaluate', { awaitPromise: true, returnByValue: true,
-          expression: "document.fonts ? Promise.race([document.fonts.ready, new Promise((_, reject) => setTimeout(() => reject(new Error('Font loading timed out')), 10000))]).then(() => true) : true" });
+        currentStage = `fonts:${vp.label}`;
+        const fontWaitMs = Math.max(100, Math.min(10_000, remaining(currentStage)) - 100);
+        // oxlint-disable-next-line no-await-in-loop -- sequential font readiness check
+        const fonts = await sendCDP('Runtime.evaluate', {
+          awaitPromise: true,
+          returnByValue: true,
+          expression: `document.fonts ? Promise.race([document.fonts.ready, new Promise((_, reject) => setTimeout(() => reject(new Error('Font loading timed out')), ${fontWaitMs}))]).then(() => true) : true`,
+        });
         if (fonts.exceptionDetails) throw new Error(`Font loading could not be verified at ${vp.label}`);
+        currentStage = `inspect:${vp.label}`;
 
         // Live DOM geometry & Second-Order Slop check at this exact viewport
         const evalRes = await sendCDP('Runtime.evaluate', {
@@ -311,10 +292,13 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
           });
         }
 
+        currentStage = `screenshot:${vp.label}`;
         const outFile = path.join(outDir, vp.file);
         fs.rmSync(outFile, { force: true });
+        // oxlint-disable-next-line no-await-in-loop -- sequential viewport screenshot
         const shot = await sendCDP('Page.captureScreenshot', {
           format: 'png',
+          captureBeyondViewport: true,
           clip: { x: 0, y: 0, width: vp.width, height: vp.height, scale: 1 },
         });
         if (shot?.data) {
@@ -437,14 +421,24 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
           }
         }
       }
-
-      ws.close();
+    } catch (error) {
+      const tail = typeof page?.stderrTail === 'function' ? page.stderrTail().trim() : '';
+      const rawMessage = error instanceof Error ? error.message : String(error);
+      const stderrSuffix = tail && !rawMessage.includes(tail) ? ` (Chrome stderr: ${tail.replace(/\s+/g, ' ')})` : '';
+      const reason = `Browser verification degraded at stage "${currentStage}" after ${elapsed()}ms: ${rawMessage}${stderrSuffix}`;
+      return {
+        captured: false,
+        degraded: true,
+        reason,
+        stages,
+        renderedEvidence: fillUnverifiedRenders(renderedEvidence, reason),
+        domFindings,
+      };
     } finally {
-      if (chromeProc?.child) chromeProc.child.kill('SIGKILL');
-      try { fs.rmSync(profileDir, { recursive: true, force: true }); } catch {}
+      if (page) await page.close().catch(() => {});
     }
 
-    return { captured: true, liveUrl, renderedEvidence, domFindings };
+    return { captured: true, liveUrl, stages, renderedEvidence, domFindings };
   } finally {
     if (serverObj?.server) serverObj.server.close();
   }

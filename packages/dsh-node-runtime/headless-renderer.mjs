@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { SANDBOX_INIT_ERROR_RE } from './chrome-cdp.mjs'
 
 const MAC_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -33,19 +34,22 @@ export function findChrome({ env = process.env, platform = process.platform, exi
   return null
 }
 
-export function headlessArguments(url, profileDir) {
+export function headlessArguments(url, profileDir, { platform = process.platform, env = process.env, noSandbox = false } = {}) {
+  const softwareWebGL = platform !== 'darwin' || env.OPENPENCIL_FORCE_SWIFTSHADER === '1'
+  const disableSandbox = Boolean(noSandbox) || env.OPENPENCIL_CHROME_NO_SANDBOX === '1'
   return [
     '--headless=new',
+    ...(disableSandbox ? ['--no-sandbox'] : []),
     '--no-first-run',
     '--no-default-browser-check',
+    '--disable-breakpad',
     '--disable-extensions',
     '--disable-background-networking',
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',
     '--mute-audio',
     '--hide-scrollbars',
-    '--use-angle=swiftshader',
-    '--enable-unsafe-swiftshader',
+    ...(softwareWebGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
     '--window-size=1600,1000',
     `--user-data-dir=${profileDir}`,
     url,
@@ -61,18 +65,32 @@ export class HeadlessRenderer {
   #baseUrl
   #chromePath
   #idleMs
+  #startupGraceMs
+  #now
   #spawn
   #log
   #child = null
+  #startedAt = 0
+  #noSandbox = false
   #profileDir = null
   #idleTimer = null
   #starting = null
   #closed = false
 
-  constructor({ baseUrl, chromePath = findChrome(), idleMs = 300_000, spawnImpl = spawn, log = () => {} }) {
+  constructor({
+    baseUrl,
+    chromePath = findChrome(),
+    idleMs = 300_000,
+    startupGraceMs = 15_000,
+    now = Date.now,
+    spawnImpl = spawn,
+    log = () => {},
+  }) {
     this.#baseUrl = baseUrl
     this.#chromePath = chromePath
     this.#idleMs = idleMs
+    this.#startupGraceMs = startupGraceMs
+    this.#now = now
     this.#spawn = spawnImpl
     this.#log = log
   }
@@ -85,15 +103,31 @@ export class HeadlessRenderer {
     return this.#child !== null
   }
 
-  // Starts Chrome if needed. Readiness is signalled by the page polling the
-  // screenshot queue, which the screenshot renderer tracks.
-  async ensure() {
+  // Starts Chrome if needed, or restarts it if it has remained disconnected
+  // past `startupGraceMs`. Readiness is signalled by polling the screenshot queue.
+  async ensure({ connected } = {}) {
     if (this.#closed) return { ok: false, reason: 'The rendering host is closed' }
     if (!this.#chromePath) return { ok: false, reason: 'No Chrome or Chromium was found (set DSH_CHROME_PATH)' }
     this.touch()
-    if (this.#child) return { ok: true, started: false }
-    this.#starting ??= this.#start().finally(() => { this.#starting = null })
+    if (this.#starting) return this.#starting
+    if (this.#child) {
+      if (connected === false && this.#now() - this.#startedAt >= this.#startupGraceMs) {
+        this.#log('headless renderer unresponsive past grace window; restarting')
+        this.#starting = this.#restart().finally(() => { this.#starting = null })
+        return this.#starting
+      }
+      return { ok: true, started: false }
+    }
+    this.#starting = this.#start().finally(() => { this.#starting = null })
     return this.#starting
+  }
+
+  async #restart() {
+    await this.#stop()
+    if (this.#closed) return { ok: false, reason: 'The rendering host is closed' }
+    this.touch()
+    const result = await this.#start()
+    return result.ok ? { ...result, restarted: true } : result
   }
 
   touch() {
@@ -105,17 +139,33 @@ export class HeadlessRenderer {
   async #start() {
     this.#profileDir = await mkdtemp(join(tmpdir(), 'dsh-headless-'))
     const url = `${this.#baseUrl}/?renderer=headless`
+    const noSandbox = this.#noSandbox
     let child
     try {
-      child = this.#spawn(this.#chromePath, headlessArguments(url, this.#profileDir), { stdio: 'ignore' })
+      child = this.#spawn(
+        this.#chromePath,
+        headlessArguments(url, this.#profileDir, { noSandbox }),
+        { stdio: ['ignore', 'ignore', 'pipe'] },
+      )
     } catch (error) {
       await this.#removeProfile()
       return { ok: false, reason: `Chrome could not start: ${error.message}` }
     }
     this.#child = child
+    this.#startedAt = this.#now()
+    let stderrTail = ''
+    child.stderr?.on?.('data', chunk => {
+      stderrTail = (stderrTail + chunk.toString('utf8')).slice(-2048)
+      if (!noSandbox && !this.#noSandbox && !this.#closed && this.#child === child && SANDBOX_INIT_ERROR_RE.test(stderrTail)) {
+        this.#noSandbox = true
+        this.#log('headless renderer detected nested OS sandbox; restarting with --no-sandbox')
+        this.#starting ??= this.#restart().finally(() => { this.#starting = null })
+      }
+    })
     child.once?.('exit', () => {
       if (this.#child === child) {
         this.#child = null
+        this.#startedAt = 0
         this.#removeProfile()
       }
     })

@@ -110,12 +110,22 @@ test('review evidence becomes invalid when the source or capture changes', async
   const report = { contract: 'task', targetViewports: ['desktop'],
     accessibility: { status: 'pass', evidence: 'tested' }, responsive: { status: 'pass', evidence: 'tested' },
     visualReview: { status: 'pass', evidence: 'inspected the actual capture' },
+    actions: [{ screen: 'Home', label: 'Open settings', kind: 'verifiable', evidence: 'Clicking it showed the settings panel.' }],
     contentStates: Object.fromEntries(['loading', 'empty', 'error', 'partial', 'success', 'permission']
       .map(state => [state, { status: 'not-applicable', reason: 'static page' }])),
     sourceTarget: pagePath, sourceFiles: [{ path: pagePath, sha256: hash(page) }],
     renderedEvidence: [{ viewport: 'desktop', status: 'captured', artifact: 'desktop.png', renderer: 'Chromium', sha256: hash(png) }],
   }
   assert.deepEqual(checkEvidenceLedger(report, root), [])
+  // An honest "not checked" is accepted; a status invented to pass the gate is not.
+  const honest = { ...report, accessibility: { status: 'unverified', uncovered: 'Only tab order was exercised; screen readers were not.' } }
+  assert.deepEqual(checkEvidenceLedger(honest, root), [])
+  assert.match(checkEvidenceLedger({ ...report, accessibility: { status: 'unverified' } }, root).join('\n'), /accessibility requires/)
+  assert.match(checkEvidenceLedger({ ...report, accessibility: { status: 'pending', evidence: 'x' } }, root).join('\n'), /accessibility requires/)
+  assert.match(checkEvidenceLedger({ ...report, actions: undefined }, root).join('\n'), /actions must list each primary action/)
+  const claimed = { ...report, actions: [{ label: 'Export', kind: 'verifiable' }] }
+  assert.match(checkEvidenceLedger(claimed, root).join('\n'), /requires evidence of the observed result/)
+  assert.deepEqual(checkEvidenceLedger({ ...report, actions: [{ label: 'Export', kind: 'not-implemented' }] }, root), [])
   report.sourceTarget = root
   report.sourceFiles.push({ path: join(root, 'desktop.png'), sha256: hash(png) })
   assert.deepEqual(checkEvidenceLedger(report, root), [])
@@ -229,3 +239,47 @@ test('HTML guidance, datasets, and browser verifier cover dropdown chevron inset
     assert.ok(!goodRes.domFindings.some(f => f.rule === 'dropdown-chevron-inset'), JSON.stringify(goodRes.domFindings))
   }
 })
+
+test('verify-source excludes only task-output review/shots dirs, filters real app copy-lint noise, and capture-poc keeps 390px innerWidth', async context => {
+  const { collectSourceFiles, collectEvidenceFiles, inferSurfaceScope, runCopyLint } = await import(new URL('scripts/verify-source.mjs', source))
+  const { mkdir } = await import('node:fs/promises')
+  const root = await mkdtemp(join(tmpdir(), 'synapse-surface-scope-'))
+  context.after(() => rm(root, { recursive: true, force: true }))
+  await mkdir(join(root, 'review'), { recursive: true })
+  await mkdir(join(root, 'shots'), { recursive: true })
+  await writeFile(join(root, 'DESIGN.md'), '# Task Design\n')
+  const appHtml = join(root, 'index.html')
+  await writeFile(appHtml, '<!doctype html><html><body><aside>Channels</aside><main role="log"><p>12%</p><p>48k+</p><p>99%</p></main><textarea placeholder="Send a message"></textarea></body></html>')
+  await writeFile(join(root, 'review/helper.html'), '<!doctype html><html><body>Helper review</body></html>')
+  await writeFile(join(root, 'shots/390.png'), 'png')
+
+  const sources = collectSourceFiles(root, root)
+  const evidence = collectEvidenceFiles(root, root)
+  assert.deepEqual(sources, [appHtml])
+  assert.deepEqual(evidence, [join(root, 'DESIGN.md'), appHtml])
+  assert.equal(inferSurfaceScope(sources, root), 'app')
+  assert.ok(!runCopyLint(sources, 'app').some(f => f.rule === 'copy-stat-strip'))
+
+  // A real project directory with nested `src/review/` must NOT lose its source files
+  const proj = await mkdtemp(join(tmpdir(), 'synapse-proj-review-'))
+  context.after(() => rm(proj, { recursive: true, force: true }))
+  await mkdir(join(proj, 'src/review'), { recursive: true })
+  const nestedReview = join(proj, 'src/review/page.tsx')
+  await writeFile(nestedReview, 'export const ReviewPage = () => <main>Review</main>;\n')
+  assert.deepEqual(collectSourceFiles(proj), [nestedReview])
+
+  // capture-poc at 390x844 without <meta name="viewport"> must lay out at 390px (never 980px)
+  const mobileHtml = join(proj, 'mobile.html')
+  const mobileShot = join(proj, 'mobile-390.png')
+  await writeFile(mobileHtml, '<!doctype html><html><body style="margin:0"><div id="v">Mobile</div></body></html>')
+  const cap = spawnSync(process.execPath, [
+    fileURLToPath(new URL('scripts/capture-poc.mjs', source)),
+    '--url', mobileHtml, '--out', mobileShot, '--width', '390', '--height', '844',
+  ], { encoding: 'utf8' })
+  if (cap.status === 0) {
+    const parsed = JSON.parse(cap.stdout)
+    assert.equal(parsed.width, 390)
+    assert.equal(parsed.height, 844)
+  }
+})
+

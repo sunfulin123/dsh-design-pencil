@@ -82,8 +82,8 @@ test('scoreDesignRun measures step completion, linked refs, variable ratio, lint
           draftId: 'd1',
           review: {
             screens: [
-              { name: 'Overview', nodeId: overview.id, pocScreenshot: 'shots/overview.png', differences: 'Matched layout and Cobalt tokens' },
-              { name: 'Settings', nodeId: settings.id, pocScreenshot: 'shots/settings.png', differences: 'Matched form controls' },
+              { name: 'Overview', nodeId: overview.id, pocScreenshot: 'shots/overview.png', deviation: 'none' },
+              { name: 'Settings', nodeId: settings.id, pocScreenshot: 'shots/settings.png', deviation: 'minor', differences: 'Matched form controls' },
             ],
           },
         },

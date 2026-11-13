@@ -53,6 +53,7 @@ mod batch_program_error;
 mod batch_program_exec_ops;
 pub mod batch_program_objects;
 mod batch_program_parse;
+mod batch_program_placement;
 #[cfg(test)]
 mod batch_program_repair_tests;
 mod batch_program_resolve;

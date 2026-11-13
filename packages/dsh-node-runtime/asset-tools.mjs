@@ -278,7 +278,7 @@ export class AssetTools {
   }
 
   async designAgentPrompt(args) {
-    const { styleId, expectedRevision, useDocumentStyle, ...promptArgs } = args;
+    const { styleId, expectedRevision, useDocumentStyle, includeStyle, ...promptArgs } = args;
     if ((styleId && useDocumentStyle) || (expectedRevision !== undefined && !styleId))
       throw new AssetError('asset-invalid', 'Choose one style source and supply a revision only with styleId');
     const result = this.session.callTool('get_design_agent_prompt', promptArgs);
@@ -302,6 +302,9 @@ export class AssetTools {
     if (typeof content !== 'string' || !content.trim())
       throw new AssetError('asset-invalid', 'The selected design specification is empty');
     const value = result.structuredContent;
+    // The style is still resolved and revision-checked; a caller that already
+    // delivered the specification asks not to have it repeated.
+    if (includeStyle === false) return assetReply({ ...value, style });
     return assetReply({
       ...value,
       style,

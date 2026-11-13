@@ -450,7 +450,11 @@ fn remap_ids(child: &Value, ref_id: &str, overrides: Option<&Map<String, Value>>
         .and_then(Value::as_object)
     {
         for (key, value) in ov {
-            mapped.insert(key.clone(), value.clone());
+            if value.is_null() {
+                mapped.remove(key);
+            } else {
+                mapped.insert(key.clone(), value.clone());
+            }
         }
     }
     mapped.insert(
@@ -560,7 +564,11 @@ pub(crate) fn apply_overrides(child: &Value, overrides: Option<&Map<String, Valu
         .and_then(Value::as_object)
     {
         for (key, value) in ov {
-            mapped.insert(key.clone(), value.clone());
+            if value.is_null() {
+                mapped.remove(key);
+            } else {
+                mapped.insert(key.clone(), value.clone());
+            }
         }
     }
     if let Some(Value::Array(children)) = mapped.clone().get("children") {

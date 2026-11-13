@@ -189,6 +189,11 @@ pub fn children(node: &PenNode) -> &[PenNode] {
     kids.map(Vec::as_slice).unwrap_or(&[])
 }
 
+/// A node's authored layer name (`PenNodeBase.name`), if set.
+pub fn node_name(node: &PenNode) -> Option<&str> {
+    base(node).name.as_deref()
+}
+
 /// A node's `role` (`PenNodeBase.role`), if set.
 pub fn role(node: &PenNode) -> Option<&str> {
     base(node).role.as_deref()

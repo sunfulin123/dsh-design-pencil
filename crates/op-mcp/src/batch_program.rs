@@ -60,7 +60,7 @@ use op_editor_core::command_node::remap_subtree_ids_mapping;
 use op_editor_core::{EditorState, NodeId, PenNodeExt};
 use serde_json::{json, Value};
 
-use super::batch_design::{find_top_level_char, normalize_node_shape, split_operations};
+use super::batch_design::{find_top_level_char, split_operations};
 use super::batch_direct_ops::{split_top_level_args, update_command_from_value};
 use super::batch_page::optional_page_id;
 use super::batch_program_error::ProgramError;
@@ -503,7 +503,7 @@ fn execute_insert(binding: &str, args: &str, ctx: &mut ProgramCtx) -> Result<()>
     let parent_raw = args[..comma].trim();
     let parent = resolve_parent_ref(parent_raw, &ctx.bindings);
     let mut node = parse_node_json(&args[comma + 1..], ctx.post_process, parent.is_none())?;
-    delete_superseded_draft(binding, parent.as_deref(), &node, ctx);
+    super::batch_program_placement::delete_superseded_draft(binding, parent.as_deref(), &node, ctx);
 
     // TS auto-replace: a root-level frame insert replaces the first EMPTY
     // starter root (inheriting its x/y) instead of siblinging it. Restrict the
@@ -523,10 +523,10 @@ fn execute_insert(binding: &str, args: &str, ctx: &mut ProgramCtx) -> Result<()>
         if let Some((id, x, y)) = replaceable {
             ctx.replaceable_empty_root_ids
                 .retain(|candidate| candidate != &id);
-            if x.is_some() {
+            if node.base().x.is_none() && x.is_some() {
                 node.base_mut().x = x;
             }
-            if y.is_some() {
+            if node.base().y.is_none() && y.is_some() {
                 node.base_mut().y = y;
             }
             pre_commands.push((
@@ -536,8 +536,11 @@ fn execute_insert(binding: &str, args: &str, ctx: &mut ProgramCtx) -> Result<()>
                 },
                 "failed to replace the empty root frame",
             ));
+        } else {
+            super::batch_program_placement::auto_place_root_frame(&mut node, ctx);
         }
     }
+    super::batch_program_placement::resolve_inserted_refs(&mut node, ctx);
 
     let mut nodes = vec![node];
     let map = ctx.remap(&mut nodes)?;
@@ -592,8 +595,14 @@ fn execute_update(args: &str, ctx: &mut ProgramCtx) -> Result<()> {
         .ok_or_else(|| ProgramError::Syntax("Update requires path and update data".into()))?;
     let path = resolve_path_expr(args[..comma].trim(), &ctx.bindings);
     let mut value = parse_json_arg(&args[comma + 1..])?;
-    normalize_node_shape(&mut value);
+    super::batch_design::normalize_patch_shape(&mut value);
     let Some(target) = find_node_by_path(ctx.sim.active_children(), &path, &ctx.alias) else {
+        if let Some(child_cmd) =
+            super::batch_program_placement::try_instance_child_update(&path, &value, ctx)
+        {
+            let cmd = child_cmd?;
+            return ctx.emit(cmd, &format!("Update failed for: {path}"));
+        }
         return Err(ProgramError::NotFound(format!(
             "Update target not found: {path}"
         )));
@@ -667,66 +676,4 @@ fn execute_move(args: &str, ctx: &mut ProgramCtx) -> Result<String> {
         &format!("Move failed for: {node_id}"),
     )?;
     Ok(node_id)
-}
-
-/// A RE-USED binding whose previous node sits under the SAME parent with the
-/// same type and (non-empty) name is a REDRAFT, not a new node: a weak model
-/// deliberating in-channel re-emits its section several times ("Let me
-/// redo…"), and appending every draft shipped SEVEN stacked navbars from one
-/// response (measured: minimax-m3, test0703-m3.op). Delete the superseded
-/// draft before the re-insert so the LAST draft wins. Scratch-style binding
-/// reuse (`t=I(cardA, …)` then `t=I(cardB, …)` — different parent, or unnamed
-/// leaves) keeps appending exactly as before; all four gates must agree
-/// before anything is removed. A previous draft already gone (its ancestor
-/// was itself redrafted) is skipped by the sim-apply guard.
-fn delete_superseded_draft(
-    binding: &str,
-    parent: Option<&str>,
-    node: &PenNode,
-    ctx: &mut ProgramCtx,
-) {
-    let Some(new_name) = node.base().name.as_deref().filter(|n| !n.is_empty()) else {
-        return;
-    };
-    let Some(prev_id) = ctx.bindings.get(binding).cloned() else {
-        return;
-    };
-    let parent_id = parent.map(|p| lookup_id(p, &ctx.alias));
-    let Some((prev, prev_parent)) =
-        find_node_with_parent(ctx.sim.active_children(), &prev_id, None)
-    else {
-        return;
-    };
-    let same_shape = std::mem::discriminant(prev) == std::mem::discriminant(node)
-        && prev.base().name.as_deref() == Some(new_name);
-    if !same_shape || prev_parent != parent_id.as_deref() {
-        return;
-    }
-    let del = EditorCommand::DeleteNode {
-        node_id: NodeId::new(&prev_id),
-        page_id: ctx.page_id.clone(),
-    };
-    if ctx.sim.apply(del.clone()) {
-        ctx.commands.push(del);
-    }
-}
-
-/// Locate `id` in the forest and return it together with its parent's id
-/// (`None` = document root).
-fn find_node_with_parent<'a>(
-    nodes: &'a [PenNode],
-    id: &str,
-    parent: Option<&'a str>,
-) -> Option<(&'a PenNode, Option<&'a str>)> {
-    for n in nodes {
-        if n.id_str() == id {
-            return Some((n, parent));
-        }
-        if let Some(children) = n.children() {
-            if let Some(hit) = find_node_with_parent(children, id, Some(n.id_str())) {
-                return Some(hit);
-            }
-        }
-    }
-    None
 }

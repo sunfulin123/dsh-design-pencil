@@ -112,12 +112,29 @@ test('OP guidance selects from the live catalogue and injects the complete selec
     expectedRevision: pending.structuredContent.catalogRevision,
   });
   assert.equal(prompt.isError, false, JSON.stringify(prompt));
-  assert.equal(prompt.structuredContent.version, 'synapse-design/2');
+  assert.equal(prompt.structuredContent.version, 'synapse-design/3');
   assert.equal(prompt.structuredContent.style.id, id);
   assert.ok(prompt.structuredContent.prompt.includes(markdown));
   assert.ok(prompt.structuredContent.prompt.includes('three-layer context funnel'));
   assert.ok(prompt.structuredContent.prompt.includes('OP Engine Build Guide'));
   assert.ok(prompt.structuredContent.prompt.includes('Non-Negotiable Quality Floor'));
+  const staged = await call(host, 'get_design_agent_prompt', {
+    userMessage: '设计一个应用', mode: 'build', styleId: id,
+    expectedRevision: pending.structuredContent.catalogRevision,
+  });
+  assert.equal(staged.isError, false, JSON.stringify(staged));
+  assert.equal(staged.structuredContent.mode, 'build');
+  assert.ok(staged.structuredContent.prompt.includes('OP Engine Build Guide'));
+  assert.equal(staged.structuredContent.prompt.includes('three-layer context funnel'), false);
+  assert.ok(staged.structuredContent.prompt.length < prompt.structuredContent.prompt.length);
+  assert.ok(staged.structuredContent.prompt.includes(markdown));
+  const verifiedOnly = await call(host, 'get_design_agent_prompt', {
+    userMessage: '设计一个应用', mode: 'build', styleId: id, includeStyle: false,
+    expectedRevision: pending.structuredContent.catalogRevision,
+  });
+  assert.equal(verifiedOnly.isError, false, JSON.stringify(verifiedOnly));
+  assert.equal(verifiedOnly.structuredContent.style.id, id, 'the style is still resolved and revision-checked');
+  assert.equal(verifiedOnly.structuredContent.prompt.includes(markdown), false);
   assert.equal((await call(host, 'set_design_md', { markdown })).isError, false);
   const inherited = await call(host, 'get_design_agent_prompt', {
     userMessage: '缩小卡片', mode: 'local', useDocumentStyle: true,

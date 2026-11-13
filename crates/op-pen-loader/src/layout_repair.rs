@@ -43,7 +43,7 @@ fn repair_node(node: &PenNode, rects: &mut BTreeMap<String, [f32; 4]>, is_root: 
             repair_vertical_container(node, props, kids, rects, is_root);
         }
         Some(LayoutMode::Horizontal) if start_justified(props) => {
-            repair_horizontal_container(node, props, kids, rects);
+            repair_horizontal_container(node, props, kids, rects, is_root);
         }
         // An ABSENT `layout` field is legacy flow debris: jian still solves it
         // as a flex row, so the inference below is the only thing that applies
@@ -53,9 +53,9 @@ fn repair_node(node: &PenNode, rects: &mut BTreeMap<String, [f32; 4]>, is_root: 
         // layers off the frame (measured: a full-width gradient scrim was
         // shifted a whole frame-width right and clipped away entirely).
         None if is_frame(node) && should_infer_horizontal_layout(props, kids) => {
-            repair_inferred_horizontal_container(node, props, kids, rects);
+            repair_inferred_horizontal_container(node, props, kids, rects, is_root);
         }
-        _ => repair_container_to_child_bounds(node, props, kids, rects),
+        _ => repair_container_to_child_bounds(node, props, kids, rects, is_root),
     }
     repair_split_metric_column_content(node, props, kids, rects);
 }
@@ -94,16 +94,14 @@ fn repair_vertical_container(
         + match props.justify_content {
             Some(JustifyContent::Center) => free / 2.0,
             Some(JustifyContent::End) => free,
-            Some(JustifyContent::SpaceAround) => {
-                (avail_h - total_main) / layout_kids.len() as f32 / 2.0
-            }
+            Some(JustifyContent::SpaceAround) => free / layout_kids.len() as f32 / 2.0,
             _ => 0.0,
         };
     let effective_gap = match props.justify_content {
         Some(JustifyContent::SpaceBetween) if layout_kids.len() > 1 => {
-            (avail_h - total_main) / (layout_kids.len() - 1) as f32
+            gap + free / (layout_kids.len() - 1) as f32
         }
-        Some(JustifyContent::SpaceAround) => (avail_h - total_main) / layout_kids.len() as f32,
+        Some(JustifyContent::SpaceAround) => gap + free / layout_kids.len() as f32,
         _ => gap,
     };
     let mut bottom = cursor;
@@ -129,7 +127,7 @@ fn repair_vertical_container(
     if height_can_expand_to_content_or_root(props, is_root) && desired_h > parent.h + 0.5 {
         set_height(node, rects, desired_h);
     }
-    repair_container_to_child_bounds(node, props, kids, rects);
+    repair_container_to_child_bounds(node, props, kids, rects, is_root);
 }
 
 fn repair_horizontal_container(
@@ -137,6 +135,7 @@ fn repair_horizontal_container(
     props: &ContainerProps,
     kids: &[PenNode],
     rects: &mut BTreeMap<String, [f32; 4]>,
+    is_root: bool,
 ) {
     let Some(parent) = rect(node, rects) else {
         return;
@@ -167,10 +166,10 @@ fn repair_horizontal_container(
         set_width(node, rects, desired_w);
     }
     let desired_h = bottom - parent.y + padding.bottom;
-    if height_can_expand_to_content(props) && desired_h > parent.h + 0.5 {
+    if height_can_expand_to_content_or_root(props, is_root) && desired_h > parent.h + 0.5 {
         set_height(node, rects, desired_h);
     }
-    repair_container_to_child_bounds(node, props, kids, rects);
+    repair_container_to_child_bounds(node, props, kids, rects, is_root);
 }
 
 fn repair_inferred_horizontal_container(
@@ -178,6 +177,7 @@ fn repair_inferred_horizontal_container(
     props: &ContainerProps,
     kids: &[PenNode],
     rects: &mut BTreeMap<String, [f32; 4]>,
+    is_root: bool,
 ) {
     let Some(parent) = rect(node, rects) else {
         return;
@@ -209,17 +209,15 @@ fn repair_inferred_horizontal_container(
         match props.justify_content {
             Some(JustifyContent::Center) => free / 2.0,
             Some(JustifyContent::End) => free,
-            Some(JustifyContent::SpaceAround) => {
-                (avail_w - total_main) / layout_kids.len() as f32 / 2.0
-            }
+            Some(JustifyContent::SpaceAround) => free / layout_kids.len() as f32 / 2.0,
             _ => 0.0,
         }
     };
     let effective_gap = match props.justify_content {
         Some(JustifyContent::SpaceBetween) if layout_kids.len() > 1 => {
-            (avail_w - total_main) / (layout_kids.len() - 1) as f32
+            gap + free / (layout_kids.len() - 1) as f32
         }
-        Some(JustifyContent::SpaceAround) => (avail_w - total_main) / layout_kids.len() as f32,
+        Some(JustifyContent::SpaceAround) => gap + free / layout_kids.len() as f32,
         _ => gap,
     };
 
@@ -252,7 +250,7 @@ fn repair_inferred_horizontal_container(
         cursor += child_rect.w + effective_gap;
     }
 
-    repair_container_to_child_bounds(node, props, kids, rects);
+    repair_container_to_child_bounds(node, props, kids, rects, is_root);
 }
 
 fn repair_container_to_child_bounds(
@@ -260,11 +258,13 @@ fn repair_container_to_child_bounds(
     props: &ContainerProps,
     kids: &[PenNode],
     rects: &mut BTreeMap<String, [f32; 4]>,
+    is_root: bool,
 ) {
     if is_unbounded_group(node, props) {
         return;
     }
-    if !height_can_expand_to_content(props) && !width_can_expand_to_content(props) {
+    if !height_can_expand_to_content_or_root(props, is_root) && !width_can_expand_to_content(props)
+    {
         return;
     }
     let Some(parent) = rect(node, rects) else {
@@ -285,7 +285,7 @@ fn repair_container_to_child_bounds(
             set_width(node, rects, desired_w);
         }
     }
-    if height_can_expand_to_content(props) {
+    if height_can_expand_to_content_or_root(props, is_root) {
         let desired_h = max_bottom - parent.y + padding.bottom;
         if desired_h > parent.h + 0.5 {
             set_height(node, rects, desired_h);
@@ -576,15 +576,12 @@ fn height_can_expand_to_content(props: &ContainerProps) -> bool {
 fn height_can_expand_to_content_or_root(props: &ContainerProps, is_root: bool) -> bool {
     // A clipped, explicitly-sized frame must honour its declared height even at
     // the root: Pencil clips a fixed-height screen whose content overflows
-    // rather than growing the frame to fit it. Without this guard the
-    // `|| is_root` override grew a `height: 900, clip: true` screen to its
-    // ~950px content height (off-by-50 vs Pencil's clipped baseline). The
-    // non-root path already refuses via `height_can_expand_to_content`; mirror
-    // it for the root instead of blanket-allowing expansion.
+    // rather than growing the frame to fit it, while unclipped roots still
+    // expand to overflowing content so content is never truncated.
     if matches!(props.height.as_ref(), Some(SizingBehavior::Number(_)))
         && props.clip_content == Some(true)
     {
-        return height_can_expand_to_content(props);
+        return height_can_follow_content(props);
     }
     height_can_expand_to_content(props) || is_root
 }
@@ -649,7 +646,7 @@ fn layout_child(node: &PenNode) -> bool {
     let Some(base) = base(node) else {
         return true;
     };
-    if base.role.as_deref() == Some("overlay") {
+    if base.visible == Some(false) || base.role.as_deref() == Some("overlay") {
         return false;
     }
     // Responsive constraints plus an authored coordinate are an explicit

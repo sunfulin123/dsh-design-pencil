@@ -1,8 +1,8 @@
 # Shared Design Judgement & Quality Floor
 
-Engine-neutral design decisions shared by `synapse-design` (editable canvas) and `synapse-design-html` (browser POC) so both routes evaluate hierarchy, states, copy, and craft by the same bar.
+Engine-neutral judgement shared by `synapse-design` (editable canvas) and `synapse-design-html` (browser POC). It is deliberately short: it says how to decide and how to prove a decision, and leaves medium-specific technique to `build.md`, HTML/CSS semantics and the on-demand craft reference.
 
-**Precedence:** User requirements > Selected product `DESIGN` > Medium-specific build rules (`build.md` or HTML/CSS semantics) > Domain guidelines > This shared judgement guide.
+**Precedence:** User requirements > Selected product `DESIGN` > Medium-specific build rules (`build.md` or HTML/CSS semantics) > Domain guidelines > This shared judgement guide. One exception: where a `DESIGN` value would make content unreadable or a control unusable on this surface, keep the content usable, then record the departure and its reason (see Style translation).
 
 ## 1. Surface Mode Selection
 
@@ -24,33 +24,72 @@ Evaluate all six content states for every journey and data surface: `loading`, `
 
 ## 3. Interface Copy & Truthfulness
 
+- Write all authored interface copy inside the design in **English by default**, regardless of the conversation language, unless the user explicitly asks to design in another language (or when preserving the established language of an existing non-English design during a local edit). Never mix half-translated languages on the same screen.
 - Lead each state with the single fact the user needs now, followed by the next available action and only the context that changes the decision. Do not repeat the heading in helper copy.
 - Use specific `verb + object` labels on primary buttons and navigation items, keeping terminology consistent across every screen.
 - Preserve user-supplied facts and domain vocabulary. Clearly identify illustrative sample records; never invent customer testimonials, unverified performance claims, real third-party logos, or fake system status.
 
-## 4. Non-Negotiable Quality Floor (12 Checks)
+## 4. Design Judgement
 
-Every POC and high-fidelity screen must clear these 12 checks, evaluated in context of the selected `DESIGN`:
+Each rule states its reason so it can be applied to cases it does not name.
 
-1. **Readable contrast:** Text, icons, and active control boundaries remain clearly legible against their actual rendered surface.
-2. **Typographic hierarchy:** Distinct scale and weight steps separate page title, section heading, body copy, metadata, and tabular figures, with comfortable reading line lengths.
-3. **Restrained elevation:** Layer surfaces through clean luminance steps or subtle offset shadows; avoid glowing halos and unnecessary nested cards ("don't box everything").
-4. **Proximity before borders:** Related items sit closer together (`4–8px`) than separate groups (`24px+`), and headings carry more space above them than below them; use hairline dividers only where whitespace alone cannot separate peers.
-5. **Single primary focus:** Each screen has one dominant work or focal region and one unmistakable primary action, without competing primary CTAs or ungrouped option overload.
-6. **Earned structure (checked against `DESIGN`):** Choose section and card layouts from actual content rather than automatic equal 3-card icon rows, repetitive uppercase eyebrows above every heading, pill/box soup around every metadata token, or arbitrary `01 / 02 / 03` numbering unless the selected `DESIGN` or content sequence calls for them.
-7. **Vocabulary & sibling consistency:** Repeated rows, cards, buttons, inputs, and status badges share one structural anatomy, radius relationship, spacing rhythm, and semantic color meaning across all screens.
-8. **Interactive states & hit targets:** Controls communicate interactive affordance (`default`, `active`/`selected`, `disabled`, plus hover/focus where supported) and provide comfortable hit areas (`44px` target recommendation on touch/primary controls, `< 24px` treated as critical) without overlapping or clipping neighbors.
-9. **Labels & assistive clarity:** Inputs keep visible labels, icon-only controls carry clear identity, and capabilities not verified by the current renderer (such as live keyboard order on a static screenshot) are reported honestly.
-10. **Overflow resilience:** Flexible containers allow long strings, multilingual copy, and multi-column tables to wrap or truncate cleanly without horizontal blowout or clipped actions.
-11. **Truthful, complete content:** Data surfaces carry realistic, varied domain content with zero `placeholder` scaffolding, lorem ipsum, mixed-language UI chrome, or dead controls left behind.
-12. **Version-bound visual evidence:** Completion requires inspecting actual rendered screenshots of the current artifact version and recording findings honestly.
+- **Intent.** Before drawing, state who the user is, the task they are completing and what counts as success. Every major decision should trace back to one of these; an element with no such reason is removed. A layout can be tidy and still fail the task, and a decision without a reason cannot be defended or revised.
+- **Structure before style.** Settle information hierarchy, which content belongs to which group, and reading order before choosing surfaces, colour or decoration. Borders, cards and extra whitespace do not repair unclear structure; they hide it.
+- **Three levels of space.** Distinguish distance between groups, distance within a group, and distance inside a component (content to its own edge). The same relationship uses the same value everywhere; different levels differ visibly (within a group `4–8px`, between groups `24px+`). A heading sits closer to the content it introduces than to the group above it. Sibling groups share one heading indent and one heading-to-content distance. Badges, counters and corner controls keep a clear inset from the edge of their container and never touch or straddle it. One global gap cannot express these relationships, and an empty spacer node used to push content apart hides the relationship instead of stating it; express spacing through grouping, `gap` and `padding`.
+- **Hierarchy.** Each screen has one primary region and one primary action. Build priority from scale, weight, position and space, not from colour alone, and keep decoration from competing with the task.
+- **Consistency.** Sibling headings, repeated rows, cards, controls and states share anatomy, alignment, size, type level, radius relationship and behaviour across every screen. A difference is allowed only when its purpose can be stated.
+- **Geometric and optical alignment.** Establish alignment with layout constraints, then judge the rendered result: icons, CJK glyphs, Latin text and digits have different visual centres, so mathematical centring can still look off. Check icon-to-text baselines, digits inside badges, the visual weight of adjacent buttons, and avatar, icon and text sizes together. Do not centre every child against its container; the two lines of a two-line title belong above and below the centre, and a per-line centring measurement is evidence about that line, not an instruction to move it.
+- **Style translation.** A selected style may come from a different kind of surface. Inherit its colour roles, type character, radius language and restraint; set density, type size and component size from the task on this surface. Applying a marketing scale to an operational table, or drifting from the style without saying so, both fail. Record each deliberate departure with its reason.
+- **Readable and usable first.** Check contrast, line length, line height, wrapping, icon recognisability, hit areas, visible labels and focus indication. A design must survive content growth, localisation, text scaling and other viewports; it may not depend on ideal-length sample copy.
 
-## 5. Five-Dimension Review Rubric
+## 5. Non-Negotiable Quality Floor
 
-Record structured visual and quality observations across all five dimensions before finishing:
+Blocking defects. A screen showing any of these is repaired and re-checked before delivery; if it cannot be repaired, report the unfinished scope instead of declaring the work complete.
 
-1. `task_integrity` — All planned screens, primary user flows, and POC/reference scope are present and operable.
-2. `structure_overflow` — Zero text/control clipping, element collision, collapsed containers, or broken alignment in rendered output.
-3. `hierarchy_density` — Clear focal region, reading order, action prominence, and density matched to the surface mode.
-4. `style_consistency` — Typography, color roles, spacing scale, tokens, and linked components match the selected `DESIGN` without drift.
-5. `content_states` — Realistic domain copy, language/CJK consistency, and explicit coverage or justified non-applicability of the six content states.
+1. **Missing content.** Planned content, components, states or primary actions are absent or not visible. Blank text, an empty component, an instance override that did not apply, or an unloaded asset is missing content — never treat the gap it leaves as whitespace.
+2. **Unreachable action.** A primary action is absent, hidden, covered or has no usable hit area (`44px` recommended on touch and primary controls; below `24px` is critical).
+3. **Clipped or overflowing content.** Text or controls are cut off, or a container blows out horizontally.
+4. **Overlap.** Elements collide or cover one another unintentionally.
+5. **Missing key state.** A state the journey depends on is neither designed nor justified as not applicable.
+6. **Broken hierarchy.** No identifiable primary region or action, or competing primary actions.
+7. **Unreadable text.** Text, icons or active control boundaries are not legible against their actual rendered surface.
+8. **Untruthful content.** Placeholder scaffolding, lorem ipsum, mixed-language chrome, invented claims or dead controls remain.
+
+Below the floor, judge against section 4: restrained elevation without nested cards, structure chosen from real content instead of automatic equal card rows or eyebrow labels above every heading, visible control states, labelled inputs and identifiable icon-only controls.
+
+## 6. Evidence and Delivery
+
+A check proves only what it actually covered. These distinctions are the ones most often blurred:
+
+- A screenshot was produced ≠ it was inspected.
+- Automated diagnostics are clean ≠ the design passes. No finding is not a pass; a finding is not automatically a defect. Diagnostics are leads to weigh against the rendered result and the intent.
+- A basic tab-order check ≠ accessibility verified.
+- An approximate preview ≠ exact canvas evidence.
+- A change was applied ≠ the file was saved. A preview generated, a change applied and a file saved are three facts; report each.
+
+**Status of every check:**
+
+- `pass` — the check was executed and its evidence supports the result.
+- `fail` — a defect needing repair was found.
+- `unverified` — not executed, or the evidence is insufficient. Say what was not covered and why.
+- `not-applicable` — irrelevant to this task, with the reason.
+
+Never report `pass` to satisfy a gate. An honest `unverified` is a correct result; a false `pass` is a defect in the delivery.
+
+**Evidence for each check:** what was examined and its scope, the method or tool, what was found, and what was not covered. Name something a reader can verify: a node, a measured size, a place in a screenshot. "Looks correct" is not evidence.
+
+**Version binding:** evidence describes one version of the artifact. Any later change invalidates it for the affected scope, which is checked again.
+
+**Delivered capability:** distinguish a static design, an interactive prototype and a production implementation. Classify each primary action as `verifiable` (it produced an observed result), `visual-only` (it is drawn but does nothing) or `not-implemented`. A notice saying a feature is unavailable shows that the feature is not implemented; it is not a successful verification of that feature.
+
+**Scope fidelity & design upgrade:** when continuing from a confirmed prototype or reference, preserve its confirmed scope (screen list, state range, copy/core flow, and verifiable actions) while elevating visual hierarchy, typography, spacing, and component craft (`deviation: "upgrade"` recorded with `{what, why}`—no user approval needed). Leaving out a screen or surrounding shell, expressing a state differently, or reducing copy/actions is a `substantive` scope deviation: ask before delivering it; a sentence in the handover is not consent.
+
+## 7. Five-Dimension Review Rubric
+
+Report one check per dimension, each with a status and evidence as defined in section 6:
+
+1. `task_integrity` — all planned screens, primary flows and reference scope are present, visible and operable.
+2. `structure_overflow` — no clipping, collision, collapsed container or broken alignment in rendered output.
+3. `hierarchy_density` — clear focal region, reading order, action prominence, the three levels of space, and density matched to the surface mode.
+4. `style_consistency` — typography, colour roles, tokens and linked components follow the selected `DESIGN`, with recorded departures; siblings are consistent.
+5. `content_states` — real, complete, visible content in English by default (or the user's explicitly requested UI language, kept consistent in one language), and the six content states designed or justified.

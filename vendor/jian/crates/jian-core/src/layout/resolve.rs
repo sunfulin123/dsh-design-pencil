@@ -336,6 +336,9 @@ pub fn node_to_style(n: &jian_ops_schema::node::PenNode) -> Style {
             bottom: LengthPercentageAuto::Auto,
         };
     }
+    if node_base(n).is_some_and(|b| b.visible == Some(false)) {
+        style.display = Display::None;
+    }
     style
 }
 

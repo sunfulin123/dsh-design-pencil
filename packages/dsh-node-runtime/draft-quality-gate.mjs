@@ -16,7 +16,7 @@ const NON_BLOCKING_LINT_WARNINGS = new Set([
   'slop/three-card-feature-row',
   'slop/rounded-card-wall',
 ]);
-const LINT_QUALITY_FIELDS = ['geometryIssues', 'layoutIssues', 'contrastIssues', 'iconIssues', 'structureIssues'];
+const LINT_QUALITY_FIELDS = ['geometryIssues', 'layoutIssues', 'contrastIssues', 'iconIssues', 'structureIssues', 'contentIssues'];
 const MAX_LINT_VALIDATION_PAGES = 100;
 const MAX_TOUCH_TARGET_PAGES = 50;
 
@@ -113,7 +113,7 @@ export function assertNoExternalArguments(
     const designPath = allowDesignPaths && ['path', 'screenPath', 'svgPath', 'pathData'].includes(key);
     if (
       (/(?:^|_)(?:file|source|output|preset|svg|html|snapshot)?path$/i.test(key) && !designPath)
-      || /(?:url|uri|directory|outputdir|export|import|spawn)/i.test(key)
+      || /(?:url|uri|directory|outputdir|export|import|spawn|fetchfonts)/i.test(key)
     ) {
       throw new Error(`${toolName}: ${location}.${key} is not allowed in an isolated design draft`);
     }

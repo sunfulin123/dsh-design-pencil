@@ -41,6 +41,15 @@ pub enum IssueCategory {
     RedundantWrapper,
     ExcessiveNestingDepth,
     AbsolutePositioningShare,
+    /// Declared content that cannot render: an instance override that misses
+    /// its component, an instance of a missing component, or blank text.
+    ContentNotVisible,
+    /// Sibling groups whose headings do not share one indent or one
+    /// heading-to-content distance. Report-only lead.
+    SiblingGroupRhythm,
+    /// A badge-like element that touches or crosses its container edge.
+    /// Report-only lead.
+    BadgeEdgeInset,
     /// GPU cost of SkSL shader fills — how many full-bleed fragment passes
     /// one screen carries. Advisory: expensive, but it renders.
     ShaderBudget,

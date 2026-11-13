@@ -26,7 +26,9 @@ use super::batch_design_wire::parse_batch_items;
 // Re-exported so the pre-split `crate::batch_design::<item>` paths that
 // the rest of the crate uses keep resolving after the carve-off.
 pub(crate) use super::batch_design_dsl::{find_top_level_char, split_operations};
-pub(crate) use super::batch_design_normalize::{ensure_node_ids, normalize_node_shape};
+pub(crate) use super::batch_design_normalize::{
+    ensure_node_ids, normalize_node_shape, normalize_patch_shape,
+};
 
 // First-party `batch_design` tool — insert N leaf nodes on the
 // active page in one atomic shot. Mirrors TS `batch_design` for

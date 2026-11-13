@@ -19,10 +19,12 @@ test('canvas plan respects structured platform and explicit sizes without adding
   assert.equal(mobile.canvas.width, 390);
   assert.equal(mobile.canvas.finalHeight, 'fit_content');
   assert.doesNotMatch(mobile.seedScript, /fill|#[0-9a-f]{6}/i);
+  assert.doesNotMatch(mobile.seedScript, /"clipContent"\s*:\s*true/);
   const fixed = planDesignCanvas({ width: 1024, height: 768 });
   assert.equal(fixed.canvas.width, 1024);
   assert.equal(fixed.canvas.finalHeight, 768);
   assert.equal(fixed.canvas.fixedViewport, true);
+  assert.match(fixed.seedScript, /"clipContent":true/);
   const numeric = planDesignCanvas({ userMessage: '1024×768' });
   assert.equal(numeric.canvas.width, 1024);
   assert.equal(numeric.canvas.fixedViewport, true);

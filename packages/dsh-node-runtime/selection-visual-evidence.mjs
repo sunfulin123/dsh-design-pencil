@@ -154,6 +154,18 @@ function buildEvidenceSummary(fidelity, scale, cropBounds, textMeasurements) {
   return lines.join('\n');
 }
 
+/** True when a sibling sits entirely above or below `rect`, so the parent holds a vertical stack. */
+function isStackedInParent(rect, parentRect) {
+  const siblings = Array.isArray(parentRect?.children) ? parentRect.children : [];
+  return siblings.some((sibling) =>
+    isObjectRecord(sibling)
+    && sibling.id !== rect.id
+    && typeof sibling.y === 'number'
+    && typeof sibling.height === 'number'
+    && sibling.height > 0
+    && (sibling.y + sibling.height <= rect.y || sibling.y >= rect.y + rect.height));
+}
+
 function measureSelectedTextNodes(decoded, cropBounds, scale, ctx) {
   const { selectedIds, trees } = ctx;
   return collectTextNodesForSelection(selectedIds, trees).map((rect) => {
@@ -171,6 +183,7 @@ function measureSelectedTextNodes(decoded, cropBounds, scale, ctx) {
       scale,
       parentRect,
       { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      isStackedInParent(rect, parentRect),
     );
     return {
       nodeId: rect.id,

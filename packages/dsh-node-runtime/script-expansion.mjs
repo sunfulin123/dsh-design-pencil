@@ -1,5 +1,6 @@
 import { SCRIPT_PRELUDE } from './script-prelude.mjs';
 import { runIsolatedDesignScript } from './quickjs-script-sandbox.mjs';
+import { extractDesignSpecFonts } from './font-resolution.mjs';
 
 const MAX_SCRIPT_BYTES = 262_144;
 const MAX_RECORDED_LINES = 4096;
@@ -46,6 +47,16 @@ export function expandScriptWithVariables(rawScript, options = {}) {
       pushOp(`${bind}=K(${kit}, ${parent}, ${json})`);
       return bind;
     },
+    __recordC(sourceId, parent, json) {
+      const bind = `b${counter++}`;
+      pushOp(`${bind}=C(${sourceId}, ${parent}, ${json})`);
+      return bind;
+    },
+    __recordR(targetId, json) {
+      const bind = `b${counter++}`;
+      pushOp(`${bind}=R(${targetId}, ${json})`);
+      return bind;
+    },
     __recordU(nodeId, json) {
       pushOp(`U(${nodeId}, ${json})`);
       return nodeId;
@@ -81,7 +92,12 @@ export function expandScriptWithVariables(rawScript, options = {}) {
       return axis;
     },
   };
-  runIsolatedDesignScript(SCRIPT_PRELUDE, stripped, callbacks, Boolean(options.preserveAuthoredGeometry));
+  const specFonts = options.document ? extractDesignSpecFonts(options.document) : undefined;
+  runIsolatedDesignScript(SCRIPT_PRELUDE, stripped, callbacks, {
+    preserveAuthoredGeometry: Boolean(options.preserveAuthoredGeometry),
+    defaultFontFamily: options.defaultFontFamily ?? specFonts?.bodyFont,
+    headingFontFamily: options.headingFontFamily ?? specFonts?.headingFont,
+  });
   if (limitExceeded) throw new Error('Design script recorded too many operations or bytes');
   if (
     lines.length === 0 &&

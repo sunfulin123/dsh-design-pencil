@@ -31,8 +31,8 @@ function parseViewportWidth(rawViewport) {
 }
 
 export function parsePocScreenshotInputs(raw) {
-  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 16) {
-    throw new Error('Provide one to sixteen structured POC screenshots ({ path, screen, state?, viewport })');
+  if (!Array.isArray(raw) || raw.length > 16) {
+    throw new Error('Provide zero to sixteen structured POC screenshots ({ path, screen, state?, viewport })');
   }
   return raw.map((entry) => {
     if (!isRecord(entry) || !nonEmptyText(entry.path) || !nonEmptyText(entry.screen)) {
@@ -53,6 +53,7 @@ export function parsePocScreenshotInputs(raw) {
 
 export function verifyPlannedScreensCovered(verifiedShots, plannedScreens) {
   if (!Array.isArray(plannedScreens) || plannedScreens.length === 0) return;
+  if (Array.isArray(verifiedShots) && verifiedShots.length === 0) return;
   const covered = new Set(verifiedShots.map((shot) => (shot.screen ?? '').toLocaleLowerCase('en-US')));
   const missing = plannedScreens
     .map((s) => s.name)
@@ -77,22 +78,60 @@ export function groupPocScreens(screenshots) {
   return [...byScreen.values()];
 }
 
-function assertPassingGateEntry(report, key) {
+const ACTION_KINDS = ['verifiable', 'visual-only', 'not-implemented'];
+
+/**
+ * A ledger entry records what was actually done. `unverified` is a valid,
+ * honest result (a tab-order check does not verify accessibility), so the gate
+ * accepts it with a statement of what was not covered instead of demanding pass.
+ */
+function assertHonestGateEntry(report, key, unverified) {
   const entry = report[key];
-  if (!isRecord(entry) || entry.status !== 'pass' || !nonEmptyText(entry.evidence)) {
-    throw new Error(`POC evidence ledger requires ${key}.status="pass" with a non-empty observation`);
+  if (isRecord(entry) && entry.status === 'pass' && nonEmptyText(entry.evidence)) return;
+  if (isRecord(entry) && entry.status === 'unverified' && nonEmptyText(entry.uncovered)) {
+    unverified.push({ check: key, uncovered: entry.uncovered.trim() });
+    return;
   }
+  throw new Error(
+    `POC evidence ledger ${key} requires status="pass" with the observed evidence, or status="unverified" with "uncovered" stating what was not checked`,
+  );
 }
 
-function assertValidLedgerState(states, state) {
+function assertValidLedgerState(states, state, unverified) {
   const st = states?.[state];
-  const pass = isRecord(st) && st.status === 'pass' && nonEmptyText(st.evidence);
-  const na = isRecord(st) && st.status === 'not-applicable' && nonEmptyText(st.reason);
-  if (!pass && !na) {
+  if (isRecord(st) && st.status === 'pass' && nonEmptyText(st.evidence)) return;
+  if (isRecord(st) && st.status === 'not-applicable' && nonEmptyText(st.reason)) return;
+  if (isRecord(st) && st.status === 'unverified' && nonEmptyText(st.uncovered)) {
+    unverified.push({ check: `contentStates.${state}`, uncovered: st.uncovered.trim() });
+    return;
+  }
+  throw new Error(
+    `POC evidence ledger contentStates.${state} requires status="pass"+evidence, status="not-applicable"+reason, or status="unverified"+uncovered`,
+  );
+}
+
+/** Each primary action states what was delivered; only an observed result makes it verifiable. */
+function validateLedgerActions(rawActions) {
+  if (!Array.isArray(rawActions)) {
     throw new Error(
-      `POC evidence ledger contentStates.${state} requires status="pass"+evidence or status="not-applicable"+reason`,
+      `POC evidence ledger actions must list each primary action as ${ACTION_KINDS.join(', ')} (an empty list states that the prototype has no actions)`,
     );
   }
+  return rawActions.map((entry) => {
+    if (!isRecord(entry) || !nonEmptyText(entry.label) || !ACTION_KINDS.includes(entry.kind)) {
+      throw new Error(`POC evidence ledger actions entries require a label and kind (${ACTION_KINDS.join(', ')})`);
+    }
+    if (entry.kind === 'verifiable' && !nonEmptyText(entry.evidence)) {
+      throw new Error(
+        `POC evidence ledger action "${entry.label.trim()}" is marked verifiable and requires evidence of the result observed in the browser; a notice that the feature is unavailable makes it not-implemented`,
+      );
+    }
+    return {
+      label: entry.label.trim(),
+      kind: entry.kind,
+      ...(nonEmptyText(entry.screen) ? { screen: entry.screen.trim() } : {}),
+    };
+  });
 }
 
 export function parseAndValidateEvidenceLedgerJson(rawBytes) {
@@ -103,11 +142,13 @@ export function parseAndValidateEvidenceLedgerJson(rawBytes) {
     throw new Error('POC evidence ledger must be valid JSON produced by verify-surface.mjs');
   }
   if (!isRecord(parsed)) throw new Error('POC evidence ledger must be a JSON object');
+  const unverified = [];
   for (const key of ['accessibility', 'responsive', 'visualReview']) {
-    assertPassingGateEntry(parsed, key);
+    assertHonestGateEntry(parsed, key, unverified);
   }
   const states = isRecord(parsed.contentStates) ? parsed.contentStates : undefined;
-  for (const state of CONTENT_STATES) assertValidLedgerState(states, state);
+  for (const state of CONTENT_STATES) assertValidLedgerState(states, state, unverified);
+  const actions = validateLedgerActions(parsed.actions);
   if (!Array.isArray(parsed.targetViewports) || parsed.targetViewports.length === 0
       || !Array.isArray(parsed.renderedEvidence) || parsed.renderedEvidence.length === 0) {
     throw new Error('POC evidence ledger requires non-empty targetViewports and renderedEvidence');
@@ -115,7 +156,8 @@ export function parseAndValidateEvidenceLedgerJson(rawBytes) {
   if (!Array.isArray(parsed.sourceFiles) || parsed.sourceFiles.length === 0) {
     throw new Error('POC evidence ledger sourceFiles must record the inspected prototype files and their sha256 hashes');
   }
-  const requiredRenders = parsed.targetViewports.map((viewport) => {
+  const requiredRenders = [];
+  for (const viewport of parsed.targetViewports) {
     if (!nonEmptyText(viewport)) {
       throw new Error('POC evidence ledger targetViewports entries must be non-empty strings');
     }
@@ -123,6 +165,10 @@ export function parseAndValidateEvidenceLedgerJson(rawBytes) {
     const match = parsed.renderedEvidence.find(
       (item) => isRecord(item) && typeof item.viewport === 'string' && item.viewport.trim().toLocaleLowerCase('en-US') === vpKey,
     );
+    if (isRecord(match) && match.status === 'unverified' && nonEmptyText(match.uncovered)) {
+      unverified.push({ check: `renderedEvidence.${viewport.trim()}`, uncovered: match.uncovered.trim() });
+      continue;
+    }
     if (
       !isRecord(match)
       || match.status !== 'captured'
@@ -131,11 +177,11 @@ export function parseAndValidateEvidenceLedgerJson(rawBytes) {
       || !/^[a-f0-9]{64}$/u.test(match.sha256)
     ) {
       throw new Error(
-        `POC evidence ledger renderedEvidence is missing a valid captured PNG entry for viewport ${viewport}`,
+        `POC evidence ledger renderedEvidence is missing a valid captured PNG entry or status="unverified"+uncovered for viewport ${viewport}`,
       );
     }
-    return { viewport, artifact: match.artifact.trim(), sha256: match.sha256 };
-  });
+    requiredRenders.push({ viewport, artifact: match.artifact.trim(), sha256: match.sha256 });
+  }
   const sourceEntries = parsed.sourceFiles.map((entry) => {
     if (
       !isRecord(entry)
@@ -147,5 +193,5 @@ export function parseAndValidateEvidenceLedgerJson(rawBytes) {
     }
     return { path: entry.path, sha256: entry.sha256 };
   });
-  return { requiredRenders, sourceEntries };
+  return { requiredRenders, sourceEntries, unverified, actions };
 }

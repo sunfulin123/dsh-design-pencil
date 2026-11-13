@@ -535,3 +535,40 @@ fn absent_layout_still_infers_a_horizontal_row() {
     assert_eq!(a.bounds.origin.x, 0.0);
     assert_eq!(b.bounds.origin.x, 110.0);
 }
+
+#[test]
+fn hidden_flex_children_do_not_consume_space_and_unclipped_roots_expand_while_clipped_stay_fixed() {
+    let unclipped = r##"{
+      "version":"1.0.0","pages":[{"id":"p","name":"P","children":[
+        {"type":"frame","id":"root","width":400,"height":300,
+         "layout":"vertical","gap":16,"padding":20,
+         "children":[
+          {"type":"rectangle","id":"m1","width":200,"height":120},
+          {"type":"rectangle","id":"hidden_msg","width":200,"height":80,"visible":false},
+          {"type":"rectangle","id":"m2","width":200,"height":120},
+          {"type":"rectangle","id":"m3","width":200,"height":200}
+         ]}
+      ]}],"children":[]
+    }"##;
+    let scene = editor_state_to_layout_scene(&state_from(unclipped));
+    let root = &scene.pages[0].children[0];
+    let m1 = root.find("m1").expect("m1");
+    let m2 = root.find("m2").expect("m2");
+    // m1 is at y=20..140; hidden_msg is skipped so m2 starts at 140 + 16 = 156.
+    assert_eq!(m1.bounds.origin.y, 20.0);
+    assert_eq!(m2.bounds.origin.y, 156.0);
+    // Unclipped numeric root expands to fit overflowing content (20 + 120 + 16 + 120 + 16 + 200 + 20 = 512).
+    assert_eq!(root.bounds.size.y, 512.0);
+
+    let clipped_viewport = r##"{
+      "version":"1.0.0","pages":[{"id":"p","name":"P","children":[
+        {"type":"frame","id":"root","width":1440,"height":900,"clipContent":true,
+         "layout":"horizontal",
+         "children":[
+          {"type":"frame","id":"sidebar","width":280,"height":902,"layout":"vertical"}
+         ]}
+      ]}],"children":[]
+    }"##;
+    let clipped_scene = editor_state_to_layout_scene(&state_from(clipped_viewport));
+    assert_eq!(clipped_scene.pages[0].children[0].bounds.size.y, 900.0);
+}

@@ -63,20 +63,22 @@ fn op_skill_reference_is_addressable_and_unknown_resource_is_rejected() {
         panic!("expected OP guidance");
     };
     assert!(out["designPrompt"].contains("real rendered screenshot"));
-    assert_eq!(out["version"], "synapse-design/2");
+    assert_eq!(out["version"], op_ai_skills::synapse_op_design::VERSION);
     assert!(out["availableSections"].contains("\"op-design-build\""));
     assert!(out["availableSections"].contains("\"op-design-judgement\""));
 
     for (section, needle) in [
         ("op-design-build", "textGrowth"),
         ("op-design-judgement", "Non-Negotiable Quality Floor"),
+        ("op-design-craft", "fontResolution"),
+        ("op-design-feedback", "Find the cause"),
     ] {
         let args = BTreeMap::from([("section".into(), section.into())]);
         let ToolOutcome::Ok(out) = get_design_prompt_snapshot(&state).call(&args) else {
             panic!("expected {section} guidance");
         };
         assert!(out["designPrompt"].contains(needle), "{section}");
-        assert_eq!(out["version"], "synapse-design/2");
+        assert_eq!(out["version"], op_ai_skills::synapse_op_design::VERSION);
     }
 
     let args = BTreeMap::from([("section".into(), "op-design-missing".into())]);

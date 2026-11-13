@@ -13,10 +13,19 @@ pub(crate) fn normalize_node_shape(value: &mut serde_json::Value) {
     // Canonicalize authoring-only video nodes before any shape normalizer or
     // typed PenNode parse can inspect their discriminator.
     op_pen_loader::normalize_video_alias(value);
-    normalize_node_shape_inner(value);
+    normalize_node_shape_mode(value, false);
 }
 
-fn normalize_node_shape_inner(value: &mut serde_json::Value) {
+/// Patch-mode variant of [`normalize_node_shape`] for `U()` / `update_node`
+/// and `Ref.descendants` overrides: preserves explicit `null` values (such as
+/// `"stroke": null` or `"fill": null`) so `cmd_patch_node_data` can clear
+/// existing fields instead of having the normalizer strip the key beforehand.
+pub(crate) fn normalize_patch_shape(value: &mut serde_json::Value) {
+    op_pen_loader::normalize_video_alias(value);
+    normalize_node_shape_mode(value, true);
+}
+
+fn normalize_node_shape_mode(value: &mut serde_json::Value, preserve_null_clear: bool) {
     let serde_json::Value::Object(obj) = value else {
         return;
     };
@@ -26,6 +35,7 @@ fn normalize_node_shape_inner(value: &mut serde_json::Value) {
     // drop as unknown keys, leaving the frame with no layout → it renders as an
     // unstyled horizontal strip. Rename before anything else reads them.
     normalize_pencil_autolayout_dialect(obj);
+    normalize_per_side_stroke_shorthands(obj);
     // Flatten a STRUCTURED `layout` object (`{type,gap,padding}` or the
     // externally-tagged `{Horizontal:{…}}`) down to our flat `layout` string +
     // hoisted gap/padding. glm-5.2 in the loop emits this Figma/flex shape; serde
@@ -35,29 +45,39 @@ fn normalize_node_shape_inner(value: &mut serde_json::Value) {
     // the tree thrashed to empty).
     normalize_layout_object(obj);
     if let Some(fill) = obj.get_mut("fill") {
-        normalize_fill(fill);
+        if !fill.is_null() {
+            normalize_fill(fill);
+        }
     }
     // A weak model sometimes emits an empty stroke (`"stroke":[]` or `""`),
     // which deserializes as a 0-length `PenStroke` and fails the WHOLE node
     // (and cascades to every child that targets its binding). Treat an empty
-    // stroke as "no stroke" — drop the key so the node still lands.
+    // stroke as "no stroke" — drop the key on new-node inserts, while keeping
+    // explicit `"stroke": null` in patch mode so `U(id, {stroke: null})` clears
+    // an existing stroke.
     if obj.get("stroke").is_some_and(|s| {
         matches!(s, serde_json::Value::Array(a) if a.is_empty())
             || matches!(s, serde_json::Value::String(t) if t.trim().is_empty())
-            || s.is_null()
+            || (!preserve_null_clear && s.is_null())
     }) {
         obj.remove("stroke");
     }
     if let Some(stroke) = obj.get_mut("stroke") {
-        normalize_stroke(stroke);
+        if !stroke.is_null() {
+            normalize_stroke(stroke);
+        }
     }
     if let Some(padding) = obj.get_mut("padding") {
-        normalize_padding(padding);
+        if !padding.is_null() {
+            normalize_padding(padding);
+        }
     }
     // `effects` bodies carry REQUIRED fields (`spread` and friends). A model
     // that omits one fails the whole node, and in the program DSL that
     // cascades through every descendant line — see `effect_normalize`.
-    crate::effect_normalize::normalize_node_effects(obj);
+    if !obj.get("effects").is_some_and(serde_json::Value::is_null) {
+        crate::effect_normalize::normalize_node_effects(obj);
+    }
     super::node_shape_defaults::normalize_text_default_bounds(obj);
     normalize_layout_keyword(obj, "justifyContent");
     normalize_layout_keyword(obj, "alignItems");
@@ -69,7 +89,12 @@ fn normalize_node_shape_inner(value: &mut serde_json::Value) {
     normalize_sizing_keyword(obj, "height");
     if let Some(serde_json::Value::Array(children)) = obj.get_mut("children") {
         for child in children {
-            normalize_node_shape_inner(child);
+            normalize_node_shape_mode(child, false);
+        }
+    }
+    if let Some(serde_json::Value::Object(descendants)) = obj.get_mut("descendants") {
+        for child_patch in descendants.values_mut() {
+            normalize_node_shape_mode(child_patch, true);
         }
     }
 }
@@ -411,23 +436,94 @@ fn normalize_stroke(value: &mut serde_json::Value) {
                 normalize_fill(fill);
             }
             // `thickness` is REQUIRED by the schema, but models write
-            // `{color}` / `{width}` / `{weight}` stroke objects without it —
-            // and one rejected node cascades into "parent not found" for its
-            // whole subtree (measured: a DeepSeek V4 run dropped 60+ lines
-            // and shipped one empty section, 2026-07-12). Alias the common
-            // spellings, then default to a hairline.
+            // `{color}` / `{width}` / `{weight}` stroke objects without it, or
+            // flat `{bottom: 1, color: "#E5E7EB"}` per-side objects.
             if !obj.contains_key("thickness") {
-                let aliased = ["width", "weight", "strokeWeight"]
-                    .iter()
-                    .find_map(|alias| obj.remove(*alias));
-                obj.insert(
-                    "thickness".into(),
-                    aliased.unwrap_or_else(|| serde_json::json!(1)),
-                );
+                let mut sided = serde_json::Map::new();
+                for side in ["top", "right", "bottom", "left"] {
+                    if let Some(val) = obj.remove(side).filter(serde_json::Value::is_number) {
+                        sided.insert(side.into(), val);
+                    }
+                }
+                if !sided.is_empty() {
+                    obj.entry("align")
+                        .or_insert_with(|| serde_json::json!("inside"));
+                    obj.insert("thickness".into(), serde_json::Value::Object(sided));
+                } else {
+                    let aliased = ["width", "weight", "strokeWeight"]
+                        .iter()
+                        .find_map(|alias| obj.remove(*alias));
+                    obj.insert(
+                        "thickness".into(),
+                        aliased.unwrap_or_else(|| serde_json::json!(1)),
+                    );
+                }
             }
         }
         _ => {}
     }
+}
+
+fn normalize_per_side_stroke_shorthands(obj: &mut serde_json::Map<String, serde_json::Value>) {
+    if !obj.contains_key("clipContent") {
+        if let Some(clip) = obj.remove("clip").filter(serde_json::Value::is_boolean) {
+            obj.insert("clipContent".into(), clip);
+        }
+    }
+    if obj.contains_key("stroke") {
+        return;
+    }
+    let mut sided = serde_json::Map::new();
+    let mut inferred_color: Option<serde_json::Value> = None;
+    for (side, aliases) in [
+        ("top", ["strokeTop", "borderTop"]),
+        ("right", ["strokeRight", "borderRight"]),
+        ("bottom", ["strokeBottom", "borderBottom"]),
+        ("left", ["strokeLeft", "borderLeft"]),
+    ] {
+        for alias in aliases {
+            let Some(val) = obj.remove(alias) else {
+                continue;
+            };
+            match val {
+                serde_json::Value::Number(num) => {
+                    sided.insert(side.into(), serde_json::Value::Number(num));
+                }
+                serde_json::Value::String(color) if !color.trim().is_empty() => {
+                    sided.insert(side.into(), serde_json::json!(1));
+                    inferred_color.get_or_insert(serde_json::Value::String(color));
+                }
+                serde_json::Value::Object(mut sub) => {
+                    let w = sub
+                        .remove("thickness")
+                        .or_else(|| sub.remove("width"))
+                        .or_else(|| sub.remove("weight"))
+                        .unwrap_or_else(|| serde_json::json!(1));
+                    sided.insert(side.into(), w);
+                    if let Some(c) = sub.remove("color").or_else(|| sub.remove("fill")) {
+                        inferred_color.get_or_insert(c);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    if sided.is_empty() {
+        return;
+    }
+    let color = obj
+        .remove("strokeColor")
+        .or_else(|| obj.remove("borderColor"))
+        .or(inferred_color)
+        .unwrap_or_else(|| serde_json::json!("$--border"));
+    obj.insert(
+        "stroke".into(),
+        serde_json::json!({
+            "align": "inside",
+            "thickness": serde_json::Value::Object(sided),
+            "fill": color,
+        }),
+    );
 }
 
 pub(crate) fn ensure_node_ids(value: &mut serde_json::Value, next: &mut usize) {

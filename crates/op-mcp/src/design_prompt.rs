@@ -13,6 +13,8 @@ const PROMPT_SECTIONS: &[&str] = &[
     "op-design-composition",
     "op-design-review",
     "op-design-judgement",
+    "op-design-craft",
+    "op-design-feedback",
     "html-poc",
     "all",
     "schema",
@@ -78,6 +80,9 @@ const AESTHETIC_QUALITY_GUIDE: &str = r#"AESTHETIC QUALITY BAR:
 - Reuse one card radius, one card padding, and one shadow treatment within a screen.
 - Use at most two saturated colors. Let hierarchy come from spacing, contrast, and content scale, not decoration.
 - Product card favorite/heart controls must stay fully inside its card or image with an 8-12px inset. Treat favorite/heart as a functional icon-button, not a floating badge; never use negative x/y, straddle the card edge, or let it overlap the section heading row.
+- The same inset rule applies to every badge, counter and corner control: keep a clear inset from the container edge and never touch or straddle it.
+- Use three levels of space: between groups, within a group, and inside a component. Sibling groups share one heading indent and one heading-to-content distance. Express spacing with grouping, gap and padding; do not insert empty spacer nodes to push content apart.
+- Confirm that planned content is present and visible before judging spacing. A gap left by blank text or an instance override that did not apply is missing content, not whitespace.
 - Mobile tab bars are part of the page flow; do not add fake bottom spacers or overlays.
 - Pick a distinct visual concept for each new design and build around one signature moment. Do not repeat the same predictable mobile stack of search + categories + orange promo + two cards unless the prompt specifically calls for that pattern.
 - Use the user's domain to vary composition, imagery, palette, rhythm, and interaction affordances; polish should feel intentional rather than template-derived."#;

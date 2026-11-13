@@ -58,6 +58,7 @@ pub(super) fn ts_update_patch_json_value(value: &Value) -> Result<Option<String>
         return Ok(None);
     };
     let is_rich = obj.is_empty()
+        || obj.values().any(Value::is_null)
         || obj.keys().any(|key| !is_flat_update_data_key(key))
         || uses_sizing_keyword(obj)
         || fill_requires_rich_patch(obj);
@@ -67,9 +68,9 @@ pub(super) fn ts_update_patch_json_value(value: &Value) -> Result<Option<String>
 
     let mut patch = value.clone();
     canonicalize_fill_hex_shortcut(&mut patch)?;
-    // Rich `fill` values stay on the canonical patch path. Normalize legacy
-    // string/object spellings before `PatchNodeData` deserializes the node.
-    super::batch_design::normalize_node_shape(&mut patch);
+    // Rich `fill` / `stroke` values stay on the canonical patch path while
+    // preserving explicit `null` clears (`{"stroke": null}`).
+    super::batch_design::normalize_patch_shape(&mut patch);
     Ok(Some(patch.to_string()))
 }
 

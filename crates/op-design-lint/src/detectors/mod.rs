@@ -14,7 +14,9 @@ use jian_ops_schema::PenDocument;
 use crate::design_form::{classify_root_form_node, DesignForm};
 use crate::issue::Issue;
 
+pub mod content_visibility;
 pub mod empty_filled_panel;
+pub mod group_rhythm;
 pub mod motion_budget;
 pub mod shader_budget;
 mod sibling_peers;
@@ -35,7 +37,9 @@ mod slop_tests;
 #[cfg(test)]
 mod spacing_edge_tests;
 
+pub use content_visibility::*;
 pub use empty_filled_panel::*;
+pub use group_rhythm::*;
 pub use motion_budget::*;
 pub use shader_budget::*;
 pub use siblings::*;
@@ -71,6 +75,7 @@ pub fn detect_all(root: &PenNode, doc: &PenDocument) -> Vec<Issue> {
 /// instead of re-deriving it from a width comparison of its own.
 pub fn detect_all_for_form(root: &PenNode, doc: &PenDocument, form: DesignForm) -> Vec<Issue> {
     let mut combined = Vec::new();
+    combined.extend(detect_content_visibility(root, doc));
     combined.extend(detect_invisible_containers(root, doc));
     combined.extend(detect_empty_paths(root));
     combined.extend(detect_text_explicit_heights(root));
@@ -86,6 +91,8 @@ pub fn detect_all_for_form(root: &PenNode, doc: &PenDocument, form: DesignForm) 
     combined.extend(detect_stacked_horizontal_padding(root));
     combined.extend(detect_text_bg_contrast(root, doc));
     combined.extend(detect_empty_filled_panel(root));
+    combined.extend(detect_sibling_group_rhythm(root));
+    combined.extend(detect_badge_edge_inset(root));
     combined.extend(detect_top_anchored_bars(root));
     // Structural workability detectors — report-only findings on nesting and layout.
     combined.extend(detect_redundant_wrappers(root));

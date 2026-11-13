@@ -66,14 +66,17 @@ function scanVerticalInkBounds(image, textBoxInImagePx, scale, bg) {
   return maxY >= minY ? { minY, maxY } : undefined;
 }
 
+/**
+ * Describe where the glyph ink sits. The result is a measurement, never an
+ * instruction: whether text should be centred in a reference depends on the
+ * layout, which the caller knows and the pixels do not.
+ */
 function buildInkDiagnosis(refOffset, refLabel, topGapInTextBoxPx, bottomGapInTextBoxPx) {
   if (Math.abs(refOffset) <= 0.5) {
-    return `Visually centered in ${refLabel} (glyph ink center offset ${refOffset}px <= 0.5px).`;
+    return `Glyph ink is centred in ${refLabel} (offset ${refOffset}px <= 0.5px).`;
   }
-  const shift = Math.round(Math.abs(refOffset));
-  const dir = refOffset < 0 ? 'ABOVE' : 'BELOW';
-  const action = refOffset < 0 ? 'DOWN' : 'UP';
-  return `Glyph ink sits ${Math.abs(refOffset)}px ${dir} ${refLabel} vertical center (topGap=${topGapInTextBoxPx}px, bottomGap=${bottomGapInTextBoxPx}px inside text box). To center visually, shift text ${action} by ~${shift}px (e.g. adjust parent padding [top, right, bottom, left] or text y/lineHeight).`;
+  const dir = refOffset < 0 ? 'above' : 'below';
+  return `Glyph ink centre is ${Math.abs(refOffset)}px ${dir} the vertical centre of ${refLabel} (topGap=${topGapInTextBoxPx}px, bottomGap=${bottomGapInTextBoxPx}px inside text box). This is a measurement: correct it only if this text is meant to be optically centred in ${refLabel}.`;
 }
 
 function computeInkMetricsFromScan(scan, params) {
@@ -93,8 +96,12 @@ function computeInkMetricsFromScan(scan, params) {
   const inkCenterOffsetInParentPx = parentBoxInDocPx !== undefined && textBoxInDocPx !== undefined
     ? roundHalf((textBoxInDocPx.y + inkCenterInBox) - (parentBoxInDocPx.y + parentBoxInDocPx.height / 2))
     : undefined;
-  const refOffset = inkCenterOffsetInParentPx ?? inkCenterOffsetInTextBoxPx;
-  const refLabel = inkCenterOffsetInParentPx !== undefined ? 'parent container' : 'text box';
+  // Text stacked with siblings (one line of a two-line title, a label above a
+  // value) is not meant to sit at its parent's centre, so the parent is not a
+  // meaningful reference for it.
+  const parentIsReference = inkCenterOffsetInParentPx !== undefined && params.stackedInParent !== true;
+  const refOffset = parentIsReference ? inkCenterOffsetInParentPx : inkCenterOffsetInTextBoxPx;
+  const refLabel = parentIsReference ? 'parent container' : 'its own text box';
   return {
     topInTextBoxPx,
     bottomInTextBoxPx,
@@ -103,12 +110,13 @@ function computeInkMetricsFromScan(scan, params) {
     bottomGapInTextBoxPx,
     inkCenterOffsetInTextBoxPx,
     ...(inkCenterOffsetInParentPx === undefined ? {} : { inkCenterOffsetInParentPx }),
+    ...(params.stackedInParent === true ? { stackedInParent: true } : {}),
     diagnosis: buildInkDiagnosis(refOffset, refLabel, topGapInTextBoxPx, bottomGapInTextBoxPx),
   };
 }
 
 /** Measure true glyph ink bounds within a cropped RGBA buffer. */
-export function measureGlyphInkInRgba(image, textBoxInImagePx, scale, parentBoxInDocPx, textBoxInDocPx) {
+export function measureGlyphInkInRgba(image, textBoxInImagePx, scale, parentBoxInDocPx, textBoxInDocPx, stackedInParent = false) {
   const padPx = Math.max(2, Math.round(6 * scale));
   const rx0 = Math.max(0, Math.floor(textBoxInImagePx.x - padPx));
   const ry0 = Math.max(0, Math.floor(textBoxInImagePx.y - padPx));
@@ -125,6 +133,6 @@ export function measureGlyphInkInRgba(image, textBoxInImagePx, scale, parentBoxI
   }
   return {
     reliable: true,
-    ink: computeInkMetricsFromScan(scan, { textBoxInImagePx, scale, parentBoxInDocPx, textBoxInDocPx }),
+    ink: computeInkMetricsFromScan(scan, { textBoxInImagePx, scale, parentBoxInDocPx, textBoxInDocPx, stackedInParent }),
   };
 }

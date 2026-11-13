@@ -23,6 +23,7 @@
 //! | `command_node/state_ops.rs` | `impl EditorState` command methods             |
 
 mod builders;
+mod patch_merge;
 mod state_ops;
 mod tree_ops;
 

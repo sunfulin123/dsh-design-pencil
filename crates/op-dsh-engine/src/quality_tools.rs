@@ -61,6 +61,8 @@ impl DesignEngine {
         let mut contrast_issues = Vec::new();
         let mut icon_issues = Vec::new();
         let mut structure_issues = Vec::new();
+        let mut content_issues = Vec::new();
+        let mut spacing_leads = Vec::new();
         let mut empty_shells = Vec::new();
         let mut intent_questions = Vec::new();
         let mut findings = Vec::new();
@@ -98,6 +100,11 @@ impl DesignEngine {
                     | IssueCategory::TopAnchoredBars
                     | IssueCategory::NoBaselineBars
                     | IssueCategory::AbsolutePositioningShare => layout_issues.push(detail),
+                    // Leads, not defects: reported under `findings` and here so they
+                    // never block a draft the way `layoutIssues` do.
+                    IssueCategory::SiblingGroupRhythm | IssueCategory::BadgeEdgeInset => {
+                        spacing_leads.push(detail);
+                    }
                     IssueCategory::TextBgContrast => contrast_issues.push(json!({
                         "nodeId": issue.node_id,
                         "reason": issue.reason,
@@ -105,6 +112,7 @@ impl DesignEngine {
                         "suggestedValue": issue.suggested_value,
                     })),
                     IssueCategory::EmptyPath => icon_issues.push(detail),
+                    IssueCategory::ContentNotVisible => content_issues.push(detail),
                     IssueCategory::EmptyFilledPanel | IssueCategory::InvisibleContainer => {
                         empty_shells.push(detail);
                     }
@@ -159,6 +167,8 @@ impl DesignEngine {
             "contrastIssues": contrast_issues.len(),
             "iconIssues": icon_issues.len(),
             "structureIssues": structure_issues.len(),
+            "contentIssues": content_issues.len(),
+            "spacingLeads": spacing_leads.len(),
             "emptyShells": empty_shells.len(),
             "intentQuestions": intent_questions.len(),
             "navIssues": nav_issues.len(),
@@ -177,6 +187,7 @@ impl DesignEngine {
             contrast_issues.len(),
             icon_issues.len(),
             structure_issues.len(),
+            content_issues.len(),
             empty_shells.len(),
             intent_questions.len(),
             nav_issues.len(),
@@ -190,6 +201,8 @@ impl DesignEngine {
         contrast_issues.truncate(limit);
         icon_issues.truncate(limit);
         structure_issues.truncate(limit);
+        content_issues.truncate(limit);
+        spacing_leads.truncate(limit);
         empty_shells.truncate(limit);
         intent_questions.truncate(limit);
         nav_issues = nav_issues
@@ -212,6 +225,8 @@ impl DesignEngine {
             "contrastIssues": contrast_issues,
             "iconIssues": icon_issues,
             "structureIssues": structure_issues,
+            "contentIssues": content_issues,
+            "spacingLeads": spacing_leads,
             "emptyShells": empty_shells,
             "intentQuestions": intent_questions,
             "variableIssues": variable_issues,
@@ -225,6 +240,8 @@ impl DesignEngine {
                 "layout": {"status": "checked", "reason": "Selected layout heuristics only; inspect the rendered layout as well."},
                 "icons": {"status": "checked", "reason": "Detects empty paths, not icon correctness or meaning."},
                 "structure": {"status": "checked", "reason": "Selected structure and widget-label heuristics only."},
+                "spacing": {"status": "indeterminate", "reason": "spacingLeads compare authored heading indent and heading-to-content distance across sibling groups, and the authored inset of elements named or tagged as badges. They do not measure rendered spacing, optical alignment or unnamed badges, and a reported difference can be intentional."},
+                "content": {"status": "checked", "reason": "Reports blank text, instances of missing components and instance overrides that match no component node. It cannot tell whether authored copy is the intended copy, nor whether text is clipped or covered when rendered; compare planned content with the screenshot."},
                 "touchTargets": {"status": "checked", "reason": "A 44px recommendation for interactive frame/rectangle roles or click/press prototype actions, including linked refs inheriting their master's role or reaction. Other node types and inferred interactions are not covered. Results are sorted by smallest dimension and can be paged with touchTargetOffset; inspect clipping, overlap and actual behavior. This is not a WCAG compliance determination."},
                 "componentReuse": {"status": "indeterminate", "reason": "Reports repeated small sibling structures with matching authored layout. Styles may differ, and it cannot infer shared semantics, behavior, desired variants or every reuse opportunity."},
                 "contrast": {"status": "indeterminate", "reason": "The heuristic cannot reliably determine all rendered backgrounds, alpha, image fills, gradients, or non-default modes. Inspect actual rendered contrast."},
@@ -253,6 +270,8 @@ fn quality_category(category: op_design_lint::IssueCategory) -> &'static str {
         | AbsolutePositioningShare => "layout",
         TextBgContrast => "contrast",
         EmptyPath => "icons",
+        ContentNotVisible => "content",
+        SiblingGroupRhythm | BadgeEdgeInset => "spacing",
         EmptyFilledPanel | InvisibleContainer => "emptyShells",
         SlopPurpleGlowGradient | SlopThreeCardFeatureRow | SlopRoundedCardWall => "intentQuestions",
         _ => "structure",

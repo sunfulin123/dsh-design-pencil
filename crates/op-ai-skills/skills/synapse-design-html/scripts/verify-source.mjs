@@ -10,22 +10,44 @@ const SLOP_WORDS = [
 
 const VAGUE_CTA_REGEX = /<(?:button|a)\b[^>]*>\s*(?:submit|click here|learn more|read more|go)\s*<\/(?:button|a)>/gi;
 
-export function collectSourceFiles(target) {
+function isPocTaskOutputDir(dir) {
+  return ['style-context.json', 'evidence-report.json', 'DESIGN.md'].some((marker) =>
+    fs.existsSync(path.join(dir, marker)),
+  );
+}
+
+function taskArtifactDirs(targetRoot, outDir) {
+  const bases = [];
+  if (outDir) bases.push(path.resolve(outDir));
+  else if (targetRoot && isPocTaskOutputDir(targetRoot)) bases.push(targetRoot);
+  return new Set(bases.flatMap((base) => [path.join(base, 'review'), path.join(base, 'shots')]));
+}
+
+export function collectSourceFiles(target, outDir = null) {
   if (!target || !fs.existsSync(target)) return [];
   const stat = fs.statSync(target);
   if (stat.isFile()) return [path.resolve(target)];
+  const resolvedTarget = path.resolve(target);
   const exts = new Set(['.html', '.htm', '.css', '.scss', '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte', '.astro']);
-  const ignoreDirs = new Set(['node_modules', '.git', '.next', 'dist', 'build', '.synapse', '.synapse-review', '.impeccable', '.taste-skill']);
+  const ignoreDirs = new Set([
+    'node_modules', '.git', '.next', 'dist', 'build', '__pycache__',
+    '.synapse', '.synapse-review', '.impeccable', '.taste-skill',
+  ]);
+  const excludedArtifactDirs = taskArtifactDirs(resolvedTarget, outDir);
   const results = [];
   function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       if (ignoreDirs.has(entry.name)) continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (exts.has(path.extname(entry.name).toLowerCase())) results.push(full);
+      if (entry.isDirectory()) {
+        if (excludedArtifactDirs.has(full)) continue;
+        walk(full);
+      } else if (exts.has(path.extname(entry.name).toLowerCase())) {
+        results.push(full);
+      }
     }
   }
-  walk(path.resolve(target));
+  walk(resolvedTarget);
   return results;
 }
 
@@ -35,12 +57,13 @@ export function collectEvidenceFiles(target, outDir) {
   const output = path.resolve(outDir);
   const ignored = new Set(['node_modules', '.git', '.next', 'dist', 'build', '__pycache__']);
   const excluded = new Set(['evidence-report.json', 'style-context.json', 'baseline.json']);
+  const excludedArtifactDirs = taskArtifactDirs(path.resolve(target), output);
   const files = [];
   function visit(current) {
     const stat = fs.lstatSync(current);
     if (stat.isSymbolicLink()) throw new Error(`Cannot fingerprint a symbolic link: ${current}`);
     if (stat.isDirectory()) {
-      if (ignored.has(path.basename(current)) || current === path.join(output, 'shots') || current === path.join(output, 'review')) return;
+      if (ignored.has(path.basename(current)) || excludedArtifactDirs.has(current)) return;
       for (const entry of fs.readdirSync(current).sort()) visit(path.join(current, entry));
     } else if (stat.isFile() && !(path.dirname(current) === output && excluded.has(path.basename(current)))) {
       if (stat.size > 32 * 1024 * 1024 || files.length >= 5000) throw new Error('POC evidence exceeds the supported file budget');
@@ -49,6 +72,39 @@ export function collectEvidenceFiles(target, outDir) {
   }
   visit(path.resolve(target));
   return files;
+}
+
+/** Infer sloplint scope (`page` | `app` | `component`) from explicit flag, style-context, or operational app DOM signals. */
+export function inferSurfaceScope(files, reviewRoot = null, explicitScope = null) {
+  if (typeof explicitScope === 'string') {
+    const norm = explicitScope.trim().toLowerCase();
+    if (norm === 'app' || norm === 'operational' || norm === 'workspace' || norm === 'chat' || norm === 'dashboard') return 'app';
+    if (norm === 'component') return 'component';
+    if (norm === 'page' || norm === 'marketing' || norm === 'landing' || norm === 'editorial') return 'page';
+  }
+  if (reviewRoot) {
+    try {
+      const ctx = JSON.parse(fs.readFileSync(path.join(reviewRoot, 'style-context.json'), 'utf8'));
+      const mode = String(ctx?.surfaceMode || ctx?.scope || '').trim().toLowerCase();
+      if (mode === 'app' || mode === 'operational' || mode === 'workspace' || mode === 'chat' || mode === 'dashboard') return 'app';
+      if (mode === 'component') return 'component';
+      if (mode === 'page' || mode === 'marketing' || mode === 'landing') return 'page';
+    } catch { /* style-context may not carry surfaceMode */ }
+  }
+  for (const file of files) {
+    if (!/\.html?$/i.test(file)) continue;
+    const html = fs.readFileSync(file, 'utf8');
+    if (/<html[^>]*\bdata-(?:scope|surface-mode)=["'](?:app|operational|chat|workspace|dashboard)["']/i.test(html)
+      || /<meta[^>]*\bname=["'](?:surface-mode|page-scope)["'][^>]*\bcontent=["'](?:app|operational|chat|workspace|dashboard)["']/i.test(html)) {
+      return 'app';
+    }
+    const hasAppShell = /<(?:aside|nav)\b/i.test(html)
+      && (/\brole=["'](?:log|tablist|tree|grid|dialog|Feed)["']/i.test(html)
+        || /<(?:textarea|input)\b[^>]*(?:placeholder|aria-label)=["'][^"']*(?:message|reply|search|command|filter|send|消息|回复|搜索)/i.test(html));
+    const hasMarketingFooter = /<footer\b[\s\S]*?(?:copyright|©|privacy|terms)/i.test(html);
+    if (hasAppShell && !hasMarketingFooter) return 'app';
+  }
+  return 'page';
 }
 
 export function extractInteractiveBaseline(files) {
@@ -181,7 +237,7 @@ export function scanAnimationAndCraftFlags(files) {
   return { findings, hasReducedMotion, hasTabularNums };
 }
 
-export function scanCopyAndSlop(files) {
+export function scanCopyAndSlop(files, surfaceScope = 'page') {
   const findings = [];
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
@@ -212,8 +268,8 @@ export function scanCopyAndSlop(files) {
       });
     }
 
-    // Hallmark Gate 63: Middle-dot-joined meta strings (e.g. "SKU: X · 184g · 5500mAh" or multiple <span>·</span>)
-    if (/[^<>\n]{2,}\s*·\s*[^<>\n]{2,}\s*·\s*[^<>\n]{2,}/.test(content) || (content.match(/<span[^>]*>\s*·\s*<\/span>/gi) || []).length >= 2) {
+    // Hallmark Gate 63: Middle-dot-joined meta strings on marketing cards (operational app timestamps like "10:42 · Edited" are normal UI metadata)
+    if (surfaceScope === 'page' && (/[^<>\n]{2,}\s*·\s*[^<>\n]{2,}\s*·\s*[^<>\n]{2,}/.test(content) || (content.match(/<span[^>]*>\s*·\s*<\/span>/gi) || []).length >= 2)) {
       findings.push({
         severity: 'P1',
         category: 'second-order-slop',
@@ -328,30 +384,41 @@ export function runImpeccableDetect(sourceTarget) {
   }
 }
 
-export function runCopyLint(files) {
+export function runCopyLint(files, surfaceScope = 'page') {
   const html = files.filter(f => /\.html?$/i.test(f));
   if (!html.length) return [];
   const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'copy-lint.mjs');
-  const r = spawnSync(process.execPath, [script, ...html, '--json'], { encoding: 'utf8', timeout: 60000 });
+  const cliArgs = [script, ...html, ...(surfaceScope === 'app' ? ['--kind', 'software'] : []), '--json'];
+  const r = spawnSync(process.execPath, cliArgs, { encoding: 'utf8', timeout: 60000 });
   let data; try { data = JSON.parse(r.stdout); } catch {
     return [{ severity: 'P1', category: 'verification-unavailable', rule: 'copy-lint', location: script,
       message: `Copy checks did not return a valid result: ${r.error?.message || r.stderr || `exit ${r.status}`}` }];
   }
+  const appIgnoredCopyIds = new Set([
+    'copy-stat-strip',
+    'copy-eyebrows',
+    'copy-footer-signoff',
+    'copy-stale-year',
+    'copy-proof-figure',
+    'copy-rhythm',
+  ]);
   const out = [];
   for (const file of data.files || []) {
     for (const f of file.findings || []) {
       const lv = f.sev || f.level; if (lv !== 'FAIL' && lv !== 'WARN') continue;
+      if (surfaceScope === 'app' && lv === 'WARN' && appIgnoredCopyIds.has(f.id)) continue;
       out.push({ severity: lv === 'FAIL' ? 'P1' : 'P2', category: 'copy-lint', rule: f.id || 'copy', location: path.relative(process.cwd(), file.file || file.path || html[0]), message: `${f.msg || f.message || f.id}${f.fix ? ' Fix: ' + f.fix : ''}` });
     }
   }
   return out;
 }
 
-export function runSloplint(files) {
+export function runSloplint(files, surfaceScope = 'page') {
   const html = files.filter(f => /\.html?$/i.test(f));
   if (!html.length) return [];
   const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'sloplint.mjs');
-  const r = spawnSync(process.execPath, [script, ...html, '--json'], { encoding: 'utf8', timeout: 90000 });
+  const scopeArg = ['page', 'app', 'component'].includes(surfaceScope) ? surfaceScope : 'page';
+  const r = spawnSync(process.execPath, [script, ...html, '--scope', scopeArg, '--json'], { encoding: 'utf8', timeout: 90000 });
   let data; try { data = JSON.parse(r.stdout); } catch {
     return [{ severity: 'P1', category: 'verification-unavailable', rule: 'sloplint', location: script,
       message: `Design checks did not return a valid result: ${r.error?.message || r.stderr || `exit ${r.status}`}` }];

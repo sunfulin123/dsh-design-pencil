@@ -85,7 +85,7 @@ embedding host override > 临时 MCP override > 设备偏好。
 设计流程的内置来源：先读取对话和当前文档，再从资产风格目录决定是否询问用户；
 设计结束通过真实截图和结构检查发现问题、修复并复测。分阶段资料通过
 `get_design_prompt` 的 `op-design-*` 节点读取。`get_design_agent_prompt` 返回版本化
-核心指导；managed Node host 可按选择的稳定 style id 读取完整原始 DESIGN 并组装。
+核心指导，并可按阶段（`plan`、`build`、`review`、`revise`、`deliver`）只返回当前阶段的指导；managed Node host 可按选择的稳定 style id 读取完整原始 DESIGN 并组装。
 
 `plan_design_style` 使用同一个资产目录提供候选、推荐 id 和 revision；
 `plan_design_canvas` 只创建不含预置配色的中性画布计划。
@@ -94,13 +94,17 @@ embedding host override > 临时 MCP override > 设备偏好。
 [RGBA PNG 编解码](packages/dsh-node-runtime/png-rgba-codec.mjs)、
 [系统设备外框与根节点识别](packages/dsh-node-runtime/device-frame.mjs)、
 [代码上下文过滤与回退](packages/dsh-node-runtime/design-code-context.mjs)、
+[发现漏斗与结构化问答选项门禁](packages/dsh-node-runtime/design-discovery-gate.mjs)、
 [草稿画布契约](packages/dsh-node-runtime/draft-canvas-contract.mjs)、
 [分页质量与 lint 门禁](packages/dsh-node-runtime/draft-quality-gate.mjs)、
 [发布评审回执门禁](packages/dsh-node-runtime/draft-review-gate.mjs)、
 [POC 证据台账校验](packages/dsh-node-runtime/poc-evidence-validator.mjs) 以及
 [受管守护进程/MCP 客户端协议辅助](packages/dsh-node-runtime/managed-mcp-client.mjs)——均归属
 `packages/dsh-node-runtime` 并随运行时打包发布；`ss-dsh-design` 仅负责 DSH 会话、沙箱文件权限、
-用户选择 UI、HTTP 授权和注入，设计指导与领域门禁不在插件中重复实现。
+用户选择 UI、HTTP 授权和注入，设计指导与领域门禁不在插件中重复实现。面向模型的工具说明、
+各步骤指令、路由策略拦截文案与可读取的指导分区清单由
+[design-workflow-text](packages/dsh-node-runtime/design-workflow-text.mjs) 和
+[design-tool-text](packages/dsh-node-runtime/design-tool-text.mjs) 定义，插件只读取。
 运行时构建将核心 skill 复制到 wasm 构建产物；发布 staging 校验源码一致并写入哈希清单。
 
 ## 变量集合与内置库

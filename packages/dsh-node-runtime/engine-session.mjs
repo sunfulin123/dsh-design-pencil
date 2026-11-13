@@ -688,10 +688,9 @@ export class EngineSession {
           : {};
       if (name === 'batch_design') delete normalizedArgs.variables;
       if (name === 'batch_design') delete normalizedArgs.themes;
-      const preserveAuthoredGeometry = Boolean(
-        this.#store.peek()?.editorMeta?.preserveAuthoredGeometry,
-      );
-      const healParents = operations => healOperationsParents(operations, activePageNodes(this.#store.peek()), {
+      const currentDoc = this.#store.peek();
+      const preserveAuthoredGeometry = Boolean(currentDoc?.editorMeta?.preserveAuthoredGeometry);
+      const healParents = operations => healOperationsParents(operations, activePageNodes(currentDoc), {
         strict: normalizedArgs.strictParent === true,
       });
       if (
@@ -706,14 +705,10 @@ export class EngineSession {
         ) {
           return {
             isError: true,
-            content: [
-              { type: 'text', text: 'Provide only one of script, operations, or nodes_json' },
-            ],
+            content: [{ type: 'text', text: 'Provide only one of script, operations, or nodes_json' }],
           };
         }
-        const expanded = expandScriptWithVariables(normalizedArgs.script, {
-          preserveAuthoredGeometry,
-        });
+        const expanded = expandScriptWithVariables(normalizedArgs.script, { preserveAuthoredGeometry, document: currentDoc });
         delete normalizedArgs.script;
         normalizedArgs.operations = expanded.operations;
         batchVariables = { ...batchVariables, ...expanded.variables };
@@ -775,9 +770,7 @@ export class EngineSession {
             normalizedArgs.operations,
           )
         ) {
-          const expanded = expandScriptWithVariables(normalizedArgs.operations, {
-            preserveAuthoredGeometry,
-          });
+          const expanded = expandScriptWithVariables(normalizedArgs.operations, { preserveAuthoredGeometry, document: currentDoc });
           normalizedArgs.operations = expanded.operations;
         }
         normalizedArgs.operations = healParents(normalizedArgs.operations);
