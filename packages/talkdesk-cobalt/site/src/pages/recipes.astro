@@ -1,0 +1,15 @@
+---
+import Page from '../layouts/Page.astro';
+import registry from '../../../registry/authoring.json';
+import { recipeTitles, recipeHref } from '../lib/catalog';
+const descriptions: Record<string, string> = {
+  'recipe.list-page': 'A page header, search and filters, sortable table, details panel and pagination.',
+  'recipe.detail-page': 'A detail page composition for reviewing a record and its related information.',
+  'recipe.form-page': 'A form page composition with labeled fields and primary actions.',
+  'recipe.extensions.users-list': 'A user list with search, a create panel and review states using Cobalt Extensions.',
+};
+---
+<Page title="Page recipes" section="Recipes">
+  <div class="page-heading" data-enter><h1>Page recipes</h1><p>Start from a complete composition. Run the page, inspect its source and adapt it to your business workflow.</p></div>
+  <div class="recipe-index">{registry.recipes.map(recipe => <a class="recipe-link" href={recipeHref(recipe.id)}><h2>{recipeTitles[recipe.id]}</h2><span class="arrow" aria-hidden="true">↗</span><p>{descriptions[recipe.id]}</p><span class="recipe-type">{recipe.id.includes('.extensions.') ? 'Cobalt Extensions' : 'Cobalt composition'} · React 18</span></a>)}</div>
+</Page>

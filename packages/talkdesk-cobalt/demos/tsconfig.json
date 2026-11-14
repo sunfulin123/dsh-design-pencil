@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": "..",
+    "types": [
+      "vite/client"
+    ],
+    "strict": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "../examples",
+    "../recipes",
+    "../components/extensions/src/react-app-env.d.ts",
+    "./main.tsx"
+  ]
+}

@@ -1,0 +1,201 @@
+# Collapse
+
+Layout container that animates a content panel open and closed when the user clicks the header. Use it to hide secondary information until needed.
+
+```ts
+import { Collapse } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The simplest form: pass `title` and `children`. The panel starts collapsed and toggles on click. The chevron rotates and the body smoothly animates between 0 and its natural height using a `grid-template-rows` transition — no JS height measurement, no jank when content changes size.
+
+```tsx preview
+import { Collapse, Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Collapse title="Controllability" data-qa="controllability">
+      <Typography variant="body">
+        Decision making: giving advice about operations is acceptable, but do
+        not make decisions for the users.
+      </Typography>
+      <Typography variant="body">
+        Controlled consequences: users should be granted the freedom to operate,
+        including canceling, aborting or terminating current operation.
+      </Typography>
+    </Collapse>
+  );
+}
+```
+
+## Default Open
+
+Use `defaultOpen` to render the panel expanded on first mount. The component remains uncontrolled — subsequent toggles are driven internally.
+
+```tsx preview
+import { Collapse, Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Collapse defaultOpen title="What is WFM?">
+      <Typography variant="body">
+        WFM (Workforce Management) helps contact centers forecast demand,
+        schedule agents, and track adherence in real time.
+      </Typography>
+    </Collapse>
+  );
+}
+```
+
+## Controlled
+
+Pass both `open` and `onOpenChange` to drive the state from outside — useful for syncing multiple Collapses, persisting state, or reacting to expansion in a parent component.
+
+```tsx preview
+import { useState } from 'react';
+import { Button, Collapse, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Flex direction="column" gap="3">
+      <Flex gap="2">
+        <Button size="small" type="secondary" onClick={() => setOpen(true)}>
+          Expand
+        </Button>
+        <Button size="small" type="secondary" onClick={() => setOpen(false)}>
+          Collapse
+        </Button>
+      </Flex>
+      <Collapse open={open} title="Advanced settings" onOpenChange={setOpen}>
+        <Typography variant="body">
+          External buttons drive the open state. Clicking the header still
+          toggles via `onOpenChange`.
+        </Typography>
+      </Collapse>
+    </Flex>
+  );
+}
+```
+
+## With Extra Content
+
+Use `extra` to render a chip, badge, or secondary action on the right side of the header. Clicks on `extra` content do not toggle the panel — bubbling is stopped automatically.
+
+```tsx preview
+import { Badge, Button, Collapse, Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Collapse
+      defaultOpen
+      title="Notifications"
+      extra={<Badge status="info">3 new</Badge>}
+    >
+      <Typography variant="body">
+        New messages from your team will appear here.
+      </Typography>
+    </Collapse>
+  );
+}
+```
+
+## Sizes
+
+`size="small"` reduces the header vertical padding from 16px to 12px — use it inside dense layouts such as side panels or settings pages. `size="medium"` (default) is standard density.
+
+```tsx preview
+import { Collapse, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="3">
+      <Collapse defaultOpen size="small" title="Compact (small)">
+        <Typography variant="body">
+          12px header padding — fits dense surfaces.
+        </Typography>
+      </Collapse>
+      <Collapse defaultOpen size="medium" title="Standard (medium)">
+        <Typography variant="body">
+          16px header padding — default density.
+        </Typography>
+      </Collapse>
+    </Flex>
+  );
+}
+```
+
+## Disabled
+
+`disabled` greys out the header, removes keyboard focus, and ignores click/keypress toggles. The current open state is preserved.
+
+```tsx preview
+import { Collapse, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="3">
+      <Collapse disabled title="Disabled (collapsed)">
+        <Typography variant="body">
+          Hidden — header cannot be toggled.
+        </Typography>
+      </Collapse>
+      <Collapse defaultOpen disabled title="Disabled (open)">
+        <Typography variant="body">
+          Locked open — useful for required sections that must stay visible.
+        </Typography>
+      </Collapse>
+    </Flex>
+  );
+}
+```
+
+## Custom Animation Duration
+
+`duration` (in ms) controls both the chevron rotation and the height transition. Defaults to `240`. Pass `0` to disable the animation entirely.
+
+```tsx preview
+import { Collapse, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="3">
+      <Collapse duration={120} title="Fast (120ms)">
+        <Typography variant="body">Snappy reveal.</Typography>
+      </Collapse>
+      <Collapse duration={500} title="Slow (500ms)">
+        <Typography variant="body">Leisurely reveal.</Typography>
+      </Collapse>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                      | Default         | Description                                                                                                   |
+| ---------------- | ------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------- |
+| `title`          | `ReactNode`               | —               | Header label. Strings are auto-wrapped in `Typography variant="body-emphasis"`; pass a node for custom markup |
+| `children`       | `ReactNode`               | —               | Body content shown when expanded                                                                              |
+| `open`           | `boolean`                 | —               | Controlled open state. When set, pair with `onOpenChange`                                                     |
+| `defaultOpen`    | `boolean`                 | `false`         | Initial open state in uncontrolled mode                                                                       |
+| `onOpenChange`   | `(open: boolean) => void` | —               | Called whenever the user toggles the panel                                                                    |
+| `disabled`       | `boolean`                 | `false`         | Disables the trigger; preserves current open state                                                            |
+| `duration`       | `number`                  | `240`           | Animation duration in ms. `0` disables the animation                                                          |
+| `size`           | `'small' \| 'medium'`     | `'medium'`      | Header density. `'small'` = 12px Y-padding; `'medium'` = 16px                                                 |
+| `extra`          | `ReactNode`               | —               | Right-aligned header content (badge, chip, button). Clicks do not toggle the panel                            |
+| `data-qa`        | `string`                  | —               | QA selector. Trigger gets `${dataQa}-trigger`, body gets `${dataQa}-panel`                                    |
+| `data-component` | `string`                  | `'WFMCollapse'` | Component identifier                                                                                          |
+
+## Accessibility
+
+- The header has `role="button"`, `aria-expanded`, and `aria-controls` linking it to the panel id.
+- `Enter` and `Space` toggle the panel from the focused header.
+- When collapsed, the panel is marked `aria-hidden` and visually clipped to 0 height — assistive tech skips its content.
+- `disabled={true}` removes the header from the tab order (`tabIndex={-1}`) and sets `aria-disabled`.

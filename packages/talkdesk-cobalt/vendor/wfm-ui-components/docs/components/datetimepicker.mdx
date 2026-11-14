@@ -1,0 +1,464 @@
+# DateTimePicker
+
+A date-and-time input that opens a popup combining a Cobalt calendar with an hour/minute stepper, returning a single JS `Date`.
+
+```ts
+import { DateTimePicker } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+A minimal `DateTimePicker` requires a `value` (a JS `Date`) and an `onChange` callback. The popup closes when the user clicks outside. Date changes and time adjustments both call `onChange` immediately.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [value, setValue] = useState(new Date(2026, 3, 22, 9, 30));
+
+  return (
+    <DateTimePicker
+      value={value}
+      onChange={setValue}
+      data-qa="basic-datetimepicker"
+    />
+  );
+}
+```
+
+## With Label and Required
+
+Use `label` to render a text label above the input. Add `isRequired` to show a required marker next to the label. Both props work the same as in `DatePicker`.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [value, setValue] = useState(new Date(2026, 3, 22, 14, 0));
+
+  return (
+    <DateTimePicker
+      isRequired
+      label="Scheduled start"
+      value={value}
+      onChange={setValue}
+      data-qa="labeled-datetimepicker"
+    />
+  );
+}
+```
+
+## 24-Hour Format
+
+Set `format24H={true}` to display and edit the time in 24-hour format. When `false` (default), the time is shown in 12-hour format with an AM/PM toggle in the popup.
+
+- Left: `format24H={false}` (default) — displays `"9:30 AM"`, shows AM/PM toggle in popup
+- Right: `format24H={true}` — displays `"09:30"`, no AM/PM toggle
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [v1, setV1] = useState(new Date(2026, 3, 22, 9, 30));
+  const [v2, setV2] = useState(new Date(2026, 3, 22, 9, 30));
+
+  return (
+    <Flex gap="6" wrap>
+      <DateTimePicker
+        label="12-hour (default)"
+        value={v1}
+        onChange={setV1}
+        data-qa="12h"
+      />
+      <DateTimePicker
+        format24H
+        label="24-hour"
+        value={v2}
+        onChange={setV2}
+        data-qa="24h"
+      />
+    </Flex>
+  );
+}
+```
+
+## Sizes
+
+Use `size` to match the surrounding form density. `'medium'` (default) suits standard forms; `'small'` suits compact toolbars and filter bars.
+
+- Left: `size="small"`
+- Right: `size="medium"` (default)
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [v1, setV1] = useState(new Date(2026, 3, 22, 10, 0));
+  const [v2, setV2] = useState(new Date(2026, 3, 22, 10, 0));
+
+  return (
+    <Flex alignY="center" gap="6" wrap>
+      <DateTimePicker label="Small" size="small" value={v1} onChange={setV1} />
+      <DateTimePicker
+        label="Medium (default)"
+        size="medium"
+        value={v2}
+        onChange={setV2}
+      />
+    </Flex>
+  );
+}
+```
+
+## Full Width
+
+Set `isFullWidth={true}` to make the trigger input stretch to fill its container. The popup width matches the trigger.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [value, setValue] = useState(new Date(2026, 3, 22, 8, 45));
+
+  return (
+    <DateTimePicker
+      isFullWidth
+      label="Full width"
+      value={value}
+      onChange={setValue}
+      data-qa="fullwidth-datetimepicker"
+    />
+  );
+}
+```
+
+## Without Calendar Icon
+
+Set `hasIcon={false}` to remove the calendar icon prefix. Use this in compact inline forms or when the field label already provides enough context.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [value, setValue] = useState(new Date(2026, 3, 22, 11, 15));
+
+  return (
+    <DateTimePicker
+      hasIcon={false}
+      label="No icon"
+      value={value}
+      onChange={setValue}
+      data-qa="noicon-datetimepicker"
+    />
+  );
+}
+```
+
+## Custom Display Formatter
+
+Use `formatDateTime` to control how the selected date and time appear in the trigger input. The function receives the current `Date` and must return a string.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [value, setValue] = useState(new Date(2026, 3, 22, 16, 0));
+
+  return (
+    <DateTimePicker
+      label="Custom format"
+      value={value}
+      onChange={setValue}
+      formatDateTime={(d) =>
+        d.toLocaleString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+      }
+      data-qa="custom-format"
+    />
+  );
+}
+```
+
+## Validation States
+
+Use `variation` to apply an error or warning border to the input group. These states signal form validation feedback.
+
+- Left: `variation="error"` — red border
+- Right: `variation="warning"` — amber border
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [v1, setV1] = useState(new Date(2026, 3, 22, 9, 0));
+  const [v2, setV2] = useState(new Date(2026, 3, 22, 9, 0));
+
+  return (
+    <Flex gap="6" wrap>
+      <DateTimePicker
+        label="Error state"
+        variation="error"
+        value={v1}
+        onChange={setV1}
+        data-qa="error"
+      />
+      <DateTimePicker
+        label="Warning state"
+        variation="warning"
+        value={v2}
+        onChange={setV2}
+        data-qa="warning"
+      />
+    </Flex>
+  );
+}
+```
+
+## Popup Position
+
+Use `direction` and `origin` to control where the popup opens. `direction` is the cardinal point on the trigger that anchors the popup; `origin` is the corner of the popup that aligns to it. Defaults are `direction="SE"` and `origin="SW"` (popup opens below-right).
+
+- Left: default position — popup opens below the trigger, left-aligned
+- Right: `direction="NE" origin="SW"` — popup opens above the trigger
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [v1, setV1] = useState(new Date(2026, 3, 22, 9, 0));
+  const [v2, setV2] = useState(new Date(2026, 3, 22, 9, 0));
+
+  return (
+    <Flex alignY="end" gap="6" style={{ paddingTop: 280 }}>
+      <DateTimePicker
+        label="Default (SE / SW)"
+        value={v1}
+        onChange={setV1}
+        data-qa="pos-default"
+      />
+      <DateTimePicker
+        direction="NE"
+        label="Above (NE / SW)"
+        origin="SW"
+        value={v2}
+        onChange={setV2}
+        data-qa="pos-above"
+      />
+    </Flex>
+  );
+}
+```
+
+## Disabled Days
+
+Pass `disabledDays` to prevent selecting certain dates. Accepts Cobalt's `DaysType`: an array of `{ year, month, day }` exact-date objects or `{ start?, end? }` range objects.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+
+const disabledDays = [
+  {
+    start: { year: 2026, month: 4, day: 1 },
+    end: { year: 2026, month: 4, day: 10 },
+  },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState(new Date(2026, 3, 22, 10, 0));
+
+  return (
+    <DateTimePicker
+      label="April 1–10 disabled"
+      value={value}
+      disabledDays={disabledDays}
+      onChange={setValue}
+      data-qa="disabled-days"
+    />
+  );
+}
+```
+
+## Placeholder
+
+Pass `placeholder` to show custom hint text in the input when no date is selected. The default input is empty with no placeholder text.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <Flex padding="4">
+      <DateTimePicker
+        label="Scheduled at"
+        placeholder="e.g. Apr 22, 2026 09:00 AM"
+        value={value}
+        onChange={setValue}
+        data-qa="placeholder-demo"
+      />
+    </Flex>
+  );
+}
+```
+
+## Helper Text
+
+Pass `description` to show neutral helper text below the input. Requires `label`. The text is styled in neutral grey and is not affected by the `variation` state.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <Flex padding="4">
+      <DateTimePicker
+        label="Meeting start"
+        description="Meetings are scheduled in the agent's local timezone."
+        value={value}
+        onChange={setValue}
+        data-qa="description-demo"
+      />
+    </Flex>
+  );
+}
+```
+
+## Calendar Options
+
+Use `isHighlightToday` to accent today's date on the calendar. Pass `highlightedDays` to visually mark specific dates without selecting them. Use `weekStart={1}` to begin the week on Monday. Restrict the year dropdown with `availableYears`.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = today.getMonth() + 1;
+
+export default function Demo() {
+  const [v1, setV1] = useState<Date | null>(null);
+  const [v2, setV2] = useState<Date | null>(null);
+  return (
+    <Flex gap="6" padding="4" wrap>
+      <DateTimePicker
+        label="Highlight today + events"
+        isHighlightToday
+        highlightedDays={[
+          { year: yyyy, month: mm, day: 5 },
+          { year: yyyy, month: mm, day: 15 },
+        ]}
+        value={v1}
+        onChange={setV1}
+        data-qa="highlight"
+      />
+      <DateTimePicker
+        label="Monday start + restricted years"
+        weekStart={1}
+        availableYears={[yyyy - 1, yyyy, yyyy + 1]}
+        value={v2}
+        onChange={setV2}
+        data-qa="weekstart"
+      />
+    </Flex>
+  );
+}
+```
+
+## Localised Calendar
+
+Pass `months` and `weekdays` to localise the calendar labels.
+
+```tsx preview
+import { useState } from 'react';
+import { DateTimePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const frMonths = {
+  1: 'Janvier',
+  2: 'Février',
+  3: 'Mars',
+  4: 'Avril',
+  5: 'Mai',
+  6: 'Juin',
+  7: 'Juillet',
+  8: 'Août',
+  9: 'Septembre',
+  10: 'Octobre',
+  11: 'Novembre',
+  12: 'Décembre',
+};
+
+const frWeekdays = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+export default function Demo() {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <Flex padding="4">
+      <DateTimePicker
+        label="Début de réunion (FR)"
+        weekStart={1}
+        months={frMonths}
+        weekdays={frWeekdays}
+        value={value}
+        onChange={setValue}
+        data-qa="localised"
+      />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop               | Type                     | Default               | Description                                                     |
+| ------------------ | ------------------------ | --------------------- | --------------------------------------------------------------- |
+| `value`            | `Date \| null`           | —                     | Currently selected date and time                                |
+| `onChange`         | `(date: Date) => void`   | —                     | Called when the user picks a date or changes the time           |
+| `label`            | `string`                 | —                     | Label rendered above the input                                  |
+| `isRequired`       | `boolean`                | `false`               | Shows a required marker next to the label                       |
+| `placeholder`      | `string`                 | —                     | Placeholder text when no value is selected                      |
+| `size`             | `'small' \| 'medium'`    | `'medium'`            | Input size                                                      |
+| `isFullWidth`      | `boolean`                | `false`               | Stretches the trigger input to fill its container               |
+| `hasIcon`          | `boolean`                | `true`                | Shows the calendar icon prefix                                  |
+| `format24H`        | `boolean`                | `false`               | Display and edit time in 24-hour format                         |
+| `formatDateTime`   | `(date: Date) => string` | —                     | Custom formatter for the trigger display string                 |
+| `variation`        | `'error' \| 'warning'`   | —                     | Validation border colour on the input group                     |
+| `description`      | `string`                 | —                     | Helper or validation message below the input (requires `label`) |
+| `direction`        | `CardinalPoint`          | `'SE'`                | Direction the popup opens relative to the trigger               |
+| `origin`           | `CardinalPoint`          | `'SW'`                | Origin corner of the popup that aligns to the trigger           |
+| `availableYears`   | `number[]`               | ±3 years from today   | Years shown in the calendar's year dropdown                     |
+| `disabledDays`     | `CobaltDaysType`         | —                     | Dates that cannot be selected                                   |
+| `highlightedDays`  | `CobaltDaysType`         | —                     | Dates visually highlighted without being selected               |
+| `isHighlightToday` | `boolean`                | `false`               | Highlights today's date on the calendar                         |
+| `weekStart`        | `0 \| 1`                 | `0`                   | First day of the week (`0` = Sunday, `1` = Monday)              |
+| `months`           | `CobaltMonths`           | English names         | Custom month names                                              |
+| `weekdays`         | `CobaltWeekdays`         | English names         | Custom weekday names                                            |
+| `data-qa`          | `string`                 | —                     | QA selector                                                     |
+| `data-component`   | `string`                 | `'WFMDateTimePicker'` | Component identifier                                            |

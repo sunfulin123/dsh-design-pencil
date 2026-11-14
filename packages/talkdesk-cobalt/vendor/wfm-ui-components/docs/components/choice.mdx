@@ -1,0 +1,152 @@
+# Choice
+
+A single checkbox or radio control with a clickable label and built-in `error` / `warning` outline states. Use `FormField` when you need a description, hint message, or label-above layout.
+
+```ts
+import { Choice } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The default `type` is `'checkbox'`. Pass controlled `checked` + `onChange` (the handler receives the new boolean as the first argument and the native event as the second). The `label` is rendered as a Cobalt `Label` with `font-weight: 400` so it reads as option text rather than a form-section heading; clicking the text toggles the control.
+
+```tsx preview
+import { useState } from 'react';
+import { Choice } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [checked, setChecked] = useState(false);
+
+  return (
+    <Choice
+      checked={checked}
+      label="Turn on reforecast"
+      onChange={setChecked}
+      data-qa="basic-choice"
+    />
+  );
+}
+```
+
+## Radio Variant
+
+Switch the variant via `type="radio"`. Group radios together by giving them the same `name`.
+
+```tsx preview
+import { useState } from 'react';
+import { Choice } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState('weekly');
+
+  return (
+    <Flex direction="column" gap="2">
+      <Choice
+        checked={value === 'daily'}
+        label="Daily"
+        name="reforecast-cadence"
+        type="radio"
+        value="daily"
+        onChange={(c) => c && setValue('daily')}
+      />
+      <Choice
+        checked={value === 'weekly'}
+        label="Weekly"
+        name="reforecast-cadence"
+        type="radio"
+        value="weekly"
+        onChange={(c) => c && setValue('weekly')}
+      />
+      <Choice
+        checked={value === 'monthly'}
+        label="Monthly"
+        name="reforecast-cadence"
+        type="radio"
+        value="monthly"
+        onChange={(c) => c && setValue('monthly')}
+      />
+    </Flex>
+  );
+}
+```
+
+## Validation State
+
+Set `variation="error"` or `variation="warning"` to tint the control outline and the label. The component itself does not render a hint message — wrap it in `FormField` when you need an associated error / warning text.
+
+```tsx preview
+import { useState } from 'react';
+import { Choice } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [accepted, setAccepted] = useState(false);
+
+  return (
+    <Flex direction="column" gap="2">
+      <Choice
+        checked={accepted}
+        label="I accept the terms and conditions"
+        variation={accepted ? undefined : 'error'}
+        onChange={setAccepted}
+      />
+      <Choice checked label="Apply to past schedules" variation="warning" />
+    </Flex>
+  );
+}
+```
+
+## Disabled
+
+`disabled` freezes interaction and dims the label to neutral grey, regardless of `variation`.
+
+```tsx preview
+import { Choice } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Choice disabled checked label="Disabled checked" />
+      <Choice disabled label="Disabled unchecked" />
+      <Choice disabled checked label="Disabled radio" type="radio" />
+    </Flex>
+  );
+}
+```
+
+## Sizes
+
+`size` is forwarded to the underlying Cobalt `Input`. Use `'small'` for dense toolbars or table cells.
+
+```tsx preview
+import { Choice } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Choice checked label="Small" size="small" />
+      <Choice checked label="Medium (default)" size="medium" />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                                               | Default       | Description                                                                                           |
+| ---------------- | ------------------------------------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
+| `type`           | `'checkbox' \| 'radio'`                                            | `'checkbox'`  | Renders a checkbox or a radio                                                                         |
+| `checked`        | `boolean`                                                          | —             | Controlled checked state                                                                              |
+| `onChange`       | `(checked: boolean, event: ChangeEvent<HTMLInputElement>) => void` | —             | Fired when the user toggles the control                                                               |
+| `label`          | `ReactNode`                                                        | —             | Visible label rendered to the right of the control. Clickable via `htmlFor`.                          |
+| `variation`      | `'error' \| 'warning'`                                             | —             | Validation state. Tints the control outline and the label                                             |
+| `disabled`       | `boolean`                                                          | `false`       | Disables interaction and dims the label                                                               |
+| `name`           | `string`                                                           | —             | Native `name` attribute. Required when grouping radios.                                               |
+| `value`          | `string \| number`                                                 | —             | Native `value` attribute — useful for radios that share a `name`                                      |
+| `size`           | `'small' \| 'medium'`                                              | `'medium'`    | Control size                                                                                          |
+| `id`             | `string`                                                           | auto          | Input `id`. When omitted, an auto-generated id is used so the `Label htmlFor` association still works |
+| `data-qa`        | `string`                                                           | —             | QA selector — also propagated as `${data-qa}-input`                                                   |
+| `data-component` | `string`                                                           | `'WFMChoice'` | Component identifier                                                                                  |

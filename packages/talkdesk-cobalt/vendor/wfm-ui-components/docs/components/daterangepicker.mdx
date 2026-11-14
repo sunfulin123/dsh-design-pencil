@@ -1,0 +1,465 @@
+# DateRangePicker
+
+A date-range input that opens a Cobalt calendar popup for selecting start and end dates, accepting and returning `{ startDate, endDate }` as plain JS `Date` values.
+
+```ts
+import { DateRangePicker } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+A minimal `DateRangePicker` requires `selectedRange` (an object with optional `startDate` and `endDate`) and an `onRangeChange` callback. Once the user selects a start date, the input shows `"StartDate →"` until an end date is also chosen.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 10),
+    endDate: new Date(2026, 3, 22),
+  });
+
+  return (
+    <DateRangePicker
+      selectedRange={range}
+      onRangeChange={setRange}
+      data-qa="basic-daterangepicker"
+    />
+  );
+}
+```
+
+## With Label and Required
+
+Use `label` to render a descriptive label above the input. Add `isRequired` to show a required marker next to the label.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 15),
+  });
+
+  return (
+    <DateRangePicker
+      isRequired
+      label="Report period"
+      selectedRange={range}
+      onRangeChange={setRange}
+      data-qa="labeled-daterangepicker"
+    />
+  );
+}
+```
+
+## Empty State (No Selection)
+
+When `selectedRange` contains no dates, the trigger shows the `placeholder` text. The default placeholder is `"Select date range"`.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [range, setRange] = useState({});
+
+  return (
+    <DateRangePicker
+      label="Select period"
+      placeholder="From → To"
+      selectedRange={range}
+      onRangeChange={setRange}
+      data-qa="empty-daterangepicker"
+    />
+  );
+}
+```
+
+## Sizes
+
+Use `size` to match the surrounding form density. `'medium'` (default) suits standard forms; `'small'` suits compact toolbars and filter bars.
+
+- Left: `size="small"`
+- Right: `size="medium"` (default)
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const range = {
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 15),
+  };
+  const [r1, setR1] = useState(range);
+  const [r2, setR2] = useState(range);
+
+  return (
+    <Flex alignY="center" gap="6" wrap>
+      <DateRangePicker
+        label="Small"
+        size="small"
+        selectedRange={r1}
+        onRangeChange={setR1}
+      />
+      <DateRangePicker
+        label="Medium (default)"
+        size="medium"
+        selectedRange={r2}
+        onRangeChange={setR2}
+      />
+    </Flex>
+  );
+}
+```
+
+## Full Width
+
+Set `isFullWidth={true}` to stretch the trigger input to fill its container. The popup width matches the trigger.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 30),
+  });
+
+  return (
+    <DateRangePicker
+      isFullWidth
+      label="Full width"
+      selectedRange={range}
+      onRangeChange={setRange}
+      data-qa="fullwidth-daterangepicker"
+    />
+  );
+}
+```
+
+## Without Calendar Icon
+
+Set `hasIcon={false}` to remove the calendar icon prefix. Use this in compact inline forms or when the label already provides enough context.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 5),
+    endDate: new Date(2026, 3, 20),
+  });
+
+  return (
+    <DateRangePicker
+      hasIcon={false}
+      label="No icon"
+      selectedRange={range}
+      onRangeChange={setRange}
+      data-qa="noicon-daterangepicker"
+    />
+  );
+}
+```
+
+## Custom Date Formatter
+
+Use `formatDate` to control how each date in the range appears in the trigger input. The function receives a `Date` and must return a string. It is applied to both the start and end dates.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 30),
+  });
+
+  return (
+    <DateRangePicker
+      label="Custom format (DD/MM/YYYY)"
+      selectedRange={range}
+      onRangeChange={setRange}
+      formatDate={(d) =>
+        d.toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      }
+      data-qa="custom-format"
+    />
+  );
+}
+```
+
+## Validation States
+
+Use `variation` to apply a colored border to the input group for form validation feedback.
+
+- Left: `variation="error"` — red border
+- Right: `variation="warning"` — amber border
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [r1, setR1] = useState({});
+  const [r2, setR2] = useState({
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 15),
+  });
+
+  return (
+    <Flex gap="6" wrap>
+      <DateRangePicker
+        label="Error — no selection"
+        variation="error"
+        selectedRange={r1}
+        onRangeChange={setR1}
+        data-qa="error"
+      />
+      <DateRangePicker
+        label="Warning"
+        variation="warning"
+        selectedRange={r2}
+        onRangeChange={setR2}
+        data-qa="warning"
+      />
+    </Flex>
+  );
+}
+```
+
+## Disabled Days
+
+Pass `disabledDays` to prevent selecting certain dates. Accepts Cobalt's `DaysType` format — an array of exact-date objects `{ year, month, day }` or range objects `{ start?, end? }`.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+
+const disabledDays = [
+  {
+    start: { year: 2026, month: 4, day: 11 },
+    end: { year: 2026, month: 4, day: 20 },
+  },
+];
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 10),
+  });
+
+  return (
+    <DateRangePicker
+      label="April 11–20 disabled"
+      selectedRange={range}
+      disabledDays={disabledDays}
+      onRangeChange={setRange}
+      data-qa="disabled-days"
+    />
+  );
+}
+```
+
+## Popup Position
+
+Use `direction` and `origin` to control where the calendar popup opens relative to the trigger. `direction` is the cardinal point on the trigger that anchors the popup; `origin` is the corner of the popup that aligns to it. Use this when the picker is near the bottom or right edge of the viewport.
+
+- Default `direction="SE"` — popup opens below and to the right of the input
+- `direction="NE" origin="SW"` — popup opens above the input
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const range = {
+  startDate: new Date(2026, 3, 1),
+  endDate: new Date(2026, 3, 15),
+};
+
+export default function Demo() {
+  const [r1, setR1] = useState(range);
+  const [r2, setR2] = useState(range);
+  return (
+    <Flex direction="column" gap="10" padding="4">
+      <DateRangePicker
+        label="Default (opens below)"
+        selectedRange={r1}
+        onRangeChange={setR1}
+        data-qa="pos-default"
+      />
+      <Flex style={{ paddingTop: 280 }}>
+        <DateRangePicker
+          label="Opens above (direction=NE origin=SW)"
+          direction="NE"
+          origin="SW"
+          selectedRange={r2}
+          onRangeChange={setR2}
+          data-qa="pos-above"
+        />
+      </Flex>
+    </Flex>
+  );
+}
+```
+
+## Helper Text
+
+Pass `description` to show neutral helper text below the input. Requires `label`. The text persists regardless of `variation` — use it for permanent guidance rather than validation feedback.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [range, setRange] = useState({});
+  return (
+    <Flex padding="4">
+      <DateRangePicker
+        label="Forecast period"
+        description="The selected range determines the forecast window."
+        selectedRange={range}
+        onRangeChange={setRange}
+        data-qa="description"
+      />
+    </Flex>
+  );
+}
+```
+
+## Calendar Options
+
+Use `isHighlightToday` to accent today's date. Pass `highlightedDays` to visually mark specific dates without selecting them. Use `weekStart={1}` to begin the week on Monday. Restrict the year dropdown with `availableYears`.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = today.getMonth() + 1;
+
+export default function Demo() {
+  const [range, setRange] = useState({});
+  return (
+    <Flex gap="6" padding="4" wrap>
+      <DateRangePicker
+        label="Highlight today + events"
+        isHighlightToday
+        highlightedDays={[
+          { year: yyyy, month: mm, day: 3 },
+          { year: yyyy, month: mm, day: 17 },
+        ]}
+        selectedRange={range}
+        onRangeChange={setRange}
+        data-qa="highlight"
+      />
+      <DateRangePicker
+        label="Monday start + restricted years"
+        weekStart={1}
+        availableYears={[yyyy - 1, yyyy, yyyy + 1]}
+        selectedRange={range}
+        onRangeChange={setRange}
+        data-qa="weekstart"
+      />
+    </Flex>
+  );
+}
+```
+
+## Localised Calendar
+
+Pass `months` to override the calendar's month name labels — useful for non-English locales.
+
+```tsx preview
+import { useState } from 'react';
+import { DateRangePicker } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const esMonths = {
+  1: 'Enero',
+  2: 'Febrero',
+  3: 'Marzo',
+  4: 'Abril',
+  5: 'Mayo',
+  6: 'Junio',
+  7: 'Julio',
+  8: 'Agosto',
+  9: 'Septiembre',
+  10: 'Octubre',
+  11: 'Noviembre',
+  12: 'Diciembre',
+};
+
+export default function Demo() {
+  const [range, setRange] = useState({
+    startDate: new Date(2026, 3, 1),
+    endDate: new Date(2026, 3, 15),
+  });
+  return (
+    <Flex padding="4">
+      <DateRangePicker
+        label="Período (ES)"
+        weekStart={1}
+        months={esMonths}
+        selectedRange={range}
+        onRangeChange={setRange}
+        data-qa="localised"
+      />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop               | Type                                   | Default                | Description                                                     |
+| ------------------ | -------------------------------------- | ---------------------- | --------------------------------------------------------------- |
+| `selectedRange`    | `{ startDate?: Date; endDate?: Date }` | —                      | Currently selected date range                                   |
+| `onRangeChange`    | `(range: DateRange) => void`           | —                      | Called when the user changes the selection                      |
+| `label`            | `string`                               | —                      | Label rendered above the input                                  |
+| `isRequired`       | `boolean`                              | `false`                | Shows a required marker next to the label                       |
+| `placeholder`      | `string`                               | `'Select date range'`  | Placeholder text when no range is selected                      |
+| `size`             | `'small' \| 'medium'`                  | `'medium'`             | Input size                                                      |
+| `isFullWidth`      | `boolean`                              | `false`                | Stretches the trigger input to fill its container               |
+| `hasIcon`          | `boolean`                              | `true`                 | Shows the calendar icon prefix                                  |
+| `formatDate`       | `(date: Date) => string`               | `"MMMM D, YYYY"`       | Custom formatter for each date in the trigger display           |
+| `variation`        | `'error' \| 'warning'`                 | —                      | Validation border colour on the input group                     |
+| `description`      | `string`                               | —                      | Helper or validation message below the input (requires `label`) |
+| `direction`        | `CardinalPoint`                        | `'SE'`                 | Direction the popup opens relative to the trigger               |
+| `origin`           | `CardinalPoint`                        | `'SW'`                 | Origin corner of the popup that aligns to the trigger           |
+| `availableYears`   | `number[]`                             | ±3 years from today    | Years shown in the calendar's year dropdown                     |
+| `disabledDays`     | `CobaltDaysType`                       | —                      | Dates that cannot be selected                                   |
+| `highlightedDays`  | `CobaltDaysType`                       | —                      | Dates visually highlighted without being selected               |
+| `isHighlightToday` | `boolean`                              | `false`                | Highlights today's date on the calendar                         |
+| `weekStart`        | `0 \| 1`                               | `0`                    | First day of the week (`0` = Sunday, `1` = Monday)              |
+| `months`           | `CobaltMonths`                         | English names          | Custom month names                                              |
+| `weekdays`         | `CobaltWeekdays`                       | English names          | Custom weekday names                                            |
+| `data-qa`          | `string`                               | —                      | QA selector                                                     |
+| `data-component`   | `string`                               | `'WFMDateRangePicker'` | Component identifier                                            |
+
+## DateRange Type
+
+```ts
+type DateRange = {
+  startDate?: Date;
+  endDate?: Date;
+};
+```

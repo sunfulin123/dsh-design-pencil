@@ -1,0 +1,80 @@
+# UploadFile
+
+A drag-and-drop / click-to-browse file upload field that toggles between an empty drop zone and a selected-file preview card. It renders two distinct states: an empty drop zone when no file is selected, and a file card when a file has been chosen. Drag-over triggers a visual highlight on the drop zone border and background.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { UploadFile, FormField } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+`file` and `onFileChange` are the two required props. Pass `null` as the initial `file` to start in the empty state. The component calls `onFileChange(file)` when the user selects a valid file, and `onFileChange(null)` when the user removes it. Wrap with `FormField` to add a label and description.
+
+<Example id="extensions.uploadfile.001" />
+
+## Required Field
+
+Use `FormField`'s `isRequired` prop to show a required `*` marker next to the label.
+
+<Example id="extensions.uploadfile.002" />
+
+## With Download Template Link
+
+Set `templateUrl` on `UploadFile` to show a "Download template" link. The link is absolutely positioned at the top-right of the component so that, when wrapped in a `FormField`, it aligns horizontally with the field label row instead of consuming a separate row above the drop zone. The link opens in a new tab. Use `templateLabel` to override the default link text.
+
+<Example id="extensions.uploadfile.003" />
+
+## File Type and Size Validation
+
+Use `accept` to restrict which file types the input accepts (same syntax as the HTML `accept` attribute). Use `maxSizeBytes` to enforce a size limit. When validation fails, `onError` is called with the error type (`'invalidType'` or `'tooLarge'`) and the rejected file — the component itself does not show inline errors, giving the caller full control over the feedback.
+
+<Example id="extensions.uploadfile.004" />
+
+## Uploaded File State
+
+When `file` is a `File` object, the component renders a file card showing the filename and size. The card provides a **Change file** button (replaces the file) and a **Delete** button (calls `onFileChange(null)`).
+
+<Example id="extensions.uploadfile.005" />
+
+## Custom Drop Zone Text
+
+Use `dragText` to replace the "Drag a file here or" line, and `chooseFileText` to replace the "+ Choose a file to upload" CTA.
+
+<Example id="extensions.uploadfile.006" />
+
+## Validation States
+
+Use `variation` on `FormField` to apply a colored border for form validation feedback. It works in both the empty drop zone state and the uploaded file card state.
+
+- Left: `variation="error"` — red border, no file selected
+- Right: `variation="warning"` — amber border, file already uploaded
+
+<Example id="extensions.uploadfile.007" />
+
+## Props
+
+| Prop             | Type                                          | Default                     | Description                                                                                                                          |
+| ---------------- | --------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `file`           | `File \| null`                                | —                           | Currently selected file, or `null` when nothing is selected                                                                          |
+| `onFileChange`   | `(file: File \| null) => void`                | —                           | Called with a new `File` when the user selects a valid file, or `null` when the user removes it                                      |
+| `accept`         | `string`                                      | `"*"`                       | Native file input `accept` attribute (e.g. `".csv"` or `"image/*"`)                                                                  |
+| `maxSizeBytes`   | `number`                                      | —                           | Maximum allowed file size in bytes. Omit to skip size validation                                                                     |
+| `description`    | `string`                                      | —                           | Helper text rendered inside the drop zone below the drag text                                                                        |
+| `templateUrl`    | `string`                                      | —                           | URL opened when the user clicks the "Download template" link. Omit to hide the link                                                  |
+| `templateLabel`  | `string`                                      | `'Download template'`       | Text for the download template link                                                                                                  |
+| `dragText`       | `string`                                      | `'Drag a file here or'`     | Primary text inside the drop zone                                                                                                    |
+| `chooseFileText` | `string`                                      | `'Choose a file to upload'` | CTA text for the file picker link                                                                                                    |
+| `onError`        | `(type: UploadFileError, file: File) => void` | —                           | Called when the user selects a file that fails type or size validation                                                               |
+| `variation`      | `'error' \| 'warning'`                        | —                           | Applies a colored border to the drop zone / file card. Pass the same value to the wrapping `FormField` for label/hint coloring       |
+| `data-qa`        | `string`                                      | —                           | QA selector (also namespaced to child elements: `-dropzone`, `-choose-file`, `-file-card`, `-change-file`, `-remove-file`, `-input`) |
+| `data-component` | `string`                                      | `'WFMUploadFile'`           | Component identifier                                                                                                                 |
+
+## UploadFileError Type
+
+```ts
+type UploadFileError = 'invalidType' | 'tooLarge';
+```
+
+The file input remains mounted across empty and selected states so selecting, changing, removing and reselecting files use the same stable data-qa locator. The choose-file action is a native named button and supports keyboard activation. The ListPage import dialog composes this source with CSV and size validation; actual import is delegated to the caller.

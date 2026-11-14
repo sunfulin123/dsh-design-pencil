@@ -1,0 +1,63 @@
+---
+import { Code } from 'astro:components';
+import registry from '../../../registry/authoring.json';
+const { id, height } = Astro.props;
+const canonicalId = id;
+const entry = [...registry.examples, ...registry.recipes].find(entry => entry.id === canonicalId);
+if (!entry) throw new Error(`Unknown example ${id}`);
+const sources = import.meta.glob('../../../{examples,recipes}/**/*.tsx', { query: '?raw', import: 'default', eager: true });
+const source = sources['../../../' + entry.path];
+if (typeof source !== 'string') throw new Error(`Missing demo source ${entry.path}`);
+const src = '/demos/index.html?entry=' + encodeURIComponent(entry.path);
+const panel = id.replaceAll('.', '-');
+const frameHeight = height ?? (entry.kind === 'recipe' || entry.path.includes('apppage') ? 520 : 400);
+---
+<section class="example" data-demo={src} style={`--demo-height:${frameHeight}px`} aria-label={id}>
+  <div class="example-toolbar">
+    <div class="example-tabs" role="tablist" aria-label={`${id} view`}>
+      <button class="example-tab" role="tab" id={`${panel}-preview-tab`} aria-controls={`${panel}-preview`} aria-selected="true" data-example-tab="preview">Preview</button>
+      <button class="example-tab" role="tab" id={`${panel}-code-tab`} aria-controls={`${panel}-code`} aria-selected="false" tabindex="-1" data-example-tab="code">Code</button>
+    </div>
+    <div class="example-tools">
+      <label><span class="sr-only">{id} theme</span><select data-demo-scheme aria-label={`${id} theme`}><option value="page">Follow page</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <a href={src} target="_blank" rel="noopener" aria-label={`Open ${id} demo`} title="Open demo">↗</a>
+    </div>
+  </div>
+  <div role="tabpanel" id={`${panel}-preview`} aria-labelledby={`${panel}-preview-tab`} data-example-panel="preview"><iframe src={src} title={id} loading="lazy"></iframe></div>
+  <div class="example-source" role="tabpanel" id={`${panel}-code`} aria-labelledby={`${panel}-code-tab`} data-example-panel="code" hidden><Code code={source} lang="tsx" themes={{ light: 'github-light', dark: 'github-dark' }} defaultColor={false} /></div>
+</section>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-demo]').forEach(section => {
+    const select = section.querySelector<HTMLSelectElement>('[data-demo-scheme]')!;
+    const iframe = section.querySelector<HTMLIFrameElement>('iframe')!;
+    const link = section.querySelector<HTMLAnchorElement>('.example-tools a')!;
+    const tabs = [...section.querySelectorAll<HTMLButtonElement>('[data-example-tab]')];
+    const updateTheme = () => {
+      const scheme = select.value === 'page' ? document.documentElement.dataset.scheme ?? 'light' : select.value;
+      const src = section.dataset.demo + '&scheme=' + scheme;
+      if (iframe.getAttribute('src') !== src) iframe.src = src;
+      link.href = src;
+    };
+    select.addEventListener('change', updateTheme);
+    document.addEventListener('docs:appearance', updateTheme);
+    updateTheme();
+    const chooseTab = (name: string, focus = false) => {
+      tabs.forEach(tab => {
+        const active = tab.dataset.exampleTab === name;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        if (active && focus) tab.focus();
+      });
+      section.querySelectorAll<HTMLElement>('[data-example-panel]').forEach(panel => { panel.hidden = panel.dataset.examplePanel !== name; });
+    };
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => chooseTab(tab.dataset.exampleTab!));
+      tab.addEventListener('keydown', event => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          event.preventDefault();
+          chooseTab(event.key === 'Home' ? 'preview' : event.key === 'End' ? 'code' : tab.dataset.exampleTab === 'preview' ? 'code' : 'preview', true);
+        }
+      });
+    });
+  });
+</script>

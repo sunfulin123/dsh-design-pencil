@@ -91,3 +91,10 @@ packages/.toolchain/
 
 # Local isolated model evaluation evidence
 /.synapse/op-design/evaluations/
+
+# Preserve the read-only WFM documentation snapshot used for migration provenance.
+!packages/talkdesk-cobalt/vendor/wfm-ui-components/docs/
+!packages/talkdesk-cobalt/vendor/wfm-ui-components/docs/**
+
+# Astro development metadata
+.astro/

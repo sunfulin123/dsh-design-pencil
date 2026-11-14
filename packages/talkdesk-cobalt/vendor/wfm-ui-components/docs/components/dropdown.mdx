@@ -1,0 +1,383 @@
+# Dropdown
+
+A single-select dropdown that renders a list of options and supports fully customisable option rows via per-option or global render functions — backed by the Cobalt Marketplace dropdown.
+
+```ts
+import { Dropdown } from '@wfm/ui-components';
+import type {
+  DropdownOption,
+  DropdownOptionValue,
+  DropdownOptionRenderContext,
+  DropdownMessages,
+} from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The simplest form: pass `options` with `value` and `label`, and a controlled `value` + `onChange`. Each option renders as a standard Cobalt option row.
+
+```tsx preview
+import { useState } from 'react';
+import { Dropdown } from '@wfm/ui-components';
+
+const OPTIONS = [
+  { value: 'us', label: 'United States' },
+  { value: 'uk', label: 'United Kingdom' },
+  { value: 'de', label: 'Germany' },
+  { value: 'fr', label: 'France' },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState(null);
+
+  return (
+    <Dropdown
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      data-qa="basic-dropdown"
+    />
+  );
+}
+```
+
+## Option Metadata (Icon, Description, Right Slot)
+
+Each option may declare `icon`, `description`, `right`, or `borderBottom` to enrich the built-in row layout — no custom renderer required.
+
+```tsx preview
+import { useState } from 'react';
+import { Dropdown } from '@wfm/ui-components';
+import Tag from '@talkdesk/cobalt-react-tag';
+
+const OPTIONS = [
+  {
+    value: 'admin',
+    label: 'Administrator',
+    icon: 'shield',
+    description: 'Full access to all settings',
+    right: <Tag color="light-purple">Owner</Tag>,
+  },
+  {
+    value: 'agent',
+    label: 'Agent',
+    icon: 'person',
+    description: 'Handle calls and chats',
+  },
+  {
+    value: 'viewer',
+    label: 'Viewer',
+    icon: 'visibility',
+    description: 'Read-only access',
+    disabled: true,
+  },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState('agent');
+
+  return (
+    <Dropdown
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      data-qa="metadata-dropdown"
+    />
+  );
+}
+```
+
+## Searchable
+
+Set `searchable` to enable a built-in client-side filter on the option `label`. The list is filtered as the user types, and `messages.noResults` is shown when nothing matches.
+
+```tsx preview
+import { useState } from 'react';
+import { Dropdown } from '@wfm/ui-components';
+
+const OPTIONS = Array.from({ length: 20 }, (_, i) => ({
+  value: `tz-${i}`,
+  label: `Timezone option ${i + 1}`,
+}));
+
+export default function Demo() {
+  const [value, setValue] = useState(null);
+
+  return (
+    <Dropdown
+      searchable
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      messages={{
+        placeholder: 'Pick a timezone',
+        searchPlaceholder: 'Filter…',
+      }}
+      data-qa="searchable-dropdown"
+    />
+  );
+}
+```
+
+## Custom Option (Per-Option `render`)
+
+A single option can override its row markup by setting `render`. The renderer receives a context object with `selected` and `onSelect` — call `onSelect()` to commit the choice and close the dropdown. Use this for one-off custom rows like a "Create new" entry.
+
+```tsx preview
+import { useState } from 'react';
+import { Dropdown, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Tag from '@talkdesk/cobalt-react-tag';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+export default function Demo() {
+  const [value, setValue] = useState(null);
+  const theme = useTheme();
+
+  const options = [
+    { value: 'sales', label: 'Sales' },
+    { value: 'support', label: 'Support' },
+    {
+      value: '__create__',
+      label: 'Create new tag',
+      render: ({ onSelect }) => (
+        <Box
+          paddingX="3"
+          paddingY="2"
+          style={{ cursor: 'pointer' }}
+          onClick={onSelect}
+        >
+          <Flex alignY="center" gap="2">
+            <Icon color={theme.primary600} name="add" size="tiny" />
+            <Typography variant="body" color={theme.primary600}>
+              Create new tag
+            </Typography>
+            <Tag color="light-purple" size="small">
+              New
+            </Tag>
+          </Flex>
+        </Box>
+      ),
+    },
+  ];
+
+  return (
+    <Dropdown
+      value={value}
+      options={options}
+      onChange={setValue}
+      data-qa="custom-option-dropdown"
+    />
+  );
+}
+```
+
+## Custom Option (Global `renderOption`)
+
+Pass a `renderOption` prop to apply the same custom layout to every option. Per-option `render` still takes precedence over the global one. Use this when the entire list shares a non-standard row format such as avatars, swatches, or rich previews.
+
+```tsx preview
+import { useState } from 'react';
+import { Dropdown, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+const OPTIONS = [
+  { value: 'red', label: 'Red', swatch: '#E74C3C' },
+  { value: 'green', label: 'Green', swatch: '#27AE60' },
+  { value: 'blue', label: 'Blue', swatch: '#2980B9' },
+  { value: 'purple', label: 'Purple', swatch: '#8E44AD' },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState('green');
+  const theme = useTheme();
+
+  return (
+    <Dropdown
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      renderOption={(option, { selected, onSelect }) => (
+        <Box
+          paddingX="3"
+          paddingY="2"
+          backgroundColor={selected ? theme.primarySurface : undefined}
+          style={{ cursor: 'pointer' }}
+          onClick={onSelect}
+        >
+          <Flex alignY="center" gap="3">
+            <Box
+              width="16px"
+              height="16px"
+              backgroundColor={option.swatch}
+              style={{ borderRadius: 4 }}
+            />
+            <Typography variant="body">{option.label}</Typography>
+            {selected && (
+              <Box style={{ marginLeft: 'auto' }}>
+                <Icon color={theme.primary600} name="check" size="tiny" />
+              </Box>
+            )}
+          </Flex>
+        </Box>
+      )}
+      data-qa="global-render-dropdown"
+    />
+  );
+}
+```
+
+## States: Disabled, Loading, Error
+
+Use `disabled` to freeze interaction, `loading` to indicate the trigger is fetching its value, and `error` to mark the trigger as invalid (e.g. failed validation in a form).
+
+```tsx preview
+import { useState } from 'react';
+import { Dropdown } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+const OPTIONS = [
+  { value: 'a', label: 'Option A' },
+  { value: 'b', label: 'Option B' },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState('a');
+
+  return (
+    <Flex direction="column" gap="4">
+      <Box width="320px">
+        <Dropdown
+          disabled
+          value={value}
+          options={OPTIONS}
+          onChange={setValue}
+        />
+      </Box>
+      <Box width="320px">
+        <Dropdown loading value={value} options={OPTIONS} onChange={setValue} />
+      </Box>
+      <Box width="320px">
+        <Dropdown error value={null} options={OPTIONS} onChange={setValue} />
+      </Box>
+    </Flex>
+  );
+}
+```
+
+## Load More (Pagination)
+
+Provide `hasMore` and `onLoadMore` to render a full-width "Load more" button at the bottom of the list. Clicking it does not close the dropdown. Set `isLoadingMore` while the request is in flight to disable the button and swap the label to `messages.loading`. Combine with `onSearch` + `isSearching` for paginated server-side search.
+
+```tsx preview
+import { useState, useCallback } from 'react';
+import { Dropdown } from '@wfm/ui-components';
+
+function fakeApi(page) {
+  return new Promise((resolve) =>
+    setTimeout(
+      () =>
+        resolve(
+          Array.from({ length: 5 }, (_, i) => ({
+            value: `p${page}-${i}`,
+            label: `Page ${page} — Item ${i + 1}`,
+          }))
+        ),
+      600
+    )
+  );
+}
+
+export default function Demo() {
+  const [value, setValue] = useState(null);
+  const [options, setOptions] = useState(
+    Array.from({ length: 5 }, (_, i) => ({
+      value: `p1-${i}`,
+      label: `Page 1 — Item ${i + 1}`,
+    }))
+  );
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const hasMore = page < 4;
+
+  const handleLoadMore = useCallback(async () => {
+    setIsLoadingMore(true);
+    const next = await fakeApi(page + 1);
+    setOptions((prev) => [...prev, ...next]);
+    setPage((p) => p + 1);
+    setIsLoadingMore(false);
+  }, [page]);
+
+  return (
+    <Dropdown
+      value={value}
+      options={options}
+      onChange={setValue}
+      hasMore={hasMore}
+      isLoadingMore={isLoadingMore}
+      onLoadMore={handleLoadMore}
+      messages={{ placeholder: 'Pick an item' }}
+      data-qa="paginated-dropdown"
+    />
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                | Default      | Description                                                                                                                               |
+| ---------------- | ----------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `string \| number \| null`          | —            | Currently selected option value                                                                                                           |
+| `options`        | `DropdownOption[]`                  | —            | List of options to render                                                                                                                 |
+| `onChange`       | `(value: string \| number) => void` | —            | Fired when the user picks an option                                                                                                       |
+| `renderOption`   | `(option, ctx) => ReactNode`        | —            | Global custom renderer applied to every option without its own `render`                                                                   |
+| `searchable`     | `boolean`                           | `false`      | Enables a built-in client-side search filter on `option.label`                                                                            |
+| `onSearch`       | `(query: string) => void`           | —            | Server-side search callback. When provided, client-side filtering is disabled and the parent must update `options`. Implies `searchable`. |
+| `isSearching`    | `boolean`                           | `false`      | While `true`, swaps the empty-list text to `messages.searching` (use with `onSearch`)                                                     |
+| `hasMore`        | `boolean`                           | `false`      | Renders a full-width "Load more" button at the bottom of the list                                                                         |
+| `isLoadingMore`  | `boolean`                           | `false`      | Disables the load-more button and shows `messages.loading` while a request is in flight                                                   |
+| `onLoadMore`     | `() => void`                        | —            | Called when the user clicks the load-more button                                                                                          |
+| `size`           | `'small' \| 'medium'`               | `'medium'`   | Trigger height. Use `'small'` to align with `DatePicker`/`Input size="small"` in toolbars                                                 |
+| `disabled`       | `boolean`                           | `false`      | Disables interaction                                                                                                                      |
+| `loading`        | `boolean`                           | `false`      | Shows a loading state on the trigger                                                                                                      |
+| `error`          | `boolean`                           | `false`      | Marks the trigger as in an error state                                                                                                    |
+| `messages`       | `DropdownMessages`                  | —            | Customise visible text strings (see below)                                                                                                |
+| `data-qa`        | `string`                            | —            | QA selector — also propagated to each option as `${data-qa}-option-${value}`                                                              |
+| `data-component` | `string`                            | `'Dropdown'` | Component identifier                                                                                                                      |
+
+### `DropdownOption`
+
+| Field          | Type                                              | Default | Description                                                                                                              |
+| -------------- | ------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `value`        | `string \| number`                                | —       | Unique value submitted on selection                                                                                      |
+| `label`        | `string`                                          | —       | Display label, also used as the trigger text when selected                                                               |
+| `disabled`     | `boolean`                                         | `false` | Prevents the option from being selected                                                                                  |
+| `description`  | `string`                                          | —       | Secondary line shown below the label (built-in renderer only)                                                            |
+| `icon`         | `IconName \| JSX.Element`                         | —       | Cobalt icon name or element shown to the left of the label (built-in renderer only)                                      |
+| `right`        | `ReactNode`                                       | —       | Content rendered to the right of the label, e.g. a `Tag` (built-in renderer only)                                        |
+| `borderBottom` | `boolean`                                         | `false` | Draws a divider below this option (built-in renderer only)                                                               |
+| `render`       | `(ctx: DropdownOptionRenderContext) => ReactNode` | —       | Per-option custom renderer. Takes precedence over the global `renderOption`. Call `ctx.onSelect()` to commit the choice. |
+
+### `DropdownOptionRenderContext`
+
+| Field      | Type         | Description                                                    |
+| ---------- | ------------ | -------------------------------------------------------------- |
+| `selected` | `boolean`    | Whether this option matches the current `value`                |
+| `onSelect` | `() => void` | Commit selection — closes the dropdown and triggers `onChange` |
+
+### `DropdownMessages`
+
+| Field               | Type     | Default              | Description                                                                    |
+| ------------------- | -------- | -------------------- | ------------------------------------------------------------------------------ |
+| `placeholder`       | `string` | `'Select an option'` | Trigger placeholder when no value set                                          |
+| `searchPlaceholder` | `string` | `'Search'`           | Search input placeholder                                                       |
+| `noResults`         | `string` | `'No results found'` | Empty state when search has no matches                                         |
+| `searching`         | `string` | `'Searching…'`       | Empty state shown while a server-side search is in flight (with `isSearching`) |
+| `loadMore`          | `string` | `'Load more…'`       | Label on the load-more button                                                  |
+| `loading`           | `string` | `'Loading…'`         | Label on the load-more button while `isLoadingMore` is `true`                  |

@@ -1,0 +1,105 @@
+{
+  "list-page.tsx": {
+    "title": "List page",
+    "description": "A user-management list with selection, search, filters, pagination, an Extensions Dialog creation form, an UploadFile import Dialog and SidePanel record details.",
+    "keywords": [
+      "list",
+      "table",
+      "users",
+      "selection",
+      "filters",
+      "pagination",
+      "toolbar",
+      "create",
+      "dialog",
+      "form",
+      "upload",
+      "csv",
+      "import"
+    ],
+    "states": [
+      "success",
+      "loading",
+      "empty",
+      "error",
+      "permission",
+      "partial",
+      "create validation",
+      "create submission",
+      "import file selection",
+      "submission failure"
+    ],
+    "composition": [
+      "extensions.basic-table",
+      "cobalt-marketplace:components/toolbar",
+      "extensions.side-panel",
+      "extensions.dialog",
+      "extensions.form-field",
+      "extensions.input",
+      "extensions.dropdown",
+      "extensions.upload-file"
+    ],
+    "usage": "Create user opens the copied Extensions Dialog with a validated FormField/Input/Dropdown form. With no onCreate callback, creation appends an in-memory user; onCreate(draft) delegates persistence and users refresh to the host. Import opens Dialog with Extensions UploadFile (.csv, up to 5 MB); onImport(file) submits to the host. Without onImport, confirmation only records the selected filename and does not parse/import CSV records. Both callbacks may return promises; failures remain in the dialog for retry. Connect onEdit, onExport, onBulkManagement and onRefresh to host workflows; unconnected host actions are disabled. Pass scenario from usePrototypeScenario() in Workspace; controls stay in the host toolbar. Details use the copied SidePanel. Keep table parents flush: no rounded card, outer border, shadow or horizontal insets. Pass batch guidance through messageComponent below the column header.",
+    "limits": "No backend or durable storage is provided. Local creation resets on remount; CSV selection is not a completed server import. The host owns duplicate/persistence validation across sessions and refreshes supplied users after successful creation. BasicTable owns rendering and pagination; the page sorts and slices data. Selection persists across pages/filters. The 48px filter Toolbar reserves space, search moves below it on small viewports, and the wide table scrolls internally."
+  },
+  "detail-page.tsx": {
+    "title": "Detail page",
+    "description": "Read-only user details with tabs, grouped fields and host-owned edit/delete/back actions.",
+    "keywords": [
+      "detail",
+      "profile",
+      "record",
+      "read-only"
+    ],
+    "states": [
+      "populated sample"
+    ],
+    "composition": [],
+    "usage": "Read the Props interface in the source; pass user, onBack, onEdit and onDelete from the host. Adapt record groups and tabs to the requested domain.",
+    "limits": "The sample is not a backend integration. Loading/error/permission states and routing need target-specific implementation; this recipe does not accept scenario."
+  },
+  "form-page.tsx": {
+    "title": "Form page",
+    "description": "Editable profile form with validation and save/cancel callbacks.",
+    "keywords": [
+      "form",
+      "edit",
+      "validation",
+      "save"
+    ],
+    "states": [
+      "form input",
+      "validation"
+    ],
+    "composition": [],
+    "usage": "Read the Props interface in the source; pass initial, onSave and onCancel. Connect submission and routing before delivery.",
+    "limits": "No backend or persistent save is provided. Async submit/failure and permission states require target-specific implementation; this recipe does not accept scenario."
+  },
+  "extensions/users-list.tsx": {
+    "title": "Users list with extensions",
+    "description": "A compact extension-based list demonstrating local search, a create SidePanel and prototype scenario rendering.",
+    "keywords": [
+      "users",
+      "create",
+      "side panel",
+      "local state",
+      "prototype"
+    ],
+    "states": [
+      "success",
+      "loading",
+      "empty",
+      "error",
+      "permission",
+      "partial"
+    ],
+    "composition": [
+      "extensions.app-page",
+      "extensions.basic-table",
+      "extensions.side-panel",
+      "extensions.form-field"
+    ],
+    "usage": "Mount the default UsersList export and pass scenario from usePrototypeScenario(). Replace sample records and connect persistence for a real application. Keep AppPageContent padding at zero around BasicTable; inset the search region independently.",
+    "limits": "Creation is in-memory only; state is lost on remount. This compact recipe is not the full List page composition. Use ListPage for marketplace Toolbar, row selection and multi-page data."
+  }
+}

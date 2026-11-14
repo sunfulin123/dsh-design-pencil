@@ -1,0 +1,369 @@
+# ToolbarWrapper
+
+A horizontal toolbar container with a `gray100` background, a `start` slot on the left and an `end` slot on the right, and an optional bottom divider. Use it to build list headers, filter bars, and date-navigation bars above content areas.
+
+```ts
+import { ToolbarWrapper } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+`start` anchors content to the left (summary text, counts, date controls); `end` anchors action controls to the right (search, filter, action buttons). Both slots accept any `ReactNode`.
+
+```tsx preview
+import { ToolbarWrapper, Typography } from '@wfm/ui-components';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+import Button from '@talkdesk/cobalt-react-button';
+import Input from '@talkdesk/cobalt-react-input';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const theme = useTheme();
+  return (
+    <ToolbarWrapper
+      start={
+        <Typography variant="body-emphasis" color={theme.textDefault}>
+          80 Agents
+        </Typography>
+      }
+      end={
+        <Flex alignY="center" gap={2}>
+          <Input
+            placeholder="Search by agent"
+            size="small"
+            prefix={<Icon name="search" size="tiny" />}
+          />
+          <Button type="secondary" size="small">
+            + Create blank agent
+          </Button>
+          <Button type="secondary" variation="transparent" size="small">
+            <Icon name="filter_list" size="tiny" />
+            <Typography variant="caption" inline>
+              Filters
+            </Typography>
+          </Button>
+        </Flex>
+      }
+    />
+  );
+}
+```
+
+## End-only toolbar (no start content)
+
+When `start` is omitted the `end` slot is still right-aligned. Use this for toolbars where no left-side summary is needed.
+
+```tsx preview
+import { ToolbarWrapper, Typography } from '@wfm/ui-components';
+import Input from '@talkdesk/cobalt-react-input';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <ToolbarWrapper
+      end={
+        <Flex alignY="center" gap={2}>
+          <Input
+            placeholder="Search by all queues"
+            size="small"
+            prefix={<Icon name="search" size="tiny" />}
+          />
+          <Button type="secondary" variation="transparent" size="small">
+            <Icon name="filter_list" size="tiny" />
+            <Typography variant="caption" inline>
+              Filters
+            </Typography>
+          </Button>
+        </Flex>
+      }
+    />
+  );
+}
+```
+
+## Rich start slot — date navigation
+
+The `start` slot supports any controls. This example composes a real schedule toolbar entirely from `@wfm/ui-components`: a `DatePicker` for the current day, three `Button` controls (with the new `iconName` prop) for prev/today/next, and a `Dropdown` for view mode. The Filters button on the right opens a `SidePanel` containing a small filter form (status `MultiDropdown` + date range), with Reset/Apply actions in the footer.
+
+> Why the explicit widths and heights? `DatePicker` and `Dropdown` are built on **different Cobalt families** — `DatePicker` renders a `FormField` (`InputGroup` + `Input` + icon cell, plus an internal 2px wrapper for popup padding), while `Dropdown` renders the marketplace `Input` directly. Even with both set to `size="small"`, the DatePicker is ~4px taller. To line them up in a toolbar, wrap each trigger in a `Box` with a fixed `width` _and_ `height: 32` and pass `isFullWidth` so the trigger stretches to fill it.
+
+```tsx preview
+import { useState } from 'react';
+import {
+  Button,
+  DatePicker,
+  Dropdown,
+  MultiDropdown,
+  SidePanel,
+  ToolbarWrapper,
+} from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const viewOptions = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+];
+
+const statusOptions = [
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+const formatHeader = (d) =>
+  d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+// Shared trigger height so DatePicker (FormField + 2px wrapper) and Dropdown
+// (marketplace Input) line up. 32 = small input height in Cobalt.
+const TRIGGER_HEIGHT = 32;
+
+export default function Demo() {
+  const [date, setDate] = useState(new Date(2026, 3, 24));
+  const [view, setView] = useState('day');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [statuses, setStatuses] = useState(['scheduled', 'in_progress']);
+  const [from, setFrom] = useState(new Date(2026, 3, 20));
+  const [to, setTo] = useState(new Date(2026, 3, 27));
+
+  const shiftDay = (delta) => {
+    const next = new Date(date);
+    next.setDate(next.getDate() + delta);
+    setDate(next);
+  };
+
+  const resetFilters = () => {
+    setStatuses([]);
+    setFrom(new Date(2026, 3, 20));
+    setTo(new Date(2026, 3, 27));
+  };
+
+  return (
+    <>
+      <ToolbarWrapper
+        start={
+          <Flex alignY="center" gap={2}>
+            <Box style={{ width: 180, height: TRIGGER_HEIGHT }}>
+              <DatePicker
+                isFullWidth
+                value={date}
+                formatDate={formatHeader}
+                onChange={setDate}
+                data-qa="schedule-date"
+              />
+            </Box>
+            <Button
+              iconName="chevron_left"
+              shape="compact"
+              size="small"
+              type="secondary"
+              aria-label="Previous day"
+              onClick={() => shiftDay(-1)}
+            />
+            <Button
+              size="small"
+              type="secondary"
+              onClick={() => setDate(new Date())}
+            >
+              Today
+            </Button>
+            <Button
+              iconName="chevron_right"
+              shape="compact"
+              size="small"
+              type="secondary"
+              aria-label="Next day"
+              onClick={() => shiftDay(1)}
+            />
+            <Box style={{ width: 140, height: TRIGGER_HEIGHT }}>
+              <Dropdown
+                size="small"
+                value={view}
+                options={viewOptions}
+                onChange={(v) => setView(v)}
+                data-qa="view-mode"
+              />
+            </Box>
+          </Flex>
+        }
+        end={
+          <Flex alignY="center" gap={2}>
+            <Button
+              iconName="sort"
+              size="small"
+              type="secondary"
+              variation="transparent"
+            >
+              Sort options
+            </Button>
+            <Button
+              iconName="filter_list"
+              size="small"
+              type="secondary"
+              variation="transparent"
+              onClick={() => setFilterOpen(true)}
+            >
+              Filters
+            </Button>
+          </Flex>
+        }
+      />
+
+      <SidePanel
+        visible={filterOpen}
+        title="Filters"
+        size="small"
+        onClose={() => setFilterOpen(false)}
+        actions={[
+          { label: 'Reset', type: 'secondary', onClick: resetFilters },
+          {
+            label: 'Apply',
+            type: 'primary',
+            onClick: () => setFilterOpen(false),
+          },
+        ]}
+      >
+        <Flex direction="column" gap={4} width="100%">
+          <MultiDropdown
+            label="Status"
+            value={statuses}
+            options={statusOptions}
+            onChange={setStatuses}
+            messages={{ placeholder: 'Any status' }}
+            data-qa="filter-status"
+          />
+          <DatePicker
+            isFullWidth
+            label="From"
+            value={from}
+            onChange={setFrom}
+            data-qa="filter-from"
+          />
+          <DatePicker
+            isFullWidth
+            label="To"
+            value={to}
+            onChange={setTo}
+            data-qa="filter-to"
+          />
+        </Flex>
+      </SidePanel>
+    </>
+  );
+}
+```
+
+## Without border
+
+Set `isBordered={false}` to remove the bottom divider when the content below already provides sufficient visual separation.
+
+```tsx preview
+import { ToolbarWrapper, Typography } from '@wfm/ui-components';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+export default function Demo() {
+  const theme = useTheme();
+  return (
+    <ToolbarWrapper
+      isBottomBordered={false}
+      start={
+        <Typography variant="body-emphasis" color={theme.textDefault}>
+          Borderless toolbar
+        </Typography>
+      }
+    />
+  );
+}
+```
+
+## Top Bordered
+
+Set `isTopBordered={true}` to render a 1 px border above the toolbar. Use this when the toolbar is not at the very top of its section and needs a visual separator from the content above it.
+
+```tsx preview
+import { ToolbarWrapper, Typography } from '@wfm/ui-components';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  const theme = useTheme();
+  return (
+    <Box style={{ border: `1px solid ${theme.basic300}`, borderRadius: 4 }}>
+      <Box padding="3">
+        <Typography variant="caption" color={theme.basic600}>
+          Content above toolbar
+        </Typography>
+      </Box>
+      <ToolbarWrapper
+        isTopBordered
+        start={
+          <Typography variant="body-emphasis" color={theme.textDefault}>
+            Toolbar with top border
+          </Typography>
+        }
+      />
+    </Box>
+  );
+}
+```
+
+## Custom Padding
+
+Use `paddingX` and `paddingY` to override the default spacing inside the toolbar. Both accept `Space` tokens (multiples of 4 px). Use tighter padding for compact toolbars or larger padding for prominent action bars.
+
+- Left: `paddingX={2}` / `paddingY={1}` — compact (8 px / 4 px)
+- Right: `paddingX={8}` / `paddingY={4}` — generous (32 px / 16 px)
+
+```tsx preview
+import { ToolbarWrapper, Typography } from '@wfm/ui-components';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const theme = useTheme();
+  return (
+    <Flex direction="column" gap="4">
+      <ToolbarWrapper
+        paddingX={2}
+        paddingY={1}
+        start={
+          <Typography variant="caption" color={theme.textDefault}>
+            Compact padding (paddingX=2, paddingY=1)
+          </Typography>
+        }
+      />
+      <ToolbarWrapper
+        paddingX={8}
+        paddingY={4}
+        start={
+          <Typography variant="body-emphasis" color={theme.textDefault}>
+            Generous padding (paddingX=8, paddingY=4)
+          </Typography>
+        }
+      />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop               | Type        | Default               | Description                                                 |
+| ------------------ | ----------- | --------------------- | ----------------------------------------------------------- |
+| `start`            | `ReactNode` | —                     | Left-anchored content — summary text, counts, date controls |
+| `end`              | `ReactNode` | —                     | Right-anchored content — search, filter, and action buttons |
+| `isTopBordered`    | `boolean`   | `false`               | Renders a 1 px top border above the toolbar                 |
+| `isBottomBordered` | `boolean`   | `true`                | Renders a 1 px bottom border below the toolbar              |
+| `paddingX`         | `Space`     | `4`                   | Horizontal padding token — `4` = 16 px                      |
+| `paddingY`         | `Space`     | `2`                   | Vertical padding token — `2` = 8 px                         |
+| `data-qa`          | `string`    | —                     | QA selector                                                 |
+| `data-component`   | `string`    | `'WFMToolbarWrapper'` | Component identifier                                        |

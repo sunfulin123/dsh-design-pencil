@@ -1,0 +1,133 @@
+# DateTimePicker
+
+A date-and-time input that opens a popup combining a Cobalt calendar with an hour/minute stepper, returning a single JS `Date`.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { DateTimePicker } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+A minimal `DateTimePicker` requires a `value` (a JS `Date`) and an `onChange` callback. The popup closes when the user clicks outside. Date changes and time adjustments both call `onChange` immediately.
+
+<Example id="extensions.datetimepicker.001" />
+
+## With Label and Required
+
+Use `label` to render a text label above the input. Add `isRequired` to show a required marker next to the label. Both props work the same as in `DatePicker`.
+
+<Example id="extensions.datetimepicker.002" />
+
+## 24-Hour Format
+
+Set `format24H={true}` to display and edit the time in 24-hour format. When `false` (default), the time is shown in 12-hour format with an AM/PM toggle in the popup.
+
+- Left: `format24H={false}` (default) — displays `"9:30 AM"`, shows AM/PM toggle in popup
+- Right: `format24H={true}` — displays `"09:30"`, no AM/PM toggle
+
+<Example id="extensions.datetimepicker.003" />
+
+## Sizes
+
+Use `size` to match the surrounding form density. `'medium'` (default) suits standard forms; `'small'` suits compact toolbars and filter bars.
+
+- Left: `size="small"`
+- Right: `size="medium"` (default)
+
+<Example id="extensions.datetimepicker.004" />
+
+## Full Width
+
+Set `isFullWidth={true}` to make the trigger input stretch to fill its container. The popup width matches the trigger.
+
+<Example id="extensions.datetimepicker.005" />
+
+## Without Calendar Icon
+
+Set `hasIcon={false}` to remove the calendar icon prefix. Use this in compact inline forms or when the field label already provides enough context.
+
+<Example id="extensions.datetimepicker.006" />
+
+## Custom Display Formatter
+
+Use `formatDateTime` to control how the selected date and time appear in the trigger input. The function receives the current `Date` and must return a string.
+
+<Example id="extensions.datetimepicker.007" />
+
+## Validation States
+
+Use `variation` to apply an error or warning border to the input group. These states signal form validation feedback.
+
+- Left: `variation="error"` — red border
+- Right: `variation="warning"` — amber border
+
+<Example id="extensions.datetimepicker.008" />
+
+## Popup Position
+
+Use `direction` and `origin` to control where the popup opens. `direction` is the cardinal point on the trigger that anchors the popup; `origin` is the corner of the popup that aligns to it. Defaults are `direction="SE"` and `origin="SW"` (popup opens below-right).
+
+- Left: default position — popup opens below the trigger, left-aligned
+- Right: `direction="NE" origin="SW"` — popup opens above the trigger
+
+<Example id="extensions.datetimepicker.009" />
+
+## Disabled Days
+
+Pass `disabledDays` to prevent selecting certain dates. Accepts Cobalt's `DaysType`: an array of `{ year, month, day }` exact-date objects or `{ start?, end? }` range objects.
+
+<Example id="extensions.datetimepicker.010" />
+
+## Placeholder
+
+Pass `placeholder` to show custom hint text in the input when no date is selected. The default input is empty with no placeholder text.
+
+<Example id="extensions.datetimepicker.011" />
+
+## Helper Text
+
+Pass `description` to show neutral helper text below the input. Requires `label`. The text is styled in neutral grey and is not affected by the `variation` state.
+
+<Example id="extensions.datetimepicker.012" />
+
+## Calendar Options
+
+Use `isHighlightToday` to accent today's date on the calendar. Pass `highlightedDays` to visually mark specific dates without selecting them. Use `weekStart={1}` to begin the week on Monday. Restrict the year dropdown with `availableYears`.
+
+<Example id="extensions.datetimepicker.013" />
+
+## Localised Calendar
+
+Pass `months` and `weekdays` to localise the calendar labels.
+
+<Example id="extensions.datetimepicker.014" />
+
+## Props
+
+| Prop               | Type                     | Default               | Description                                                     |
+| ------------------ | ------------------------ | --------------------- | --------------------------------------------------------------- |
+| `value`            | `Date \| null`           | —                     | Currently selected date and time                                |
+| `onChange`         | `(date: Date) => void`   | —                     | Called when the user picks a date or changes the time           |
+| `label`            | `string`                 | —                     | Label rendered above the input                                  |
+| `isRequired`       | `boolean`                | `false`               | Shows a required marker next to the label                       |
+| `placeholder`      | `string`                 | —                     | Placeholder text when no value is selected                      |
+| `size`             | `'small' \| 'medium'`    | `'medium'`            | Input size                                                      |
+| `isFullWidth`      | `boolean`                | `false`               | Stretches the trigger input to fill its container               |
+| `hasIcon`          | `boolean`                | `true`                | Shows the calendar icon prefix                                  |
+| `format24H`        | `boolean`                | `false`               | Display and edit time in 24-hour format                         |
+| `formatDateTime`   | `(date: Date) => string` | —                     | Custom formatter for the trigger display string                 |
+| `variation`        | `'error' \| 'warning'`   | —                     | Validation border colour on the input group                     |
+| `description`      | `string`                 | —                     | Helper or validation message below the input (requires `label`) |
+| `direction`        | `CardinalPoint`          | `'SE'`                | Direction the popup opens relative to the trigger               |
+| `origin`           | `CardinalPoint`          | `'SW'`                | Origin corner of the popup that aligns to the trigger           |
+| `availableYears`   | `number[]`               | ±3 years from today   | Years shown in the calendar's year dropdown                     |
+| `disabledDays`     | `CobaltDaysType`         | —                     | Dates that cannot be selected                                   |
+| `highlightedDays`  | `CobaltDaysType`         | —                     | Dates visually highlighted without being selected               |
+| `isHighlightToday` | `boolean`                | `false`               | Highlights today's date on the calendar                         |
+| `weekStart`        | `0 \| 1`                 | `0`                   | First day of the week (`0` = Sunday, `1` = Monday)              |
+| `months`           | `CobaltMonths`           | English names         | Custom month names                                              |
+| `weekdays`         | `CobaltWeekdays`         | English names         | Custom weekday names                                            |
+| `data-qa`          | `string`                 | —                     | QA selector                                                     |
+| `data-component`   | `string`                 | `'WFMDateTimePicker'` | Component identifier                                            |

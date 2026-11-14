@@ -1,0 +1,126 @@
+# Typography
+
+A single text component that switches between Cobalt `Heading` and `Text` via a semantic `variant` prop, with overrides for level, weight, font, color tone, and skeleton loading.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Typography } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The default `variant="body"` renders 14px regular text — the extension body baseline. Pass any string or React node as children.
+
+<Example id="extensions.typography.001" />
+
+## Variants — Heading and Text in one API
+
+`variant` is the only switch between heading and body roles. Heading variants render Cobalt `Heading` (semantic `<h1>`–`<h6>`); body variants render Cobalt `Text`. All seven are shown side-by-side so the size hierarchy is visible at a glance.
+
+<Example id="extensions.typography.002" />
+
+## Tone — semantic color without `useTheme()`
+
+`tone` is a shortcut for the most common colors and resolves internally via `useTheme()`. Use this instead of importing `useTheme` for one-off color decisions; fall back to `color` when you need a token outside this set.
+
+<Example id="extensions.typography.003" />
+
+## Custom color via `color`
+
+When `tone` doesn't cover what you need, pass any CSS color string via `color`. Always prefer a `useTheme()` token over a hex value. `tone` takes precedence when both are set.
+
+<Example id="extensions.typography.004" />
+
+## Weight Override — text variants only
+
+Override the default weight for body/caption variants. Headings always use the Cobalt heading scale and ignore this prop.
+
+<Example id="extensions.typography.005" />
+
+## Font — `mono` for IDs and timestamps
+
+Set `font="mono"` to switch to Roboto Mono for machine-readable values such as IDs, timestamps, and code snippets (style-standard §3.4).
+
+<Example id="extensions.typography.006" />
+
+## Semantic Override — `asLevel`
+
+`asLevel` decouples the visual size from the semantic heading level. Use it when the page outline doesn't match the visual hierarchy — for example, a section that should still register as `<h3>` for screen readers without changing how it looks. Heading variants only.
+
+<Example id="extensions.typography.007" />
+
+## Truncation
+
+Set `truncated` to clip overflowing content with an ellipsis. The parent must constrain the width — Cobalt only adds the ellipsis CSS, it does not box the content.
+
+<Example id="extensions.typography.008" />
+
+## Loading Skeleton
+
+`loading` renders an animated full-width skeleton placeholder instead of the real content. Pass `true` for a single-line skeleton, or a number to render multiple lines (text variants only).
+
+<Example id="extensions.typography.009" />
+
+## Alignment
+
+`textAlign` works on both heading and body variants. Three alignments are stacked so the difference is obvious without interaction.
+
+<Example id="extensions.typography.010" />
+
+## Inline Text
+
+Set `inline` to render body variants as a `<span>` instead of `<p>` — useful for placing text next to icons or inline controls. Ignored for heading variants and mutually exclusive with `textAlign` (Cobalt rule).
+
+<Example id="extensions.typography.011" />
+
+## Props
+
+| Prop             | Type                                                             | Default           | Description                                                              |
+| ---------------- | ---------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `variant`        | `TypographyVariant`                                              | `'body'`          | Semantic role. Drives whether `Heading` or `Text` is rendered.           |
+| `children`       | `ReactNode`                                                      | —                 | Content.                                                                 |
+| `asLevel`        | `1 \| 2 \| 3 \| 4 \| 5 \| 6`                                     | —                 | Semantic heading level override. Heading variants only.                  |
+| `weight`         | `'light' \| 'regular' \| 'medium' \| 'inherit'`                  | —                 | Font weight override. Text variants only.                                |
+| `font`           | `'sans' \| 'mono'`                                               | `'sans'`          | Font family. `'mono'` for IDs / timestamps / code-like values.           |
+| `tone`           | `TypographyTone`                                                 | —                 | Semantic color via `useTheme()`. Takes precedence over `color`.          |
+| `color`          | `CSSProperties['color']`                                         | —                 | Raw color value. Use `useTheme()` tokens. Overridden by `tone`.          |
+| `truncated`      | `boolean`                                                        | `false`           | Truncate overflowing content with an ellipsis.                           |
+| `textAlign`      | `'left' \| 'center' \| 'right' \| 'justify' \| 'start' \| 'end'` | —                 | Horizontal alignment. Ignored when `inline` is `true`.                   |
+| `inline`         | `boolean`                                                        | `false`           | Render body variants as `<span>` instead of `<p>`. Ignored for headings. |
+| `loading`        | `boolean \| number`                                              | —                 | Render an animated full-width skeleton. Number = line count.             |
+| `data-qa`        | `string`                                                         | —                 | QA selector.                                                             |
+| `data-component` | `string`                                                         | `'WFMTypography'` | Component identifier.                                                    |
+
+### `TypographyVariant`
+
+| Variant           | Renders   | Cobalt config                  | Visual size        | Use for                                      |
+| ----------------- | --------- | ------------------------------ | ------------------ | -------------------------------------------- |
+| `'page-title'`    | `Heading` | `level=1, scale='large'`       | 28px               | Single page-level heading                    |
+| `'section-title'` | `Heading` | `level=2, scale='medium'`      | 24px               | Major page section                           |
+| `'card-title'`    | `Heading` | `level=4, scale='small'`       | 18px               | Card or local content block title            |
+| `'body-large'`    | `Text`    | `size='medium'`, 16px override | 16px               | Limited emphasis in spacious layouts         |
+| `'body'`          | `Text`    | `size='medium'`, regular       | 14px               | Default body, form values, table cells       |
+| `'body-emphasis'` | `Text`    | `size='medium'`, medium        | 14px medium weight | Inline emphasis without promoting to heading |
+| `'caption'`       | `Text`    | `size='small'`, regular        | 12px               | Helper text, captions, dense metadata        |
+
+### `TypographyTone`
+
+| Tone        | Resolves to (`useTheme()`) | Use for                               |
+| ----------- | -------------------------- | ------------------------------------- |
+| `'default'` | `theme.textDefault`        | Default primary text                  |
+| `'subdued'` | `theme.basic600`           | Secondary metadata / helper text      |
+| `'primary'` | `theme.primary11`          | Brand emphasis                        |
+| `'error'`   | `theme.textError`          | Validation errors, destructive states |
+| `'success'` | `theme.success10`          | Confirmation messages                 |
+| `'warning'` | `theme.warning10`          | Caution states                        |
+| `'info'`    | `theme.info10`             | Informational notes                   |
+| `'inverse'` | `theme.basic000`           | Text on dark backgrounds              |
+
+### `TypographyLoading`
+
+| Form                  | Meaning                                      |
+| --------------------- | -------------------------------------------- |
+| `true`                | Single-line animated skeleton at 100% width  |
+| `number` (e.g. `3`)   | Multi-line animated skeleton (text variants) |
+| `false` / `undefined` | No skeleton — render real content            |

@@ -1,0 +1,96 @@
+# Button
+
+A merged button component combining Cobalt `Button` and `StatefulButton` — supports all standard intents (primary / secondary / danger / …) plus an optional async `state` for loading, success, and error feedback.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Button } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The default `type` is `'primary'` and the default `size` is `'medium'`. When no `state` is set, the button behaves exactly like a regular Cobalt `Button`.
+
+<Example id="extensions.button.001" />
+
+## Type & Variation
+
+`type` controls the colour intent. `variation="outline"` swaps the solid fill for an outlined look; `variation="transparent"` removes the background entirely (useful for icon-only or in-row actions).
+
+<Example id="extensions.button.002" />
+
+## Size & Shape
+
+`size` accepts `'tiny' | 'small' | 'medium'`. `shape="full-width"` stretches the button to fill its parent — handy for forms and side-panel footers. `shape="compact"` shrinks horizontal padding for icon-only buttons.
+
+<Example id="extensions.button.003" />
+
+## Async State
+
+Pass `state` to flip the button into a loading, success, or error mode. Click events are ignored while a state is active. Use `'inline-loading'` inside footers / table rows where the spinner should stay compact, and `'loading'` for standalone primary CTAs.
+
+<Example id="extensions.button.004" />
+
+## Icon + Label
+
+Pass `iconName` to render a Cobalt icon next to the label — the canonical "icon button" combo. `iconPosition="end"` flips it to the right; `iconSize` overrides the default size (which scales with `size`). Omit `children` plus add `shape="compact"` for an icon-only button (remember `aria-label` for accessibility).
+
+<Example id="extensions.button.005" />
+
+## Tooltip
+
+Wrap any button with a Cobalt `Tooltip` by passing `tooltip`. Use a string for a simple label, or an object for full control over `position`, `variation`, and rich `content`. The tooltip default position is `PositionCenterTop`. Hover any button below to see it.
+
+<Example id="extensions.button.006" />
+
+### Tooltip on a disabled button
+
+Native `<button disabled>` swallows pointer events, so a Tooltip placed directly on it will never appear. The extension `Button` works around this automatically: when `disabled` is `true` and `tooltip` is set, the button is wrapped in an inline-block hover catcher so the tooltip still fires while the button stays un-clickable. Useful for explaining _why_ an action is disabled.
+
+You can also independently silence the tooltip itself by passing `tooltip={{ label, disabled: true }}` — handy when you want to keep the same render path but suppress the popover (e.g. on touch devices, or when a parent already shows guidance).
+
+<Example id="extensions.button.007" />
+
+## Disabled
+
+`disabled` greys out the button and blocks clicks. A button with an active `state` is also un-clickable, regardless of `disabled`.
+
+<Example id="extensions.button.008" />
+
+## Form Submit
+
+`htmlType="submit"` makes the button submit its enclosing `<form>`. Default is `'button'` so accidental form submissions don't happen when you drop a button into a form.
+
+<Example id="extensions.button.009" />
+
+## Props
+
+| Prop             | Type                                                                                                                   | Default       | Description                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `children`       | `ReactNode`                                                                                                            | —             | Button label                                                                                            |
+| `type`           | `'primary' \| 'secondary' \| 'info' \| 'danger' \| 'warning' \| 'success' \| 'feature' \| 'mono-dark' \| 'mono-light'` | `'primary'`   | Colour intent                                                                                           |
+| `variation`      | `'outline' \| 'transparent'`                                                                                           | —             | Style variation. Omit for the default solid look                                                        |
+| `size`           | `'tiny' \| 'small' \| 'medium'`                                                                                        | `'medium'`    | Button size                                                                                             |
+| `shape`          | `'full-width' \| 'compact'`                                                                                            | —             | `'full-width'` fills the parent; `'compact'` shrinks horizontal padding                                 |
+| `state`          | `'loading' \| 'inline-loading' \| 'success' \| 'error'`                                                                | —             | Async state. Adds a spinner / success / error overlay and blocks clicks                                 |
+| `disabled`       | `boolean`                                                                                                              | `false`       | Disables the button                                                                                     |
+| `onClick`        | `MouseEventHandler<HTMLButtonElement>`                                                                                 | —             | Click handler                                                                                           |
+| `htmlType`       | `'button' \| 'submit' \| 'reset'`                                                                                      | `'button'`    | Native `<button type>` attribute                                                                        |
+| `forwardedRef`   | `Ref<HTMLButtonElement>`                                                                                               | —             | Ref forwarded to the underlying `<button>`                                                              |
+| `tooltip`        | `ButtonTooltip`                                                                                                        | —             | Wraps the button in a Cobalt `Tooltip`. String = label only; object = full Cobalt `TooltipProps`        |
+| `iconName`       | `IconName`                                                                                                             | —             | Cobalt icon name. When set, an `<Icon>` is rendered next to the children — see the Icon + Label section |
+| `iconPosition`   | `'start' \| 'end'`                                                                                                     | `'start'`     | Where the icon sits relative to the children                                                            |
+| `iconSize`       | `ButtonIconSize`                                                                                                       | auto          | Icon size override. Defaults to `'tiny'` for `size="tiny"`, `'small'` otherwise                         |
+| `aria-label`     | `string`                                                                                                               | —             | Accessibility label, required for icon-only buttons                                                     |
+| `data-qa`        | `string`                                                                                                               | —             | QA selector                                                                                             |
+| `data-component` | `string`                                                                                                               | `'WFMButton'` | Component identifier                                                                                    |
+
+### `ButtonTooltip`
+
+| Form               | Meaning                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `string`           | Renders a plain-label tooltip at `PositionCenterTop`. Equivalent to `{ label, position: PositionCenterTop }`.                                                       |
+| `TooltipProps` obj | Forwarded directly to Cobalt `Tooltip`. Override `position`, `variation`, `content` (rich), `disabled` (suppress the tooltip independent of the button), `autoGap`. |
+
+> **Disabled buttons:** when the `Button` itself is `disabled`, the tooltip still appears on hover (the button is automatically wrapped in a hover catcher). To silence the tooltip, pass `tooltip={{ label, disabled: true }}`.

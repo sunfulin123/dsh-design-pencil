@@ -1,0 +1,56 @@
+# Choice
+
+A single checkbox or radio control with a clickable label and built-in `error` / `warning` outline states. Use `FormField` when you need a description, hint message, or label-above layout.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Choice } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The default `type` is `'checkbox'`. Pass controlled `checked` + `onChange` (the handler receives the new boolean as the first argument and the native event as the second). The `label` is rendered as a Cobalt `Label` with `font-weight: 400` so it reads as option text rather than a form-section heading; clicking the text toggles the control.
+
+<Example id="extensions.choice.001" />
+
+## Radio Variant
+
+Switch the variant via `type="radio"`. Group radios together by giving them the same `name`.
+
+<Example id="extensions.choice.002" />
+
+## Validation State
+
+Set `variation="error"` or `variation="warning"` to tint the control outline and the label. The component itself does not render a hint message — wrap it in `FormField` when you need an associated error / warning text.
+
+<Example id="extensions.choice.003" />
+
+## Disabled
+
+`disabled` freezes interaction and dims the label to neutral grey, regardless of `variation`.
+
+<Example id="extensions.choice.004" />
+
+## Sizes
+
+`size` is forwarded to the underlying Cobalt `Input`. Use `'small'` for dense toolbars or table cells.
+
+<Example id="extensions.choice.005" />
+
+## Props
+
+| Prop             | Type                                                               | Default       | Description                                                                                           |
+| ---------------- | ------------------------------------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------- |
+| `type`           | `'checkbox' \| 'radio'`                                            | `'checkbox'`  | Renders a checkbox or a radio                                                                         |
+| `checked`        | `boolean`                                                          | —             | Controlled checked state                                                                              |
+| `onChange`       | `(checked: boolean, event: ChangeEvent<HTMLInputElement>) => void` | —             | Fired when the user toggles the control                                                               |
+| `label`          | `ReactNode`                                                        | —             | Visible label rendered to the right of the control. Clickable via `htmlFor`.                          |
+| `variation`      | `'error' \| 'warning'`                                             | —             | Validation state. Tints the control outline and the label                                             |
+| `disabled`       | `boolean`                                                          | `false`       | Disables interaction and dims the label                                                               |
+| `name`           | `string`                                                           | —             | Native `name` attribute. Required when grouping radios.                                               |
+| `value`          | `string \| number`                                                 | —             | Native `value` attribute — useful for radios that share a `name`                                      |
+| `size`           | `'small' \| 'medium'`                                              | `'medium'`    | Control size                                                                                          |
+| `id`             | `string`                                                           | auto          | Input `id`. When omitted, an auto-generated id is used so the `Label htmlFor` association still works |
+| `data-qa`        | `string`                                                           | —             | QA selector — also propagated as `${data-qa}-input`                                                   |
+| `data-component` | `string`                                                           | `'WFMChoice'` | Component identifier                                                                                  |

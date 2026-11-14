@@ -12,7 +12,9 @@
     "op-vscode",
     "op-web-sdk",
     "op-web-sdk-react",
-    "op-web-sdk-vue"
+    "op-web-sdk-vue",
+    "design-data",
+    "talkdesk-cobalt"
   ],
   "type": "module",
   "scripts": {

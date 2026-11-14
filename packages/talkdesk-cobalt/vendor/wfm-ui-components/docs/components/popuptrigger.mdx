@@ -1,0 +1,365 @@
+# PopupTrigger
+
+A wrapper component that attaches a floating popup panel to any element — wrap a button, icon, link, or any React node as `children` to make it open the popup on click.
+
+```ts
+import { PopupTrigger } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+Wrap any element as `children` and provide `content` for the popup body. The popup opens on click and closes when clicking outside.
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex padding="6" alignX="center">
+      <PopupTrigger
+        content={
+          <Typography variant="body">
+            This is the popup panel content.
+          </Typography>
+        }
+      >
+        <Button type="secondary">Open panel</Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Icon Trigger
+
+Any element works as the trigger — including a standalone icon button.
+
+- Left: icon button with a vertical dots icon — opens a simple action menu
+- Right: filter icon — opens a sticky panel (`keepOpen`) for interactive controls
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex padding="6" gap="6" alignX="center" alignY="center">
+      <PopupTrigger
+        width="180px"
+        content={
+          <Flex direction="column" gap="2">
+            <Typography variant="body">Edit</Typography>
+            <Typography variant="body">Duplicate</Typography>
+            <Typography variant="body">Delete</Typography>
+          </Flex>
+        }
+      >
+        <Button type="secondary" shape="compact">
+          <Icon name="more_vertical" size="small" />
+        </Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        width="220px"
+        keepOpen
+        content={
+          <Box>
+            <Typography variant="body-emphasis">Filter options</Typography>
+            <Typography variant="caption">
+              Popup stays open for interactive controls.
+            </Typography>
+          </Box>
+        }
+      >
+        <Button type="secondary" shape="compact">
+          <Icon name="filter" size="small" />
+        </Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Custom Width
+
+Use `width` to fix the popup panel's width when the content requires a specific layout.
+
+- Left: no `width` — panel sizes to its content
+- Right: `width="280px"` — fixes panel width regardless of content
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex padding="6" gap="4" alignX="center">
+      <PopupTrigger
+        content={<Typography variant="body">Short content</Typography>}
+      >
+        <Button type="secondary">Auto width</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        width="280px"
+        content={
+          <Box>
+            <Typography variant="body-emphasis">Filter Options</Typography>
+            <Typography variant="caption">
+              Panel is fixed at 280px — useful for structured menus.
+            </Typography>
+          </Box>
+        }
+      >
+        <Button type="secondary">Fixed 280px</Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Keep Open
+
+Set `keepOpen` to prevent the popup from closing when the user clicks inside it — required when the panel contains interactive controls like checkboxes or inputs.
+
+- Left: `keepOpen` — clicking the checkbox inside keeps the popup open
+- Right: default — any click inside closes the popup
+
+```tsx preview
+import { useState } from 'react';
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [checked, setChecked] = useState(false);
+  return (
+    <Flex padding="6" gap="4" alignX="center">
+      <PopupTrigger
+        keepOpen
+        width="220px"
+        content={
+          <Flex direction="column" gap="2">
+            <Typography variant="body-emphasis">Select options</Typography>
+            <label>
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => setChecked(e.target.checked)}
+              />{' '}
+              Enable feature
+            </label>
+          </Flex>
+        }
+      >
+        <Button type="secondary">keepOpen</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        width="220px"
+        content={
+          <Typography variant="body">
+            Clicking inside closes the popup.
+          </Typography>
+        }
+      >
+        <Button type="secondary">Default (closes)</Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Disabled
+
+Set `disabled` to prevent the popup from opening. Also disable the child element manually if it should appear non-interactive.
+
+- Left: enabled — popup opens normally
+- Right: `disabled` — popup is suppressed, child button also gets `disabled`
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex padding="6" gap="4" alignX="center">
+      <PopupTrigger
+        content={<Typography variant="body">Popup content</Typography>}
+      >
+        <Button type="secondary">Enabled</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        disabled
+        content={<Typography variant="body">This will not open</Typography>}
+      >
+        <Button type="secondary" disabled>
+          Disabled
+        </Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Popup Position
+
+Use `direction` and `origin` to control where the popup opens. `direction` sets which side of the trigger the popup opens from; `origin` sets which corner of the popup aligns to that anchor. Both accept a `CardinalPoint` (e.g. `'N'`, `'SE'`, `'NW'`).
+
+Default `direction="SE"` / `origin="SW"` opens the popup below-right. Use `direction="N"` / `origin="S"` to open above the trigger.
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex padding="8" gap="6" alignX="center">
+      <PopupTrigger
+        content={
+          <Typography variant="body">Opens below-right (default).</Typography>
+        }
+      >
+        <Button type="secondary">Default SE/SW</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        direction="N"
+        origin="S"
+        content={
+          <Typography variant="body">Opens above the trigger.</Typography>
+        }
+      >
+        <Button type="secondary">Above N/S</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        direction="E"
+        origin="W"
+        content={<Typography variant="body">Opens to the right.</Typography>}
+      >
+        <Button type="secondary">Right E/W</Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Content Padding
+
+Use `contentPadding` to override the default `'4'` (16 px) padding inside the popup panel. The value maps to the same `0`–12 spacing tokens used by Cobalt `Box`.
+
+- Left: `contentPadding="2"` — compact, 8 px padding
+- Middle: `contentPadding="4"` — default, 16 px padding
+- Right: `contentPadding="0"` — no padding, content fills the panel edge to edge
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex padding="6" gap="4" alignX="center">
+      <PopupTrigger
+        contentPadding="2"
+        width="180px"
+        content={
+          <Typography variant="caption">Compact padding (2 = 8px)</Typography>
+        }
+      >
+        <Button type="secondary">padding 2</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        contentPadding="4"
+        width="180px"
+        content={
+          <Typography variant="caption">Default padding (4 = 16px)</Typography>
+        }
+      >
+        <Button type="secondary">padding 4</Button>
+      </PopupTrigger>
+
+      <PopupTrigger
+        contentPadding="0"
+        width="180px"
+        content={
+          <Box
+            padding="3"
+            style={{
+              background: 'var(--co-color-background-info-subtle, #e8f4fd)',
+            }}
+          >
+            <Typography variant="caption">
+              No padding — content fills edge to edge
+            </Typography>
+          </Box>
+        }
+      >
+        <Button type="secondary">padding 0</Button>
+      </PopupTrigger>
+    </Flex>
+  );
+}
+```
+
+## Full Width
+
+Set `fullWidth={true}` to stretch the trigger wrapper to the full available container width. Use this when the trigger should behave like a full-width select or dropdown.
+
+```tsx preview
+import { PopupTrigger, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="6">
+      <Box style={{ width: '320px', border: '1px dashed #ccc', padding: 8 }}>
+        <PopupTrigger
+          fullWidth
+          content={
+            <Typography variant="body">
+              Panel aligns to the full trigger width.
+            </Typography>
+          }
+        >
+          <Button type="secondary" style={{ width: '100%' }}>
+            Full-width trigger
+          </Button>
+        </PopupTrigger>
+      </Box>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type               | Default          | Description                                              |
+| ---------------- | ------------------ | ---------------- | -------------------------------------------------------- |
+| `children`       | `ReactNode`        | —                | The trigger element — wrapped with the popup click logic |
+| `content`        | `ReactNode`        | —                | Content rendered inside the popup panel                  |
+| `direction`      | `CardinalPoint`    | `'SE'`           | Direction the popup opens from the anchor point          |
+| `origin`         | `CardinalPoint`    | `'SW'`           | Anchor point on the trigger element                      |
+| `size`           | `PopupSize`        | —                | Popup size preset                                        |
+| `width`          | `string \| number` | —                | Custom width for the popup panel                         |
+| `contentPadding` | `Space (0–12)`     | `'4'`            | Padding inside the popup content area                    |
+| `keepOpen`       | `boolean`          | `false`          | Prevent popup from closing when clicking inside it       |
+| `disabled`       | `boolean`          | `false`          | Disables the trigger and prevents the popup from opening |
+| `fullWidth`      | `boolean`          | `false`          | Stretch trigger wrapper to full available width          |
+| `data-qa`        | `string`           | —                | QA selector (also derives `-content` value)              |
+| `data-component` | `string`           | `'PopupTrigger'` | Component identifier                                     |

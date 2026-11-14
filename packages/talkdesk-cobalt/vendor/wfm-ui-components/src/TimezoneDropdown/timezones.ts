@@ -1,0 +1,2919 @@
+/* eslint-disable max-lines */
+export default [
+  {
+    groupName: 'Other',
+    items: [
+      {
+        title: 'UTC',
+        value: 'Etc/UTC',
+      },
+    ],
+  },
+  {
+    groupName: 'Andorra',
+    items: [
+      {
+        title: 'Andorra',
+        value: 'Europe/Andorra',
+      },
+    ],
+  },
+  {
+    groupName: 'United Arab Emirates',
+    items: [
+      {
+        title: 'Dubai',
+        value: 'Asia/Dubai',
+      },
+    ],
+  },
+  {
+    groupName: 'Afghanistan',
+    items: [
+      {
+        title: 'Kabul',
+        value: 'Asia/Kabul',
+      },
+    ],
+  },
+  {
+    groupName: 'Antigua And Barbuda',
+    items: [
+      {
+        title: 'Antigua',
+        value: 'America/Antigua',
+      },
+    ],
+  },
+  {
+    groupName: 'Anguilla',
+    items: [
+      {
+        title: 'Anguilla',
+        value: 'America/Anguilla',
+      },
+    ],
+  },
+  {
+    groupName: 'Albania',
+    items: [
+      {
+        title: 'Tirane',
+        value: 'Europe/Tirane',
+      },
+    ],
+  },
+  {
+    groupName: 'Armenia',
+    items: [
+      {
+        title: 'Yerevan',
+        value: 'Asia/Yerevan',
+      },
+    ],
+  },
+  {
+    groupName: 'Angola',
+    items: [
+      {
+        title: 'Luanda',
+        value: 'Africa/Luanda',
+      },
+    ],
+  },
+  {
+    groupName: 'Antarctica',
+    items: [
+      {
+        title: 'Casey',
+        value: 'Antarctica/Casey',
+      },
+      {
+        title: 'Davis',
+        value: 'Antarctica/Davis',
+      },
+      {
+        title: 'DumontDUrville',
+        value: 'Antarctica/DumontDUrville',
+      },
+      {
+        title: 'Mawson',
+        value: 'Antarctica/Mawson',
+      },
+      {
+        title: 'McMurdo',
+        value: 'Antarctica/McMurdo',
+      },
+      {
+        title: 'Palmer',
+        value: 'Antarctica/Palmer',
+      },
+      {
+        title: 'Rothera',
+        value: 'Antarctica/Rothera',
+      },
+      {
+        title: 'Syowa',
+        value: 'Antarctica/Syowa',
+      },
+      {
+        title: 'Troll',
+        value: 'Antarctica/Troll',
+      },
+      {
+        title: 'Vostok',
+        value: 'Antarctica/Vostok',
+      },
+    ],
+  },
+  {
+    groupName: 'Argentina',
+    items: [
+      {
+        title: 'Buenos Aires',
+        value: 'America/Argentina/Buenos_Aires',
+      },
+      {
+        title: 'Catamarca',
+        value: 'America/Argentina/Catamarca',
+      },
+      {
+        title: 'Cordoba',
+        value: 'America/Argentina/Cordoba',
+      },
+      {
+        title: 'Jujuy',
+        value: 'America/Argentina/Jujuy',
+      },
+      {
+        title: 'La Rioja',
+        value: 'America/Argentina/La_Rioja',
+      },
+      {
+        title: 'Mendoza',
+        value: 'America/Argentina/Mendoza',
+      },
+      {
+        title: 'Rio Gallegos',
+        value: 'America/Argentina/Rio_Gallegos',
+      },
+      {
+        title: 'Salta',
+        value: 'America/Argentina/Salta',
+      },
+      {
+        title: 'San Juan',
+        value: 'America/Argentina/San_Juan',
+      },
+      {
+        title: 'San Luis',
+        value: 'America/Argentina/San_Luis',
+      },
+      {
+        title: 'Tucuman',
+        value: 'America/Argentina/Tucuman',
+      },
+      {
+        title: 'Ushuaia',
+        value: 'America/Argentina/Ushuaia',
+      },
+    ],
+  },
+  {
+    groupName: 'American Samoa',
+    items: [
+      {
+        title: 'Pago Pago',
+        value: 'Pacific/Pago_Pago',
+      },
+    ],
+  },
+  {
+    groupName: 'Austria',
+    items: [
+      {
+        title: 'Vienna',
+        value: 'Europe/Vienna',
+      },
+    ],
+  },
+  {
+    groupName: 'Australia',
+    items: [
+      {
+        title: 'Adelaide',
+        value: 'Australia/Adelaide',
+      },
+      {
+        title: 'Brisbane',
+        value: 'Australia/Brisbane',
+      },
+      {
+        title: 'Broken Hill',
+        value: 'Australia/Broken_Hill',
+      },
+      {
+        title: 'Canberra',
+        value: 'Australia/Canberra',
+      },
+      {
+        title: 'Currie',
+        value: 'Australia/Currie',
+      },
+      {
+        title: 'Darwin',
+        value: 'Australia/Darwin',
+      },
+      {
+        title: 'Eucla',
+        value: 'Australia/Eucla',
+      },
+      {
+        title: 'Hobart',
+        value: 'Australia/Hobart',
+      },
+      {
+        title: 'Lindeman',
+        value: 'Australia/Lindeman',
+      },
+      {
+        title: 'Lord Howe',
+        value: 'Australia/Lord_Howe',
+      },
+      {
+        title: 'Macquarie',
+        value: 'Antarctica/Macquarie',
+      },
+      {
+        title: 'Melbourne',
+        value: 'Australia/Melbourne',
+      },
+      {
+        title: 'Perth',
+        value: 'Australia/Perth',
+      },
+      {
+        title: 'Sydney',
+        value: 'Australia/Sydney',
+      },
+    ],
+  },
+  {
+    groupName: 'Aruba',
+    items: [
+      {
+        title: 'Aruba',
+        value: 'America/Aruba',
+      },
+    ],
+  },
+  {
+    groupName: 'Aland Islands',
+    items: [
+      {
+        title: 'Mariehamn',
+        value: 'Europe/Mariehamn',
+      },
+    ],
+  },
+  {
+    groupName: 'Azerbaijan',
+    items: [
+      {
+        title: 'Baku',
+        value: 'Asia/Baku',
+      },
+    ],
+  },
+  {
+    groupName: 'Bosnia And Herzegovina',
+    items: [
+      {
+        title: 'Sarajevo',
+        value: 'Europe/Sarajevo',
+      },
+    ],
+  },
+  {
+    groupName: 'Barbados',
+    items: [
+      {
+        title: 'Barbados',
+        value: 'America/Barbados',
+      },
+    ],
+  },
+  {
+    groupName: 'Bangladesh',
+    items: [
+      {
+        title: 'Dhaka',
+        value: 'Asia/Dhaka',
+      },
+    ],
+  },
+  {
+    groupName: 'Belgium',
+    items: [
+      {
+        title: 'Brussels',
+        value: 'Europe/Brussels',
+      },
+    ],
+  },
+  {
+    groupName: 'Burkina Faso',
+    items: [
+      {
+        title: 'Ouagadougou',
+        value: 'Africa/Ouagadougou',
+      },
+    ],
+  },
+  {
+    groupName: 'Bulgaria',
+    items: [
+      {
+        title: 'Sofia',
+        value: 'Europe/Sofia',
+      },
+    ],
+  },
+  {
+    groupName: 'Bahrain',
+    items: [
+      {
+        title: 'Bahrain',
+        value: 'Asia/Bahrain',
+      },
+    ],
+  },
+  {
+    groupName: 'Burundi',
+    items: [
+      {
+        title: 'Bujumbura',
+        value: 'Africa/Bujumbura',
+      },
+    ],
+  },
+  {
+    groupName: 'Benin',
+    items: [
+      {
+        title: 'Africa/Porto-Novo',
+        value: 'Africa/Porto-Novo',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Barthelemy',
+    items: [
+      {
+        title: 'St Barthelemy',
+        value: 'America/St_Barthelemy',
+      },
+    ],
+  },
+  {
+    groupName: 'Bermuda',
+    items: [
+      {
+        title: 'Bermuda',
+        value: 'Atlantic/Bermuda',
+      },
+    ],
+  },
+  {
+    groupName: 'Brunei Darussalam',
+    items: [
+      {
+        title: 'Brunei',
+        value: 'Asia/Brunei',
+      },
+    ],
+  },
+  {
+    groupName: 'Bolivia',
+    items: [
+      {
+        title: 'La Paz',
+        value: 'America/La_Paz',
+      },
+    ],
+  },
+  {
+    groupName: 'Bonaire',
+    items: [
+      {
+        title: 'Kralendijk',
+        value: 'America/Kralendijk',
+      },
+    ],
+  },
+  {
+    groupName: 'Brazil',
+    items: [
+      {
+        title: 'Araguaina',
+        value: 'America/Araguaina',
+      },
+      {
+        title: 'Bahia',
+        value: 'America/Bahia',
+      },
+      {
+        title: 'Belem',
+        value: 'America/Belem',
+      },
+      {
+        title: 'Boa Vista',
+        value: 'America/Boa_Vista',
+      },
+      {
+        title: 'Campo Grande',
+        value: 'America/Campo_Grande',
+      },
+      {
+        title: 'Cuiaba',
+        value: 'America/Cuiaba',
+      },
+      {
+        title: 'Eirunepe',
+        value: 'America/Eirunepe',
+      },
+      {
+        title: 'Fortaleza',
+        value: 'America/Fortaleza',
+      },
+      {
+        title: 'Maceio',
+        value: 'America/Maceio',
+      },
+      {
+        title: 'Manaus',
+        value: 'America/Manaus',
+      },
+      {
+        title: 'Noronha',
+        value: 'America/Noronha',
+      },
+      {
+        title: 'Porto Velho',
+        value: 'America/Porto_Velho',
+      },
+      {
+        title: 'Recife',
+        value: 'America/Recife',
+      },
+      {
+        title: 'Rio Branco',
+        value: 'America/Rio_Branco',
+      },
+      {
+        title: 'Santarem',
+        value: 'America/Santarem',
+      },
+      {
+        title: 'Sao Paulo',
+        value: 'America/Sao_Paulo',
+      },
+    ],
+  },
+  {
+    groupName: 'Bahamas',
+    items: [
+      {
+        title: 'Nassau',
+        value: 'America/Nassau',
+      },
+    ],
+  },
+  {
+    groupName: 'Bhutan',
+    items: [
+      {
+        title: 'Thimphu',
+        value: 'Asia/Thimphu',
+      },
+    ],
+  },
+  {
+    groupName: 'Botswana',
+    items: [
+      {
+        title: 'Gaborone',
+        value: 'Africa/Gaborone',
+      },
+    ],
+  },
+  {
+    groupName: 'Belarus',
+    items: [
+      {
+        title: 'Minsk',
+        value: 'Europe/Minsk',
+      },
+    ],
+  },
+  {
+    groupName: 'Belize',
+    items: [
+      {
+        title: 'Belize',
+        value: 'America/Belize',
+      },
+    ],
+  },
+  {
+    groupName: 'Canada',
+    items: [
+      {
+        title: 'America/Blanc-Sablon',
+        value: 'America/Blanc-Sablon',
+      },
+      {
+        title: 'Atikokan',
+        value: 'America/Atikokan',
+      },
+      {
+        title: 'Cambridge Bay',
+        value: 'America/Cambridge_Bay',
+      },
+      {
+        title: 'Creston',
+        value: 'America/Creston',
+      },
+      {
+        title: 'Dawson',
+        value: 'America/Dawson',
+      },
+      {
+        title: 'Dawson Creek',
+        value: 'America/Dawson_Creek',
+      },
+      {
+        title: 'Edmonton',
+        value: 'America/Edmonton',
+      },
+      {
+        title: 'Glace Bay',
+        value: 'America/Glace_Bay',
+      },
+      {
+        title: 'Goose Bay',
+        value: 'America/Goose_Bay',
+      },
+      {
+        title: 'Halifax',
+        value: 'America/Halifax',
+      },
+      {
+        title: 'Inuvik',
+        value: 'America/Inuvik',
+      },
+      {
+        title: 'Iqaluit',
+        value: 'America/Iqaluit',
+      },
+      {
+        title: 'Moncton',
+        value: 'America/Moncton',
+      },
+      {
+        title: 'Montreal',
+        value: 'America/Montreal',
+      },
+      {
+        title: 'Nipigon',
+        value: 'America/Nipigon',
+      },
+      {
+        title: 'Pangnirtung',
+        value: 'America/Pangnirtung',
+      },
+      {
+        title: 'Rainy River',
+        value: 'America/Rainy_River',
+      },
+      {
+        title: 'Rankin Inlet',
+        value: 'America/Rankin_Inlet',
+      },
+      {
+        title: 'Regina',
+        value: 'America/Regina',
+      },
+      {
+        title: 'Resolute',
+        value: 'America/Resolute',
+      },
+      {
+        title: 'St Johns',
+        value: 'America/St_Johns',
+      },
+      {
+        title: 'Swift Current',
+        value: 'America/Swift_Current',
+      },
+      {
+        title: 'Thunder Bay',
+        value: 'America/Thunder_Bay',
+      },
+      {
+        title: 'Toronto',
+        value: 'America/Toronto',
+      },
+      {
+        title: 'Vancouver',
+        value: 'America/Vancouver',
+      },
+      {
+        title: 'Whitehorse',
+        value: 'America/Whitehorse',
+      },
+      {
+        title: 'Winnipeg',
+        value: 'America/Winnipeg',
+      },
+      {
+        title: 'Yellowknife',
+        value: 'America/Yellowknife',
+      },
+    ],
+  },
+  {
+    groupName: 'Cocos (Keeling) Islands',
+    items: [
+      {
+        title: 'Cocos',
+        value: 'Indian/Cocos',
+      },
+    ],
+  },
+  {
+    groupName: 'Congo (Democratic Republic)',
+    items: [
+      {
+        title: 'Kinshasa',
+        value: 'Africa/Kinshasa',
+      },
+      {
+        title: 'Lubumbashi',
+        value: 'Africa/Lubumbashi',
+      },
+    ],
+  },
+  {
+    groupName: 'Central African Republic',
+    items: [
+      {
+        title: 'Bangui',
+        value: 'Africa/Bangui',
+      },
+    ],
+  },
+  {
+    groupName: 'Congo',
+    items: [
+      {
+        title: 'Brazzaville',
+        value: 'Africa/Brazzaville',
+      },
+    ],
+  },
+  {
+    groupName: 'Switzerland',
+    items: [
+      {
+        title: 'Zurich',
+        value: 'Europe/Zurich',
+      },
+    ],
+  },
+  {
+    groupName: "Cote D'Ivoire",
+    items: [
+      {
+        title: 'Abidjan',
+        value: 'Africa/Abidjan',
+      },
+    ],
+  },
+  {
+    groupName: 'Cook Islands',
+    items: [
+      {
+        title: 'Rarotonga',
+        value: 'Pacific/Rarotonga',
+      },
+    ],
+  },
+  {
+    groupName: 'Chile',
+    items: [
+      {
+        title: 'Easter',
+        value: 'Pacific/Easter',
+      },
+      {
+        title: 'Santiago',
+        value: 'America/Santiago',
+      },
+    ],
+  },
+  {
+    groupName: 'Cameroon',
+    items: [
+      {
+        title: 'Douala',
+        value: 'Africa/Douala',
+      },
+    ],
+  },
+  {
+    groupName: 'China',
+    items: [
+      {
+        title: 'Chongqing',
+        value: 'Asia/Chongqing',
+      },
+      {
+        title: 'Harbin',
+        value: 'Asia/Harbin',
+      },
+      {
+        title: 'Kashgar',
+        value: 'Asia/Kashgar',
+      },
+      {
+        title: 'Shanghai',
+        value: 'Asia/Shanghai',
+      },
+      {
+        title: 'Urumqi',
+        value: 'Asia/Urumqi',
+      },
+    ],
+  },
+  {
+    groupName: 'Colombia',
+    items: [
+      {
+        title: 'Bogota',
+        value: 'America/Bogota',
+      },
+    ],
+  },
+  {
+    groupName: 'Costa Rica',
+    items: [
+      {
+        title: 'Costa Rica',
+        value: 'America/Costa_Rica',
+      },
+    ],
+  },
+  {
+    groupName: 'Cuba',
+    items: [
+      {
+        title: 'Havana',
+        value: 'America/Havana',
+      },
+    ],
+  },
+  {
+    groupName: 'Cape Verde',
+    items: [
+      {
+        title: 'Cape Verde',
+        value: 'Atlantic/Cape_Verde',
+      },
+    ],
+  },
+  {
+    groupName: 'Curacao',
+    items: [
+      {
+        title: 'Curacao',
+        value: 'America/Curacao',
+      },
+    ],
+  },
+  {
+    groupName: 'Christmas Island',
+    items: [
+      {
+        title: 'Christmas',
+        value: 'Indian/Christmas',
+      },
+    ],
+  },
+  {
+    groupName: 'Cyprus',
+    items: [
+      {
+        title: 'Nicosia',
+        value: 'Asia/Nicosia',
+      },
+    ],
+  },
+  {
+    groupName: 'Czech Republic',
+    items: [
+      {
+        title: 'Prague',
+        value: 'Europe/Prague',
+      },
+    ],
+  },
+  {
+    groupName: 'Germany',
+    items: [
+      {
+        title: 'Berlin',
+        value: 'Europe/Berlin',
+      },
+      {
+        title: 'Busingen',
+        value: 'Europe/Busingen',
+      },
+    ],
+  },
+  {
+    groupName: 'Djibouti',
+    items: [
+      {
+        title: 'Djibouti',
+        value: 'Africa/Djibouti',
+      },
+    ],
+  },
+  {
+    groupName: 'Denmark',
+    items: [
+      {
+        title: 'Copenhagen',
+        value: 'Europe/Copenhagen',
+      },
+    ],
+  },
+  {
+    groupName: 'Dominica',
+    items: [
+      {
+        title: 'Dominica',
+        value: 'America/Dominica',
+      },
+    ],
+  },
+  {
+    groupName: 'Dominican Republic',
+    items: [
+      {
+        title: 'Santo Domingo',
+        value: 'America/Santo_Domingo',
+      },
+    ],
+  },
+  {
+    groupName: 'Algeria',
+    items: [
+      {
+        title: 'Algiers',
+        value: 'Africa/Algiers',
+      },
+    ],
+  },
+  {
+    groupName: 'Ecuador',
+    items: [
+      {
+        title: 'Galapagos',
+        value: 'Pacific/Galapagos',
+      },
+      {
+        title: 'Guayaquil',
+        value: 'America/Guayaquil',
+      },
+    ],
+  },
+  {
+    groupName: 'Estonia',
+    items: [
+      {
+        title: 'Tallinn',
+        value: 'Europe/Tallinn',
+      },
+    ],
+  },
+  {
+    groupName: 'Egypt',
+    items: [
+      {
+        title: 'Cairo',
+        value: 'Africa/Cairo',
+      },
+    ],
+  },
+  {
+    groupName: 'Western Sahara',
+    items: [
+      {
+        title: 'El Aaiun',
+        value: 'Africa/El_Aaiun',
+      },
+    ],
+  },
+  {
+    groupName: 'Eritrea',
+    items: [
+      {
+        title: 'Asmara',
+        value: 'Africa/Asmara',
+      },
+    ],
+  },
+  {
+    groupName: 'Spain',
+    items: [
+      {
+        title: 'Canary',
+        value: 'Atlantic/Canary',
+      },
+      {
+        title: 'Ceuta',
+        value: 'Africa/Ceuta',
+      },
+      {
+        title: 'Madrid',
+        value: 'Europe/Madrid',
+      },
+    ],
+  },
+  {
+    groupName: 'Ethiopia',
+    items: [
+      {
+        title: 'Addis Ababa',
+        value: 'Africa/Addis_Ababa',
+      },
+    ],
+  },
+  {
+    groupName: 'Finland',
+    items: [
+      {
+        title: 'Helsinki',
+        value: 'Europe/Helsinki',
+      },
+    ],
+  },
+  {
+    groupName: 'Fiji',
+    items: [
+      {
+        title: 'Fiji',
+        value: 'Pacific/Fiji',
+      },
+    ],
+  },
+  {
+    groupName: 'Falkland Islands (Malvinas)',
+    items: [
+      {
+        title: 'Stanley',
+        value: 'Atlantic/Stanley',
+      },
+    ],
+  },
+  {
+    groupName: 'Micronesia (Federated States Of)',
+    items: [
+      {
+        title: 'Chuuk',
+        value: 'Pacific/Chuuk',
+      },
+      {
+        title: 'Kosrae',
+        value: 'Pacific/Kosrae',
+      },
+      {
+        title: 'Pohnpei',
+        value: 'Pacific/Pohnpei',
+      },
+    ],
+  },
+  {
+    groupName: 'Faroe Islands',
+    items: [
+      {
+        title: 'Faroe',
+        value: 'Atlantic/Faroe',
+      },
+    ],
+  },
+  {
+    groupName: 'France',
+    items: [
+      {
+        title: 'Paris',
+        value: 'Europe/Paris',
+      },
+    ],
+  },
+  {
+    groupName: 'Gabon',
+    items: [
+      {
+        title: 'Libreville',
+        value: 'Africa/Libreville',
+      },
+    ],
+  },
+  {
+    groupName: 'United Kingdom',
+    items: [
+      {
+        title: 'London',
+        value: 'Europe/London',
+      },
+    ],
+  },
+  {
+    groupName: 'Grenada',
+    items: [
+      {
+        title: 'Grenada',
+        value: 'America/Grenada',
+      },
+    ],
+  },
+  {
+    groupName: 'Georgia',
+    items: [
+      {
+        title: 'Tbilisi',
+        value: 'Asia/Tbilisi',
+      },
+    ],
+  },
+  {
+    groupName: 'French Guiana',
+    items: [
+      {
+        title: 'Cayenne',
+        value: 'America/Cayenne',
+      },
+    ],
+  },
+  {
+    groupName: 'Guernsey',
+    items: [
+      {
+        title: 'Guernsey',
+        value: 'Europe/Guernsey',
+      },
+    ],
+  },
+  {
+    groupName: 'Ghana',
+    items: [
+      {
+        title: 'Accra',
+        value: 'Africa/Accra',
+      },
+    ],
+  },
+  {
+    groupName: 'Gibraltar',
+    items: [
+      {
+        title: 'Gibraltar',
+        value: 'Europe/Gibraltar',
+      },
+    ],
+  },
+  {
+    groupName: 'Greenland',
+    items: [
+      {
+        title: 'Danmarkshavn',
+        value: 'America/Danmarkshavn',
+      },
+      {
+        title: 'Godthab',
+        value: 'America/Godthab',
+      },
+      {
+        title: 'Scoresbysund',
+        value: 'America/Scoresbysund',
+      },
+      {
+        title: 'Thule',
+        value: 'America/Thule',
+      },
+    ],
+  },
+  {
+    groupName: 'Gambia',
+    items: [
+      {
+        title: 'Banjul',
+        value: 'Africa/Banjul',
+      },
+    ],
+  },
+  {
+    groupName: 'Guinea',
+    items: [
+      {
+        title: 'Conakry',
+        value: 'Africa/Conakry',
+      },
+    ],
+  },
+  {
+    groupName: 'Guadeloupe',
+    items: [
+      {
+        title: 'Guadeloupe',
+        value: 'America/Guadeloupe',
+      },
+    ],
+  },
+  {
+    groupName: 'Equatorial Guinea',
+    items: [
+      {
+        title: 'Malabo',
+        value: 'Africa/Malabo',
+      },
+    ],
+  },
+  {
+    groupName: 'Greece',
+    items: [
+      {
+        title: 'Athens',
+        value: 'Europe/Athens',
+      },
+    ],
+  },
+  {
+    groupName: 'South Georgia And Sandwich Isl.',
+    items: [
+      {
+        title: 'South Georgia',
+        value: 'Atlantic/South_Georgia',
+      },
+    ],
+  },
+  {
+    groupName: 'Guatemala',
+    items: [
+      {
+        title: 'Guatemala',
+        value: 'America/Guatemala',
+      },
+    ],
+  },
+  {
+    groupName: 'Guam',
+    items: [
+      {
+        title: 'Guam',
+        value: 'Pacific/Guam',
+      },
+    ],
+  },
+  {
+    groupName: 'Guinea-Bissau',
+    items: [
+      {
+        title: 'Bissau',
+        value: 'Africa/Bissau',
+      },
+    ],
+  },
+  {
+    groupName: 'Guyana',
+    items: [
+      {
+        title: 'Guyana',
+        value: 'America/Guyana',
+      },
+    ],
+  },
+  {
+    groupName: 'Hong Kong',
+    items: [
+      {
+        title: 'Hong Kong',
+        value: 'Asia/Hong_Kong',
+      },
+    ],
+  },
+  {
+    groupName: 'Honduras',
+    items: [
+      {
+        title: 'Tegucigalpa',
+        value: 'America/Tegucigalpa',
+      },
+    ],
+  },
+  {
+    groupName: 'Croatia',
+    items: [
+      {
+        title: 'Zagreb',
+        value: 'Europe/Zagreb',
+      },
+    ],
+  },
+  {
+    groupName: 'Haiti',
+    items: [
+      {
+        title: 'America/Port-au-Prince',
+        value: 'America/Port-au-Prince',
+      },
+    ],
+  },
+  {
+    groupName: 'Hungary',
+    items: [
+      {
+        title: 'Budapest',
+        value: 'Europe/Budapest',
+      },
+    ],
+  },
+  {
+    groupName: 'Indonesia',
+    items: [
+      {
+        title: 'Jakarta',
+        value: 'Asia/Jakarta',
+      },
+      {
+        title: 'Jayapura',
+        value: 'Asia/Jayapura',
+      },
+      {
+        title: 'Makassar',
+        value: 'Asia/Makassar',
+      },
+      {
+        title: 'Pontianak',
+        value: 'Asia/Pontianak',
+      },
+    ],
+  },
+  {
+    groupName: 'Ireland',
+    items: [
+      {
+        title: 'Dublin',
+        value: 'Europe/Dublin',
+      },
+    ],
+  },
+  {
+    groupName: 'Israel',
+    items: [
+      {
+        title: 'Jerusalem',
+        value: 'Asia/Jerusalem',
+      },
+    ],
+  },
+  {
+    groupName: 'Isle Of Man',
+    items: [
+      {
+        title: 'Isle of_Man',
+        value: 'Europe/Isle_of_Man',
+      },
+    ],
+  },
+  {
+    groupName: 'India',
+    items: [
+      {
+        title: 'Kolkata',
+        value: 'Asia/Kolkata',
+      },
+    ],
+  },
+  {
+    groupName: 'British Indian Ocean Territory',
+    items: [
+      {
+        title: 'Chagos',
+        value: 'Indian/Chagos',
+      },
+    ],
+  },
+  {
+    groupName: 'Iraq',
+    items: [
+      {
+        title: 'Baghdad',
+        value: 'Asia/Baghdad',
+      },
+    ],
+  },
+  {
+    groupName: 'Iran (Islamic Republic Of)',
+    items: [
+      {
+        title: 'Tehran',
+        value: 'Asia/Tehran',
+      },
+    ],
+  },
+  {
+    groupName: 'Iceland',
+    items: [
+      {
+        title: 'Reykjavik',
+        value: 'Atlantic/Reykjavik',
+      },
+    ],
+  },
+  {
+    groupName: 'Italy',
+    items: [
+      {
+        title: 'Rome',
+        value: 'Europe/Rome',
+      },
+    ],
+  },
+  {
+    groupName: 'Jersey',
+    items: [
+      {
+        title: 'Jersey',
+        value: 'Europe/Jersey',
+      },
+    ],
+  },
+  {
+    groupName: 'Jamaica',
+    items: [
+      {
+        title: 'Jamaica',
+        value: 'America/Jamaica',
+      },
+    ],
+  },
+  {
+    groupName: 'Jordan',
+    items: [
+      {
+        title: 'Amman',
+        value: 'Asia/Amman',
+      },
+    ],
+  },
+  {
+    groupName: 'Japan',
+    items: [
+      {
+        title: 'Tokyo',
+        value: 'Asia/Tokyo',
+      },
+    ],
+  },
+  {
+    groupName: 'Kenya',
+    items: [
+      {
+        title: 'Nairobi',
+        value: 'Africa/Nairobi',
+      },
+    ],
+  },
+  {
+    groupName: 'Kyrgyzstan',
+    items: [
+      {
+        title: 'Bishkek',
+        value: 'Asia/Bishkek',
+      },
+    ],
+  },
+  {
+    groupName: 'Cambodia',
+    items: [
+      {
+        title: 'Phnom Penh',
+        value: 'Asia/Phnom_Penh',
+      },
+    ],
+  },
+  {
+    groupName: 'Kiribati',
+    items: [
+      {
+        title: 'Enderbury',
+        value: 'Pacific/Enderbury',
+      },
+      {
+        title: 'Kiritimati',
+        value: 'Pacific/Kiritimati',
+      },
+      {
+        title: 'Tarawa',
+        value: 'Pacific/Tarawa',
+      },
+    ],
+  },
+  {
+    groupName: 'Comoros',
+    items: [
+      {
+        title: 'Comoro',
+        value: 'Indian/Comoro',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Kitts And Nevis',
+    items: [
+      {
+        title: 'St Kitts',
+        value: 'America/St_Kitts',
+      },
+    ],
+  },
+  {
+    groupName: 'North Korea',
+    items: [
+      {
+        title: 'Pyongyang',
+        value: 'Asia/Pyongyang',
+      },
+    ],
+  },
+  {
+    groupName: 'Korea',
+    items: [
+      {
+        title: 'Seoul',
+        value: 'Asia/Seoul',
+      },
+    ],
+  },
+  {
+    groupName: 'Kuwait',
+    items: [
+      {
+        title: 'Kuwait',
+        value: 'Asia/Kuwait',
+      },
+    ],
+  },
+  {
+    groupName: 'Cayman Islands',
+    items: [
+      {
+        title: 'Cayman',
+        value: 'America/Cayman',
+      },
+    ],
+  },
+  {
+    groupName: 'Kazakhstan',
+    items: [
+      {
+        title: 'Almaty',
+        value: 'Asia/Almaty',
+      },
+      {
+        title: 'Aqtau',
+        value: 'Asia/Aqtau',
+      },
+      {
+        title: 'Aqtobe',
+        value: 'Asia/Aqtobe',
+      },
+      {
+        title: 'Oral',
+        value: 'Asia/Oral',
+      },
+      {
+        title: 'Qyzylorda',
+        value: 'Asia/Qyzylorda',
+      },
+    ],
+  },
+  {
+    groupName: "Lao People's Democratic Republic",
+    items: [
+      {
+        title: 'Vientiane',
+        value: 'Asia/Vientiane',
+      },
+    ],
+  },
+  {
+    groupName: 'Lebanon',
+    items: [
+      {
+        title: 'Beirut',
+        value: 'Asia/Beirut',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Lucia',
+    items: [
+      {
+        title: 'St Lucia',
+        value: 'America/St_Lucia',
+      },
+    ],
+  },
+  {
+    groupName: 'Liechtenstein',
+    items: [
+      {
+        title: 'Vaduz',
+        value: 'Europe/Vaduz',
+      },
+    ],
+  },
+  {
+    groupName: 'Sri Lanka',
+    items: [
+      {
+        title: 'Colombo',
+        value: 'Asia/Colombo',
+      },
+    ],
+  },
+  {
+    groupName: 'Liberia',
+    items: [
+      {
+        title: 'Monrovia',
+        value: 'Africa/Monrovia',
+      },
+    ],
+  },
+  {
+    groupName: 'Lesotho',
+    items: [
+      {
+        title: 'Maseru',
+        value: 'Africa/Maseru',
+      },
+    ],
+  },
+  {
+    groupName: 'Lithuania',
+    items: [
+      {
+        title: 'Vilnius',
+        value: 'Europe/Vilnius',
+      },
+    ],
+  },
+  {
+    groupName: 'Luxembourg',
+    items: [
+      {
+        title: 'Luxembourg',
+        value: 'Europe/Luxembourg',
+      },
+    ],
+  },
+  {
+    groupName: 'Latvia',
+    items: [
+      {
+        title: 'Riga',
+        value: 'Europe/Riga',
+      },
+    ],
+  },
+  {
+    groupName: 'Libyan Arab Jamahiriya',
+    items: [
+      {
+        title: 'Tripoli',
+        value: 'Africa/Tripoli',
+      },
+    ],
+  },
+  {
+    groupName: 'Morocco',
+    items: [
+      {
+        title: 'Casablanca',
+        value: 'Africa/Casablanca',
+      },
+    ],
+  },
+  {
+    groupName: 'Monaco',
+    items: [
+      {
+        title: 'Monaco',
+        value: 'Europe/Monaco',
+      },
+    ],
+  },
+  {
+    groupName: 'Moldova',
+    items: [
+      {
+        title: 'Chisinau',
+        value: 'Europe/Chisinau',
+      },
+    ],
+  },
+  {
+    groupName: 'Montenegro',
+    items: [
+      {
+        title: 'Podgorica',
+        value: 'Europe/Podgorica',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Martin',
+    items: [
+      {
+        title: 'Marigot',
+        value: 'America/Marigot',
+      },
+    ],
+  },
+  {
+    groupName: 'Madagascar',
+    items: [
+      {
+        title: 'Antananarivo',
+        value: 'Indian/Antananarivo',
+      },
+    ],
+  },
+  {
+    groupName: 'Marshall Islands',
+    items: [
+      {
+        title: 'Kwajalein',
+        value: 'Pacific/Kwajalein',
+      },
+      {
+        title: 'Majuro',
+        value: 'Pacific/Majuro',
+      },
+    ],
+  },
+  {
+    groupName: 'Macedonia',
+    items: [
+      {
+        title: 'Skopje',
+        value: 'Europe/Skopje',
+      },
+    ],
+  },
+  {
+    groupName: 'Mali',
+    items: [
+      {
+        title: 'Bamako',
+        value: 'Africa/Bamako',
+      },
+    ],
+  },
+  {
+    groupName: 'Myanmar',
+    items: [
+      {
+        title: 'Rangoon',
+        value: 'Asia/Rangoon',
+      },
+    ],
+  },
+  {
+    groupName: 'Mongolia',
+    items: [
+      {
+        title: 'Choibalsan',
+        value: 'Asia/Choibalsan',
+      },
+      {
+        title: 'Hovd',
+        value: 'Asia/Hovd',
+      },
+      {
+        title: 'Ulaanbaatar',
+        value: 'Asia/Ulaanbaatar',
+      },
+    ],
+  },
+  {
+    groupName: 'Macao',
+    items: [
+      {
+        title: 'Macau',
+        value: 'Asia/Macau',
+      },
+    ],
+  },
+  {
+    groupName: 'Northern Mariana Islands',
+    items: [
+      {
+        title: 'Saipan',
+        value: 'Pacific/Saipan',
+      },
+    ],
+  },
+  {
+    groupName: 'Martinique',
+    items: [
+      {
+        title: 'Martinique',
+        value: 'America/Martinique',
+      },
+    ],
+  },
+  {
+    groupName: 'Mauritania',
+    items: [
+      {
+        title: 'Nouakchott',
+        value: 'Africa/Nouakchott',
+      },
+    ],
+  },
+  {
+    groupName: 'Montserrat',
+    items: [
+      {
+        title: 'Montserrat',
+        value: 'America/Montserrat',
+      },
+    ],
+  },
+  {
+    groupName: 'Malta',
+    items: [
+      {
+        title: 'Malta',
+        value: 'Europe/Malta',
+      },
+    ],
+  },
+  {
+    groupName: 'Mauritius',
+    items: [
+      {
+        title: 'Mauritius',
+        value: 'Indian/Mauritius',
+      },
+    ],
+  },
+  {
+    groupName: 'Maldives',
+    items: [
+      {
+        title: 'Maldives',
+        value: 'Indian/Maldives',
+      },
+    ],
+  },
+  {
+    groupName: 'Malawi',
+    items: [
+      {
+        title: 'Blantyre',
+        value: 'Africa/Blantyre',
+      },
+    ],
+  },
+  {
+    groupName: 'Mexico',
+    items: [
+      {
+        title: 'Bahia Banderas',
+        value: 'America/Bahia_Banderas',
+      },
+      {
+        title: 'Cancun',
+        value: 'America/Cancun',
+      },
+      {
+        title: 'Chihuahua',
+        value: 'America/Chihuahua',
+      },
+      {
+        title: 'Hermosillo',
+        value: 'America/Hermosillo',
+      },
+      {
+        title: 'Matamoros',
+        value: 'America/Matamoros',
+      },
+      {
+        title: 'Mazatlan',
+        value: 'America/Mazatlan',
+      },
+      {
+        title: 'Merida',
+        value: 'America/Merida',
+      },
+      {
+        title: 'Mexico City',
+        value: 'America/Mexico_City',
+      },
+      {
+        title: 'Monterrey',
+        value: 'America/Monterrey',
+      },
+      {
+        title: 'Ojinaga',
+        value: 'America/Ojinaga',
+      },
+      {
+        title: 'Santa Isabel',
+        value: 'America/Santa_Isabel',
+      },
+      {
+        title: 'Tijuana',
+        value: 'America/Tijuana',
+      },
+    ],
+  },
+  {
+    groupName: 'Malaysia',
+    items: [
+      {
+        title: 'Kuala Lumpur',
+        value: 'Asia/Kuala_Lumpur',
+      },
+      {
+        title: 'Kuching',
+        value: 'Asia/Kuching',
+      },
+    ],
+  },
+  {
+    groupName: 'Mozambique',
+    items: [
+      {
+        title: 'Maputo',
+        value: 'Africa/Maputo',
+      },
+    ],
+  },
+  {
+    groupName: 'Namibia',
+    items: [
+      {
+        title: 'Windhoek',
+        value: 'Africa/Windhoek',
+      },
+    ],
+  },
+  {
+    groupName: 'New Caledonia',
+    items: [
+      {
+        title: 'Noumea',
+        value: 'Pacific/Noumea',
+      },
+    ],
+  },
+  {
+    groupName: 'Niger',
+    items: [
+      {
+        title: 'Niamey',
+        value: 'Africa/Niamey',
+      },
+    ],
+  },
+  {
+    groupName: 'Norfolk Island',
+    items: [
+      {
+        title: 'Norfolk',
+        value: 'Pacific/Norfolk',
+      },
+    ],
+  },
+  {
+    groupName: 'Nigeria',
+    items: [
+      {
+        title: 'Lagos',
+        value: 'Africa/Lagos',
+      },
+    ],
+  },
+  {
+    groupName: 'Nicaragua',
+    items: [
+      {
+        title: 'Managua',
+        value: 'America/Managua',
+      },
+    ],
+  },
+  {
+    groupName: 'Netherlands',
+    items: [
+      {
+        title: 'Amsterdam',
+        value: 'Europe/Amsterdam',
+      },
+    ],
+  },
+  {
+    groupName: 'Norway',
+    items: [
+      {
+        title: 'Oslo',
+        value: 'Europe/Oslo',
+      },
+    ],
+  },
+  {
+    groupName: 'Nepal',
+    items: [
+      {
+        title: 'Kathmandu',
+        value: 'Asia/Kathmandu',
+      },
+    ],
+  },
+  {
+    groupName: 'Nauru',
+    items: [
+      {
+        title: 'Nauru',
+        value: 'Pacific/Nauru',
+      },
+    ],
+  },
+  {
+    groupName: 'Niue',
+    items: [
+      {
+        title: 'Niue',
+        value: 'Pacific/Niue',
+      },
+    ],
+  },
+  {
+    groupName: 'New Zealand',
+    items: [
+      {
+        title: 'Auckland',
+        value: 'Pacific/Auckland',
+      },
+      {
+        title: 'Chatham',
+        value: 'Pacific/Chatham',
+      },
+    ],
+  },
+  {
+    groupName: 'Oman',
+    items: [
+      {
+        title: 'Muscat',
+        value: 'Asia/Muscat',
+      },
+    ],
+  },
+  {
+    groupName: 'Panama',
+    items: [
+      {
+        title: 'Panama',
+        value: 'America/Panama',
+      },
+    ],
+  },
+  {
+    groupName: 'Peru',
+    items: [
+      {
+        title: 'Lima',
+        value: 'America/Lima',
+      },
+    ],
+  },
+  {
+    groupName: 'French Polynesia',
+    items: [
+      {
+        title: 'Gambier',
+        value: 'Pacific/Gambier',
+      },
+      {
+        title: 'Marquesas',
+        value: 'Pacific/Marquesas',
+      },
+      {
+        title: 'Tahiti',
+        value: 'Pacific/Tahiti',
+      },
+    ],
+  },
+  {
+    groupName: 'Papua New Guinea',
+    items: [
+      {
+        title: 'Port Moresby',
+        value: 'Pacific/Port_Moresby',
+      },
+    ],
+  },
+  {
+    groupName: 'Philippines',
+    items: [
+      {
+        title: 'Manila',
+        value: 'Asia/Manila',
+      },
+    ],
+  },
+  {
+    groupName: 'Pakistan',
+    items: [
+      {
+        title: 'Karachi',
+        value: 'Asia/Karachi',
+      },
+    ],
+  },
+  {
+    groupName: 'Poland',
+    items: [
+      {
+        title: 'Warsaw',
+        value: 'Europe/Warsaw',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Pierre And Miquelon',
+    items: [
+      {
+        title: 'Miquelon',
+        value: 'America/Miquelon',
+      },
+    ],
+  },
+  {
+    groupName: 'Pitcairn',
+    items: [
+      {
+        title: 'Pitcairn',
+        value: 'Pacific/Pitcairn',
+      },
+    ],
+  },
+  {
+    groupName: 'Puerto Rico',
+    items: [
+      {
+        title: 'Puerto Rico',
+        value: 'America/Puerto_Rico',
+      },
+    ],
+  },
+  {
+    groupName: 'Palestinian Territory (Occupied)',
+    items: [
+      {
+        title: 'Gaza',
+        value: 'Asia/Gaza',
+      },
+      {
+        title: 'Hebron',
+        value: 'Asia/Hebron',
+      },
+    ],
+  },
+  {
+    groupName: 'Portugal',
+    items: [
+      {
+        title: 'Azores',
+        value: 'Atlantic/Azores',
+      },
+      {
+        title: 'Lisbon',
+        value: 'Europe/Lisbon',
+      },
+      {
+        title: 'Madeira',
+        value: 'Atlantic/Madeira',
+      },
+    ],
+  },
+  {
+    groupName: 'Palau',
+    items: [
+      {
+        title: 'Palau',
+        value: 'Pacific/Palau',
+      },
+    ],
+  },
+  {
+    groupName: 'Paraguay',
+    items: [
+      {
+        title: 'Asuncion',
+        value: 'America/Asuncion',
+      },
+    ],
+  },
+  {
+    groupName: 'Qatar',
+    items: [
+      {
+        title: 'Qatar',
+        value: 'Asia/Qatar',
+      },
+    ],
+  },
+  {
+    groupName: 'Reunion',
+    items: [
+      {
+        title: 'Reunion',
+        value: 'Indian/Reunion',
+      },
+    ],
+  },
+  {
+    groupName: 'Romania',
+    items: [
+      {
+        title: 'Bucharest',
+        value: 'Europe/Bucharest',
+      },
+    ],
+  },
+  {
+    groupName: 'Serbia',
+    items: [
+      {
+        title: 'Belgrade',
+        value: 'Europe/Belgrade',
+      },
+    ],
+  },
+  {
+    groupName: 'Russian Federation',
+    items: [
+      {
+        title: 'Anadyr',
+        value: 'Asia/Anadyr',
+      },
+      {
+        title: 'Asia/Ust-Nera',
+        value: 'Asia/Ust-Nera',
+      },
+      {
+        title: 'Irkutsk',
+        value: 'Asia/Irkutsk',
+      },
+      {
+        title: 'Kaliningrad',
+        value: 'Europe/Kaliningrad',
+      },
+      {
+        title: 'Kamchatka',
+        value: 'Asia/Kamchatka',
+      },
+      {
+        title: 'Khandyga',
+        value: 'Asia/Khandyga',
+      },
+      {
+        title: 'Krasnoyarsk',
+        value: 'Asia/Krasnoyarsk',
+      },
+      {
+        title: 'Magadan',
+        value: 'Asia/Magadan',
+      },
+      {
+        title: 'Moscow',
+        value: 'Europe/Moscow',
+      },
+      {
+        title: 'Novokuznetsk',
+        value: 'Asia/Novokuznetsk',
+      },
+      {
+        title: 'Novosibirsk',
+        value: 'Asia/Novosibirsk',
+      },
+      {
+        title: 'Omsk',
+        value: 'Asia/Omsk',
+      },
+      {
+        title: 'Sakhalin',
+        value: 'Asia/Sakhalin',
+      },
+      {
+        title: 'Samara',
+        value: 'Europe/Samara',
+      },
+      {
+        title: 'Simferopol',
+        value: 'Europe/Simferopol',
+      },
+      {
+        title: 'Vladivostok',
+        value: 'Asia/Vladivostok',
+      },
+      {
+        title: 'Volgograd',
+        value: 'Europe/Volgograd',
+      },
+      {
+        title: 'Yakutsk',
+        value: 'Asia/Yakutsk',
+      },
+      {
+        title: 'Yekaterinburg',
+        value: 'Asia/Yekaterinburg',
+      },
+    ],
+  },
+  {
+    groupName: 'Rwanda',
+    items: [
+      {
+        title: 'Kigali',
+        value: 'Africa/Kigali',
+      },
+    ],
+  },
+  {
+    groupName: 'Saudi Arabia',
+    items: [
+      {
+        title: 'Riyadh',
+        value: 'Asia/Riyadh',
+      },
+    ],
+  },
+  {
+    groupName: 'Solomon Islands',
+    items: [
+      {
+        title: 'Guadalcanal',
+        value: 'Pacific/Guadalcanal',
+      },
+    ],
+  },
+  {
+    groupName: 'Seychelles',
+    items: [
+      {
+        title: 'Mahe',
+        value: 'Indian/Mahe',
+      },
+    ],
+  },
+  {
+    groupName: 'Sudan',
+    items: [
+      {
+        title: 'Khartoum',
+        value: 'Africa/Khartoum',
+      },
+    ],
+  },
+  {
+    groupName: 'Sweden',
+    items: [
+      {
+        title: 'Stockholm',
+        value: 'Europe/Stockholm',
+      },
+    ],
+  },
+  {
+    groupName: 'Singapore',
+    items: [
+      {
+        title: 'Singapore',
+        value: 'Asia/Singapore',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Helena',
+    items: [
+      {
+        title: 'St Helena',
+        value: 'Atlantic/St_Helena',
+      },
+    ],
+  },
+  {
+    groupName: 'Slovenia',
+    items: [
+      {
+        title: 'Ljubljana',
+        value: 'Europe/Ljubljana',
+      },
+    ],
+  },
+  {
+    groupName: 'Svalbard And Jan Mayen',
+    items: [
+      {
+        title: 'Longyearbyen',
+        value: 'Arctic/Longyearbyen',
+      },
+    ],
+  },
+  {
+    groupName: 'Slovakia',
+    items: [
+      {
+        title: 'Bratislava',
+        value: 'Europe/Bratislava',
+      },
+    ],
+  },
+  {
+    groupName: 'Sierra Leone',
+    items: [
+      {
+        title: 'Freetown',
+        value: 'Africa/Freetown',
+      },
+    ],
+  },
+  {
+    groupName: 'San Marino',
+    items: [
+      {
+        title: 'San Marino',
+        value: 'Europe/San_Marino',
+      },
+    ],
+  },
+  {
+    groupName: 'Senegal',
+    items: [
+      {
+        title: 'Dakar',
+        value: 'Africa/Dakar',
+      },
+    ],
+  },
+  {
+    groupName: 'Somalia',
+    items: [
+      {
+        title: 'Mogadishu',
+        value: 'Africa/Mogadishu',
+      },
+    ],
+  },
+  {
+    groupName: 'Suriname',
+    items: [
+      {
+        title: 'Paramaribo',
+        value: 'America/Paramaribo',
+      },
+    ],
+  },
+  {
+    groupName: 'South Sudan',
+    items: [
+      {
+        title: 'Juba',
+        value: 'Africa/Juba',
+      },
+    ],
+  },
+  {
+    groupName: 'Sao Tome And Principe',
+    items: [
+      {
+        title: 'Sao Tome',
+        value: 'Africa/Sao_Tome',
+      },
+    ],
+  },
+  {
+    groupName: 'El Salvador',
+    items: [
+      {
+        title: 'El Salvador',
+        value: 'America/El_Salvador',
+      },
+    ],
+  },
+  {
+    groupName: 'Sint Maarten',
+    items: [
+      {
+        title: 'Lower Princes',
+        value: 'America/Lower_Princes',
+      },
+    ],
+  },
+  {
+    groupName: 'Syrian Arab Republic',
+    items: [
+      {
+        title: 'Damascus',
+        value: 'Asia/Damascus',
+      },
+    ],
+  },
+  {
+    groupName: 'Swaziland',
+    items: [
+      {
+        title: 'Mbabane',
+        value: 'Africa/Mbabane',
+      },
+    ],
+  },
+  {
+    groupName: 'Turks And Caicos Islands',
+    items: [
+      {
+        title: 'Grand Turk',
+        value: 'America/Grand_Turk',
+      },
+    ],
+  },
+  {
+    groupName: 'Chad',
+    items: [
+      {
+        title: 'Ndjamena',
+        value: 'Africa/Ndjamena',
+      },
+    ],
+  },
+  {
+    groupName: 'French Southern Territories',
+    items: [
+      {
+        title: 'Kerguelen',
+        value: 'Indian/Kerguelen',
+      },
+    ],
+  },
+  {
+    groupName: 'Togo',
+    items: [
+      {
+        title: 'Lome',
+        value: 'Africa/Lome',
+      },
+    ],
+  },
+  {
+    groupName: 'Thailand',
+    items: [
+      {
+        title: 'Bangkok',
+        value: 'Asia/Bangkok',
+      },
+    ],
+  },
+  {
+    groupName: 'Tajikistan',
+    items: [
+      {
+        title: 'Dushanbe',
+        value: 'Asia/Dushanbe',
+      },
+    ],
+  },
+  {
+    groupName: 'Tokelau',
+    items: [
+      {
+        title: 'Fakaofo',
+        value: 'Pacific/Fakaofo',
+      },
+    ],
+  },
+  {
+    groupName: 'Timor-Leste',
+    items: [
+      {
+        title: 'Dili',
+        value: 'Asia/Dili',
+      },
+    ],
+  },
+  {
+    groupName: 'Turkmenistan',
+    items: [
+      {
+        title: 'Ashgabat',
+        value: 'Asia/Ashgabat',
+      },
+    ],
+  },
+  {
+    groupName: 'Tunisia',
+    items: [
+      {
+        title: 'Tunis',
+        value: 'Africa/Tunis',
+      },
+    ],
+  },
+  {
+    groupName: 'Tonga',
+    items: [
+      {
+        title: 'Tongatapu',
+        value: 'Pacific/Tongatapu',
+      },
+    ],
+  },
+  {
+    groupName: 'Turkey',
+    items: [
+      {
+        title: 'Istanbul',
+        value: 'Europe/Istanbul',
+      },
+    ],
+  },
+  {
+    groupName: 'Trinidad And Tobago',
+    items: [
+      {
+        title: 'Port of_Spain',
+        value: 'America/Port_of_Spain',
+      },
+    ],
+  },
+  {
+    groupName: 'Tuvalu',
+    items: [
+      {
+        title: 'Funafuti',
+        value: 'Pacific/Funafuti',
+      },
+    ],
+  },
+  {
+    groupName: 'Taiwan',
+    items: [
+      {
+        title: 'Taipei',
+        value: 'Asia/Taipei',
+      },
+    ],
+  },
+  {
+    groupName: 'Tanzania',
+    items: [
+      {
+        title: 'Dar es_Salaam',
+        value: 'Africa/Dar_es_Salaam',
+      },
+    ],
+  },
+  {
+    groupName: 'Ukraine',
+    items: [
+      {
+        title: 'Kiev',
+        value: 'Europe/Kiev',
+      },
+      {
+        title: 'Uzhgorod',
+        value: 'Europe/Uzhgorod',
+      },
+      {
+        title: 'Zaporozhye',
+        value: 'Europe/Zaporozhye',
+      },
+    ],
+  },
+  {
+    groupName: 'Uganda',
+    items: [
+      {
+        title: 'Kampala',
+        value: 'Africa/Kampala',
+      },
+    ],
+  },
+  {
+    groupName: 'United States Outlying Islands',
+    items: [
+      {
+        title: 'Johnston',
+        value: 'Pacific/Johnston',
+      },
+      {
+        title: 'Midway',
+        value: 'Pacific/Midway',
+      },
+      {
+        title: 'Wake',
+        value: 'Pacific/Wake',
+      },
+    ],
+  },
+  {
+    groupName: 'United States',
+    items: [
+      {
+        title: 'Adak',
+        value: 'America/Adak',
+      },
+      {
+        title: 'Anchorage',
+        value: 'America/Anchorage',
+      },
+      {
+        title: 'Beulah',
+        value: 'America/North_Dakota/Beulah',
+      },
+      {
+        title: 'Boise',
+        value: 'America/Boise',
+      },
+      {
+        title: 'Center',
+        value: 'America/North_Dakota/Center',
+      },
+      {
+        title: 'Chicago',
+        value: 'America/Chicago',
+      },
+      {
+        title: 'Denver',
+        value: 'America/Denver',
+      },
+      {
+        title: 'Detroit',
+        value: 'America/Detroit',
+      },
+      {
+        title: 'Honolulu',
+        value: 'Pacific/Honolulu',
+      },
+      {
+        title: 'Indianapolis',
+        value: 'America/Indiana/Indianapolis',
+      },
+      {
+        title: 'Juneau',
+        value: 'America/Juneau',
+      },
+      {
+        title: 'Knox',
+        value: 'America/Indiana/Knox',
+      },
+      {
+        title: 'Los Angeles',
+        value: 'America/Los_Angeles',
+      },
+      {
+        title: 'Louisville',
+        value: 'America/Kentucky/Louisville',
+      },
+      {
+        title: 'Marengo',
+        value: 'America/Indiana/Marengo',
+      },
+      {
+        title: 'Menominee',
+        value: 'America/Menominee',
+      },
+      {
+        title: 'Metlakatla',
+        value: 'America/Metlakatla',
+      },
+      {
+        title: 'Monticello',
+        value: 'America/Kentucky/Monticello',
+      },
+      {
+        title: 'New Salem',
+        value: 'America/North_Dakota/New_Salem',
+      },
+      {
+        title: 'New York',
+        value: 'America/New_York',
+      },
+      {
+        title: 'Nome',
+        value: 'America/Nome',
+      },
+      {
+        title: 'Petersburg',
+        value: 'America/Indiana/Petersburg',
+      },
+      {
+        title: 'Phoenix',
+        value: 'America/Phoenix',
+      },
+      {
+        title: 'Sitka',
+        value: 'America/Sitka',
+      },
+      {
+        title: 'Tell City',
+        value: 'America/Indiana/Tell_City',
+      },
+      {
+        title: 'Vevay',
+        value: 'America/Indiana/Vevay',
+      },
+      {
+        title: 'Vincennes',
+        value: 'America/Indiana/Vincennes',
+      },
+      {
+        title: 'Winamac',
+        value: 'America/Indiana/Winamac',
+      },
+      {
+        title: 'Yakutat',
+        value: 'America/Yakutat',
+      },
+    ],
+  },
+  {
+    groupName: 'Uruguay',
+    items: [
+      {
+        title: 'Montevideo',
+        value: 'America/Montevideo',
+      },
+    ],
+  },
+  {
+    groupName: 'Uzbekistan',
+    items: [
+      {
+        title: 'Samarkand',
+        value: 'Asia/Samarkand',
+      },
+      {
+        title: 'Tashkent',
+        value: 'Asia/Tashkent',
+      },
+    ],
+  },
+  {
+    groupName: 'Holy See (Vatican City State)',
+    items: [
+      {
+        title: 'Vatican',
+        value: 'Europe/Vatican',
+      },
+    ],
+  },
+  {
+    groupName: 'Saint Vincent And Grenadines',
+    items: [
+      {
+        title: 'St Vincent',
+        value: 'America/St_Vincent',
+      },
+    ],
+  },
+  {
+    groupName: 'Venezuela',
+    items: [
+      {
+        title: 'Caracas',
+        value: 'America/Caracas',
+      },
+    ],
+  },
+  {
+    groupName: 'Virgin Islands (British)',
+    items: [
+      {
+        title: 'Tortola',
+        value: 'America/Tortola',
+      },
+    ],
+  },
+  {
+    groupName: 'Virgin Islands (U.S.)',
+    items: [
+      {
+        title: 'St Thomas',
+        value: 'America/St_Thomas',
+      },
+    ],
+  },
+  {
+    groupName: 'Viet Nam',
+    items: [
+      {
+        title: 'Ho Chi_Minh',
+        value: 'Asia/Ho_Chi_Minh',
+      },
+    ],
+  },
+  {
+    groupName: 'Vanuatu',
+    items: [
+      {
+        title: 'Efate',
+        value: 'Pacific/Efate',
+      },
+    ],
+  },
+  {
+    groupName: 'Wallis And Futuna',
+    items: [
+      {
+        title: 'Wallis',
+        value: 'Pacific/Wallis',
+      },
+    ],
+  },
+  {
+    groupName: 'Samoa',
+    items: [
+      {
+        title: 'Apia',
+        value: 'Pacific/Apia',
+      },
+    ],
+  },
+  {
+    groupName: 'Yemen',
+    items: [
+      {
+        title: 'Aden',
+        value: 'Asia/Aden',
+      },
+    ],
+  },
+  {
+    groupName: 'Mayotte',
+    items: [
+      {
+        title: 'Mayotte',
+        value: 'Indian/Mayotte',
+      },
+    ],
+  },
+  {
+    groupName: 'South Africa',
+    items: [
+      {
+        title: 'Johannesburg',
+        value: 'Africa/Johannesburg',
+      },
+    ],
+  },
+  {
+    groupName: 'Zambia',
+    items: [
+      {
+        title: 'Lusaka',
+        value: 'Africa/Lusaka',
+      },
+    ],
+  },
+  {
+    groupName: 'Zimbabwe',
+    items: [
+      {
+        title: 'Harare',
+        value: 'Africa/Harare',
+      },
+    ],
+  },
+];

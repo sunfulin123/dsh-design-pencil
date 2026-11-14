@@ -1,0 +1,63 @@
+# ToolbarWrapper
+
+A horizontal toolbar container with a `gray100` background, a `start` slot on the left and an `end` slot on the right, and an optional bottom divider. Use it to build list headers, filter bars, and date-navigation bars above content areas.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { ToolbarWrapper } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+`start` anchors content to the left (summary text, counts, date controls); `end` anchors action controls to the right (search, filter, action buttons). Both slots accept any `ReactNode`.
+
+<Example id="extensions.toolbarwrapper.001" />
+
+## End-only toolbar (no start content)
+
+When `start` is omitted the `end` slot is still right-aligned. Use this for toolbars where no left-side summary is needed.
+
+<Example id="extensions.toolbarwrapper.002" />
+
+## Rich start slot — date navigation
+
+The `start` slot supports any controls. This example composes a real schedule toolbar entirely from `./components/cobalt-extensions`: a `DatePicker` for the current day, three `Button` controls (with the new `iconName` prop) for prev/today/next, and a `Dropdown` for view mode. The Filters button on the right opens a `SidePanel` containing a small filter form (status `MultiDropdown` + date range), with Reset/Apply actions in the footer.
+
+> Why the explicit widths and heights? `DatePicker` and `Dropdown` are built on **different Cobalt families** — `DatePicker` renders a `FormField` (`InputGroup` + `Input` + icon cell, plus an internal 2px wrapper for popup padding), while `Dropdown` renders the marketplace `Input` directly. Even with both set to `size="small"`, the DatePicker is ~4px taller. To line them up in a toolbar, wrap each trigger in a `Box` with a fixed `width` _and_ `height: 32` and pass `isFullWidth` so the trigger stretches to fill it.
+
+<Example id="extensions.toolbarwrapper.003" />
+
+## Without border
+
+Set `isBordered={false}` to remove the bottom divider when the content below already provides sufficient visual separation.
+
+<Example id="extensions.toolbarwrapper.004" />
+
+## Top Bordered
+
+Set `isTopBordered={true}` to render a 1 px border above the toolbar. Use this when the toolbar is not at the very top of its section and needs a visual separator from the content above it.
+
+<Example id="extensions.toolbarwrapper.005" />
+
+## Custom Padding
+
+Use `paddingX` and `paddingY` to override the default spacing inside the toolbar. Both accept `Space` tokens (multiples of 4 px). Use tighter padding for compact toolbars or larger padding for prominent action bars.
+
+- Left: `paddingX={2}` / `paddingY={1}` — compact (8 px / 4 px)
+- Right: `paddingX={8}` / `paddingY={4}` — generous (32 px / 16 px)
+
+<Example id="extensions.toolbarwrapper.006" />
+
+## Props
+
+| Prop               | Type        | Default               | Description                                                 |
+| ------------------ | ----------- | --------------------- | ----------------------------------------------------------- |
+| `start`            | `ReactNode` | —                     | Left-anchored content — summary text, counts, date controls |
+| `end`              | `ReactNode` | —                     | Right-anchored content — search, filter, and action buttons |
+| `isTopBordered`    | `boolean`   | `false`               | Renders a 1 px top border above the toolbar                 |
+| `isBottomBordered` | `boolean`   | `true`                | Renders a 1 px bottom border below the toolbar              |
+| `paddingX`         | `Space`     | `4`                   | Horizontal padding token — `4` = 16 px                      |
+| `paddingY`         | `Space`     | `2`                   | Vertical padding token — `2` = 8 px                         |
+| `data-qa`          | `string`    | —                     | QA selector                                                 |
+| `data-component`   | `string`    | `'WFMToolbarWrapper'` | Component identifier                                        |

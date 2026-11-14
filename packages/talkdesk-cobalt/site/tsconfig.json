@@ -1,0 +1,6 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": { "noEmit": true, "types": ["astro/client"] },
+  "include": ["src/**/*.ts", ".astro/content.d.ts"],
+  "exclude": ["dist", "public"]
+}

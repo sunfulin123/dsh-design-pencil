@@ -1,0 +1,220 @@
+# ChipGroup
+
+A compact horizontal group of tag chips that collapses overflow into a clickable `+N` chip with a popup of the remaining items.
+
+```ts
+import { ChipGroup } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+Pass `items` and the group renders one chip per entry, separated by a 4px gap. Each item needs a unique `id` and a plain-text `label`; `content` is optional for richer chip bodies.
+
+```tsx preview
+import { ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    { id: '1', label: 'Sales' },
+    { id: '2', label: 'Support' },
+  ];
+  return <ChipGroup items={items} data-qa="basic-chip-group" />;
+}
+```
+
+## Overflow with `maxVisible`
+
+`maxVisible` (default `2`) caps how many chips render inline. Anything beyond that collapses into a `+N` overflow chip — clicking it opens a popup that lists the full set.
+
+```tsx preview
+import { ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    { id: '1', label: 'Sales' },
+    { id: '2', label: 'Support' },
+    { id: '3', label: 'Engineering' },
+    { id: '4', label: 'Design' },
+    { id: '5', label: 'Operations' },
+  ];
+  return (
+    <ChipGroup items={items} maxVisible={2} data-qa="overflow-chip-group" />
+  );
+}
+```
+
+## Popup Content — `all` vs `hidden`
+
+`popupContent` controls what appears inside the overflow popup. `'all'` (default) lists every chip so users can re-scan the entire set; `'hidden'` lists only the chips that did not fit inline.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography, ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    { id: '1', label: 'Sales' },
+    { id: '2', label: 'Support' },
+    { id: '3', label: 'Engineering' },
+    { id: '4', label: 'Design' },
+  ];
+  return (
+    <Flex direction="column" gap="4">
+      <Flex direction="column" gap="2">
+        <Typography variant="caption">popupContent="all" (default)</Typography>
+        <ChipGroup
+          items={items}
+          maxVisible={2}
+          popupContent="all"
+          data-qa="popup-all"
+        />
+      </Flex>
+      <Flex direction="column" gap="2">
+        <Typography variant="caption">popupContent="hidden"</Typography>
+        <ChipGroup
+          items={items}
+          maxVisible={2}
+          popupContent="hidden"
+          data-qa="popup-hidden"
+        />
+      </Flex>
+    </Flex>
+  );
+}
+```
+
+## Color Variants
+
+`color` switches the Cobalt tag palette: `default` for neutral metadata, `info` for informational emphasis, `theme` for primary brand emphasis.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    { id: '1', label: 'Alpha' },
+    { id: '2', label: 'Beta' },
+  ];
+  return (
+    <Flex gap="4" alignY="center">
+      <ChipGroup items={items} color="default" data-qa="color-default" />
+      <ChipGroup items={items} color="info" data-qa="color-info" />
+      <ChipGroup items={items} color="theme" data-qa="color-theme" />
+    </Flex>
+  );
+}
+```
+
+## Size Variants
+
+`size` mirrors the Cobalt `Tag` scale. Use `tiny` inside dense rows or table cells, `small` (default) for general metadata, and `medium` when chips share a row with body text.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    { id: '1', label: 'Alpha' },
+    { id: '2', label: 'Beta' },
+    { id: '3', label: 'Gamma' },
+  ];
+  return (
+    <Flex direction="column" gap="3">
+      <ChipGroup items={items} size="tiny" maxVisible={2} data-qa="size-tiny" />
+      <ChipGroup
+        items={items}
+        size="small"
+        maxVisible={2}
+        data-qa="size-small"
+      />
+      <ChipGroup
+        items={items}
+        size="medium"
+        maxVisible={2}
+        data-qa="size-medium"
+      />
+    </Flex>
+  );
+}
+```
+
+## Long Labels — `maxChipWidth`
+
+Inline chips truncate with ellipsis once they exceed `maxChipWidth` (default `120`). The full label is preserved in the chip's native `title` tooltip and inside the overflow popup.
+
+```tsx preview
+import { ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    { id: '1', label: 'Customer Success Operations' },
+    { id: '2', label: 'Workforce Management Optimization' },
+    { id: '3', label: 'Quality Assurance and Coaching' },
+  ];
+  return (
+    <ChipGroup
+      items={items}
+      maxVisible={2}
+      maxChipWidth={140}
+      data-qa="long-label-chip-group"
+    />
+  );
+}
+```
+
+## Custom Chip Content
+
+Provide `content` on an item to render anything richer than plain text — for example an icon next to the label. `label` is still required as the truncation tooltip and popup fallback.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+import { ChipGroup } from '@wfm/ui-components';
+
+export default function Demo() {
+  const items = [
+    {
+      id: '1',
+      label: 'Verified',
+      content: (
+        <Flex alignY="center" gap="1">
+          <Icon iconName="check-circle-fill" size="tiny" />
+          Verified
+        </Flex>
+      ),
+    },
+    { id: '2', label: 'Draft' },
+    { id: '3', label: 'Archived' },
+  ];
+  return (
+    <ChipGroup
+      items={items}
+      maxVisible={2}
+      data-qa="custom-content-chip-group"
+    />
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                             | Default          | Description                                                                       |
+| ---------------- | -------------------------------- | ---------------- | --------------------------------------------------------------------------------- |
+| `items`          | `ChipGroupItem[]`                | —                | Chips to render, in order.                                                        |
+| `maxVisible`     | `number`                         | `2`              | Maximum chips shown inline before collapsing into a `+N` overflow chip.           |
+| `color`          | `'default' \| 'info' \| 'theme'` | `'default'`      | Visual emphasis of the chips.                                                     |
+| `size`           | `'tiny' \| 'small' \| 'medium'`  | `'small'`        | Chip size.                                                                        |
+| `maxChipWidth`   | `number \| string`               | `120`            | Maximum width of an individual inline chip; longer labels truncate with ellipsis. |
+| `popupContent`   | `'all' \| 'hidden'`              | `'all'`          | What the overflow popup lists — every chip, or only the ones that did not fit.    |
+| `data-qa`        | `string`                         | —                | QA selector. Suffixes `-{id}`, `-overflow`, `-popup`, `-popup-{id}` are derived.  |
+| `data-component` | `string`                         | `'WFMChipGroup'` | Component identifier.                                                             |
+
+### `ChipGroupItem`
+
+| Field     | Type        | Required | Description                                                                                      |
+| --------- | ----------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `id`      | `string`    | yes      | Unique identifier — used as React `key` and inside derived `data-qa` selectors.                  |
+| `label`   | `string`    | yes      | Plain-text label. Used as the chip body fallback, the truncation `title`, and the popup display. |
+| `content` | `ReactNode` | no       | Optional custom chip body (e.g. icon + label). Falls back to `label` when omitted.               |

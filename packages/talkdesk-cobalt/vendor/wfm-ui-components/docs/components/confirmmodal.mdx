@@ -1,0 +1,182 @@
+# ConfirmModal
+
+A modal dialog component that presents a confirmation prompt with an icon, descriptive content, a cancel button, and a primary action button.
+
+```ts
+import { ConfirmModal } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The `visible` prop controls whether the modal is displayed. `onDismiss` is called when the user clicks the cancel button or the modal overlay, and `onAction` is called when the user clicks the action button.
+
+```tsx preview
+import { useState } from 'react';
+import { ConfirmModal, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="primary" onClick={() => setVisible(true)}>
+        Open Modal
+      </Button>
+      <ConfirmModal
+        visible={visible}
+        onDismiss={() => setVisible(false)}
+        onAction={() => setVisible(false)}
+        actionButtonText="Confirm"
+        content={
+          <Typography variant="body">
+            Are you sure you want to proceed with this action?
+          </Typography>
+        }
+      />
+    </Flex>
+  );
+}
+```
+
+## Icon and Color
+
+Use the `iconName` prop to display a different Cobalt icon, and `iconColor` to override the default icon color.
+
+- `iconName="warning"` — displays a warning icon
+- `iconColor` set to a theme token string — overrides the default `secondary500` color
+
+```tsx preview
+import { useState } from 'react';
+import { ConfirmModal, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+  const theme = useTheme();
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="primary" onClick={() => setVisible(true)}>
+        Open Warning Modal
+      </Button>
+      <ConfirmModal
+        visible={visible}
+        onDismiss={() => setVisible(false)}
+        onAction={() => setVisible(false)}
+        iconName="warning"
+        iconColor={theme.warning500}
+        actionButtonType="danger"
+        actionButtonText="Delete"
+        content={
+          <Typography variant="body">
+            This action cannot be undone. All selected records will be
+            permanently deleted.
+          </Typography>
+        }
+      />
+    </Flex>
+  );
+}
+```
+
+## Loading State
+
+Set `isActionButtonLoading` to `true` to show an inline loading spinner on the action button while an async operation is in progress.
+
+```tsx preview
+import { useState } from 'react';
+import { ConfirmModal, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setVisible(false);
+    }, 2000);
+  };
+
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="primary" onClick={() => setVisible(true)}>
+        Open Loading Modal
+      </Button>
+      <ConfirmModal
+        visible={visible}
+        onDismiss={() => !loading && setVisible(false)}
+        onAction={handleAction}
+        actionButtonText="Save"
+        isActionButtonLoading={loading}
+        isDisabled={loading}
+        content={
+          <Typography variant="body">
+            Click Save to simulate an async operation.
+          </Typography>
+        }
+      />
+    </Flex>
+  );
+}
+```
+
+## Custom Cancel Text
+
+Use `cancelButtonText` to replace the default "Cancel" label on the dismiss button — useful for localisation or when the context calls for a more specific label such as "Keep" or "Go back".
+
+```tsx preview
+import { useState } from 'react';
+import { ConfirmModal, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="danger" onClick={() => setVisible(true)}>
+        Remove agent
+      </Button>
+      <ConfirmModal
+        visible={visible}
+        onDismiss={() => setVisible(false)}
+        onAction={() => setVisible(false)}
+        iconName="trash"
+        actionButtonType="danger"
+        actionButtonText="Remove"
+        cancelButtonText="Keep agent"
+        content={
+          <Typography variant="body">
+            This agent will be removed from all active schedules. This cannot be
+            undone.
+          </Typography>
+        }
+      />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop                        | Type                                   | Default          | Description                                                                     |
+| --------------------------- | -------------------------------------- | ---------------- | ------------------------------------------------------------------------------- |
+| `visible`                   | `boolean`                              | —                | Controls modal visibility                                                       |
+| `onDismiss`                 | `() => void`                           | —                | Called when cancel or overlay is clicked                                        |
+| `onAction`                  | `() => void`                           | —                | Called when the action button is clicked                                        |
+| `content`                   | `ReactNode`                            | —                | Body content of the modal                                                       |
+| `actionButtonText`          | `string`                               | —                | Label for the action button                                                     |
+| `iconName`                  | `string`                               | `'info_circle'`  | Cobalt icon name displayed at the top                                           |
+| `iconColor`                 | `string`                               | `secondary500`   | Icon color (use `useTheme()` tokens)                                            |
+| `actionButtonType`          | `'primary' \| 'secondary' \| 'danger'` | `'primary'`      | Visual type for the action button                                               |
+| `isActionButtonLoading`     | `boolean`                              | `false`          | Shows inline loading spinner on the action button                               |
+| `isDisabled`                | `boolean`                              | `false`          | Disables the action button                                                      |
+| `cancelButtonText`          | `string`                               | `'Cancel'`       | Label for the cancel button                                                     |
+| `data-qa`                   | `string`                               | —                | QA selector (also derives child element selectors)                              |
+| `data-component`            | `string`                               | `'ConfirmModal'` | Component identifier                                                            |

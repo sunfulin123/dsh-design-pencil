@@ -61,9 +61,8 @@ CanvasKit 按实际选择事件保留有界的临时选区历史，并按顺序�
 模板功能、目录、工具、存储类型、文档及预览资源已删除，不提供旧数据兼容。
 主题预设加载占一个 undo，MCP 与 HTTP 的设计变更均经过 draft autosave。
 
-风格唯一来源为 [style-guides](crates/op-ai-skills/skills/style-guides/)：保留默认
-`talkdesk-cobalt`，另有 84 份逐字保存的社区 `DESIGN.md`。清单记录来源相对路径、
-稳定 `design-md:<目录名>` id 和 SHA-256；空目录不导入。原文的 name 用于展示，id 用于
+风格唯一来源为 [design-data](packages/design-data/)：保留默认
+`talkdesk-cobalt`，另有 84 份逐字保存的社区 `DESIGN.md`。构建脚本自动发现 `styles/<目录>/DESIGN.md`，可选 `style.json` 保留稳定 id 和分类；生成清单记录来源路径和 SHA-256。现有 `design-md:<目录名>` id 保持不变。原文的 name 用于展示，id 用于
 查询与绑定。完整原文供 AI 使用，frontmatter 颜色/字体供卡片与结构化规范使用，
 无 frontmatter 的文件走现有宽容 Markdown 解析。不可变卡片与 AI 目录缓存避免逐帧解析全文。
 内置清单的应用场景分类只补充目录元数据，内容指纹针对完整 DESIGN 正文；用户风格不指定分类时保持未分类。
@@ -106,6 +105,8 @@ embedding host override > 临时 MCP override > 设备偏好。
 [design-workflow-text](packages/dsh-node-runtime/design-workflow-text.mjs) 和
 [design-tool-text](packages/dsh-node-runtime/design-tool-text.mjs) 定义，插件只读取。
 运行时构建将核心 skill 复制到 wasm 构建产物；发布 staging 校验源码一致并写入哈希清单。
+
+Cobalt Workspace HTML 原型通过同一 Skill 资源中的 `cobalt-project.mjs` 创建 React 18/Vite 项目；工具从版本和 SHA-256 固定的官方 `ai-docs` shell 快照复制源码，仅对项目副本应用自有多应用路由和顶部状态控件适配。`talkdesk-prototype.json` 注册 Dock 应用和业务页面，组件与设计规范读取 HTML Skill 内的 `cobalt-reference/content/` 本地资料库，`talkdesk-cobalt` 风格内置设计契约，不在用户会话下载文档。工具不启动进程或安装依赖；SS Preview 管运行环境和服务，编译产物 `delivery/index.html` 沿用现有静态 POC 交接。其他风格和直接 canvas 路线保持原有边界。
 
 ## 变量集合与内置库
 
@@ -190,3 +191,7 @@ CI 排除 base 中已闭合的 Task-ID，按最近完成的新 v2 记录核对�
 变更所有权、同步协议、公开接口、队列、缓存失效或 crate 依赖时：
 在本页更新真实数据流/边界，并在任务 notes 中写决策、备选、兼容/迁移和回滚方式。
 只有跨任务可复用且经验证的结论进入 KB；不要把设想当成既定架构。
+
+## Design authoring modules
+
+[Talkdesk Cobalt](packages/talkdesk-cobalt/README.md) owns pinned shell snapshots, local reference content, general-purpose Cobalt Extensions component code, authored MDX, executable examples and recipes. Its exporter preserves the HTML Skill resource paths; the generic Skill keeps discovery and evidence review. Astro builds a static site from the same sources and renders React 18 examples in isolated iframes. Runtime content revisions are SHA-256 based; installed SS resources remain bundled snapshots. Node.js is required when Cargo generates the [style catalogue](packages/design-data/README.md).

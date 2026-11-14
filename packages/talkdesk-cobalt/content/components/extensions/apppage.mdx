@@ -1,0 +1,133 @@
+# AppPage
+
+A full-viewport page scaffold composed of six sub-components: `AppPage` (root), `AppPageHeader` (top bar), `AppPageMain` (fill area), `AppPageAside` (sidebar), `AppPageContent` (content area), and `AppPageFooter` (pinned footer). `AppPageFooter` can be placed as a direct child of `AppPage` to span the full width, or passed via `AppPageContent`'s `footer` prop to pin it inside the content column only.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import {
+  AppPage,
+  AppPageHeader,
+  AppPageMain,
+  AppPageAside,
+  AppPageContent,
+  AppPageFooter,
+} from './components/cobalt-extensions';
+```
+
+| Component        | Role                                                                |
+| ---------------- | ------------------------------------------------------------------- |
+| `AppPage`        | Root — flex column, full-height container                           |
+| `AppPageHeader`  | Fixed-height top bar — titles, breadcrumbs, actions                 |
+| `AppPageMain`    | Flex row that fills the remaining height                            |
+| `AppPageAside`   | Sidebar with independent vertical scroll                            |
+| `AppPageContent` | Main panel with independent vertical scroll                         |
+| `AppPageFooter`  | Pinned footer — full-width or content-column depending on placement |
+
+## Basic Usage
+
+The standard layout imports all five components and composes them directly. Both `AppPageAside` and `AppPageContent` scroll independently when their content exceeds the available height.
+
+<Example id="extensions.apppage.001" />
+
+## Without Aside
+
+When `AppPageAside` is omitted, `AppPageContent` expands to fill the full width of `AppPageMain`.
+
+<Example id="extensions.apppage.002" />
+
+## Custom Aside Width
+
+Use the `width` prop on `AppPageAside` to override the default 240 px sidebar width. Accepts any CSS width value or a pixel number.
+
+- Top: `width={300}` — wider sidebar for complex filter forms
+- Bottom: `width="30%"` — proportional sidebar using a percentage
+
+<Example id="extensions.apppage.003" />
+
+## Borderless Variant
+
+Set `isBordered={false}` on `AppPageHeader` and `AppPageAside` to remove the separator lines. Use this when background color contrast already provides sufficient visual separation.
+
+- Top: default `isBordered={true}` — separator lines visible
+- Bottom: `isBordered={false}` on both Header and Aside — borderless
+
+<Example id="extensions.apppage.004" />
+
+## Page-Wide Footer
+
+Use `AppPageFooter` as a direct child of `AppPage`, placed after `AppPageMain`. The footer spans the full page width and stays pinned at the bottom regardless of scroll position. Content in `AppPageContent` continues to scroll independently above it.
+
+<Example id="extensions.apppage.005" />
+
+## Content-Area Footer
+
+Pass `<AppPageFooter>` to the `footer` prop on `AppPageContent` to pin it inside the content column only. The footer does not span the full page width — the sidebar remains unaffected — and the content area above it continues to scroll independently.
+
+<Example id="extensions.apppage.006" />
+
+## Props
+
+### AppPage
+
+| Prop             | Type        | Default        | Description                                                |
+| ---------------- | ----------- | -------------- | ---------------------------------------------------------- |
+| `children`       | `ReactNode` | —              | `AppPageHeader` + `AppPageMain` + optional `AppPageFooter` |
+| `data-qa`        | `string`    | —              | QA selector                                                |
+| `data-component` | `string`    | `'WFMAppPage'` | Component identifier                                       |
+
+### AppPageHeader
+
+| Prop         | Type        | Default | Description                                   |
+| ------------ | ----------- | ------- | --------------------------------------------- |
+| `children`   | `ReactNode` | —       | Header content                                |
+| `isBordered` | `boolean`   | `true`  | Renders a 1 px bottom border below the header |
+| `paddingX`   | `Space`     | `6`     | Horizontal padding token — `6` = 24 px        |
+| `paddingY`   | `Space`     | `4`     | Vertical padding token — `4` = 16 px          |
+| `data-qa`    | `string`    | —       | QA selector                                   |
+
+### AppPageMain
+
+| Prop       | Type        | Default | Description                            |
+| ---------- | ----------- | ------- | -------------------------------------- |
+| `children` | `ReactNode` | —       | `AppPageAside` and/or `AppPageContent` |
+| `data-qa`  | `string`    | —       | QA selector                            |
+
+### AppPageAside
+
+| Prop         | Type               | Default | Description                                     |
+| ------------ | ------------------ | ------- | ----------------------------------------------- |
+| `children`   | `ReactNode`        | —       | Sidebar content — scrolls when it overflows     |
+| `width`      | `string \| number` | `240`   | Panel width; accepts CSS values or pixel number |
+| `isBordered` | `boolean`          | `true`  | Renders a 1 px right border beside the aside    |
+| `paddingX`   | `Space`            | `4`     | Horizontal padding token — `4` = 16 px          |
+| `paddingY`   | `Space`            | `4`     | Vertical padding token — `4` = 16 px            |
+| `data-qa`    | `string`           | —       | QA selector                                     |
+
+### AppPageContent
+
+| Prop       | Type        | Default | Description                                                                        |
+| ---------- | ----------- | ------- | ---------------------------------------------------------------------------------- |
+| `children` | `ReactNode` | —       | Main content — scrolls when it overflows                                           |
+| `footer`   | `ReactNode` | —       | Pinned footer inside the content column — does not scroll. Pass `<AppPageFooter>`. |
+| `paddingX` | `Space`     | `6`     | Horizontal padding token — `6` = 24 px                                             |
+| `paddingY` | `Space`     | `4`     | Vertical padding token — `4` = 16 px                                               |
+| `data-qa`  | `string`    | —       | QA selector                                                                        |
+
+### AppPageFooter
+
+| Prop         | Type        | Default | Description                                       |
+| ------------ | ----------- | ------- | ------------------------------------------------- |
+| `children`   | `ReactNode` | —       | Footer content — action bars, save/cancel buttons |
+| `isBordered` | `boolean`   | `true`  | Renders a 1 px top border above the footer        |
+| `paddingX`   | `Space`     | `6`     | Horizontal padding token — `6` = 24 px            |
+| `paddingY`   | `Space`     | `4`     | Vertical padding token — `4` = 16 px              |
+| `data-qa`    | `string`    | —       | QA selector                                       |
+
+> `Space` tokens map to the 4 px grid: `1` = 4 px, `2` = 8 px, `3` = 12 px, `4` = 16 px, `6` = 24 px, `8` = 32 px.
+
+## Layout Notes
+
+- `AppPage` must have a **bounded height** set by its parent (e.g. `height: 100vh`, `height: 400px`). Without a fixed height the main area cannot constrain overflow.
+- `min-height: 0` on `AppPageMain` and `min-width: 0` on `AppPageContent` are applied internally — required by the CSS flexbox spec to allow children to shrink below their intrinsic content size.
+- `AppPageAside` is optional. When omitted, `AppPageContent` fills the full width of `AppPageMain`.

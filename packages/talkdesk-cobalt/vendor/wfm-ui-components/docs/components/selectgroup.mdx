@@ -1,0 +1,208 @@
+# SelectGroup
+
+A button-group selector supporting single-select and multi-select modes as a fully controlled component via `options`, `value`, and `onChange`.
+
+```ts
+import { SelectGroup } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+Use `mode="single"` (the default) when exactly one option must be active at a time. Pass the current value as `value` and update it with `onChange`. This pattern suits view-switchers, period selectors, and other mutually-exclusive choices.
+
+```tsx preview
+import { useState } from 'react';
+import { SelectGroup } from '@wfm/ui-components';
+
+const viewOptions = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+];
+
+export default function Demo() {
+  const [view, setView] = useState('day');
+  return <SelectGroup options={viewOptions} value={view} onChange={setView} />;
+}
+```
+
+## Multi-Select
+
+Set `mode="multi"` when the user may activate several options independently. `value` becomes a `string[]` and `onChange` receives the updated array after each toggle. Add `shape="fullWidth"` to stretch the group across the available container width — useful for day-of-week pickers and similar full-row layouts.
+
+- `mode="multi"` — multiple options can be active at the same time
+- `shape="fullWidth"` — group fills the container width evenly
+
+```tsx preview
+import { useState } from 'react';
+import { SelectGroup } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+const dayOptions = [
+  { value: 'mon', label: 'MON' },
+  { value: 'tue', label: 'TUE' },
+  { value: 'wed', label: 'WED' },
+  { value: 'thu', label: 'THU' },
+  { value: 'fri', label: 'FRI' },
+  { value: 'sat', label: 'SAT' },
+  { value: 'sun', label: 'SUN' },
+];
+
+export default function Demo() {
+  const [days, setDays] = useState(['mon', 'tue', 'wed', 'thu', 'fri']);
+  return (
+    <Box style={{ width: '480px' }}>
+      <SelectGroup
+        mode="multi"
+        options={dayOptions}
+        value={days}
+        onChange={setDays}
+        shape="fullWidth"
+      />
+    </Box>
+  );
+}
+```
+
+## Sizes
+
+The `size` prop accepts `small`, `medium` (default), and `large`. Use `small` for dense toolbars and `large` for prominent top-level controls.
+
+- Top: `size="small"`
+- Middle: `size="medium"` — default
+- Bottom: `size="large"`
+
+```tsx preview
+import { SelectGroup } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const options = [
+  { value: 'a', label: 'Option A' },
+  { value: 'b', label: 'Option B' },
+  { value: 'c', label: 'Option C' },
+];
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      <SelectGroup
+        options={options}
+        value="a"
+        onChange={() => {}}
+        size="small"
+      />
+      <SelectGroup
+        options={options}
+        value="a"
+        onChange={() => {}}
+        size="medium"
+      />
+      <SelectGroup
+        options={options}
+        value="a"
+        onChange={() => {}}
+        size="large"
+      />
+    </Flex>
+  );
+}
+```
+
+## Outline Style
+
+Set `type="outline"` to render a bordered variant instead of the default filled style. Useful when the group sits on a surface where the filled style would compete with surrounding UI.
+
+```tsx preview
+import { useState } from 'react';
+import { SelectGroup } from '@wfm/ui-components';
+
+const options = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'map', label: 'Map' },
+];
+
+export default function Demo() {
+  const [view, setView] = useState('list');
+  return (
+    <SelectGroup
+      options={options}
+      value={view}
+      onChange={setView}
+      type="outline"
+    />
+  );
+}
+```
+
+## Validation States
+
+Use `variation="warning"` or `variation="error"` to communicate field-level validation feedback. The surrounding border changes color while the options remain interactive.
+
+- Left: `variation="warning"` — advisory state, selection is valid but needs attention
+- Right: `variation="error"` — invalid state, user must correct the selection
+
+```tsx preview
+import { SelectGroup } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const options = [
+  { value: 'a', label: 'Option A' },
+  { value: 'b', label: 'Option B' },
+  { value: 'c', label: 'Option C' },
+];
+
+export default function Demo() {
+  return (
+    <Flex gap="6" padding="4">
+      <SelectGroup
+        options={options}
+        value="a"
+        onChange={() => {}}
+        variation="warning"
+      />
+      <SelectGroup
+        options={options}
+        value="b"
+        onChange={() => {}}
+        variation="error"
+      />
+    </Flex>
+  );
+}
+```
+
+## Disabled Options
+
+Set `disabled: true` on individual items in the `options` array to prevent interaction with specific choices while keeping the rest of the group active.
+
+```tsx preview
+import { useState } from 'react';
+import { SelectGroup } from '@wfm/ui-components';
+
+const options = [
+  { value: 'enabled1', label: 'Available' },
+  { value: 'disabled1', label: 'Unavailable', disabled: true },
+  { value: 'enabled2', label: 'Available' },
+];
+
+export default function Demo() {
+  const [val, setVal] = useState('enabled1');
+  return <SelectGroup options={options} value={val} onChange={setVal} />;
+}
+```
+
+## Props
+
+| Prop             | Type                                                      | Default            | Description                                                  |
+| ---------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| `options`        | `SelectGroupOption[]`                                     | —                  | Required. Array of `{ value, label, disabled? }` items.      |
+| `value`          | `string` \| `string[]`                                    | —                  | Required. Selected value(s). `string[]` when `mode="multi"`. |
+| `onChange`       | `(value: string) => void` \| `(values: string[]) => void` | —                  | Required. Called on every selection change.                  |
+| `mode`           | `'single' \| 'multi'`                                     | `'single'`         | Selection mode.                                              |
+| `size`           | `'small' \| 'medium' \| 'large'`                          | `'medium'`         | Control size.                                                |
+| `shape`          | `'fullWidth'`                                             | —                  | Stretches the group to fill the container width.             |
+| `type`           | `'outline'`                                               | —                  | Outlined border style instead of filled.                     |
+| `variation`      | `'warning' \| 'error'`                                    | —                  | Validation state border color.                               |
+| `data-qa`        | `string`                                                  | —                  | QA selector attribute.                                       |
+| `data-component` | `string`                                                  | `'WFMSelectGroup'` | Component identifier attribute.                              |

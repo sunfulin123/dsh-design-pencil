@@ -1,0 +1,165 @@
+# Stepper
+
+A vertical timeline indicator that renders a list of steps — each with a `status` dot (`complete`, `active`, `error`, or `idle`) — connected by lines.
+
+```ts
+import { Stepper, StepStatus } from '@wfm/ui-components';
+```
+
+## Step States
+
+Use the `status` prop to control the visual style of the step indicator dot.
+
+| `status`             | Dot style              | Meaning                   |
+| -------------------- | ---------------------- | ------------------------- |
+| `undefined`          | Gray filled circle     | Not yet reached (default) |
+| `StepStatus.VISITED` | Purple filled circle   | Step completed            |
+| `StepStatus.ACTIVE`  | Purple outlined circle | Currently active step     |
+
+```tsx preview
+import { Stepper, StepStatus, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" padding="6" style={{ maxWidth: 320 }}>
+      <Stepper status={StepStatus.VISITED} isEnd={false}>
+        <Box paddingLeft="2" paddingBottom="4">
+          <Typography variant="caption" weight="medium">
+            Step 1 — Completed
+          </Typography>
+          <Typography variant="caption" tone="subdued">
+            Form submitted on Apr 20.
+          </Typography>
+        </Box>
+      </Stepper>
+      <Stepper status={StepStatus.ACTIVE} isEnd={false}>
+        <Box paddingLeft="2" paddingBottom="4">
+          <Typography variant="caption" weight="medium">
+            Step 2 — In Progress
+          </Typography>
+          <Typography variant="caption" tone="subdued">
+            Under review by the team.
+          </Typography>
+        </Box>
+      </Stepper>
+      <Stepper isEnd>
+        <Box paddingLeft="2" paddingBottom="4">
+          <Typography variant="caption" weight="medium">
+            Step 3 — Pending
+          </Typography>
+          <Typography variant="caption" tone="subdued">
+            Awaiting approval.
+          </Typography>
+        </Box>
+      </Stepper>
+    </Flex>
+  );
+}
+```
+
+## End Step
+
+Use `isEnd={true}` on the last step to hide the vertical connector line below the dot.
+
+- `isEnd={false}` — connector line extends downward to the next step
+- `isEnd={true}` — no connector line (must be set on the final item)
+
+```tsx preview
+import { Stepper, StepStatus, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" padding="6" style={{ maxWidth: 300 }}>
+      <Stepper status={StepStatus.VISITED} isEnd={false}>
+        <Box paddingLeft="2" paddingBottom="4">
+          <Typography variant="caption">
+            First step — has connector below
+          </Typography>
+        </Box>
+      </Stepper>
+      <Stepper status={StepStatus.VISITED} isEnd>
+        <Box paddingLeft="2" paddingBottom="4">
+          <Typography variant="caption">
+            Last step — no connector (isEnd)
+          </Typography>
+        </Box>
+      </Stepper>
+    </Flex>
+  );
+}
+```
+
+## All States in a Timeline
+
+A realistic example combining all three states in a sequential workflow.
+
+```tsx preview
+import { Stepper, StepStatus, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+const steps = [
+  {
+    label: 'Created',
+    detail: 'Apr 18 — Request submitted',
+    status: StepStatus.VISITED,
+  },
+  {
+    label: 'Approved',
+    detail: 'Apr 19 — Manager approved',
+    status: StepStatus.VISITED,
+  },
+  {
+    label: 'In Progress',
+    detail: 'Apr 21 — Being processed',
+    status: StepStatus.ACTIVE,
+  },
+  { label: 'Completed', detail: 'Awaiting completion', status: undefined },
+];
+
+export default function Demo() {
+  return (
+    <Flex direction="column" padding="6" style={{ maxWidth: 340 }}>
+      {steps.map((step, i) => (
+        <Stepper
+          key={step.label}
+          status={step.status}
+          isEnd={i === steps.length - 1}
+        >
+          <Box paddingLeft="2" paddingBottom="4">
+            <Typography variant="caption" weight="medium">
+              {step.label}
+            </Typography>
+            <Typography variant="caption" tone="subdued">
+              {step.detail}
+            </Typography>
+          </Box>
+        </Stepper>
+      ))}
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                                   | Default               | Description                                                               |
+| ---------------- | ------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------- |
+| `status`         | `StepStatus.VISITED \| StepStatus.ACTIVE \| undefined` | `undefined`           | Visual state of the step dot                                              |
+| `isEnd`          | `boolean`                                              | —                     | **Required.** Hides the connector line when `true` — set on the last step |
+| `children`       | `ReactNode`                                            | —                     | Content rendered to the right of the step indicator                       |
+| `data-qa`        | `string`                                               | `'stepper-container'` | QA selector attribute                                                     |
+| `data-component` | `string`                                               | `'WFMStepper'`        | Component identifier                                                      |
+
+## StepStatus Enum
+
+```ts
+enum StepStatus {
+  VISITED = 'visited', // Completed step — solid purple dot
+  ACTIVE = 'active', // Current step  — outlined purple dot
+}
+```

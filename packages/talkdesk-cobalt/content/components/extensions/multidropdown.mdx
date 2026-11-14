@@ -1,0 +1,118 @@
+# MultiDropdown
+
+A multi-select dropdown that renders a list of options as toggleable rows and shows the selection as removable tags in the trigger — with support for fully customisable option rows via per-option or global render functions.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { MultiDropdown } from './components/cobalt-extensions';
+import type {
+  MultiDropdownOption,
+  MultiDropdownOptionValue,
+  MultiDropdownOptionRenderContext,
+  MultiDropdownMessages,
+} from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+Pass `options`, the controlled `value` array, and an `onChange` handler. Each option renders as a checkbox row; selecting one adds it to the array passed back to `onChange`.
+
+<Example id="extensions.multidropdown.001" />
+
+## Dismissible Tags & Max Visible
+
+Set `dismissValues` to let users remove tags directly from the trigger, and `maxVisibleValues` to collapse extras into a `+N` summary chip.
+
+<Example id="extensions.multidropdown.002" />
+
+## Searchable + Select All
+
+Set `searchable` for a built-in client-side filter, and `renderSelectAll` to add a "Select all" row at the top of the list. Override the row label via `messages.selectAll`.
+
+<Example id="extensions.multidropdown.003" />
+
+## Option Metadata (Description, Right Slot)
+
+Each option may declare `description`, `right`, or `borderBottom` to enrich the built-in row layout — no custom renderer required.
+
+<Example id="extensions.multidropdown.004" />
+
+## Custom Option (Per-Option `render`)
+
+A single option can override its row markup by setting `render`. The renderer receives `{ selected, onToggle }` — call `onToggle()` to add or remove this option from the selection. Use this for one-off custom rows like a "Create new" entry.
+
+<Example id="extensions.multidropdown.005" />
+
+## Custom Option (Global `renderOption`)
+
+Pass a `renderOption` prop to apply the same custom layout to every option. Per-option `render` still takes precedence over the global one. Use this when the entire list shares a non-standard row format such as avatars, swatches, or rich previews.
+
+<Example id="extensions.multidropdown.006" />
+
+## Load More (Pagination)
+
+Provide `hasMore` and `onLoadMore` to render a full-width "Load more" button at the bottom of the list. Clicking it does not close the dropdown. Set `isLoadingMore` while the request is in flight to disable the button and swap the label to `messages.loading`.
+
+<Example id="extensions.multidropdown.007" />
+
+## Props
+
+| Prop               | Type                                    | Default           | Description                                                                                                                               |
+| ------------------ | --------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`            | `(string \| number)[]`                  | `[]`              | Currently selected option values                                                                                                          |
+| `options`          | `MultiDropdownOption[]`                 | —                 | List of options to render                                                                                                                 |
+| `onChange`         | `(value: (string \| number)[]) => void` | —                 | Fired with the new selection array whenever an option is toggled                                                                          |
+| `renderOption`     | `(option, ctx) => ReactNode`            | —                 | Global custom renderer applied to every option without its own `render`                                                                   |
+| `searchable`       | `boolean`                               | `false`           | Enables a built-in client-side search filter on `option.label`                                                                            |
+| `onSearch`         | `(query: string) => void`               | —                 | Server-side search callback. When provided, client-side filtering is disabled and the parent must update `options`. Implies `searchable`. |
+| `isSearching`      | `boolean`                               | `false`           | While `true`, swaps the empty-list text to `messages.searching` (use with `onSearch`)                                                     |
+| `hasMore`          | `boolean`                               | `false`           | Renders a full-width "Load more" button at the bottom of the list                                                                         |
+| `isLoadingMore`    | `boolean`                               | `false`           | Disables the load-more button and shows `messages.loading` while a request is in flight                                                   |
+| `onLoadMore`       | `() => void`                            | —                 | Called when the user clicks the load-more button                                                                                          |
+| `renderSelectAll`  | `boolean`                               | `false`           | Renders a "Select all" row at the top of the list                                                                                         |
+| `dismissValues`    | `boolean`                               | `false`           | Allows tags to be removed individually directly from the trigger                                                                          |
+| `maxVisibleValues` | `number`                                | —                 | Max number of selected tags shown in the trigger before collapsing into "+N"                                                              |
+| `inputSize`        | `'small' \| 'medium'`                   | `'medium'`        | Cobalt input and selected-tag size                                                                                                        |
+| `placeholderSize`  | `'small' \| 'medium'`                   | —                 | Override the placeholder text size without changing selected tags                                                                         |
+| `height`           | `CSSProperties['height']`               | —                 | Height of the dropdown trigger                                                                                                            |
+| `className`        | `string`                                | —                 | Class applied to the outer dropdown container                                                                                             |
+| `aria-labelledby`  | `string`                                | —                 | ID of the visible label that names the keyboard-accessible trigger                                                                        |
+| `disabled`         | `boolean`                               | `false`           | Disables interaction                                                                                                                      |
+| `loading`          | `boolean`                               | `false`           | Shows a loading state on the trigger                                                                                                      |
+| `error`            | `boolean`                               | `false`           | Marks the trigger as in an error state                                                                                                    |
+| `messages`         | `MultiDropdownMessages`                 | —                 | Customise visible text strings (see below)                                                                                                |
+| `data-qa`          | `string`                                | —                 | QA selector — also propagated to each option as `${data-qa}-option-${value}`                                                              |
+| `data-component`   | `string`                                | `'MultiDropdown'` | Component identifier                                                                                                                      |
+
+### `MultiDropdownOption`
+
+| Field          | Type                                                   | Default | Description                                                                                                                |
+| -------------- | ------------------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `value`        | `string \| number`                                     | —       | Unique value emitted in the `onChange` array                                                                               |
+| `label`        | `string`                                               | —       | Display label, also used as the tag text in the trigger                                                                    |
+| `disabled`     | `boolean`                                              | `false` | Prevents the option from being toggled                                                                                     |
+| `description`  | `string`                                               | —       | Secondary line shown below the label (built-in renderer only)                                                              |
+| `icon`         | `JSX.Element`                                          | —       | Icon element shown to the left of the label (built-in renderer only)                                                       |
+| `right`        | `ReactNode`                                            | —       | Content rendered to the right of the label, e.g. a `Tag` (built-in renderer only)                                          |
+| `borderBottom` | `boolean`                                              | `false` | Draws a divider below this option (built-in renderer only)                                                                 |
+| `render`       | `(ctx: MultiDropdownOptionRenderContext) => ReactNode` | —       | Per-option custom renderer. Takes precedence over the global `renderOption`. Call `ctx.onToggle()` to add/remove the item. |
+
+### `MultiDropdownOptionRenderContext`
+
+| Field      | Type         | Description                                                              |
+| ---------- | ------------ | ------------------------------------------------------------------------ |
+| `selected` | `boolean`    | Whether this option's value is in the current `value` array              |
+| `onToggle` | `() => void` | Add the option if not selected, remove it if selected — fires `onChange` |
+
+### `MultiDropdownMessages`
+
+| Field               | Type     | Default              | Description                                                                    |
+| ------------------- | -------- | -------------------- | ------------------------------------------------------------------------------ |
+| `placeholder`       | `string` | `'Select options'`   | Trigger placeholder when nothing is selected                                   |
+| `searchPlaceholder` | `string` | `'Search'`           | Search input placeholder                                                       |
+| `noResults`         | `string` | `'No results found'` | Empty state when search has no matches                                         |
+| `selectAll`         | `string` | `'Select all'`       | Label for the "Select all" row (only when `renderSelectAll` is `true`)         |
+| `searching`         | `string` | `'Searching…'`       | Empty state shown while a server-side search is in flight (with `isSearching`) |
+| `loadMore`          | `string` | `'Load more…'`       | Label on the load-more button                                                  |
+| `loading`           | `string` | `'Loading…'`         | Label on the load-more button while `isLoadingMore` is `true`                  |

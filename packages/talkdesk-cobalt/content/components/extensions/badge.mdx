@@ -1,0 +1,98 @@
+# Badge
+
+A notification badge that anchors a count or status `Tag` at a configurable corner of any child element — typically used for unread counts on icons or buttons.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Badge } from './components/cobalt-extensions';
+```
+
+## Numeric Count
+
+Use the `count` prop to show a numeric badge. When `count` exceeds `maxCount`, the badge displays a capped value in `+N` format.
+
+- Left: `count={3}` — renders the number directly
+- Right: `count={12} maxCount={9}` — count exceeds the cap, displays `9+`
+
+<Example id="extensions.badge.001" />
+
+## Count Hidden When Zero
+
+When `count={0}` the badge is **automatically hidden** — no extra visibility logic needed.
+
+- Left: `count={0}` — badge is not rendered
+- Right: `count={5}` — badge renders normally
+
+<Example id="extensions.badge.002" />
+
+## Custom Content
+
+Use the `content` prop to render any `ReactNode` inside the badge. Mutually exclusive with `count` and `maxCount`.
+
+- `content="NEW"` — text label badge
+
+<Example id="extensions.badge.003" />
+
+## Status
+
+Use the `status` prop to control the semantic color of the badge, mapped to Cobalt Tag `color` tokens.
+
+| `status`  | Cobalt `color` | Use case                       |
+| --------- | -------------- | ------------------------------ |
+| `default` | `light-gray`   | Neutral indicator              |
+| `success` | `light-green`  | Success / online               |
+| `warning` | `light-yellow` | Warning                        |
+| `danger`  | `red`          | Error / critical (**default**) |
+| `info`    | `light-blue`   | Informational                  |
+
+<Example id="extensions.badge.004" />
+
+## Sizes
+
+Use the `size` prop to control badge size. Values map directly to Cobalt Tag size tokens — no abbreviations.
+
+| `size`   | Use case                              |
+| -------- | ------------------------------------- |
+| `tiny`   | Extra-small icon contexts (16px icon) |
+| `small`  | Standard icon contexts (**default**)  |
+| `medium` | Medium-sized element contexts         |
+| `large`  | Large element contexts                |
+
+<Example id="extensions.badge.005" />
+
+## Status → Cobalt color mapping
+
+| Extension `status` | Cobalt Tag `color` |
+| ------------ | ------------------ |
+| `default`    | `light-gray`       |
+| `success`    | `light-green`      |
+| `warning`    | `light-yellow`     |
+| `danger`     | `red`              |
+| `info`       | `light-blue`       |
+
+## Badge Positioning
+
+Use `gapX` and `gapY` to offset the badge from the child element's corner. Use `originPosition` and `directionPosition` (both `CardinalPoint`) to change which corner of the child the badge anchors to and which direction it floats.
+
+- Default: `originPosition="NE"` / `directionPosition="NW"` — badge sits at the top-right corner
+- `originPosition="SE"` / `directionPosition="SW"` — badge moves to the bottom-right corner
+- `gapY={0}` — reduces vertical gap so the badge sits flush with the edge
+
+<Example id="extensions.badge.006" />
+
+## Props
+
+| Prop                | Type                                                        | Default      | Description                                            |
+| ------------------- | ----------------------------------------------------------- | ------------ | ------------------------------------------------------ |
+| `status`            | `'default' \| 'success' \| 'warning' \| 'danger' \| 'info'` | `'danger'`   | Semantic status — controls Cobalt Tag color            |
+| `size`              | `'tiny' \| 'small' \| 'medium' \| 'large'`                  | `'tiny'`     | Cobalt Tag size token                                  |
+| `count`             | `number`                                                    | —            | Numeric count (hidden when 0)                          |
+| `maxCount`          | `number`                                                    | `9`          | Cap value; shows `+N` when exceeded                    |
+| `content`           | `ReactNode`                                                 | —            | Custom badge content (mutually exclusive with `count`) |
+| `gapX`              | `number`                                                    | `0`          | Horizontal offset in px                                |
+| `gapY`              | `number`                                                    | `12`         | Vertical offset in px                                  |
+| `originPosition`    | `CardinalPoint`                                             | `'NE'`       | Anchor point on the child                              |
+| `directionPosition` | `CardinalPoint`                                             | `'NW'`       | Direction the badge floats toward                      |
+| `data-qa`           | `string`                                                    | —            | QA selector attribute                                  |
+| `data-component`    | `string`                                                    | `'WFMBadge'` | Component identifier                                   |

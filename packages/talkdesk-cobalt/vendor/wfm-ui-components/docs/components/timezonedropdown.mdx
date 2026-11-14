@@ -1,0 +1,149 @@
+# TimezoneDropdown
+
+A searchable dropdown for selecting an IANA timezone, grouped by country/region.
+
+```ts
+import { TimezoneDropdown, FormField } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+Provide `value` (an IANA timezone string) and `onChange` to get a controlled searchable timezone selector. The selected value is displayed as `Region: City`. Type in the search field to filter by city or country name. Wrap in a `FormField` to add a label and helper text.
+
+```tsx preview
+import { useState } from 'react';
+import { TimezoneDropdown, FormField } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  const [tz, setTz] = useState('Europe/Lisbon');
+  return (
+    <Box padding="6" width="360px">
+      <FormField
+        isRequired
+        label="Timezone"
+        description="Used to display schedules in the agent's local time."
+      >
+        <TimezoneDropdown
+          data-qa="timezone-select"
+          value={tz}
+          onChange={setTz}
+        />
+      </FormField>
+    </Box>
+  );
+}
+```
+
+## Disabled
+
+Set `disabled` to prevent the user from changing the timezone. The current value is still shown in read-only form. Wrapping in `FormField` keeps the label aligned with the surrounding form.
+
+- Left: enabled — user can open and search the dropdown
+- Right: `disabled={true}` — dropdown is locked to the current value
+
+```tsx preview
+import { TimezoneDropdown, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex gap="6" padding="6" wrap>
+      <Flex width="300px">
+        <FormField label="Timezone">
+          <TimezoneDropdown
+            data-qa="tz-enabled"
+            value="America/New_York"
+            onChange={() => {}}
+          />
+        </FormField>
+      </Flex>
+      <Flex width="300px">
+        <FormField label="Timezone" description="Locked by tenant policy.">
+          <TimezoneDropdown
+            disabled
+            data-qa="tz-disabled"
+            value="America/New_York"
+            onChange={() => {}}
+          />
+        </FormField>
+      </Flex>
+    </Flex>
+  );
+}
+```
+
+## No Selection
+
+When `value` is an empty string or an unrecognised timezone key, the dropdown renders without a pre-selected value — useful for optional fields or uninitialized form state.
+
+```tsx preview
+import { useState } from 'react';
+import { TimezoneDropdown, FormField } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  const [tz, setTz] = useState('');
+  return (
+    <Box padding="6" width="360px">
+      <FormField
+        label="Timezone (optional)"
+        description="Leave empty to inherit the team default."
+      >
+        <TimezoneDropdown data-qa="tz-empty" value={tz} onChange={setTz} />
+      </FormField>
+    </Box>
+  );
+}
+```
+
+## Custom Messages
+
+Use the `messages` prop to override every visible string in the component — search placeholder, no-results text, trigger placeholder when nothing is selected, and the "Show more" button label. All fields are optional; unset fields keep their defaults.
+
+```tsx preview
+import { useState } from 'react';
+import { TimezoneDropdown, FormField } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  const [tz, setTz] = useState('');
+  return (
+    <Box padding="6" width="360px">
+      <FormField label="时区" description="选择一个 IANA 时区。">
+        <TimezoneDropdown
+          data-qa="tz-custom-messages"
+          value={tz}
+          onChange={setTz}
+          messages={{
+            placeholder: 'Choose a timezone…',
+            searchPlaceholder: 'Type to filter',
+            noResults: 'Nothing matched your search',
+            showMore: 'Load more timezones',
+          }}
+        />
+      </FormField>
+    </Box>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                       | Default              | Description                                            |
+| ---------------- | -------------------------- | -------------------- | ------------------------------------------------------ |
+| `value`          | `string`                   | —                    | IANA timezone string (e.g. `'Europe/Lisbon'`)          |
+| `onChange`       | `(value: string) => void`  | —                    | Called with the new timezone string on selection       |
+| `disabled`       | `boolean`                  | `false`              | Disables interaction; the current value is still shown |
+| `messages`       | `TimezoneDropdownMessages` | —                    | Override any visible text string in the component      |
+| `data-qa`        | `string`                   | —                    | QA selector (also prefixes `-search` and `-option-*`)  |
+| `data-component` | `string`                   | `'TimezoneDropdown'` | Component identifier                                   |
+
+### TimezoneDropdownMessages
+
+| Field               | Type     | Default              | Description                                      |
+| ------------------- | -------- | -------------------- | ------------------------------------------------ |
+| `placeholder`       | `string` | `'Select timezone'`  | Shown on the trigger when no value is selected   |
+| `searchPlaceholder` | `string` | `'Search'`           | Placeholder text inside the search input         |
+| `noResults`         | `string` | `'No results found'` | Shown when the search query matches no timezone  |
+| `showMore`          | `string` | `'Show more…'`       | Label on the button that loads additional groups |

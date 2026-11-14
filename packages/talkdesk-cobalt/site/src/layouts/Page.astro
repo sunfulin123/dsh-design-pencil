@@ -1,0 +1,60 @@
+---
+import Sidebar from '../components/Sidebar.astro';
+import '../styles/shell.css';
+import '../styles/content.css';
+const { title = 'Cobalt design library', section = 'Documentation' } = Astro.props;
+---
+<!doctype html>
+<html lang="en" data-type="software" data-scheme="light" data-accent="cobalt" data-mode="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="software" />
+    <meta name="description" content="Talkdesk Cobalt design guidance, React components, runnable examples and page recipes." />
+    <meta name="theme-color" content="#ffffff" />
+    <title>{title} · Cobalt</title>
+    <script is:inline>
+      (() => {
+        let preferences = {};
+        try { preferences = JSON.parse(localStorage.getItem('cobalt-docs-appearance') || '{}') || {}; } catch {}
+        const root = document.documentElement;
+        const mode = ['light', 'dark', 'system'].includes(preferences.mode) ? preferences.mode : 'system';
+        root.dataset.mode = mode;
+        root.dataset.accent = ['cobalt', 'blue', 'green'].includes(preferences.accent) ? preferences.accent : 'cobalt';
+        root.dataset.scheme = mode === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : mode;
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="docs-header">
+      <div class="header-brand">
+        <button class="icon-button menu-toggle" aria-label="Open navigation" aria-controls="docs-sidebar" aria-expanded="false" data-open-menu><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <a class="wordmark" href="/">Talkdesk<span>/</span><strong>Cobalt</strong></a>
+      </div>
+      <div class="header-main">
+        <span class="header-label">Design library</span>
+        <div class="appearance-controls" aria-label="Documentation appearance">
+          <details class="accent-menu"><summary aria-label="Choose accent color"><span class="current-accent"></span><span class="color-label">Color</span></summary><div class="accent-picker" role="group" aria-label="Accent color">
+            <button class="accent-swatch" data-accent-choice="cobalt" aria-label="Cobalt accent" aria-pressed="true" title="Cobalt accent"><span style="background:#6a41d2"></span></button>
+            <button class="accent-swatch" data-accent-choice="blue" aria-label="Blue accent" aria-pressed="false" title="Blue accent"><span style="background:#2563eb"></span></button>
+            <button class="accent-swatch" data-accent-choice="green" aria-label="Green accent" aria-pressed="false" title="Green accent"><span style="background:#087f5b"></span></button>
+          </div></details>
+          <span class="control-divider" aria-hidden="true"></span>
+          <label class="appearance-select"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><span class="sr-only">Color scheme</span><select id="color-scheme" aria-label="Color scheme"><option value="light">Light</option><option value="dark">Dark</option><option value="system">System</option></select></label>
+        </div>
+      </div>
+    </header>
+    <Sidebar />
+    <button class="menu-backdrop" aria-label="Close navigation backdrop" tabindex="-1" hidden></button>
+    <main class="docs-main" id="main-content" tabindex="-1">
+      <div class="reading-area">
+        <div class="breadcrumb"><a href="/">Documentation</a><span aria-hidden="true">/</span><span>{section}</span></div>
+        <slot />
+        <footer class="docs-footer"><span>Talkdesk Cobalt</span><span>Design guidance &amp; runnable React examples</span></footer>
+      </div>
+    </main>
+    <script src="../scripts/docs-shell.ts"></script>
+  </body>
+</html>

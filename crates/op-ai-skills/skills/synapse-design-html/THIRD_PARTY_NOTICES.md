@@ -1,5 +1,7 @@
 # Third-party notices
 
+`templates/cobalt/vendor/workspace-shell/` contains the unmodified published Workspace prototype shell from Talkdesk/cobalt-docs, `ai-docs` revision `6605872cd112c71226fe6df921baac1d6f1f50d8`. `templates/cobalt/source.json` records source paths and SHA-256 hashes. Original source comments and the upstream README are retained. This snapshot is Talkdesk material; this notice does not grant a license to it or to Talkdesk trademarks. Owned adapters apply only when copying into a prototype project; the source checkout and bundled upstream snapshot stay unchanged.
+
 The HTML design skill adapts resources from the user's existing
 `synapse-design-html` skill. The individual references retain their original
 source notes. Their guidance is subject to the active Synapse skill, the user
@@ -32,3 +34,5 @@ notice does not claim that all external resources or trademarks share the
 upstream code licenses. The user's original composite skill did not supply a
 single top-level license or a complete provenance map; retain its source notes
 and review further third-party material before redistributing it.
+
+The runtime `cobalt-reference/` directory contains Talkdesk component and design reference text from the same pinned ai-docs revision, and the referenced documentation images from source revision `589b433ee00187a62e0da360b7215c2699eedac7`. Its `source.json` records hashes, original repository provenance and the owned local workflow entry that replaces upstream checkout instructions. Original reference text and image rights remain with their owners.

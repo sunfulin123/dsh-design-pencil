@@ -1,0 +1,378 @@
+# FormField
+
+A labeled form field that adds a required marker, prefix/suffix decorators, character counter, static description, and validation hints around any input control passed as `children`.
+
+```ts
+import { FormField } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+A complete activity-creation form composed from `FormField` wrappers around every control type WFM ships: text `Input`, `Dropdown`, `DatePicker` + `TimeSelectInput` paired in a single field, a single `Choice` checkbox, a 2-column grid of multi-select `Choice` checkboxes, a horizontal radio group, and a `Textarea` — closed off by a primary/secondary `Button` row. Each row keeps the standard vertical layout: label on top (with the red `*` for required fields) and helper / hint text below the control.
+
+```tsx preview
+import { useState } from 'react';
+import {
+  Button,
+  Choice,
+  DatePicker,
+  Dropdown,
+  FormField,
+  Input,
+  TimeSelectInput,
+  Textarea,
+} from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const zoneOptions = [
+  { label: 'Asia / Shanghai', value: 'asia-shanghai' },
+  { label: 'Europe / Lisbon', value: 'europe-lisbon' },
+  { label: 'America / New York', value: 'america-ny' },
+];
+
+const activityTypes = [
+  { label: 'Online activities', value: 'online' },
+  { label: 'Promotion activities', value: 'promotion' },
+  { label: 'Offline activities', value: 'offline' },
+  { label: 'Simple brand exposure', value: 'brand' },
+];
+
+export default function Demo() {
+  const [name, setName] = useState('');
+  const [zone, setZone] = useState(null);
+  const [date, setDate] = useState(null);
+  const [time, setTime] = useState('');
+  const [instant, setInstant] = useState(false);
+  const [types, setTypes] = useState([]);
+  const [resource, setResource] = useState('sponsor');
+  const [form, setForm] = useState('');
+
+  const toggleType = (value) => {
+    setTypes((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
+  return (
+    <Box padding="4" width="640px">
+      <Flex direction="column" gap="4">
+        <FormField isRequired htmlFor="activity-name" label="Activity name">
+          <Input
+            id="activity-name"
+            value={name}
+            placeholder="Enter activity name"
+            onChange={(e) => setName(e.target.value)}
+            data-qa="activity-name"
+          />
+        </FormField>
+
+        <FormField isRequired label="Activity zone">
+          <Dropdown
+            value={zone}
+            options={zoneOptions}
+            onChange={(v) => setZone(v)}
+            messages={{ placeholder: 'Please select your zone' }}
+            data-qa="activity-zone"
+          />
+        </FormField>
+
+        <FormField isRequired label="Activity time">
+          <Flex alignY="center" gap="2" width="100%">
+            <Box grow>
+              <DatePicker
+                isFullWidth
+                size="medium"
+                value={date}
+                onChange={setDate}
+                placeholder="Pick a date"
+                data-qa="activity-date"
+              />
+            </Box>
+            <Box>—</Box>
+            <Box grow>
+              <TimeSelectInput
+                value={time}
+                size="medium"
+                onChange={setTime}
+                placeholder="Pick a time"
+                data-qa="activity-time"
+              />
+            </Box>
+          </Flex>
+        </FormField>
+
+        <FormField label="Instant delivery">
+          <Choice
+            checked={instant}
+            onChange={setInstant}
+            label="Deliver immediately after creation"
+            data-qa="instant-delivery"
+          />
+        </FormField>
+
+        <FormField label="Activity type">
+          <Box
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              rowGap: 8,
+              columnGap: 24,
+            }}
+          >
+            {activityTypes.map((opt) => (
+              <Choice
+                key={opt.value}
+                checked={types.includes(opt.value)}
+                onChange={() => toggleType(opt.value)}
+                label={opt.label}
+                data-qa={`activity-type-${opt.value}`}
+              />
+            ))}
+          </Box>
+        </FormField>
+
+        <FormField label="Resources">
+          <Flex gap="6">
+            {['sponsor', 'venue'].map((value) => (
+              <Choice
+                key={value}
+                type="radio"
+                name="activity-resource"
+                value={value}
+                checked={resource === value}
+                onChange={() => setResource(value)}
+                label={value === 'sponsor' ? 'Sponsor' : 'Venue'}
+                data-qa={`resource-${value}`}
+              />
+            ))}
+          </Flex>
+        </FormField>
+
+        <FormField
+          label="Activity form"
+          currentInput={form.length}
+          maxInput={200}
+        >
+          <Textarea
+            value={form}
+            placeholder="Describe the activity"
+            rows={4}
+            maxLength={200}
+            onChange={(e) => setForm(e.target.value)}
+            data-qa="activity-form"
+          />
+        </FormField>
+
+        <Flex gap="2">
+          <Button data-qa="create" type="primary" onClick={() => null}>
+            Create
+          </Button>
+          <Button data-qa="cancel" type="secondary" onClick={() => null}>
+            Cancel
+          </Button>
+        </Flex>
+      </Flex>
+    </Box>
+  );
+}
+```
+
+## Required
+
+Set `isRequired` to render a red asterisk next to the label.
+
+```tsx preview
+import { FormField } from '@wfm/ui-components';
+import Input from '@talkdesk/cobalt-react-input';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Box width="320px" padding="4">
+      <FormField
+        isRequired
+        htmlFor="queue-name"
+        label="Queue Name"
+        description="Enter a unique name for this queue"
+      >
+        <Input
+          id="queue-name"
+          placeholder="e.g. Support Team A"
+          size="medium"
+          style={{ width: '100%', padding: '0 8px' }}
+        />
+      </FormField>
+    </Box>
+  );
+}
+```
+
+## Prefix and Suffix
+
+Use `prefix` to prepend a fixed label or icon, and `suffix` to append one. Both accept a string or any React node. The prefix/suffix cells use the `InputGroup.Item` component internally and share the same border as the input.
+
+- `prefix="$"` — renders a currency symbol on the left
+- `suffix=".com"` — renders a domain on the right
+
+```tsx preview
+import { FormField } from '@wfm/ui-components';
+import Input from '@talkdesk/cobalt-react-input';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="6" padding="4" width="320px">
+      <FormField
+        htmlFor="salary"
+        label="Monthly Salary"
+        prefix="$"
+        description="Enter gross monthly salary in USD"
+      >
+        <Input
+          id="salary"
+          placeholder="5000"
+          size="medium"
+          type="number"
+          variation="unstyled"
+          style={{ width: '100%', padding: '0 8px' }}
+        />
+      </FormField>
+
+      <FormField
+        htmlFor="website"
+        label="Website"
+        suffix=".com"
+        description="Enter your subdomain"
+      >
+        <Input
+          id="website"
+          placeholder="my-company"
+          size="medium"
+          variation="unstyled"
+          style={{ width: '100%', padding: '0 8px' }}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Validation States
+
+Use `variation` to apply error or warning styling. The border and label colour change to reflect the state. Use `errorHint` or `warningHint` (not `description`) for validation feedback — they are only rendered when the matching `variation` is active, and automatically gain a leading icon and the corresponding colour.
+
+`description` and a hint prop can coexist: `description` remains in neutral grey at all times, while the hint appears beneath it only when validation is triggered.
+
+- `variation="error"` + `errorHint` — red border, red label, `error_outline` icon, red hint text
+- `variation="warning"` + `warningHint` — amber border, amber label, `warning` icon, amber hint text
+
+```tsx preview
+import { FormField } from '@wfm/ui-components';
+import Input from '@talkdesk/cobalt-react-input';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="6" padding="4" width="320px">
+      <FormField
+        isRequired
+        htmlFor="email-error"
+        label="Email Address"
+        variation="error"
+        description="We will send your confirmation here"
+        errorHint="Please enter a valid email address"
+      >
+        <Input
+          id="email-error"
+          value="not-an-email"
+          size="medium"
+          style={{ width: '100%', padding: '0 8px' }}
+          onChange={() => {}}
+        />
+      </FormField>
+
+      <FormField
+        htmlFor="password-warning"
+        label="Password"
+        variation="warning"
+        warningHint="Password is weak — consider adding numbers and symbols"
+      >
+        <Input
+          id="password-warning"
+          type="password"
+          value="abc123"
+          size="medium"
+          style={{ width: '100%', padding: '0 8px' }}
+          onChange={() => {}}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Character Counter
+
+Pass `currentInput` and `maxInput` together to show a counter tag in the top-right corner of the label row. The tag turns red when `currentInput` exceeds `maxInput`.
+
+- Normal: neutral grey tag showing `current/max`
+- Over limit: red tag, matching `variation="error"` colours
+
+```tsx preview
+import { useState } from 'react';
+import { FormField } from '@wfm/ui-components';
+import Input from '@talkdesk/cobalt-react-input';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const MAX = 50;
+
+export default function Demo() {
+  const [value, setValue] = useState('Hello, World!');
+
+  const isOver = value.length > MAX;
+
+  return (
+    <Flex direction="column" gap="6" padding="4" width="360px">
+      <FormField
+        htmlFor="short-desc"
+        label="Short Description"
+        currentInput={value.length}
+        maxInput={MAX}
+        variation={isOver ? 'error' : undefined}
+        description="Keep it brief"
+        errorHint={isOver ? `Exceeds ${MAX} characters` : undefined}
+      >
+        <Input
+          id="short-desc"
+          value={value}
+          size="medium"
+          style={{ width: '100%', padding: '0 8px' }}
+          onChange={(e) => setValue(e.target.value)}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                   | Default          | Description                                                                      |
+| ---------------- | ---------------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `label`          | `string`               | —                | Label text rendered above the input group                                        |
+| `htmlFor`        | `string`               | —                | Links the label to the inner input via `id`                                      |
+| `children`       | `ReactNode`            | —                | Input control(s) rendered inside the `InputGroup`                                |
+| `isRequired`     | `boolean`              | `false`          | Shows a required asterisk next to the label                                      |
+| `variation`      | `'error' \| 'warning'` | —                | Validation state — applies coloured borders and label                            |
+| `description`    | `string`               | —                | Static helper text always shown below the input in neutral grey. No icon.        |
+| `errorHint`      | `string`               | —                | Error message with `error_outline` icon. Only rendered when `variation="error"`. |
+| `warningHint`    | `string`               | —                | Warning message with `warning` icon. Only rendered when `variation="warning"`.   |
+| `prefix`         | `ReactNode`            | —                | Content prepended to the left of the input (string or node)                      |
+| `suffix`         | `ReactNode`            | —                | Content appended to the right of the input (string or node)                      |
+| `currentInput`   | `number`               | —                | Current character count — requires `maxInput` to show counter                    |
+| `maxInput`       | `number`               | —                | Maximum character count — requires `currentInput`                                |
+| `size`           | `'small' \| 'medium'`  | `'medium'`       | Input group size                                                                 |
+| `data-qa`        | `string`               | —                | QA selector prefix                                                               |
+| `data-component` | `string`               | `'WFMFormField'` | Component identifier                                                             |

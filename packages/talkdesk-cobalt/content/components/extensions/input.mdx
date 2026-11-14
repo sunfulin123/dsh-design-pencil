@@ -1,0 +1,73 @@
+# Input
+
+A naked text-input control built on Cobalt `Input`. For labels, descriptions, hints, and character counters, compose with [`FormField`](/components/formfield) externally.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Input } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The bare input — a controlled value with a `placeholder`. Use inside toolbars, table cells, or any layout where the surrounding UI provides the label.
+
+<Example id="extensions.input.001" />
+
+## With FormField
+
+For labels, helper text, validation messages, and character counters, wrap `Input` in `FormField`. `FormField` owns all surrounding chrome; `Input` owns only the editable control.
+
+<Example id="extensions.input.002" />
+
+## Sizes
+
+`size="small"` (28px) for dense filters / toolbars, `size="medium"` (36px, default) for forms.
+
+<Example id="extensions.input.003" />
+
+## Prefix and Suffix
+
+Pass a string (e.g. `"$"`, `".com"`) or any node (icon, badge, button) to `prefix` / `suffix`. Both render as absolutely-positioned overlays anchored to the input's left and right edges — no `InputGroup`, no extra cells. The input's left/right padding is auto-reserved based on each measured overlay so the value text never overlaps.
+
+<Example id="extensions.input.004" />
+
+## Validation States
+
+Set the same `variation` on both `FormField` and `Input` — `FormField` uses it to gate which hint row to render (`errorHint` for `'error'`, `warningHint` for `'warning'`) and `Input` uses it to colour the border.
+
+<Example id="extensions.input.005" />
+
+## Disabled and Read-only
+
+`disabled` blocks all interaction and greys out the input; `readOnly` keeps the value selectable but prevents editing — use it for derived/computed values.
+
+<Example id="extensions.input.006" />
+
+## Props
+
+| Prop             | Type                                         | Default      | Description                                                                       |
+| ---------------- | -------------------------------------------- | ------------ | --------------------------------------------------------------------------------- |
+| `value`          | `string \| number`                           | —            | Controlled input value                                                            |
+| `onChange`       | `(e: ChangeEvent<HTMLInputElement>) => void` | —            | Native onChange — read `e.target.value`                                           |
+| `type`           | `InputType`                                  | `'text'`     | Native input type — `text`, `search`, `email`, `number`, `password`, `tel`, `url` |
+| `size`           | `'small' \| 'medium'`                        | `'medium'`   | Input height — `small` (~28px) for toolbars, `medium` (~36px) for forms           |
+| `variation`      | `'error' \| 'warning'`                       | —            | Validation state — colours the border. Pair with `FormField` for the hint row     |
+| `textAlign`      | `'left' \| 'center' \| 'right'`              | `'left'`     | Text alignment of the input contents                                              |
+| `hasNoArrows`    | `boolean`                                    | `false`      | Hide the spinner buttons on `type="number"`                                       |
+| `placeholder`    | `string`                                     | —            | Placeholder text                                                                  |
+| `disabled`       | `boolean`                                    | `false`      | Disables interaction                                                              |
+| `readOnly`       | `boolean`                                    | `false`      | Marks the input as read-only                                                      |
+| `name`           | `string`                                     | —            | Native `name` attribute                                                           |
+| `autoFocus`      | `boolean`                                    | `false`      | Focus the input on mount                                                          |
+| `maxLength`      | `number`                                     | —            | Native `maxLength` — pair with `FormField`'s `currentInput` to render the counter |
+| `id`             | `string`                                     | —            | Native input id — pass to link an external `FormField` / `<Label htmlFor>`        |
+| `forwardedRef`   | `Ref<HTMLInputElement>`                      | —            | Ref forwarded to the underlying `<input>`                                         |
+| `onBlur`         | `FocusEventHandler<HTMLInputElement>`        | —            | Native onBlur                                                                     |
+| `onFocus`        | `FocusEventHandler<HTMLInputElement>`        | —            | Native onFocus                                                                    |
+| `onKeyDown`      | `KeyboardEventHandler<HTMLInputElement>`     | —            | Native onKeyDown                                                                  |
+| `prefix`         | `ReactNode`                                  | —            | Absolutely-positioned overlay anchored to the input's left edge                   |
+| `suffix`         | `ReactNode`                                  | —            | Absolutely-positioned overlay anchored to the input's right edge                  |
+| `isFullWidth`    | `boolean`                                    | `false`      | Stretch the wrapper to fill its container                                         |
+| `data-qa`        | `string`                                     | —            | QA selector                                                                       |
+| `data-component` | `string`                                     | `'WFMInput'` | Component identifier                                                              |

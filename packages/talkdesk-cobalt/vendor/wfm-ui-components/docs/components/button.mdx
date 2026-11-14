@@ -1,0 +1,312 @@
+# Button
+
+A merged button component combining Cobalt `Button` and `StatefulButton` — supports all standard intents (primary / secondary / danger / …) plus an optional async `state` for loading, success, and error feedback.
+
+```ts
+import { Button } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The default `type` is `'primary'` and the default `size` is `'medium'`. When no `state` is set, the button behaves exactly like a regular Cobalt `Button`.
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex gap="2">
+      <Button onClick={() => alert('Clicked')}>Primary</Button>
+      <Button type="secondary">Secondary</Button>
+      <Button type="danger">Delete</Button>
+    </Flex>
+  );
+}
+```
+
+## Type & Variation
+
+`type` controls the colour intent. `variation="outline"` swaps the solid fill for an outlined look; `variation="transparent"` removes the background entirely (useful for icon-only or in-row actions).
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Flex gap="2">
+        <Button type="primary">Solid</Button>
+        <Button type="primary" variation="outline">
+          Outline
+        </Button>
+        <Button type="primary" variation="transparent">
+          Transparent
+        </Button>
+      </Flex>
+      <Flex gap="2">
+        <Button type="success">Success</Button>
+        <Button type="warning">Warning</Button>
+        <Button type="info">Info</Button>
+        <Button type="feature">Feature</Button>
+      </Flex>
+    </Flex>
+  );
+}
+```
+
+## Size & Shape
+
+`size` accepts `'tiny' | 'small' | 'medium'`. `shape="full-width"` stretches the button to fill its parent — handy for forms and side-panel footers. `shape="compact"` shrinks horizontal padding for icon-only buttons.
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="3">
+      <Flex alignY="center" gap="2">
+        <Button size="tiny">Tiny</Button>
+        <Button size="small">Small</Button>
+        <Button size="medium">Medium</Button>
+      </Flex>
+      <Box width="320px">
+        <Button shape="full-width">Full-width inside 320px</Button>
+      </Box>
+    </Flex>
+  );
+}
+```
+
+## Async State
+
+Pass `state` to flip the button into a loading, success, or error mode. Click events are ignored while a state is active. Use `'inline-loading'` inside footers / table rows where the spinner should stay compact, and `'loading'` for standalone primary CTAs.
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex gap="2">
+      <Button state="loading">loading</Button>
+      <Button state="inline-loading">inline-loading</Button>
+      <Button state="success" type="success">
+        success
+      </Button>
+      <Button state="error" type="danger">
+        error
+      </Button>
+    </Flex>
+  );
+}
+```
+
+## Icon + Label
+
+Pass `iconName` to render a Cobalt icon next to the label — the canonical "icon button" combo. `iconPosition="end"` flips it to the right; `iconSize` overrides the default size (which scales with `size`). Omit `children` plus add `shape="compact"` for an icon-only button (remember `aria-label` for accessibility).
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Flex gap="2" alignY="center">
+        <Button iconName="add" type="primary">
+          Create
+        </Button>
+        <Button iconName="filter_list" type="secondary">
+          Filters
+        </Button>
+        <Button iconName="chevron_right" iconPosition="end" type="secondary">
+          Next
+        </Button>
+        <Button iconName="trash" type="danger" variation="outline">
+          Delete
+        </Button>
+      </Flex>
+      <Flex gap="2" alignY="center">
+        <Button
+          iconName="chevron_left"
+          shape="compact"
+          type="secondary"
+          aria-label="Previous"
+        />
+        <Button
+          iconName="chevron_right"
+          shape="compact"
+          type="secondary"
+          aria-label="Next"
+        />
+        <Button
+          iconName="more_horiz"
+          shape="compact"
+          type="secondary"
+          variation="transparent"
+          aria-label="More"
+        />
+      </Flex>
+    </Flex>
+  );
+}
+```
+
+## Tooltip
+
+Wrap any button with a Cobalt `Tooltip` by passing `tooltip`. Use a string for a simple label, or an object for full control over `position`, `variation`, and rich `content`. The tooltip default position is `PositionCenterTop`. Hover any button below to see it.
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+import {
+  PositionRightCenter,
+  PositionCenterBottom,
+} from '@talkdesk/cobalt-marketplace-react-tooltip';
+
+export default function Demo() {
+  return (
+    <Flex gap="3" alignY="center">
+      <Button tooltip="Save changes" type="primary">
+        Save
+      </Button>
+      <Button
+        tooltip={{ label: 'Edit row', position: PositionRightCenter }}
+        shape="compact"
+        type="secondary"
+        variation="transparent"
+        aria-label="Edit"
+      >
+        <Icon name="edit" size="tiny" />
+      </Button>
+      <Button
+        tooltip={{
+          label: 'Delete — cannot be undone',
+          variation: 'error',
+          position: PositionCenterBottom,
+        }}
+        shape="compact"
+        type="danger"
+        variation="transparent"
+        aria-label="Delete"
+      >
+        <Icon name="trash" size="tiny" />
+      </Button>
+    </Flex>
+  );
+}
+```
+
+### Tooltip on a disabled button
+
+Native `<button disabled>` swallows pointer events, so a Tooltip placed directly on it will never appear. The WFM `Button` works around this automatically: when `disabled` is `true` and `tooltip` is set, the button is wrapped in an inline-block hover catcher so the tooltip still fires while the button stays un-clickable. Useful for explaining _why_ an action is disabled.
+
+You can also independently silence the tooltip itself by passing `tooltip={{ label, disabled: true }}` — handy when you want to keep the same render path but suppress the popover (e.g. on touch devices, or when a parent already shows guidance).
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex gap="3" alignY="center">
+      <Button disabled tooltip="You don't have permission to save">
+        Save
+      </Button>
+      <Button
+        disabled
+        tooltip={{ label: 'Tooltip is suppressed', disabled: true }}
+        type="secondary"
+      >
+        Hover me — no tooltip
+      </Button>
+    </Flex>
+  );
+}
+```
+
+## Disabled
+
+`disabled` greys out the button and blocks clicks. A button with an active `state` is also un-clickable, regardless of `disabled`.
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex gap="2">
+      <Button disabled>Disabled primary</Button>
+      <Button disabled type="secondary">
+        Disabled secondary
+      </Button>
+      <Button disabled type="danger" variation="outline">
+        Disabled danger outline
+      </Button>
+    </Flex>
+  );
+}
+```
+
+## Form Submit
+
+`htmlType="submit"` makes the button submit its enclosing `<form>`. Default is `'button'` so accidental form submissions don't happen when you drop a button into a form.
+
+```tsx preview
+import { Button } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        alert('Submitted');
+      }}
+    >
+      <Flex gap="2">
+        <Button htmlType="submit">Submit</Button>
+        <Button htmlType="reset" type="secondary">
+          Reset
+        </Button>
+      </Flex>
+    </form>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                                                                                                   | Default       | Description                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
+| `children`       | `ReactNode`                                                                                                            | —             | Button label                                                                                            |
+| `type`           | `'primary' \| 'secondary' \| 'info' \| 'danger' \| 'warning' \| 'success' \| 'feature' \| 'mono-dark' \| 'mono-light'` | `'primary'`   | Colour intent                                                                                           |
+| `variation`      | `'outline' \| 'transparent'`                                                                                           | —             | Style variation. Omit for the default solid look                                                        |
+| `size`           | `'tiny' \| 'small' \| 'medium'`                                                                                        | `'medium'`    | Button size                                                                                             |
+| `shape`          | `'full-width' \| 'compact'`                                                                                            | —             | `'full-width'` fills the parent; `'compact'` shrinks horizontal padding                                 |
+| `state`          | `'loading' \| 'inline-loading' \| 'success' \| 'error'`                                                                | —             | Async state. Adds a spinner / success / error overlay and blocks clicks                                 |
+| `disabled`       | `boolean`                                                                                                              | `false`       | Disables the button                                                                                     |
+| `onClick`        | `MouseEventHandler<HTMLButtonElement>`                                                                                 | —             | Click handler                                                                                           |
+| `htmlType`       | `'button' \| 'submit' \| 'reset'`                                                                                      | `'button'`    | Native `<button type>` attribute                                                                        |
+| `forwardedRef`   | `Ref<HTMLButtonElement>`                                                                                               | —             | Ref forwarded to the underlying `<button>`                                                              |
+| `tooltip`        | `ButtonTooltip`                                                                                                        | —             | Wraps the button in a Cobalt `Tooltip`. String = label only; object = full Cobalt `TooltipProps`        |
+| `iconName`       | `IconName`                                                                                                             | —             | Cobalt icon name. When set, an `<Icon>` is rendered next to the children — see the Icon + Label section |
+| `iconPosition`   | `'start' \| 'end'`                                                                                                     | `'start'`     | Where the icon sits relative to the children                                                            |
+| `iconSize`       | `ButtonIconSize`                                                                                                       | auto          | Icon size override. Defaults to `'tiny'` for `size="tiny"`, `'small'` otherwise                         |
+| `aria-label`     | `string`                                                                                                               | —             | Accessibility label, required for icon-only buttons                                                     |
+| `data-qa`        | `string`                                                                                                               | —             | QA selector                                                                                             |
+| `data-component` | `string`                                                                                                               | `'WFMButton'` | Component identifier                                                                                    |
+
+### `ButtonTooltip`
+
+| Form               | Meaning                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `string`           | Renders a plain-label tooltip at `PositionCenterTop`. Equivalent to `{ label, position: PositionCenterTop }`.                                                       |
+| `TooltipProps` obj | Forwarded directly to Cobalt `Tooltip`. Override `position`, `variation`, `content` (rich), `disabled` (suppress the tooltip independent of the button), `autoGap`. |
+
+> **Disabled buttons:** when the `Button` itself is `disabled`, the tooltip still appears on hover (the button is automatically wrapped in a hover catcher). To silence the tooltip, pass `tooltip={{ label, disabled: true }}`.

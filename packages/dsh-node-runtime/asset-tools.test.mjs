@@ -254,21 +254,29 @@ test('asset conflicts expose machine-readable errors over MCP and the shared API
 });
 
 
-test('all 84 DESIGN.md guides ship as immutable builtins beside Cobalt and templates are absent', async (t) => {
+test('all discovered DESIGN.md guides ship as immutable builtins beside Cobalt and templates are absent', async (t) => {
   const { host } = await fixture(t);
+  const { discoverStyles, stylesRoot } = await import('../design-data/tools/catalog.mjs');
+  const manifest = await discoverStyles();
   const list = await call(host, 'list_style_guides', { source: 'builtin', limit: 100 });
   assert.equal(list.isError, false, JSON.stringify(list));
-  assert.equal(list.structuredContent.count, 85);
-  const guides = list.structuredContent.guides;
+  assert.equal(list.structuredContent.count, manifest.length);
+  const guides = [...list.structuredContent.guides];
+  let next = list.structuredContent.nextOffset;
+  while (next !== null) {
+    const page = await call(host, 'list_style_guides', { source: 'builtin', limit: 100, offset: next });
+    assert.equal(page.isError, false);
+    guides.push(...page.structuredContent.guides);
+    next = page.structuredContent.nextOffset;
+  }
   assert.equal(guides[0].id, 'talkdesk-cobalt');
-  assert.equal(guides.filter((g) => g.id.startsWith('design-md:')).length, 84);
+  assert.equal(guides.filter((g) => g.id.startsWith('design-md:')).length, (await discoverStyles()).filter(g => g.id.startsWith('design-md:')).length);
   assert.ok(guides.every((g) => typeof g.category === 'string' && g.category.length > 0));
   assert.ok(guides.every((g) => /^[a-f0-9]{64}$/.test(g.contentHash)));
   assert.ok(guides.every((g) => g.isUser === false));
   assert.ok(!guides.some((g) => g.id === 'design-md:talkdesk'));
   const { readFile } = await import('node:fs/promises');
-  const manifestUrl = new URL('../../crates/op-ai-skills/skills/style-guides/manifest.json', import.meta.url);
-  const manifest = JSON.parse(await readFile(manifestUrl, 'utf8'));
+  const manifestUrl = new URL('file://' + stylesRoot + '/manifest.json');
   for (const entry of manifest) {
     const guide = await call(host, 'get_style_guide', { id: entry.id });
     assert.equal(guide.isError, false, entry.id);

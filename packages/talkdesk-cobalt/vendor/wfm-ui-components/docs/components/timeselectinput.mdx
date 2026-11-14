@@ -1,0 +1,174 @@
+# TimeSelectInput
+
+A compact time-picker control that renders adjacent hours and minutes inputs with an optional AM/PM toggle, expressing its value as total minutes from midnight.
+
+```ts
+import { TimeSelectInput, FormField } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The `value` prop is total minutes from midnight (0–1439). `onChange` fires with the updated total whenever any field changes. The default mode is 12-hour with an AM/PM toggle. Wrap the control in a `FormField` to add a label and optional helper text.
+
+```tsx preview
+import { useState } from 'react';
+import { TimeSelectInput, FormField, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState(540); // 09:00 AM
+
+  const hours = Math.floor(value / 60);
+  const mins = value % 60;
+
+  return (
+    <Flex direction="column" gap="4" padding="6" width="240px">
+      <FormField label="Start time" description="Select the shift start time.">
+        <TimeSelectInput value={value} onChange={setValue} />
+      </FormField>
+      <Typography variant="caption">
+        Total minutes: {value} ({String(hours).padStart(2, '0')}:
+        {String(mins).padStart(2, '0')})
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## 24-Hour Mode
+
+Set `format24H` to `true` to display a plain HH:MM input without the AM/PM toggle. Use `minHour` and `maxHour` to constrain the allowed hour range in this mode.
+
+```tsx preview
+import { useState } from 'react';
+import { TimeSelectInput, FormField, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState(870); // 14:30
+
+  return (
+    <Flex direction="column" gap="4" padding="6" width="200px">
+      <FormField label="Departure time">
+        <TimeSelectInput format24H value={value} onChange={setValue} />
+      </FormField>
+      <Typography variant="caption">
+        {Math.floor(value / 60)}h {value % 60}m from midnight
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Disabled State
+
+Set `isDisabled` to disable all fields and the AM/PM toggle at once. Use `isMinutesDisabled` to disable only the minutes field while keeping hours and meridian editable.
+
+```tsx preview
+import { TimeSelectInput, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="6" width="240px">
+      <FormField label="Fully disabled">
+        <TimeSelectInput isDisabled value={600} onChange={() => {}} />
+      </FormField>
+      <FormField label="Minutes disabled">
+        <TimeSelectInput isMinutesDisabled value={720} onChange={() => {}} />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Custom Labels (messages)
+
+Override the AM/PM labels via the `messages` prop — useful for localisation.
+
+```tsx preview
+import { useState } from 'react';
+import { TimeSelectInput, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState(480);
+
+  return (
+    <Flex padding="6" width="240px">
+      <FormField label="开始时间">
+        <TimeSelectInput
+          value={value}
+          messages={{ am: '上午', pm: '下午' }}
+          onChange={setValue}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Outline
+
+Set `isOutline` to `true` to render a border around the control. Use this when `TimeSelectInput` is placed outside a `FormField`'s `InputGroup` — for example, inline in a table cell or toolbar — and needs a visible input boundary.
+
+```tsx preview
+import { useState } from 'react';
+import { TimeSelectInput } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [value, setValue] = useState(540);
+
+  return (
+    <Flex direction="column" gap="4" padding="6" width="200px">
+      <TimeSelectInput isOutline value={value} onChange={setValue} />
+      <TimeSelectInput isOutline format24H value={value} onChange={setValue} />
+    </Flex>
+  );
+}
+```
+
+## Size
+
+Matches Cobalt input sizing. Use `'medium'` (default, 40px) when paired with other medium-sized inputs such as `DatePicker` or the standard `Input` / `Dropdown`. Use `'small'` (32px) for compact contexts like table cells.
+
+```tsx preview
+import { TimeSelectInput } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="6" width="240px">
+      <TimeSelectInput size="small" value={540} onChange={() => {}} />
+      <TimeSelectInput size="medium" value={540} onChange={() => {}} />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop                | Type                      | Default                | Description                                                     |
+| ------------------- | ------------------------- | ---------------------- | --------------------------------------------------------------- |
+| `value`             | `number`                  | `0`                    | Total minutes from midnight (0–1439)                            |
+| `onChange`          | `(total: number) => void` | —                      | Called with the new total-minutes value on any change           |
+| `format24H`         | `boolean`                 | `false`                | Use 24-hour mode; hides the AM/PM toggle                        |
+| `maxHour`           | `number`                  | `23`                   | Maximum hour allowed in 24H mode                                |
+| `minHour`           | `number`                  | `0`                    | Minimum hour allowed in 24H mode                                |
+| `isDisabled`        | `boolean`                 | `false`                | Disables all fields                                             |
+| `isMinutesDisabled` | `boolean`                 | `false`                | Disables only the minutes field                                 |
+| `isOutline`         | `boolean`                 | `true`                 | Renders a border around the control                             |
+| `size`              | `'small' \| 'medium'`     | `'medium'`             | Control height — `small` = 32px, `medium` = 40px                |
+| `onBlur`            | `() => void`              | —                      | Called when the control loses focus                             |
+| `forwardedRef`      | `RefObject<HTMLInput>`    | —                      | Forwarded to the hours input element                            |
+| `messages`          | `TimeSelectInputMessages` | —                      | Override user-visible labels — see table below                  |
+| `data-qa`           | `string`                  | —                      | QA selector prefix. Suffixes: `-hours`, `-minutes`, `-meridian` |
+| `data-component`    | `string`                  | `'WFMTimeSelectInput'` | Component identifier                                            |
+
+## TimeSelectInputMessages
+
+| Field | Type     | Default | Description |
+| ----- | -------- | ------- | ----------- |
+| `am`  | `string` | `'AM'`  | AM label    |
+| `pm`  | `string` | `'PM'`  | PM label    |

@@ -1,0 +1,231 @@
+# Input
+
+A naked text-input control built on Cobalt `Input`. For labels, descriptions, hints, and character counters, compose with [`FormField`](/components/formfield) externally.
+
+```ts
+import { Input } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The bare input — a controlled value with a `placeholder`. Use inside toolbars, table cells, or any layout where the surrounding UI provides the label.
+
+```tsx preview
+import { useState } from 'react';
+import { Input } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  const [value, setValue] = useState('');
+
+  return (
+    <Box style={{ width: 280 }}>
+      <Input
+        value={value}
+        placeholder="Search agents"
+        onChange={(e) => setValue(e.target.value)}
+      />
+    </Box>
+  );
+}
+```
+
+## With FormField
+
+For labels, helper text, validation messages, and character counters, wrap `Input` in `FormField`. `FormField` owns all surrounding chrome; `Input` owns only the editable control.
+
+```tsx preview
+import { useState } from 'react';
+import { Input, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('Workforce planner based in Lisbon.');
+
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <FormField
+        isRequired
+        label="Full name"
+        description="Shown to other team members."
+      >
+        <Input
+          isFullWidth
+          value={name}
+          placeholder="Jane Doe"
+          onChange={(e) => setName(e.target.value)}
+        />
+      </FormField>
+      <FormField label="Short bio" maxLength={60} currentInput={bio.length}>
+        <Input
+          isFullWidth
+          maxLength={60}
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Sizes
+
+`size="small"` (28px) for dense filters / toolbars, `size="medium"` (36px, default) for forms.
+
+```tsx preview
+import { Input } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={3} style={{ width: 280 }}>
+      <Input size="small" placeholder="Small (toolbar)" />
+      <Input size="medium" placeholder="Medium (form)" />
+    </Flex>
+  );
+}
+```
+
+## Prefix and Suffix
+
+Pass a string (e.g. `"$"`, `".com"`) or any node (icon, badge, button) to `prefix` / `suffix`. Both render as absolutely-positioned overlays anchored to the input's left and right edges — no `InputGroup`, no extra cells. The input's left/right padding is auto-reserved based on each measured overlay so the value text never overlaps.
+
+```tsx preview
+import { useState } from 'react';
+import { Input } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+
+export default function Demo() {
+  const [amount, setAmount] = useState('');
+  const [domain, setDomain] = useState('');
+  const [search, setSearch] = useState('');
+
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <Input
+        isFullWidth
+        type="number"
+        prefix="$"
+        suffix="USD"
+        value={amount}
+        placeholder="0.00"
+        onChange={(e) => setAmount(e.target.value)}
+      />
+      <Input
+        isFullWidth
+        suffix=".talkdesk.com"
+        value={domain}
+        placeholder="my-team"
+        onChange={(e) => setDomain(e.target.value)}
+      />
+      <Input
+        isFullWidth
+        type="search"
+        prefix={<Icon name="search" size="tiny" />}
+        value={search}
+        placeholder="Search by agent"
+        onChange={(e) => setSearch(e.target.value)}
+      />
+    </Flex>
+  );
+}
+```
+
+## Validation States
+
+Set the same `variation` on both `FormField` and `Input` — `FormField` uses it to gate which hint row to render (`errorHint` for `'error'`, `warningHint` for `'warning'`) and `Input` uses it to colour the border.
+
+```tsx preview
+import { Input, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <FormField
+        label="Email"
+        variation="error"
+        errorHint="Enter a valid email address."
+      >
+        <Input
+          isFullWidth
+          value="not-an-email"
+          variation="error"
+          onChange={() => null}
+        />
+      </FormField>
+      <FormField
+        label="Display name"
+        variation="warning"
+        warningHint="Trailing whitespace will be trimmed on save."
+      >
+        <Input
+          isFullWidth
+          value="Jane "
+          variation="warning"
+          onChange={() => null}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Disabled and Read-only
+
+`disabled` blocks all interaction and greys out the input; `readOnly` keeps the value selectable but prevents editing — use it for derived/computed values.
+
+```tsx preview
+import { Input } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <Input
+        isFullWidth
+        disabled
+        value="td-prod-eu-west-1"
+        onChange={() => null}
+      />
+      <Input
+        isFullWidth
+        readOnly
+        value="forecast-2026-q2"
+        onChange={() => null}
+      />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                         | Default      | Description                                                                       |
+| ---------------- | -------------------------------------------- | ------------ | --------------------------------------------------------------------------------- |
+| `value`          | `string \| number`                           | —            | Controlled input value                                                            |
+| `onChange`       | `(e: ChangeEvent<HTMLInputElement>) => void` | —            | Native onChange — read `e.target.value`                                           |
+| `type`           | `InputType`                                  | `'text'`     | Native input type — `text`, `search`, `email`, `number`, `password`, `tel`, `url` |
+| `size`           | `'small' \| 'medium'`                        | `'medium'`   | Input height — `small` (~28px) for toolbars, `medium` (~36px) for forms           |
+| `variation`      | `'error' \| 'warning'`                       | —            | Validation state — colours the border. Pair with `FormField` for the hint row     |
+| `textAlign`      | `'left' \| 'center' \| 'right'`              | `'left'`     | Text alignment of the input contents                                              |
+| `hasNoArrows`    | `boolean`                                    | `false`      | Hide the spinner buttons on `type="number"`                                       |
+| `placeholder`    | `string`                                     | —            | Placeholder text                                                                  |
+| `disabled`       | `boolean`                                    | `false`      | Disables interaction                                                              |
+| `readOnly`       | `boolean`                                    | `false`      | Marks the input as read-only                                                      |
+| `name`           | `string`                                     | —            | Native `name` attribute                                                           |
+| `autoFocus`      | `boolean`                                    | `false`      | Focus the input on mount                                                          |
+| `maxLength`      | `number`                                     | —            | Native `maxLength` — pair with `FormField`'s `currentInput` to render the counter |
+| `id`             | `string`                                     | —            | Native input id — pass to link an external `FormField` / `<Label htmlFor>`        |
+| `forwardedRef`   | `Ref<HTMLInputElement>`                      | —            | Ref forwarded to the underlying `<input>`                                         |
+| `onBlur`         | `FocusEventHandler<HTMLInputElement>`        | —            | Native onBlur                                                                     |
+| `onFocus`        | `FocusEventHandler<HTMLInputElement>`        | —            | Native onFocus                                                                    |
+| `onKeyDown`      | `KeyboardEventHandler<HTMLInputElement>`     | —            | Native onKeyDown                                                                  |
+| `prefix`         | `ReactNode`                                  | —            | Absolutely-positioned overlay anchored to the input's left edge                   |
+| `suffix`         | `ReactNode`                                  | —            | Absolutely-positioned overlay anchored to the input's right edge                  |
+| `isFullWidth`    | `boolean`                                    | `false`      | Stretch the wrapper to fill its container                                         |
+| `data-qa`        | `string`                                     | —            | QA selector                                                                       |
+| `data-component` | `string`                                     | `'WFMInput'` | Component identifier                                                              |

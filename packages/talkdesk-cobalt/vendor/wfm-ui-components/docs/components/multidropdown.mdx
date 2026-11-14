@@ -1,0 +1,394 @@
+# MultiDropdown
+
+A multi-select dropdown that renders a list of options as toggleable rows and shows the selection as removable tags in the trigger — with support for fully customisable option rows via per-option or global render functions.
+
+```ts
+import { MultiDropdown } from '@wfm/ui-components';
+import type {
+  MultiDropdownOption,
+  MultiDropdownOptionValue,
+  MultiDropdownOptionRenderContext,
+  MultiDropdownMessages,
+} from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+Pass `options`, the controlled `value` array, and an `onChange` handler. Each option renders as a checkbox row; selecting one adds it to the array passed back to `onChange`.
+
+```tsx preview
+import { useState } from 'react';
+import { MultiDropdown } from '@wfm/ui-components';
+
+const OPTIONS = [
+  { value: 'us', label: 'United States' },
+  { value: 'uk', label: 'United Kingdom' },
+  { value: 'de', label: 'Germany' },
+  { value: 'fr', label: 'France' },
+  { value: 'es', label: 'Spain' },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState(['us']);
+
+  return (
+    <MultiDropdown
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      data-qa="basic-multi-dropdown"
+    />
+  );
+}
+```
+
+## Dismissible Tags & Max Visible
+
+Set `dismissValues` to let users remove tags directly from the trigger, and `maxVisibleValues` to collapse extras into a `+N` summary chip.
+
+```tsx preview
+import { useState } from 'react';
+import { MultiDropdown } from '@wfm/ui-components';
+
+const OPTIONS = Array.from({ length: 8 }, (_, i) => ({
+  value: `team-${i + 1}`,
+  label: `Team ${i + 1}`,
+}));
+
+export default function Demo() {
+  const [value, setValue] = useState(['team-1', 'team-2', 'team-3', 'team-4']);
+
+  return (
+    <MultiDropdown
+      dismissValues
+      maxVisibleValues={2}
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      messages={{ placeholder: 'Pick teams' }}
+      data-qa="dismissible-multi-dropdown"
+    />
+  );
+}
+```
+
+## Searchable + Select All
+
+Set `searchable` for a built-in client-side filter, and `renderSelectAll` to add a "Select all" row at the top of the list. Override the row label via `messages.selectAll`.
+
+```tsx preview
+import { useState } from 'react';
+import { MultiDropdown } from '@wfm/ui-components';
+
+const OPTIONS = Array.from({ length: 12 }, (_, i) => ({
+  value: `q-${i + 1}`,
+  label: `Queue ${i + 1}`,
+}));
+
+export default function Demo() {
+  const [value, setValue] = useState([]);
+
+  return (
+    <MultiDropdown
+      searchable
+      renderSelectAll
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      messages={{
+        placeholder: 'Pick queues',
+        searchPlaceholder: 'Filter queues…',
+        selectAll: 'Select all queues',
+      }}
+      data-qa="searchable-multi-dropdown"
+    />
+  );
+}
+```
+
+## Option Metadata (Description, Right Slot)
+
+Each option may declare `description`, `right`, or `borderBottom` to enrich the built-in row layout — no custom renderer required.
+
+```tsx preview
+import { useState } from 'react';
+import { MultiDropdown } from '@wfm/ui-components';
+import Tag from '@talkdesk/cobalt-react-tag';
+
+const OPTIONS = [
+  {
+    value: 'admin',
+    label: 'Administrator',
+    description: 'Full access to all settings',
+    right: <Tag color="light-purple">Owner</Tag>,
+  },
+  {
+    value: 'agent',
+    label: 'Agent',
+    description: 'Handle calls and chats',
+  },
+  {
+    value: 'viewer',
+    label: 'Viewer',
+    description: 'Read-only access',
+    disabled: true,
+  },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState(['agent']);
+
+  return (
+    <MultiDropdown
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      data-qa="metadata-multi-dropdown"
+    />
+  );
+}
+```
+
+## Custom Option (Per-Option `render`)
+
+A single option can override its row markup by setting `render`. The renderer receives `{ selected, onToggle }` — call `onToggle()` to add or remove this option from the selection. Use this for one-off custom rows like a "Create new" entry.
+
+```tsx preview
+import { useState } from 'react';
+import { MultiDropdown, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Tag from '@talkdesk/cobalt-react-tag';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+export default function Demo() {
+  const [value, setValue] = useState([]);
+  const theme = useTheme();
+
+  const options = [
+    { value: 'sales', label: 'Sales' },
+    { value: 'support', label: 'Support' },
+    { value: 'billing', label: 'Billing' },
+    {
+      value: '__create__',
+      label: 'Create new tag',
+      render: ({ onToggle }) => (
+        <Box
+          paddingX="3"
+          paddingY="2"
+          style={{ cursor: 'pointer' }}
+          onClick={onToggle}
+        >
+          <Flex alignY="center" gap="2">
+            <Icon color={theme.primary600} name="add" size="tiny" />
+            <Typography variant="body" color={theme.primary600}>
+              Create new tag
+            </Typography>
+            <Tag color="light-purple" size="small">
+              New
+            </Tag>
+          </Flex>
+        </Box>
+      ),
+    },
+  ];
+
+  return (
+    <MultiDropdown
+      value={value}
+      options={options}
+      onChange={setValue}
+      data-qa="custom-option-multi-dropdown"
+    />
+  );
+}
+```
+
+## Custom Option (Global `renderOption`)
+
+Pass a `renderOption` prop to apply the same custom layout to every option. Per-option `render` still takes precedence over the global one. Use this when the entire list shares a non-standard row format such as avatars, swatches, or rich previews.
+
+```tsx preview
+import { useState } from 'react';
+import { MultiDropdown, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Input from '@talkdesk/cobalt-react-input';
+import Label from '@talkdesk/cobalt-react-label';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+const OPTIONS = [
+  { value: 'red', label: 'Red', swatch: '#E74C3C' },
+  { value: 'green', label: 'Green', swatch: '#27AE60' },
+  { value: 'blue', label: 'Blue', swatch: '#2980B9' },
+  { value: 'purple', label: 'Purple', swatch: '#8E44AD' },
+];
+
+export default function Demo() {
+  const [value, setValue] = useState(['green', 'blue']);
+  const theme = useTheme();
+
+  return (
+    <MultiDropdown
+      value={value}
+      options={OPTIONS}
+      onChange={setValue}
+      renderOption={(option, { selected, onToggle }) => (
+        <Box
+          paddingX="3"
+          paddingY="2"
+          backgroundColor={selected ? theme.primarySurface : undefined}
+          style={{ cursor: 'pointer' }}
+          onClick={onToggle}
+        >
+          <Label
+            htmlFor={`swatch-${option.value}`}
+            style={{ display: 'block' }}
+          >
+            <Flex alignY="center" gap="3">
+              <Input
+                checked={selected}
+                id={`swatch-${option.value}`}
+                size="small"
+                type="checkbox"
+                onChange={onToggle}
+              />
+              <Box
+                width="16px"
+                height="16px"
+                backgroundColor={option.swatch}
+                style={{ borderRadius: 4 }}
+              />
+              <Typography variant="body">{option.label}</Typography>
+            </Flex>
+          </Label>
+        </Box>
+      )}
+      data-qa="global-render-multi-dropdown"
+    />
+  );
+}
+```
+
+## Load More (Pagination)
+
+Provide `hasMore` and `onLoadMore` to render a full-width "Load more" button at the bottom of the list. Clicking it does not close the dropdown. Set `isLoadingMore` while the request is in flight to disable the button and swap the label to `messages.loading`.
+
+```tsx preview
+import { useState, useCallback } from 'react';
+import { MultiDropdown } from '@wfm/ui-components';
+
+function fakeApi(page) {
+  return new Promise((resolve) =>
+    setTimeout(
+      () =>
+        resolve(
+          Array.from({ length: 5 }, (_, i) => ({
+            value: `p${page}-${i}`,
+            label: `Page ${page} — Item ${i + 1}`,
+          }))
+        ),
+      600
+    )
+  );
+}
+
+export default function Demo() {
+  const [value, setValue] = useState([]);
+  const [options, setOptions] = useState(
+    Array.from({ length: 5 }, (_, i) => ({
+      value: `p1-${i}`,
+      label: `Page 1 — Item ${i + 1}`,
+    }))
+  );
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const hasMore = page < 4;
+
+  const handleLoadMore = useCallback(async () => {
+    setIsLoadingMore(true);
+    const next = await fakeApi(page + 1);
+    setOptions((prev) => [...prev, ...next]);
+    setPage((p) => p + 1);
+    setIsLoadingMore(false);
+  }, [page]);
+
+  return (
+    <MultiDropdown
+      dismissValues
+      maxVisibleValues={3}
+      value={value}
+      options={options}
+      onChange={setValue}
+      hasMore={hasMore}
+      isLoadingMore={isLoadingMore}
+      onLoadMore={handleLoadMore}
+      messages={{ placeholder: 'Pick items' }}
+      data-qa="paginated-multi-dropdown"
+    />
+  );
+}
+```
+
+## Props
+
+| Prop               | Type                                    | Default           | Description                                                                                                                               |
+| ------------------ | --------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`            | `(string \| number)[]`                  | `[]`              | Currently selected option values                                                                                                          |
+| `options`          | `MultiDropdownOption[]`                 | —                 | List of options to render                                                                                                                 |
+| `onChange`         | `(value: (string \| number)[]) => void` | —                 | Fired with the new selection array whenever an option is toggled                                                                          |
+| `renderOption`     | `(option, ctx) => ReactNode`            | —                 | Global custom renderer applied to every option without its own `render`                                                                   |
+| `searchable`       | `boolean`                               | `false`           | Enables a built-in client-side search filter on `option.label`                                                                            |
+| `onSearch`         | `(query: string) => void`               | —                 | Server-side search callback. When provided, client-side filtering is disabled and the parent must update `options`. Implies `searchable`. |
+| `isSearching`      | `boolean`                               | `false`           | While `true`, swaps the empty-list text to `messages.searching` (use with `onSearch`)                                                     |
+| `hasMore`          | `boolean`                               | `false`           | Renders a full-width "Load more" button at the bottom of the list                                                                         |
+| `isLoadingMore`    | `boolean`                               | `false`           | Disables the load-more button and shows `messages.loading` while a request is in flight                                                   |
+| `onLoadMore`       | `() => void`                            | —                 | Called when the user clicks the load-more button                                                                                          |
+| `renderSelectAll`  | `boolean`                               | `false`           | Renders a "Select all" row at the top of the list                                                                                         |
+| `dismissValues`    | `boolean`                               | `false`           | Allows tags to be removed individually directly from the trigger                                                                          |
+| `maxVisibleValues` | `number`                                | —                 | Max number of selected tags shown in the trigger before collapsing into "+N"                                                              |
+| `inputSize`        | `'small' \| 'medium'`                   | `'medium'`        | Cobalt input and selected-tag size                                                                                                        |
+| `placeholderSize`  | `'small' \| 'medium'`                   | —                 | Override the placeholder text size without changing selected tags                                                                         |
+| `height`           | `CSSProperties['height']`               | —                 | Height of the dropdown trigger                                                                                                            |
+| `className`        | `string`                                | —                 | Class applied to the outer dropdown container                                                                                             |
+| `aria-labelledby`  | `string`                                | —                 | ID of the visible label that names the keyboard-accessible trigger                                                                        |
+| `disabled`         | `boolean`                               | `false`           | Disables interaction                                                                                                                      |
+| `loading`          | `boolean`                               | `false`           | Shows a loading state on the trigger                                                                                                      |
+| `error`            | `boolean`                               | `false`           | Marks the trigger as in an error state                                                                                                    |
+| `messages`         | `MultiDropdownMessages`                 | —                 | Customise visible text strings (see below)                                                                                                |
+| `data-qa`          | `string`                                | —                 | QA selector — also propagated to each option as `${data-qa}-option-${value}`                                                              |
+| `data-component`   | `string`                                | `'MultiDropdown'` | Component identifier                                                                                                                      |
+
+### `MultiDropdownOption`
+
+| Field          | Type                                                   | Default | Description                                                                                                                |
+| -------------- | ------------------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `value`        | `string \| number`                                     | —       | Unique value emitted in the `onChange` array                                                                               |
+| `label`        | `string`                                               | —       | Display label, also used as the tag text in the trigger                                                                    |
+| `disabled`     | `boolean`                                              | `false` | Prevents the option from being toggled                                                                                     |
+| `description`  | `string`                                               | —       | Secondary line shown below the label (built-in renderer only)                                                              |
+| `icon`         | `JSX.Element`                                          | —       | Icon element shown to the left of the label (built-in renderer only)                                                       |
+| `right`        | `ReactNode`                                            | —       | Content rendered to the right of the label, e.g. a `Tag` (built-in renderer only)                                          |
+| `borderBottom` | `boolean`                                              | `false` | Draws a divider below this option (built-in renderer only)                                                                 |
+| `render`       | `(ctx: MultiDropdownOptionRenderContext) => ReactNode` | —       | Per-option custom renderer. Takes precedence over the global `renderOption`. Call `ctx.onToggle()` to add/remove the item. |
+
+### `MultiDropdownOptionRenderContext`
+
+| Field      | Type         | Description                                                              |
+| ---------- | ------------ | ------------------------------------------------------------------------ |
+| `selected` | `boolean`    | Whether this option's value is in the current `value` array              |
+| `onToggle` | `() => void` | Add the option if not selected, remove it if selected — fires `onChange` |
+
+### `MultiDropdownMessages`
+
+| Field               | Type     | Default              | Description                                                                    |
+| ------------------- | -------- | -------------------- | ------------------------------------------------------------------------------ |
+| `placeholder`       | `string` | `'Select options'`   | Trigger placeholder when nothing is selected                                   |
+| `searchPlaceholder` | `string` | `'Search'`           | Search input placeholder                                                       |
+| `noResults`         | `string` | `'No results found'` | Empty state when search has no matches                                         |
+| `selectAll`         | `string` | `'Select all'`       | Label for the "Select all" row (only when `renderSelectAll` is `true`)         |
+| `searching`         | `string` | `'Searching…'`       | Empty state shown while a server-side search is in flight (with `isSearching`) |
+| `loadMore`          | `string` | `'Load more…'`       | Label on the load-more button                                                  |
+| `loading`           | `string` | `'Loading…'`         | Label on the load-more button while `isLoadingMore` is `true`                  |

@@ -25,6 +25,8 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     'skills/synapse-design-html/references/judgement.md',
     'skills/synapse-design-html/references/layout-sections-and-cards.md',
     'skills/synapse-design-html/references/harden-and-edge-cases.md',
+    'cobalt-reference/source.json', 'cobalt-reference/content/registry.json',
+    'cobalt-reference/content/components/core/button/button.md',
     'web-bundle/index.html', 'web-bundle/op_host_web.js',
     'web-bundle/op_host_web_bg.wasm', 'web-bundle/snippets/bridge.js',
     'web-bundle/canvaskit/canvaskit.js', 'web-bundle/canvaskit/canvaskit.wasm',
@@ -73,6 +75,11 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.ok(manifest.files['wasm/design-skill.md'])
   assert.ok(manifest.files['skills/synapse-design-html/scripts/capture-poc.mjs'])
   assert.ok(manifest.files['skills/synapse-design-html/references/judgement.md'])
+  assert.ok(manifest.files['skills/synapse-design-html/cobalt-reference/source.json'])
+  assert.ok(manifest.files['skills/synapse-design-html/cobalt-reference/content/registry.json'])
+  assert.ok(manifest.files['skills/synapse-design-html/cobalt-reference/content/components/core/button/button.md'])
+  assert.ok(manifest.files['skills/synapse-design-html/cobalt-reference/components/extensions/src/react-app-env.d.ts'])
+  assert.ok(manifest.files['skills/synapse-design-html/templates/cobalt/vendor/workspace-shell/theme.ts'])
   assert.ok(manifest.files['color-sampler.mjs'])
   assert.ok(manifest.files['screenshot-renderer.mjs'])
   assert.ok(manifest.files['draft-recovery.mjs'])
@@ -89,7 +96,12 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.ok(manifest.files['node_modules/@jitl/quickjs-ffi-types/dist/index.js'])
   assert.equal(manifest.files['node_modules/quickjs-emscripten-core/dist/index.d.mts'], undefined)
   for (const path of Object.keys(manifest.files)) {
-    assert.doesNotMatch(path, /(?:^|\/)(?:vendor|target)(?:\/|$)|\.test\.|\.d\.ts|build-web|prompt_center|op-host-web-server/)
+    if (path.startsWith('skills/synapse-design-html/')) {
+      // Prototype sources include the pinned shell and CSS module declarations.
+      assert.doesNotMatch(path, /(?:^|\/)(?:node_modules|target|__tests__|test)(?:\/|$)|\.test\./)
+    } else {
+      assert.doesNotMatch(path, /(?:^|\/)(?:vendor|target)(?:\/|$)|\.test\.|\.d\.ts|build-web|prompt_center|op-host-web-server/)
+    }
     if (path.startsWith('node_modules/')) {
       assert.match(path, /^node_modules\/(?:quickjs-emscripten-core|@jitl\/(?:quickjs-wasmfile-release-sync|quickjs-ffi-types))\//)
     }

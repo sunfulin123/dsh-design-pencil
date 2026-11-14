@@ -1,0 +1,54 @@
+# ConfirmModal
+
+A modal dialog component that presents a confirmation prompt with an icon, descriptive content, a cancel button, and a primary action button.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { ConfirmModal } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The `visible` prop controls whether the modal is displayed. `onDismiss` is called when the user clicks the cancel button or the modal overlay, and `onAction` is called when the user clicks the action button.
+
+<Example id="extensions.confirmmodal.001" />
+
+## Icon and Color
+
+Use the `iconName` prop to display a different Cobalt icon, and `iconColor` to override the default icon color.
+
+- `iconName="warning"` — displays a warning icon
+- `iconColor` set to a theme token string — overrides the default `secondary500` color
+
+<Example id="extensions.confirmmodal.002" />
+
+## Loading State
+
+Set `isActionButtonLoading` to `true` to show an inline loading spinner on the action button while an async operation is in progress.
+
+<Example id="extensions.confirmmodal.003" />
+
+## Custom Cancel Text
+
+Use `cancelButtonText` to replace the default "Cancel" label on the dismiss button — useful for localisation or when the context calls for a more specific label such as "Keep" or "Go back".
+
+<Example id="extensions.confirmmodal.004" />
+
+## Props
+
+| Prop                        | Type                                   | Default          | Description                                                                     |
+| --------------------------- | -------------------------------------- | ---------------- | ------------------------------------------------------------------------------- |
+| `visible`                   | `boolean`                              | —                | Controls modal visibility                                                       |
+| `onDismiss`                 | `() => void`                           | —                | Called when cancel or overlay is clicked                                        |
+| `onAction`                  | `() => void`                           | —                | Called when the action button is clicked                                        |
+| `content`                   | `ReactNode`                            | —                | Body content of the modal                                                       |
+| `actionButtonText`          | `string`                               | —                | Label for the action button                                                     |
+| `iconName`                  | `string`                               | `'info_circle'`  | Cobalt icon name displayed at the top                                           |
+| `iconColor`                 | `string`                               | `secondary500`   | Icon color (use `useTheme()` tokens)                                            |
+| `actionButtonType`          | `'primary' \| 'secondary' \| 'danger'` | `'primary'`      | Visual type for the action button                                               |
+| `isActionButtonLoading`     | `boolean`                              | `false`          | Shows inline loading spinner on the action button                               |
+| `isDisabled`                | `boolean`                              | `false`          | Disables the action button                                                      |
+| `cancelButtonText`          | `string`                               | `'Cancel'`       | Label for the cancel button                                                     |
+| `data-qa`                   | `string`                               | —                | QA selector (also derives child element selectors)                              |
+| `data-component`            | `string`                               | `'ConfirmModal'` | Component identifier                                                            |

@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use crate::color::contrast::{on_color, scan_pairs, ContrastReport};
 use crate::color::palettes::{palette_anchors, palette_names, PaletteAnchors, PaletteMode};
 
-pub const STYLE_COUNT: usize = 85;
+/// Number of styles discovered from the build's design-data source.
+pub const STYLE_COUNT: usize = include!(concat!(env!("OUT_DIR"), "/style-count.rs"));
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Fonts {

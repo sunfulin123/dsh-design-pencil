@@ -1,0 +1,92 @@
+# PopupTrigger
+
+A wrapper component that attaches a floating popup panel to any element — wrap a button, icon, link, or any React node as `children` to make it open the popup on click.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { PopupTrigger } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+Wrap any element as `children` and provide `content` for the popup body. The popup opens on click and closes when clicking outside.
+
+<Example id="extensions.popuptrigger.001" />
+
+## Icon Trigger
+
+Any element works as the trigger — including a standalone icon button.
+
+- Left: icon button with a vertical dots icon — opens a simple action menu
+- Right: filter icon — opens a sticky panel (`keepOpen`) for interactive controls
+
+<Example id="extensions.popuptrigger.002" />
+
+## Custom Width
+
+Use `width` to fix the popup panel's width when the content requires a specific layout.
+
+- Left: no `width` — panel sizes to its content
+- Right: `width="280px"` — fixes panel width regardless of content
+
+<Example id="extensions.popuptrigger.003" />
+
+## Keep Open
+
+Set `keepOpen` to prevent the popup from closing when the user clicks inside it — required when the panel contains interactive controls like checkboxes or inputs.
+
+- Left: `keepOpen` — clicking the checkbox inside keeps the popup open
+- Right: default — any click inside closes the popup
+
+<Example id="extensions.popuptrigger.004" />
+
+## Disabled
+
+Set `disabled` to prevent the popup from opening. Also disable the child element manually if it should appear non-interactive.
+
+- Left: enabled — popup opens normally
+- Right: `disabled` — popup is suppressed, child button also gets `disabled`
+
+<Example id="extensions.popuptrigger.005" />
+
+## Popup Position
+
+Use `direction` and `origin` to control where the popup opens. `direction` sets which side of the trigger the popup opens from; `origin` sets which corner of the popup aligns to that anchor. Both accept a `CardinalPoint` (e.g. `'N'`, `'SE'`, `'NW'`).
+
+Default `direction="SE"` / `origin="SW"` opens the popup below-right. Use `direction="N"` / `origin="S"` to open above the trigger.
+
+<Example id="extensions.popuptrigger.006" />
+
+## Content Padding
+
+Use `contentPadding` to override the default `'4'` (16 px) padding inside the popup panel. The value maps to the same `0`–12 spacing tokens used by Cobalt `Box`.
+
+- Left: `contentPadding="2"` — compact, 8 px padding
+- Middle: `contentPadding="4"` — default, 16 px padding
+- Right: `contentPadding="0"` — no padding, content fills the panel edge to edge
+
+<Example id="extensions.popuptrigger.007" />
+
+## Full Width
+
+Set `fullWidth={true}` to stretch the trigger wrapper to the full available container width. Use this when the trigger should behave like a full-width select or dropdown.
+
+<Example id="extensions.popuptrigger.008" />
+
+## Props
+
+| Prop             | Type               | Default          | Description                                              |
+| ---------------- | ------------------ | ---------------- | -------------------------------------------------------- |
+| `children`       | `ReactNode`        | —                | The trigger element — wrapped with the popup click logic |
+| `content`        | `ReactNode`        | —                | Content rendered inside the popup panel                  |
+| `direction`      | `CardinalPoint`    | `'SE'`           | Direction the popup opens from the anchor point          |
+| `origin`         | `CardinalPoint`    | `'SW'`           | Anchor point on the trigger element                      |
+| `size`           | `PopupSize`        | —                | Popup size preset                                        |
+| `width`          | `string \| number` | —                | Custom width for the popup panel                         |
+| `contentPadding` | `Space (0–12)`     | `'4'`            | Padding inside the popup content area                    |
+| `keepOpen`       | `boolean`          | `false`          | Prevent popup from closing when clicking inside it       |
+| `disabled`       | `boolean`          | `false`          | Disables the trigger and prevents the popup from opening |
+| `fullWidth`      | `boolean`          | `false`          | Stretch trigger wrapper to full available width          |
+| `data-qa`        | `string`           | —                | QA selector (also derives `-content` value)              |
+| `data-component` | `string`           | `'PopupTrigger'` | Component identifier                                     |

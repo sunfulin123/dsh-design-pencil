@@ -1,0 +1,74 @@
+# SidePanel
+
+The default and `form` variants retain a row title container. The opt-in
+`participants` variant keeps its column title/subtitle container and dedicated
+spacing and typography; restoring the default layout does not change it.
+
+A slide-in overlay panel with a fixed header, scrollable body, and a `StatefulButton` footer that supports inline loading, success, and error feedback.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { SidePanel } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+Pass `visible` and `onClose` to control the panel. Use `title` for the header heading and `actions` for the footer buttons. The panel body composes a real "Import historical data" form using `Typography` (subtitle + helper notes), `UploadFile` (drop zone with template link), `InteractiveMessage` (info banner), `Choice` (radio + checkbox), `Dropdown`, and `FormField` for label / required / helper composition.
+
+<Example id="extensions.sidepanel.001" />
+
+## Inline Loading State
+
+Set `state="inline-loading"` on an action to show a spinner inside the button during an async save. The `disabled` prop on every action prevents double-submission and locks the form while the request is in flight. Once the operation completes, restore `state` to `undefined`. The body reuses the full `FormField` composition from Basic Usage so users can fill the form, then click Save to simulate a 2-second submit.
+
+<Example id="extensions.sidepanel.002" />
+
+## Scrollable Body
+
+When body content exceeds the panel height, the middle section scrolls independently. The header and footer remain fixed. This example fills the body with many items to demonstrate the scroll behaviour.
+
+<Example id="extensions.sidepanel.003" />
+
+## Sizes
+
+Use `size` to control the panel width. Available values match Cobalt's `Panel` sizes.
+
+- `'small'` — narrow, suited for filter or confirmation panels
+- `'medium'` (default) — standard form or detail panels
+- `'large'` — wide panels for complex workflows
+- `'xlarge'` — maximum width
+
+<Example id="extensions.sidepanel.004" />
+
+## No Footer Actions
+
+Omit `actions` (or pass an empty array) to render the panel without a footer. This is useful for read-only detail panels or panels that manage their own submit logic inside the body.
+
+<Example id="extensions.sidepanel.005" />
+
+## Props
+
+| Prop             | Type                | Default          | Description                                                                     |
+| ---------------- | ------------------- | ---------------- | ------------------------------------------------------------------------------- |
+| `visible`        | `boolean`           | —                | Controls panel visibility                                                       |
+| `title`          | `string`            | —                | Heading text rendered in the fixed header                                       |
+| `onClose`        | `() => void`        | —                | Called when the × button or overlay is clicked                                  |
+| `actions`        | `SidePanelAction[]` | `[]`             | Footer action buttons, rendered right-aligned. Omit to hide the footer entirely |
+| `size`           | `SidePanelSize`     | `'medium'`       | Panel width preset — `'small'`, `'medium'`, `'large'`, or `'xlarge'`            |
+| `children`       | `ReactNode`         | —                | Content rendered in the scrollable body                                         |
+| `data-qa`        | `string`            | —                | QA selector on the Panel element; close button appends `-close`                 |
+| `data-component` | `string`            | `'WFMSidePanel'` | Component identifier                                                            |
+
+## SidePanelAction Type
+
+Each object in the `actions` array is spread onto a `StatefulButton`:
+
+| Prop       | Type                                                    | Default       | Description                                          |
+| ---------- | ------------------------------------------------------- | ------------- | ---------------------------------------------------- |
+| `label`    | `ReactNode`                                             | —             | Button label content                                 |
+| `type`     | `'primary' \| 'secondary' \| 'danger'`                  | `'secondary'` | Cobalt button type                                   |
+| `state`    | `'loading' \| 'inline-loading' \| 'success' \| 'error'` | —             | StatefulButton state — shows spinner / icon in-place |
+| `disabled` | `boolean`                                               | `false`       | Disables the button                                  |
+| `onClick`  | `(e: MouseEvent) => void`                               | —             | Click handler                                        |
+| `data-qa`  | `string`                                                | —             | QA selector for the individual button                |

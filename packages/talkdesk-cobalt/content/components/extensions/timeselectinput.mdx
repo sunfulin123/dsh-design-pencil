@@ -1,0 +1,71 @@
+# TimeSelectInput
+
+A compact time-picker control that renders adjacent hours and minutes inputs with an optional AM/PM toggle, expressing its value as total minutes from midnight.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { TimeSelectInput, FormField } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The `value` prop is total minutes from midnight (0–1439). `onChange` fires with the updated total whenever any field changes. The default mode is 12-hour with an AM/PM toggle. Wrap the control in a `FormField` to add a label and optional helper text.
+
+<Example id="extensions.timeselectinput.001" />
+
+## 24-Hour Mode
+
+Set `format24H` to `true` to display a plain HH:MM input without the AM/PM toggle. Use `minHour` and `maxHour` to constrain the allowed hour range in this mode.
+
+<Example id="extensions.timeselectinput.002" />
+
+## Disabled State
+
+Set `isDisabled` to disable all fields and the AM/PM toggle at once. Use `isMinutesDisabled` to disable only the minutes field while keeping hours and meridian editable.
+
+<Example id="extensions.timeselectinput.003" />
+
+## Custom Labels (messages)
+
+Override the AM/PM labels via the `messages` prop — useful for localisation.
+
+<Example id="extensions.timeselectinput.004" />
+
+## Outline
+
+Set `isOutline` to `true` to render a border around the control. Use this when `TimeSelectInput` is placed outside a `FormField`'s `InputGroup` — for example, inline in a table cell or toolbar — and needs a visible input boundary.
+
+<Example id="extensions.timeselectinput.005" />
+
+## Size
+
+Matches Cobalt input sizing. Use `'medium'` (default, 40px) when paired with other medium-sized inputs such as `DatePicker` or the standard `Input` / `Dropdown`. Use `'small'` (32px) for compact contexts like table cells.
+
+<Example id="extensions.timeselectinput.006" />
+
+## Props
+
+| Prop                | Type                      | Default                | Description                                                     |
+| ------------------- | ------------------------- | ---------------------- | --------------------------------------------------------------- |
+| `value`             | `number`                  | `0`                    | Total minutes from midnight (0–1439)                            |
+| `onChange`          | `(total: number) => void` | —                      | Called with the new total-minutes value on any change           |
+| `format24H`         | `boolean`                 | `false`                | Use 24-hour mode; hides the AM/PM toggle                        |
+| `maxHour`           | `number`                  | `23`                   | Maximum hour allowed in 24H mode                                |
+| `minHour`           | `number`                  | `0`                    | Minimum hour allowed in 24H mode                                |
+| `isDisabled`        | `boolean`                 | `false`                | Disables all fields                                             |
+| `isMinutesDisabled` | `boolean`                 | `false`                | Disables only the minutes field                                 |
+| `isOutline`         | `boolean`                 | `true`                 | Renders a border around the control                             |
+| `size`              | `'small' \| 'medium'`     | `'medium'`             | Control height — `small` = 32px, `medium` = 40px                |
+| `onBlur`            | `() => void`              | —                      | Called when the control loses focus                             |
+| `forwardedRef`      | `RefObject<HTMLInput>`    | —                      | Forwarded to the hours input element                            |
+| `messages`          | `TimeSelectInputMessages` | —                      | Override user-visible labels — see table below                  |
+| `data-qa`           | `string`                  | —                      | QA selector prefix. Suffixes: `-hours`, `-minutes`, `-meridian` |
+| `data-component`    | `string`                  | `'WFMTimeSelectInput'` | Component identifier                                            |
+
+## TimeSelectInputMessages
+
+| Field | Type     | Default | Description |
+| ----- | -------- | ------- | ----------- |
+| `am`  | `string` | `'AM'`  | AM label    |
+| `pm`  | `string` | `'PM'`  | PM label    |

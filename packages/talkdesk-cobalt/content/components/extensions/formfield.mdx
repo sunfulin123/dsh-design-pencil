@@ -1,0 +1,72 @@
+# FormField
+
+A labeled form field that adds a required marker, prefix/suffix decorators, character counter, static description, and validation hints around any input control passed as `children`.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { FormField } from './components/cobalt-extensions';
+```
+
+Prefix and suffix slots reserve a minimum width of 32px (small) or 40px (medium), with 8px horizontal padding and no flex shrinking. The input takes the remaining width. Keep these slots centered when adapting icon or text adornments.
+
+## Basic Usage
+
+A complete activity-creation form composed from `FormField` wrappers around the extension control types: text `Input`, `Dropdown`, `DatePicker` + `TimeSelectInput` paired in a single field, a single `Choice` checkbox, a 2-column grid of multi-select `Choice` checkboxes, a horizontal radio group, and a `Textarea` — closed off by a primary/secondary `Button` row. Each row keeps the standard vertical layout: label on top (with the red `*` for required fields) and helper / hint text below the control.
+
+<Example id="extensions.formfield.001" />
+
+## Required
+
+Set `isRequired` to render a red asterisk next to the label.
+
+<Example id="extensions.formfield.002" />
+
+## Prefix and Suffix
+
+Use `prefix` to prepend a fixed label or icon, and `suffix` to append one. Both accept a string or any React node. The prefix/suffix cells use the `InputGroup.Item` component internally and share the same border as the input.
+
+- `prefix="$"` — renders a currency symbol on the left
+- `suffix=".com"` — renders a domain on the right
+
+<Example id="extensions.formfield.003" />
+
+## Validation States
+
+Use `variation` to apply error or warning styling. The border and label colour change to reflect the state. Use `errorHint` or `warningHint` (not `description`) for validation feedback — they are only rendered when the matching `variation` is active, and automatically gain a leading icon and the corresponding colour.
+
+`description` and a hint prop can coexist: `description` remains in neutral grey at all times, while the hint appears beneath it only when validation is triggered.
+
+- `variation="error"` + `errorHint` — red border, red label, `error_outline` icon, red hint text
+- `variation="warning"` + `warningHint` — amber border, amber label, `warning` icon, amber hint text
+
+<Example id="extensions.formfield.004" />
+
+## Character Counter
+
+Pass `currentInput` and `maxInput` together to show a counter tag in the top-right corner of the label row. The tag turns red when `currentInput` exceeds `maxInput`.
+
+- Normal: neutral grey tag showing `current/max`
+- Over limit: red tag, matching `variation="error"` colours
+
+<Example id="extensions.formfield.005" />
+
+## Props
+
+| Prop             | Type                   | Default          | Description                                                                      |
+| ---------------- | ---------------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `label`          | `string`               | —                | Label text rendered above the input group                                        |
+| `htmlFor`        | `string`               | —                | Links the label to the inner input via `id`                                      |
+| `children`       | `ReactNode`            | —                | Input control(s) rendered inside the `InputGroup`                                |
+| `isRequired`     | `boolean`              | `false`          | Shows a required asterisk next to the label                                      |
+| `variation`      | `'error' \| 'warning'` | —                | Validation state — applies coloured borders and label                            |
+| `description`    | `string`               | —                | Static helper text always shown below the input in neutral grey. No icon.        |
+| `errorHint`      | `string`               | —                | Error message with `error_outline` icon. Only rendered when `variation="error"`. |
+| `warningHint`    | `string`               | —                | Warning message with `warning` icon. Only rendered when `variation="warning"`.   |
+| `prefix`         | `ReactNode`            | —                | Content prepended to the left of the input (string or node)                      |
+| `suffix`         | `ReactNode`            | —                | Content appended to the right of the input (string or node)                      |
+| `currentInput`   | `number`               | —                | Current character count — requires `maxInput` to show counter                    |
+| `maxInput`       | `number`               | —                | Maximum character count — requires `currentInput`                                |
+| `size`           | `'small' \| 'medium'`  | `'medium'`       | Input group size                                                                 |
+| `data-qa`        | `string`               | —                | QA selector prefix                                                               |
+| `data-component` | `string`               | `'WFMFormField'` | Component identifier                                                             |

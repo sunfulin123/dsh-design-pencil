@@ -1,0 +1,157 @@
+{
+  "baseline": "bundled-cobalt-reference",
+  "source": "../../wfm-source.json",
+  "runtime": {
+    "react": "18.3.1"
+  },
+  "dependencies": {
+    "@talkdesk/cobalt-marketplace-react-badge-container": {
+      "from": "^2.2.0",
+      "to": "2.2.0"
+    },
+    "@talkdesk/cobalt-marketplace-react-datepicker": {
+      "from": "2.2.0",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-datepicker-utils": {
+      "from": "2.2.0",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-daterangepicker": {
+      "from": "2.2.0",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-dismissible-modal": {
+      "from": "2.2.0",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-dropdown": {
+      "from": "3.2.0",
+      "to": "3.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-dropdown-utils": {
+      "from": "3.2.0",
+      "to": "3.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-empty-widget": {
+      "from": "2.2.0",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-message": {
+      "from": "2.2.0",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-multi-dropdown": {
+      "from": "3.2.0",
+      "to": "3.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-pagination": {
+      "from": "2.2.0",
+      "to": "2.2.3"
+    },
+    "@talkdesk/cobalt-marketplace-react-stateful-button": {
+      "from": "2.0.2",
+      "to": "2.2.2"
+    },
+    "@talkdesk/cobalt-marketplace-react-stateful-popup": {
+      "from": "3.2.0",
+      "to": "3.2.0"
+    },
+    "@talkdesk/cobalt-marketplace-react-tooltip": {
+      "from": "2.3.0",
+      "to": "2.3.0"
+    },
+    "@talkdesk/cobalt-react-box": {
+      "from": "2.2.2",
+      "to": "2.3.0"
+    },
+    "@talkdesk/cobalt-react-button": {
+      "from": "2.1.0",
+      "to": "3.3.1"
+    },
+    "@talkdesk/cobalt-react-divider": {
+      "from": "2.2.2",
+      "to": "3.0.3"
+    },
+    "@talkdesk/cobalt-react-flex": {
+      "from": "3.2.2",
+      "to": "3.3.0"
+    },
+    "@talkdesk/cobalt-react-icon": {
+      "from": "2.17.2",
+      "to": "2.31.0"
+    },
+    "@talkdesk/cobalt-react-input": {
+      "from": "2.3.2",
+      "to": "2.3.6"
+    },
+    "@talkdesk/cobalt-react-input-group": {
+      "from": "2.2.2",
+      "to": "3.0.1"
+    },
+    "@talkdesk/cobalt-react-label": {
+      "from": "2.2.2",
+      "to": "2.2.5"
+    },
+    "@talkdesk/cobalt-react-panel": {
+      "from": "^2.3.2",
+      "to": "3.0.3"
+    },
+    "@talkdesk/cobalt-react-portal-provider": {
+      "from": "2.2.2",
+      "to": "2.2.5"
+    },
+    "@talkdesk/cobalt-react-position-hook": {
+      "from": "3.2.4",
+      "to": "3.2.7"
+    },
+    "@talkdesk/cobalt-react-required": {
+      "from": "2.2.2",
+      "to": "2.2.5"
+    },
+    "@talkdesk/cobalt-react-responsive-value-hook": {
+      "from": "^3.2.2",
+      "to": "3.2.5"
+    },
+    "@talkdesk/cobalt-react-selection-group": {
+      "from": "2.1.0",
+      "to": "3.1.0"
+    },
+    "@talkdesk/cobalt-react-spinner": {
+      "from": "2.2.2",
+      "to": "3.1.2"
+    },
+    "@talkdesk/cobalt-react-table": {
+      "from": "2.2.2",
+      "to": "2.2.5"
+    },
+    "@talkdesk/cobalt-react-tag": {
+      "from": "2.3.2",
+      "to": "3.0.2"
+    },
+    "@talkdesk/cobalt-react-textarea": {
+      "from": "^2.2.2",
+      "to": "3.1.2"
+    },
+    "@talkdesk/cobalt-react-theme-provider": {
+      "from": "4.1.5",
+      "to": "4.6.3"
+    },
+    "@talkdesk/cobalt-react-typography": {
+      "from": "^2.0.0",
+      "to": "3.0.2"
+    },
+    "@talkdesk/cobalt-react-viewport-provider": {
+      "from": "2.2.2",
+      "to": "2.2.5"
+    },
+    "@talkdesk/cobalt-theme-base": {
+      "from": null,
+      "to": "2.5.0"
+    },
+    "@talkdesk/cobalt-react-skeleton": {
+      "from": null,
+      "to": "1.0.1"
+    }
+  }
+}

@@ -28,7 +28,7 @@ BASELINE_PATH = "tools/code-line-baseline.json"
 SUFFIXES = {".rs", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"}
 EXCLUDED_DIRS = {
     ".git", "vendor", ".venv-lint", ".superpowers", ".worktrees",
-    ".playwright-cli", ".playwright-mcp",
+    ".playwright-cli", ".playwright-mcp", ".taste-skill",
     "node_modules", "target", "dist", "out", "wasm", "web-bundle",
     "tests", "test", "__tests__", "fixtures", "__fixtures__",
 }
@@ -38,6 +38,8 @@ EXCLUDED_PREFIXES = (
     "crates/op-host-web/pkg-webgl/", "crates/op-web-sdk/pkg/",
     "crates/op-host-web/assets/canvaskit/",
     "packages/op-chrome-extension/vendor/",
+    "packages/talkdesk-cobalt/site/.astro/",
+    "packages/talkdesk-cobalt/site/public/",
 )
 COMMENTS = {"line_comment", "block_comment", "comment", "html_comment"}
 TEST_NAME = re.compile(r"(?:^test_|_tests?$|[.](?:test|spec)(?:[.-]|$))")

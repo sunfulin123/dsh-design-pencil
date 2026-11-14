@@ -1,0 +1,74 @@
+# Dialog
+
+A modal dialog component with a structured header (title + optional subtitle + X close button), a scrollable content area, and a footer with cancel and confirm actions.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Dialog } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+`visible` controls whether the dialog is open. `onClose` is called by the X button, the cancel button, and the backdrop click. `onConfirm` is called when the confirm button is clicked.
+
+<Example id="extensions.dialog.001" />
+
+## With Subtitle
+
+Pass `subtitle` to render a muted secondary line below the title — useful for timestamps, record identifiers, or supporting context.
+
+<Example id="extensions.dialog.002" />
+
+## Sizes
+
+Use `size` to control the dialog width. The three presets map directly to Cobalt Modal sizes: `'small'` for brief confirmations, `'medium'` (default) for standard forms, and `'large'` for complex content.
+
+<Example id="extensions.dialog.003" />
+
+## Danger Variant
+
+Set `confirmButtonType="danger"` for destructive actions. Combine with `messages` to override the default button labels.
+
+<Example id="extensions.dialog.004" />
+
+## Confirm Loading State
+
+Set `isConfirmLoading` to `true` while an async operation is in progress. The confirm button switches to an inline spinner and becomes non-interactive until you set it back to `false`.
+
+<Example id="extensions.dialog.005" />
+
+## Disabled Confirm
+
+Set `isConfirmDisabled={true}` to prevent the user from submitting the dialog — useful when form validation is incomplete. The confirm button is grayed out and non-interactive; the cancel button remains active.
+
+<Example id="extensions.dialog.006" />
+
+## Props
+
+| Prop                | Type                                   | Default       | Description                                                                                |
+| ------------------- | -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| `visible`           | `boolean`                              | —             | Controls dialog visibility                                                                 |
+| `onClose`           | `() => void`                           | —             | Called when X button, cancel button, or backdrop is clicked                                |
+| `onConfirm`         | `() => void`                           | —             | Called when the confirm button is clicked                                                  |
+| `title`             | `string`                               | —             | Primary heading in the dialog header                                                       |
+| `subtitle`          | `string`                               | —             | Optional muted secondary line below the title                                              |
+| `children`          | `ReactNode`                            | —             | Dialog body content — scrolls if it overflows                                              |
+| `size`              | `'small' \| 'medium' \| 'large'`       | `'medium'`    | Dialog width preset                                                                        |
+| `confirmButtonType` | `'primary' \| 'secondary' \| 'danger'` | `'primary'`   | Visual style of the confirm button                                                         |
+| `isConfirmLoading`  | `boolean`                              | `false`       | Shows an inline loading spinner on the confirm button                                      |
+| `isConfirmDisabled` | `boolean`                              | `false`       | Disables the confirm button                                                                |
+| `messages`          | `DialogMessages`                       | —             | Override user-visible labels — see table below                                             |
+| `data-qa`           | `string`                               | —             | QA selector prefix. Suffixes: `-cancel-button`, `-confirm-button`, `-content`, `-subtitle` |
+| `data-component`    | `string`                               | `'WFMDialog'` | Component identifier                                                                       |
+
+## DialogMessages
+
+| Field          | Type     | Default     | Description          |
+| -------------- | -------- | ----------- | -------------------- |
+| `cancelLabel`  | `string` | `'Cancel'`  | Cancel button label  |
+| `confirmLabel` | `string` | `'Confirm'` | Confirm button label |
+
+The title also names the dialog for assistive technology. Escape invokes onClose; while submitting, callers should guard onClose and keep isConfirmLoading true. The cancel action is disabled during confirmation. ListPage composes this source with form and upload controls for its create/import workflows.
+
+Dialog owns a local PortalProvider for nested dropdowns so their menus stay inside the modal focus and positioning boundary. Do not move those menus to the outer application portal.

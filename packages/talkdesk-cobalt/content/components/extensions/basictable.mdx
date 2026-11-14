@@ -1,0 +1,162 @@
+# BasicTable
+
+A type-safe data table with built-in column sorting, pagination, loading skeletons, and empty/error states. Column definitions use a typed `headers` array so TypeScript enforces that `key` matches a field on the row data.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { BasicTable, SortDirection } from './components/cobalt-extensions';
+```
+
+## Surface and page edges
+
+BasicTable is a structural full-width surface: no outer border, corner radius, shadow, margin or horizontal padding. Keep row separators and cell padding for readability. Do not wrap it in a rounded card. In list pages, the table starts at the business page's left edge and reaches its right edge; put title, search and form spacing on those regions rather than on the table parent. A wide table may scroll inside a full-width container. The maintained List page combines this source with marketplace Toolbar and the local Extensions SidePanel.
+
+## Basic Usage
+
+A minimal table requires `headers`, `data`, `currentPage`, `totalPages`, and `onPageClick`. The `render` function on each column is optional — when omitted the cell displays the raw field value. The Actions column below uses `render` to compose two compact `Button` controls wrapping a tiny `Icon`, each with a `tooltip` for discoverability — Edit opens a `SidePanel` and Delete opens a `ConfirmModal`.
+
+<Example id="extensions.basictable.001" />
+
+## Sortable Columns
+
+Set `sortable: true` on any column definition to enable ascending / descending / unsorted cycling. The `onSortClick` callback receives the full sort map keyed by column key with values from the `SortDirection` enum (`'asc'`, `'desc'`, `''`).
+
+- `isMultiSorting={false}` (default) — clicking a new column resets all other column sorts.
+- `isMultiSorting={true}` — multiple columns can be sorted simultaneously.
+
+<Example id="extensions.basictable.002" />
+
+## Custom Cell Renderer
+
+Use the `render` function on a column to display arbitrary React content instead of the raw field value. The function receives the full row object and the row index.
+
+<Example id="extensions.basictable.003" />
+
+## Pagination
+
+When `totalPages > 1` a paginator is rendered below the table. The `currentPage` prop controls the highlighted page; `onPageClick` is called with the new page number. `maxPagesCount` (default `9`) limits how many page buttons are visible at once. The table fills its parent height, keeps the body scrollable, and docks the paginator below the scrollable body.
+
+<Example id="extensions.basictable.004" />
+
+## Loading State
+
+Set `isFetching={true}` to replace row content with animated skeleton placeholders. The number of skeleton rows matches the default row count (10).
+
+<Example id="extensions.basictable.005" />
+
+## Error State
+
+Set `isRequestError={true}` to show the error widget. Provide `onRefresh` to enable the Refresh button inside it.
+
+<Example id="extensions.basictable.006" />
+
+## Empty State — Default
+
+When `data` is an empty array and neither `isFetching` nor `isRequestError` is set, the built-in `NoResultsWidget` is rendered automatically.
+
+Pass `onAdd` to show a primary Add button below the widget. When `onAdd` is omitted the button is not rendered.
+
+- Top: no `onAdd` — widget only, no button
+- Bottom: `onAdd` provided with a custom `addLabel` — button appears below the widget
+
+<Example id="extensions.basictable.007" />
+
+## Empty State — Custom
+
+Pass `emptyStateComponent` to replace the default widget with any React content. Use this to show a context-specific message instead of the generic illustration.
+
+<Example id="extensions.basictable.008" />
+
+## Column Widths
+
+Set `width` on any column definition to control how much horizontal space it takes. The value maps directly to Cobalt's flex-basis classes: multiples of `5` from `5` to `100` (as percentages), plus `33`, `66`, and `'min'` (shrink to fit content). Columns without a `width` prop share the remaining space equally.
+
+- `width={20}` — column takes 20% of the table width
+- `width="min"` — column shrinks to the minimum width needed by its content
+
+<Example id="extensions.basictable.009" />
+
+## Expandable Rows
+
+Pass `renderExpandedRow` to make each row expandable. The function receives the row data and its index, and should return the panel content rendered below the row when expanded. Clicking anywhere on a row toggles its expanded state. A leading chevron column is added automatically.
+
+<Example id="extensions.basictable.010" />
+
+## Column Header Tooltips
+
+Use the `tooltip` prop on any column definition to show an info icon next to the header label. Hovering the icon displays the tooltip text. The popup wraps long text and caps at **300 px wide**, so multi-line tooltips are fully supported.
+
+<Example id="extensions.basictable.011" />
+
+## Message Component
+
+Use `messageComponent` to render arbitrary content as the first row inside the table body, directly below the column header and above the data rows. The List page uses this slot for its batch-selection guidance rather than placing a separate banner above the table. This is designed for inline banners — such as import status messages, applied-filter notices, or warnings — that are contextually tied to the table content.
+
+<Example id="extensions.basictable.012" />
+
+## Internationalization (messages)
+
+Use the `messages` prop to override all display strings — empty state labels, error widget labels, and pagination button text. Each key is optional; omitted keys fall back to English defaults.
+
+<Example id="extensions.basictable.013" />
+
+## Props
+
+| Prop                  | Type                                            | Default           | Description                                                             |
+| --------------------- | ----------------------------------------------- | ----------------- | ----------------------------------------------------------------------- |
+| `headers`             | `BasicTableColumn<T>[]`                         | —                 | Column definitions (key, title, sortable, render)                       |
+| `data`                | `T[]`                                           | —                 | Row data; each item should have a unique `id`                           |
+| `currentPage`         | `number`                                        | —                 | Active page (1-based)                                                   |
+| `totalPages`          | `number`                                        | —                 | Total number of pages                                                   |
+| `onPageClick`         | `(page: number) => void`                        | —                 | Called when a page button is clicked                                    |
+| `isFetching`          | `boolean`                                       | `false`           | Shows animated skeleton rows                                            |
+| `isRequestError`      | `boolean`                                       | `false`           | Shows the error widget                                                  |
+| `defaultSort`         | `Record<string, SortDirection>`                 | `{}`              | Initial sort state                                                      |
+| `onSortClick`         | `(sort: Record<string, SortDirection>) => void` | —                 | Called when sort changes                                                |
+| `onRefresh`           | `() => void`                                    | —                 | Refresh callback shown in the error widget                              |
+| `onAdd`               | `() => void`                                    | —                 | Shows an Add button in the default empty state; omit to hide the button |
+| `addLabel`            | `string`                                        | `'Add'`           | Label for the Add button in the empty state                             |
+| `emptyStateComponent` | `ReactNode`                                     | —                 | Overrides the default no-results widget                                 |
+| `messageComponent`    | `ReactNode`                                     | —                 | Rendered as the first row above the data rows                           |
+| `renderExpandedRow`   | `(row: T, index: number) => ReactNode`          | —                 | Makes each row expandable; returns panel content                        |
+| `messages`            | `BasicTableMessages`                            | —                 | Override display strings (see table below)                              |
+| `isMultiSorting`      | `boolean`                                       | `false`           | Allow sorting by multiple columns                                       |
+| `maxPagesCount`       | `number`                                        | `9`               | Max visible page buttons in the paginator                               |
+| `data-qa`             | `string`                                        | `'basic-table'`   | QA selector                                                             |
+| `data-component`      | `string`                                        | `'WFMBasicTable'` | Component identifier                                                    |
+
+## BasicTableColumn Props
+
+| Prop       | Type                                   | Required | Description                                     |
+| ---------- | -------------------------------------- | -------- | ----------------------------------------------- |
+| `key`      | `keyof T`                              | ✓        | Maps to a field on the row data                 |
+| `title`    | `ReactNode`                            | ✓        | Column header content                           |
+| `sortable` | `boolean`                              | —        | Enables sort indicators on this column          |
+| `tooltip`  | `string`                               | —        | Info-icon tooltip shown beside the header title |
+| `width`    | `ColumnWidth`                          | —        | Column width (percentage or `'min'`)            |
+| `render`   | `(row: T, index: number) => ReactNode` | —        | Custom cell renderer                            |
+
+## BasicTableMessages
+
+All keys are optional. Omitted keys fall back to English defaults.
+
+| Key                  | Default                                   |
+| -------------------- | ----------------------------------------- |
+| `noResultsTitle`     | `'No results found'`                      |
+| `noResultsMessage`   | `'Try adjusting your search or filters.'` |
+| `noResultsAlt`       | `'No results'`                            |
+| `badRequestTitle`    | `'Something went wrong'`                  |
+| `badRequestMessage`  | `'An error occurred while loading data.'` |
+| `badRequestAlt`      | `'Error'`                                 |
+| `refresh`            | `'Refresh'`                               |
+| `paginationPrevious` | `'Previous'`                              |
+| `paginationNext`     | `'Next'`                                  |
+
+## SortDirection Enum
+
+| Value                    | String   | Description     |
+| ------------------------ | -------- | --------------- |
+| `SortDirection.ASC`      | `'asc'`  | Ascending sort  |
+| `SortDirection.DESC`     | `'desc'` | Descending sort |
+| `SortDirection.UNSORTED` | `''`     | No sort applied |

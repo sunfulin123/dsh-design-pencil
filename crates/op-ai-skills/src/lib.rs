@@ -358,23 +358,12 @@ pub fn design_agent_system_prompt_with_skills_for(
 #[cfg(not(all(feature = "slim-corpus", target_arch = "wasm32")))]
 pub static SKILLS: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/skills");
 
-/// slim-corpus: only the style-guides subtree is embedded. Everything
-/// that walks [`SKILLS`] must go through [`style_guides_dir`] /
-/// [`phase_corpus_dir`] so both embeds answer the same questions.
-#[cfg(all(feature = "slim-corpus", target_arch = "wasm32"))]
-pub static STYLE_GUIDES_ONLY: Dir<'static> =
-    include_dir!("$CARGO_MANIFEST_DIR/skills/style-guides");
+/// Design data is generated from packages/design-data for every Cargo build.
+pub static STYLE_GUIDES_ONLY: Dir<'static> = include_dir!("$DESIGN_DATA_EMBED_DIR");
 
-/// The style-guides subtree, wherever this build embedded it.
+/// The independently managed style catalogue, present in native and WASM builds.
 pub fn style_guides_dir() -> Option<&'static Dir<'static>> {
-    #[cfg(not(all(feature = "slim-corpus", target_arch = "wasm32")))]
-    {
-        SKILLS.get_dir("style-guides")
-    }
-    #[cfg(all(feature = "slim-corpus", target_arch = "wasm32"))]
-    {
-        Some(&STYLE_GUIDES_ONLY)
-    }
+    Some(&STYLE_GUIDES_ONLY)
 }
 
 /// The phase/domain/knowledge corpus root, absent on a slim build — the

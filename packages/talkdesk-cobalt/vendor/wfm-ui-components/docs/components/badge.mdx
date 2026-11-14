@@ -1,0 +1,351 @@
+# Badge
+
+A notification badge that anchors a count or status `Tag` at a configurable corner of any child element — typically used for unread counts on icons or buttons.
+
+```ts
+import { Badge } from '@wfm/ui-components';
+```
+
+## Numeric Count
+
+Use the `count` prop to show a numeric badge. When `count` exceeds `maxCount`, the badge displays a capped value in `+N` format.
+
+- Left: `count={3}` — renders the number directly
+- Right: `count={12} maxCount={9}` — count exceeds the cap, displays `9+`
+
+```tsx preview
+import { Badge } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex gap="6" padding="4">
+      <Badge count={3}>
+        <Box
+          width="32px"
+          height="32px"
+          style={{
+            background: '#e8f0fe',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          🔔
+        </Box>
+      </Badge>
+      <Badge count={12} maxCount={9}>
+        <Box
+          width="32px"
+          height="32px"
+          style={{
+            background: '#e3fcef',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          📬
+        </Box>
+      </Badge>
+    </Flex>
+  );
+}
+```
+
+## Count Hidden When Zero
+
+When `count={0}` the badge is **automatically hidden** — no extra visibility logic needed.
+
+- Left: `count={0}` — badge is not rendered
+- Right: `count={5}` — badge renders normally
+
+```tsx preview
+import { Badge } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex gap="6" padding="4">
+      <Badge count={0}>
+        <Box
+          width="32px"
+          height="32px"
+          style={{
+            background: '#f4f5f7',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          🔕
+        </Box>
+      </Badge>
+      <Badge count={5}>
+        <Box
+          width="32px"
+          height="32px"
+          style={{
+            background: '#f4f5f7',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          🔔
+        </Box>
+      </Badge>
+    </Flex>
+  );
+}
+```
+
+## Custom Content
+
+Use the `content` prop to render any `ReactNode` inside the badge. Mutually exclusive with `count` and `maxCount`.
+
+- `content="NEW"` — text label badge
+
+```tsx preview
+import { Badge } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex padding="4">
+      <Badge content="NEW">
+        <Box
+          width="64px"
+          height="32px"
+          style={{
+            background: '#e8f0fe',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          Feature
+        </Box>
+      </Badge>
+    </Flex>
+  );
+}
+```
+
+## Status
+
+Use the `status` prop to control the semantic color of the badge, mapped to Cobalt Tag `color` tokens.
+
+| `status`  | Cobalt `color` | Use case                       |
+| --------- | -------------- | ------------------------------ |
+| `default` | `light-gray`   | Neutral indicator              |
+| `success` | `light-green`  | Success / online               |
+| `warning` | `light-yellow` | Warning                        |
+| `danger`  | `red`          | Error / critical (**default**) |
+| `info`    | `light-blue`   | Informational                  |
+
+```tsx preview
+import { Badge } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+const Icon = ({ bg, label }) => (
+  <Box
+    width="32px"
+    height="32px"
+    style={{
+      background: bg,
+      borderRadius: 6,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 14,
+    }}
+  >
+    {label}
+  </Box>
+);
+
+export default function Demo() {
+  return (
+    <Flex gap="8" padding="4" wrap>
+      <Badge count={1} status="default">
+        <Icon bg="#f4f5f7" label="D" />
+      </Badge>
+      <Badge count={2} status="success">
+        <Icon bg="#e3fcef" label="S" />
+      </Badge>
+      <Badge count={3} status="warning">
+        <Icon bg="#fffae6" label="W" />
+      </Badge>
+      <Badge count={4} status="danger">
+        <Icon bg="#ffebe6" label="!" />
+      </Badge>
+      <Badge count={5} status="info">
+        <Icon bg="#e8f0fe" label="i" />
+      </Badge>
+    </Flex>
+  );
+}
+```
+
+## Sizes
+
+Use the `size` prop to control badge size. Values map directly to Cobalt Tag size tokens — no abbreviations.
+
+| `size`   | Use case                              |
+| -------- | ------------------------------------- |
+| `tiny`   | Extra-small icon contexts (16px icon) |
+| `small`  | Standard icon contexts (**default**)  |
+| `medium` | Medium-sized element contexts         |
+| `large`  | Large element contexts                |
+
+```tsx preview
+import { Badge } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Flex gap="8" padding="4" alignY="center">
+      <Badge count={9} size="tiny">
+        <Box
+          width="24px"
+          height="24px"
+          style={{ background: '#e8f0fe', borderRadius: 6 }}
+        />
+      </Badge>
+      <Badge count={9} size="small">
+        <Box
+          width="32px"
+          height="32px"
+          style={{ background: '#e8f0fe', borderRadius: 6 }}
+        />
+      </Badge>
+      <Badge count={9} size="medium">
+        <Box
+          width="40px"
+          height="40px"
+          style={{ background: '#e8f0fe', borderRadius: 6 }}
+        />
+      </Badge>
+      <Badge count={9} size="large">
+        <Box
+          width="48px"
+          height="48px"
+          style={{ background: '#e8f0fe', borderRadius: 6 }}
+        />
+      </Badge>
+    </Flex>
+  );
+}
+```
+
+## Status → Cobalt color mapping
+
+| WFM `status` | Cobalt Tag `color` |
+| ------------ | ------------------ |
+| `default`    | `light-gray`       |
+| `success`    | `light-green`      |
+| `warning`    | `light-yellow`     |
+| `danger`     | `red`              |
+| `info`       | `light-blue`       |
+
+## Badge Positioning
+
+Use `gapX` and `gapY` to offset the badge from the child element's corner. Use `originPosition` and `directionPosition` (both `CardinalPoint`) to change which corner of the child the badge anchors to and which direction it floats.
+
+- Default: `originPosition="NE"` / `directionPosition="NW"` — badge sits at the top-right corner
+- `originPosition="SE"` / `directionPosition="SW"` — badge moves to the bottom-right corner
+- `gapY={0}` — reduces vertical gap so the badge sits flush with the edge
+
+```tsx preview
+import { Badge, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+
+const Icon = ({ bg }: { bg: string }) => (
+  <Box
+    width="40px"
+    height="40px"
+    style={{
+      background: bg,
+      borderRadius: 8,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: 20,
+    }}
+  >
+    🔔
+  </Box>
+);
+
+export default function Demo() {
+  return (
+    <Flex gap="10" padding="8" alignY="center" wrap>
+      <Flex direction="column" gap="2" alignX="center">
+        <Badge count={3} status="danger">
+          <Icon bg="#e8f0fe" />
+        </Badge>
+        <Typography variant="caption">default (NE/NW)</Typography>
+      </Flex>
+
+      <Flex direction="column" gap="2" alignX="center">
+        <Badge
+          count={5}
+          status="success"
+          originPosition="SE"
+          directionPosition="SW"
+        >
+          <Icon bg="#e3fcef" />
+        </Badge>
+        <Typography variant="caption">SE/SW (bottom-right)</Typography>
+      </Flex>
+
+      <Flex direction="column" gap="2" alignX="center">
+        <Badge
+          count={2}
+          status="info"
+          originPosition="NW"
+          directionPosition="NE"
+        >
+          <Icon bg="#f4f5f7" />
+        </Badge>
+        <Typography variant="caption">NW/NE (top-left)</Typography>
+      </Flex>
+
+      <Flex direction="column" gap="2" alignX="center">
+        <Badge count={7} status="warning" gapX={4} gapY={0}>
+          <Icon bg="#fffae6" />
+        </Badge>
+        <Typography variant="caption">gapX=4 gapY=0</Typography>
+      </Flex>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop                | Type                                                        | Default      | Description                                            |
+| ------------------- | ----------------------------------------------------------- | ------------ | ------------------------------------------------------ |
+| `status`            | `'default' \| 'success' \| 'warning' \| 'danger' \| 'info'` | `'danger'`   | Semantic status — controls Cobalt Tag color            |
+| `size`              | `'tiny' \| 'small' \| 'medium' \| 'large'`                  | `'tiny'`     | Cobalt Tag size token                                  |
+| `count`             | `number`                                                    | —            | Numeric count (hidden when 0)                          |
+| `maxCount`          | `number`                                                    | `9`          | Cap value; shows `+N` when exceeded                    |
+| `content`           | `ReactNode`                                                 | —            | Custom badge content (mutually exclusive with `count`) |
+| `gapX`              | `number`                                                    | `0`          | Horizontal offset in px                                |
+| `gapY`              | `number`                                                    | `12`         | Vertical offset in px                                  |
+| `originPosition`    | `CardinalPoint`                                             | `'NE'`       | Anchor point on the child                              |
+| `directionPosition` | `CardinalPoint`                                             | `'NW'`       | Direction the badge floats toward                      |
+| `data-qa`           | `string`                                                    | —            | QA selector attribute                                  |
+| `data-component`    | `string`                                                    | `'WFMBadge'` | Component identifier                                   |

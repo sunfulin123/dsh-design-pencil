@@ -8,7 +8,7 @@ description: Internal HTML proof-of-concept sub-skill loaded by synapse-design a
 
 # Synapse Design HTML POC
 
-This is the HTML proof-of-concept branch of `synapse-design`. Execute Stages A–E in order so every planned screen, state, style binding, and browser verification check completes before handoff. This workflow produces a standalone design prototype under `.synapse/html-design/tasks/<taskId>/`, never production React or application code unless the user expressly requests implementation.
+This is the HTML proof-of-concept branch of `synapse-design`. Execute Stages A–E in order so every planned screen, state, style binding, and browser verification check completes before handoff. This workflow produces a standalone design prototype under `.synapse/html-design/tasks/<taskId>/`, never production application code unless the user expressly requests implementation. A Cobalt Workspace POC may use the bundled React project scaffold and compile to static HTML for review.
 
 **Rule Precedence:** User instructions > Selected DESIGN specification > This skill > Mandatory shared judgement (`references/judgement.md` and `references/direction/surface-modes.md`) > Optional supporting playbooks under `references/`.
 
@@ -29,6 +29,8 @@ Follow the same three-layer conversation, project/document, and requirements/sty
 - **Mandatory reading before authoring HTML:** Read `references/direction/surface-modes.md` and `references/judgement.md` in full to classify the surface mode (`Operate`, `Persuade`, `Read`, `Experience`), plan all six content states (`loading`, `empty`, `error`, `partial`, `success`, `permission`), decide structure and the three levels of space (design judgement, section 4), and apply the Non-Negotiable Quality Floor and the evidence rules (sections 5–6). Load specialist files (`references/craft/layout-sections-and-cards.md`, `references/craft/craft-floor.md`, `references/review/audit-and-critique.md`, etc.) only when relevant; ignore any legacy instructions about alternate palettes, mandatory surveys, or other hosts.
 
 ## Stage C — Build the Standalone Prototype
+
+When the confirmed style id is `talkdesk-cobalt`, read `references/cobalt-workspace.md` before authoring. For Workspace prototypes use its bundled `cobalt-project.mjs` tool to copy the official shell and register Dock apps/pages; explicitly standalone prototypes skip the shell. Keep Stages A–E and the evidence contract, using the compiled `project/delivery/index.html` as the POC entry. Other styles keep the ordinary HTML workflow.
 
 - Author clean HTML/CSS/JavaScript inside `.synapse/html-design/tasks/<taskId>/` covering every planned screen from Stage A and applicable states from Stage B.
 - Apply the selected `DESIGN` typography, color roles, spacing scale, and component anatomy faithfully while preserving user-supplied content and labeling illustrative sample data honestly.

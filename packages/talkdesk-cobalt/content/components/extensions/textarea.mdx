@@ -1,0 +1,70 @@
+# Textarea
+
+A naked multi-line text-input control built on Cobalt `Textarea`. For labels, descriptions, hints, and character counters, compose with [`FormField`](/components/formfield) externally.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Textarea } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The bare textarea — a controlled value with a `placeholder`. Defaults to 4 rows and is user-resizable.
+
+<Example id="extensions.textarea.001" />
+
+## With FormField
+
+For labels, helper text, validation messages, and character counters, wrap `Textarea` in `FormField`. `FormField` owns all surrounding chrome; `Textarea` owns only the editable control. When using the counter, set `maxLength` on **both** sides — `FormField` shows the counter tag, `Textarea` enforces the native limit.
+
+<Example id="extensions.textarea.002" />
+
+## Sizes
+
+`size="small"` for dense layouts, `size="medium"` (default) for standard forms.
+
+<Example id="extensions.textarea.003" />
+
+## Rows and Resize
+
+`rows` controls the initial visible height. Set `isResizable={false}` to lock the height — useful in toolbars or fixed-height side panels.
+
+<Example id="extensions.textarea.004" />
+
+## Validation States
+
+Set the same `variation` on both `FormField` and `Textarea` — `FormField` uses it to gate which hint row to render (`errorHint` for `'error'`, `warningHint` for `'warning'`) and `Textarea` uses it to colour the border.
+
+<Example id="extensions.textarea.005" />
+
+## Disabled and Read-only
+
+`disabled` blocks all interaction and greys out the control; `readOnly` keeps the value selectable but prevents editing — use it for derived/computed values.
+
+<Example id="extensions.textarea.006" />
+
+## Props
+
+| Prop             | Type                                            | Default         | Description                                                                       |
+| ---------------- | ----------------------------------------------- | --------------- | --------------------------------------------------------------------------------- |
+| `value`          | `string \| number`                              | —               | Controlled textarea value                                                         |
+| `onChange`       | `(e: ChangeEvent<HTMLTextAreaElement>) => void` | —               | Native onChange — read `e.target.value`                                           |
+| `rows`           | `number`                                        | `4`             | Visible row count (initial height)                                                |
+| `size`           | `'small' \| 'medium'`                           | `'medium'`      | Textarea height preset                                                            |
+| `variation`      | `'error' \| 'warning'`                          | —               | Validation state — colours the border. Pair with `FormField` for the hint row     |
+| `isResizable`    | `boolean`                                       | `true`          | Allow the user to drag-resize the textarea                                        |
+| `placeholder`    | `string`                                        | —               | Placeholder text                                                                  |
+| `disabled`       | `boolean`                                       | `false`         | Disables interaction                                                              |
+| `readOnly`       | `boolean`                                       | `false`         | Marks the textarea as read-only                                                   |
+| `name`           | `string`                                        | —               | Native `name` attribute                                                           |
+| `autoFocus`      | `boolean`                                       | `false`         | Focus the textarea on mount                                                       |
+| `maxLength`      | `number`                                        | —               | Native `maxLength` — pair with `FormField`'s `currentInput` to render the counter |
+| `id`             | `string`                                        | —               | Native textarea id — pass to link an external `FormField` / `<Label htmlFor>`     |
+| `forwardedRef`   | `Ref<HTMLTextAreaElement>`                      | —               | Ref forwarded to the underlying `<textarea>`                                      |
+| `onBlur`         | `FocusEventHandler<HTMLTextAreaElement>`        | —               | Native onBlur                                                                     |
+| `onFocus`        | `FocusEventHandler<HTMLTextAreaElement>`        | —               | Native onFocus                                                                    |
+| `onKeyDown`      | `KeyboardEventHandler<HTMLTextAreaElement>`     | —               | Native onKeyDown                                                                  |
+| `isFullWidth`    | `boolean`                                       | `false`         | Stretch the wrapper to fill its container                                         |
+| `data-qa`        | `string`                                        | —               | QA selector                                                                       |
+| `data-component` | `string`                                        | `'WFMTextarea'` | Component identifier                                                              |

@@ -1,0 +1,74 @@
+# Collapse
+
+Layout container that animates a content panel open and closed when the user clicks the header. Use it to hide secondary information until needed.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Collapse } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The simplest form: pass `title` and `children`. The panel starts collapsed and toggles on click. The chevron rotates and the body smoothly animates between 0 and its natural height using a `grid-template-rows` transition — no JS height measurement, no jank when content changes size.
+
+<Example id="extensions.collapse.001" />
+
+## Default Open
+
+Use `defaultOpen` to render the panel expanded on first mount. The component remains uncontrolled — subsequent toggles are driven internally.
+
+<Example id="extensions.collapse.002" />
+
+## Controlled
+
+Pass both `open` and `onOpenChange` to drive the state from outside — useful for syncing multiple Collapses, persisting state, or reacting to expansion in a parent component.
+
+<Example id="extensions.collapse.003" />
+
+## With Extra Content
+
+Use `extra` to render a chip, badge, or secondary action on the right side of the header. Clicks on `extra` content do not toggle the panel — bubbling is stopped automatically.
+
+<Example id="extensions.collapse.004" />
+
+## Sizes
+
+`size="small"` reduces the header vertical padding from 16px to 12px — use it inside dense layouts such as side panels or settings pages. `size="medium"` (default) is standard density.
+
+<Example id="extensions.collapse.005" />
+
+## Disabled
+
+`disabled` greys out the header, removes keyboard focus, and ignores click/keypress toggles. The current open state is preserved.
+
+<Example id="extensions.collapse.006" />
+
+## Custom Animation Duration
+
+`duration` (in ms) controls both the chevron rotation and the height transition. Defaults to `240`. Pass `0` to disable the animation entirely.
+
+<Example id="extensions.collapse.007" />
+
+## Props
+
+| Prop             | Type                      | Default         | Description                                                                                                   |
+| ---------------- | ------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------- |
+| `title`          | `ReactNode`               | —               | Header label. Strings are auto-wrapped in `Typography variant="body-emphasis"`; pass a node for custom markup |
+| `children`       | `ReactNode`               | —               | Body content shown when expanded                                                                              |
+| `open`           | `boolean`                 | —               | Controlled open state. When set, pair with `onOpenChange`                                                     |
+| `defaultOpen`    | `boolean`                 | `false`         | Initial open state in uncontrolled mode                                                                       |
+| `onOpenChange`   | `(open: boolean) => void` | —               | Called whenever the user toggles the panel                                                                    |
+| `disabled`       | `boolean`                 | `false`         | Disables the trigger; preserves current open state                                                            |
+| `duration`       | `number`                  | `240`           | Animation duration in ms. `0` disables the animation                                                          |
+| `size`           | `'small' \| 'medium'`     | `'medium'`      | Header density. `'small'` = 12px Y-padding; `'medium'` = 16px                                                 |
+| `extra`          | `ReactNode`               | —               | Right-aligned header content (badge, chip, button). Clicks do not toggle the panel                            |
+| `data-qa`        | `string`                  | —               | QA selector. Trigger gets `${dataQa}-trigger`, body gets `${dataQa}-panel`                                    |
+| `data-component` | `string`                  | `'WFMCollapse'` | Component identifier                                                                                          |
+
+## Accessibility
+
+- The header has `role="button"`, `aria-expanded`, and `aria-controls` linking it to the panel id.
+- `Enter` and `Space` toggle the panel from the focused header.
+- When collapsed, the panel is marked `aria-hidden` and visually clipped to 0 height — assistive tech skips its content.
+- `disabled={true}` removes the header from the tab order (`tabIndex={-1}`) and sets `aria-disabled`.

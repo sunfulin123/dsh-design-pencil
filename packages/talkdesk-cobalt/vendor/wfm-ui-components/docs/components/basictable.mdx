@@ -1,0 +1,699 @@
+# BasicTable
+
+A type-safe data table with built-in column sorting, pagination, loading skeletons, and empty/error states. Column definitions use a typed `headers` array so TypeScript enforces that `key` matches a field on the row data.
+
+```ts
+import { BasicTable, SortDirection } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+A minimal table requires `headers`, `data`, `currentPage`, `totalPages`, and `onPageClick`. The `render` function on each column is optional — when omitted the cell displays the raw field value. The Actions column below uses `render` to compose two compact `Button` controls wrapping a tiny `Icon`, each with a `tooltip` for discoverability — Edit opens a `SidePanel` and Delete opens a `ConfirmModal`.
+
+```tsx preview
+import { useState } from 'react';
+import {
+  BasicTable,
+  Button,
+  ConfirmModal,
+  SidePanel,
+  Typography,
+} from '@wfm/ui-components';
+import Icon from '@talkdesk/cobalt-react-icon';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const rows = [
+  { id: '1', name: 'Alice', role: 'Agent', status: 'Active' },
+  { id: '2', name: 'Bob', role: 'Supervisor', status: 'Inactive' },
+  { id: '3', name: 'Carol', role: 'Agent', status: 'Active' },
+];
+
+export default function Demo() {
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+
+  const columns = [
+    { key: 'name', title: 'Name' },
+    { key: 'role', title: 'Role' },
+    { key: 'status', title: 'Status' },
+    {
+      key: 'actions',
+      title: 'Actions',
+      render: (row) => (
+        <Flex alignY="center" gap="2" data-qa={`row-${row.id}-actions`}>
+          <Button
+            aria-label={`Edit ${row.name}`}
+            data-qa={`row-${row.id}-edit`}
+            shape="compact"
+            type="secondary"
+            variation="transparent"
+            tooltip={`Edit ${row.name}`}
+            onClick={() => setEditing(row)}
+          >
+            <Icon name="edit" size="tiny" />
+          </Button>
+          <Button
+            aria-label={`Delete ${row.name}`}
+            data-qa={`row-${row.id}-delete`}
+            shape="compact"
+            type="danger"
+            variation="transparent"
+            tooltip={`Delete ${row.name}`}
+            onClick={() => setDeleting(row)}
+          >
+            <Icon name="trash" size="tiny" />
+          </Button>
+        </Flex>
+      ),
+    },
+  ];
+
+  return (
+    <>
+      <BasicTable
+        headers={columns}
+        data={rows}
+        currentPage={1}
+        totalPages={1}
+        onPageClick={() => {}}
+      />
+
+      <SidePanel
+        visible={!!editing}
+        onClose={() => setEditing(null)}
+        title={editing ? `Edit ${editing.name}` : ''}
+        size="small"
+        actions={
+          editing
+            ? [
+                {
+                  label: 'Cancel',
+                  type: 'secondary',
+                  onClick: () => setEditing(null),
+                },
+                {
+                  label: 'Save',
+                  type: 'primary',
+                  onClick: () => setEditing(null),
+                },
+              ]
+            : []
+        }
+        data-qa="basictable-edit-side-panel"
+      >
+        {editing && (
+          <Flex direction="column" gap="2">
+            <Typography variant="body">
+              Edit details for <strong>{editing.name}</strong>.
+            </Typography>
+            <Typography variant="caption">Role: {editing.role}</Typography>
+            <Typography variant="caption">Status: {editing.status}</Typography>
+          </Flex>
+        )}
+      </SidePanel>
+
+      <ConfirmModal
+        visible={!!deleting}
+        onDismiss={() => setDeleting(null)}
+        onAction={() => setDeleting(null)}
+        iconName="trash"
+        actionButtonType="danger"
+        actionButtonText="Delete"
+        data-qa="basictable-delete-confirm"
+        content={
+          deleting && (
+            <>
+              <Typography variant="body-emphasis">
+                Delete {deleting.name}?
+              </Typography>
+              <Typography variant="caption">
+                This action cannot be undone.
+              </Typography>
+            </>
+          )
+        }
+      />
+    </>
+  );
+}
+```
+
+## Sortable Columns
+
+Set `sortable: true` on any column definition to enable ascending / descending / unsorted cycling. The `onSortClick` callback receives the full sort map keyed by column key with values from the `SortDirection` enum (`'asc'`, `'desc'`, `''`).
+
+- `isMultiSorting={false}` (default) — clicking a new column resets all other column sorts.
+- `isMultiSorting={true}` — multiple columns can be sorted simultaneously.
+
+```tsx preview
+import { useState } from 'react';
+import { BasicTable, SortDirection } from '@wfm/ui-components';
+
+const columns = [
+  { key: 'name', title: 'Name', sortable: true },
+  { key: 'score', title: 'Score', sortable: true },
+  { key: 'team', title: 'Team' },
+];
+
+const rows = [
+  { id: '1', name: 'Alice', score: 92, team: 'Alpha' },
+  { id: '2', name: 'Bob', score: 78, team: 'Beta' },
+  { id: '3', name: 'Carol', score: 85, team: 'Alpha' },
+  { id: '4', name: 'Dave', score: 61, team: 'Beta' },
+];
+
+export default function Demo() {
+  const [sort, setSort] = useState({});
+  return (
+    <BasicTable
+      headers={columns}
+      data={rows}
+      currentPage={1}
+      totalPages={1}
+      defaultSort={sort}
+      onSortClick={setSort}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Custom Cell Renderer
+
+Use the `render` function on a column to display arbitrary React content instead of the raw field value. The function receives the full row object and the row index.
+
+```tsx preview
+import { BasicTable, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+const rows = [
+  { id: '1', name: 'Alice', score: 92 },
+  { id: '2', name: 'Bob', score: 45 },
+  { id: '3', name: 'Carol', score: 76 },
+];
+
+const columns = [
+  { key: 'name', title: 'Name' },
+  {
+    key: 'score',
+    title: 'Score',
+    render: (row) => (
+      <Box padding={1}>
+        <Typography
+          variant="body-emphasis"
+          color={
+            row.score >= 75
+              ? 'var(--co-color-green-600)'
+              : 'var(--co-color-red-600)'
+          }
+        >
+          {row.score}
+        </Typography>
+      </Box>
+    ),
+  },
+];
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={columns}
+      data={rows}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Pagination
+
+When `totalPages > 1` a paginator is rendered below the table. The `currentPage` prop controls the highlighted page; `onPageClick` is called with the new page number. `maxPagesCount` (default `9`) limits how many page buttons are visible at once. The table fills its parent height, keeps the body scrollable, and docks the paginator below the scrollable body.
+
+```tsx preview
+import { useState } from 'react';
+import { BasicTable } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+const allRows = Array.from({ length: 30 }, (_, i) => ({
+  id: String(i + 1),
+  name: `Agent ${i + 1}`,
+  team: i % 2 === 0 ? 'Alpha' : 'Beta',
+}));
+
+const PAGE_SIZE = 5;
+
+export default function Demo() {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(allRows.length / PAGE_SIZE);
+  const data = allRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  return (
+    <Box height="400px">
+      <BasicTable
+        headers={[
+          { key: 'name', title: 'Name' },
+          { key: 'team', title: 'Team' },
+        ]}
+        data={data}
+        currentPage={page}
+        totalPages={totalPages}
+        onPageClick={setPage}
+      />
+    </Box>
+  );
+}
+```
+
+## Loading State
+
+Set `isFetching={true}` to replace row content with animated skeleton placeholders. The number of skeleton rows matches the default row count (10).
+
+```tsx preview
+import { BasicTable } from '@wfm/ui-components';
+
+const columns = [
+  { key: 'name', title: 'Name' },
+  { key: 'role', title: 'Role' },
+  { key: 'status', title: 'Status' },
+];
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={columns}
+      data={[]}
+      isFetching
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Error State
+
+Set `isRequestError={true}` to show the error widget. Provide `onRefresh` to enable the Refresh button inside it.
+
+```tsx preview
+import { BasicTable } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={[
+        { key: 'name', title: 'Name' },
+        { key: 'role', title: 'Role' },
+        { key: 'team', title: 'Team' },
+        { key: 'status', title: 'Status' },
+        { key: 'shift', title: 'Shift' },
+        { key: 'timezone', title: 'Timezone' },
+      ]}
+      data={[]}
+      isRequestError
+      onRefresh={() => alert('Refreshing…')}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Empty State — Default
+
+When `data` is an empty array and neither `isFetching` nor `isRequestError` is set, the built-in `NoResultsWidget` is rendered automatically.
+
+Pass `onAdd` to show a primary Add button below the widget. When `onAdd` is omitted the button is not rendered.
+
+- Top: no `onAdd` — widget only, no button
+- Bottom: `onAdd` provided with a custom `addLabel` — button appears below the widget
+
+```tsx preview
+import { useState } from 'react';
+import { BasicTable } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const headers = [
+  { key: 'name', title: 'Name' },
+  { key: 'role', title: 'Role' },
+];
+
+export default function Demo() {
+  const [added, setAdded] = useState(false);
+
+  return (
+    <Flex direction="column" gap="6">
+      <BasicTable
+        headers={headers}
+        data={[]}
+        currentPage={1}
+        totalPages={1}
+        onPageClick={() => {}}
+      />
+      <BasicTable
+        headers={headers}
+        data={[]}
+        currentPage={1}
+        totalPages={1}
+        onPageClick={() => {}}
+        onAdd={() => setAdded(true)}
+        addLabel={added ? 'Added!' : 'Add Agent'}
+      />
+    </Flex>
+  );
+}
+```
+
+## Empty State — Custom
+
+Pass `emptyStateComponent` to replace the default widget with any React content. Use this to show a context-specific message instead of the generic illustration.
+
+```tsx preview
+import { BasicTable, Typography } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={[
+        { key: 'name', title: 'Name' },
+        { key: 'role', title: 'Role' },
+      ]}
+      data={[]}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+      emptyStateComponent={
+        <Flex padding="6" alignX="center">
+          <Typography variant="body">
+            No agents match your current filter.
+          </Typography>
+        </Flex>
+      }
+    />
+  );
+}
+```
+
+## Column Widths
+
+Set `width` on any column definition to control how much horizontal space it takes. The value maps directly to Cobalt's flex-basis classes: multiples of `5` from `5` to `100` (as percentages), plus `33`, `66`, and `'min'` (shrink to fit content). Columns without a `width` prop share the remaining space equally.
+
+- `width={20}` — column takes 20% of the table width
+- `width="min"` — column shrinks to the minimum width needed by its content
+
+```tsx preview
+import { BasicTable } from '@wfm/ui-components';
+
+const columns = [
+  { key: 'name', title: 'Name', width: 30 },
+  { key: 'email', title: 'Email', width: 40 },
+  { key: 'status', title: 'Status', width: 'min' },
+];
+
+const rows = [
+  { id: '1', name: 'Alice', email: 'alice@example.com', status: 'Active' },
+  { id: '2', name: 'Bob', email: 'bob@example.com', status: 'Inactive' },
+  { id: '3', name: 'Carol', email: 'carol@example.com', status: 'Active' },
+];
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={columns}
+      data={rows}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Expandable Rows
+
+Pass `renderExpandedRow` to make each row expandable. The function receives the row data and its index, and should return the panel content rendered below the row when expanded. Clicking anywhere on a row toggles its expanded state. A leading chevron column is added automatically.
+
+```tsx preview
+import { useState } from 'react';
+import { BasicTable, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+const columns = [
+  { key: 'name', title: 'Name' },
+  { key: 'role', title: 'Role' },
+  { key: 'team', title: 'Team' },
+];
+
+const rows = [
+  {
+    id: '1',
+    name: 'Alice',
+    role: 'Agent',
+    team: 'Alpha',
+    email: 'alice@example.com',
+    hired: 'Jan 2022',
+  },
+  {
+    id: '2',
+    name: 'Bob',
+    role: 'Supervisor',
+    team: 'Beta',
+    email: 'bob@example.com',
+    hired: 'Mar 2021',
+  },
+  {
+    id: '3',
+    name: 'Carol',
+    role: 'Agent',
+    team: 'Alpha',
+    email: 'carol@example.com',
+    hired: 'Sep 2023',
+  },
+];
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={columns}
+      data={rows}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+      renderExpandedRow={(row) => (
+        <Box padding={4} style={{ background: 'var(--basic-100, #f8f9fa)' }}>
+          <Flex gap="6">
+            <Flex direction="column" gap="1">
+              <Typography variant="body-emphasis">Email</Typography>
+              <Typography variant="body" weight="light">
+                {row.email}
+              </Typography>
+            </Flex>
+            <Flex direction="column" gap="1">
+              <Typography variant="body-emphasis">Hired</Typography>
+              <Typography variant="body" weight="light">
+                {row.hired}
+              </Typography>
+            </Flex>
+          </Flex>
+        </Box>
+      )}
+    />
+  );
+}
+```
+
+## Column Header Tooltips
+
+Use the `tooltip` prop on any column definition to show an info icon next to the header label. Hovering the icon displays the tooltip text. The popup wraps long text and caps at **300 px wide**, so multi-line tooltips are fully supported.
+
+```tsx preview
+import { BasicTable } from '@wfm/ui-components';
+
+const columns = [
+  { key: 'name', title: 'Name' },
+  {
+    key: 'aht',
+    title: 'AHT',
+    tooltip:
+      'Average Handle Time — the mean duration of a single agent interaction including talk time and after-call work.',
+  },
+  {
+    key: 'occupancy',
+    title: 'Occupancy',
+    tooltip:
+      'The percentage of time an agent spends handling interactions versus available idle time.',
+  },
+];
+
+const rows = [
+  { id: '1', name: 'Alice', aht: '3m 12s', occupancy: '82%' },
+  { id: '2', name: 'Bob', aht: '4m 05s', occupancy: '74%' },
+  { id: '3', name: 'Carol', aht: '2m 48s', occupancy: '91%' },
+];
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={columns}
+      data={rows}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Message Component
+
+Use `messageComponent` to render arbitrary content as the first row inside the table body, above the data rows. This is designed for inline banners — such as import status messages, applied-filter notices, or warnings — that are contextually tied to the table content.
+
+```tsx preview
+import { BasicTable, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+import Icon from '@talkdesk/cobalt-react-icon';
+
+const columns = [
+  { key: 'name', title: 'Name' },
+  { key: 'role', title: 'Role' },
+  { key: 'status', title: 'Status' },
+];
+
+const rows = [
+  { id: '1', name: 'Alice', role: 'Agent', status: 'Active' },
+  { id: '2', name: 'Bob', role: 'Supervisor', status: 'Inactive' },
+];
+
+const ImportBanner = () => (
+  <Flex
+    alignY="center"
+    gap="2"
+    padding="2"
+    style={{
+      background: 'var(--color-background-info-subtle, #e8f4fd)',
+      borderRadius: 4,
+    }}
+  >
+    <Icon
+      name="info_outline"
+      size="tiny"
+      style={{ color: 'var(--blue-600, #1a73e8)' }}
+    />
+    <Typography variant="body" weight="light">
+      3 agents imported successfully. Showing updated list.
+    </Typography>
+  </Flex>
+);
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={columns}
+      data={rows}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+      messageComponent={<ImportBanner />}
+    />
+  );
+}
+```
+
+## Internationalization (messages)
+
+Use the `messages` prop to override all display strings — empty state labels, error widget labels, and pagination button text. Each key is optional; omitted keys fall back to English defaults.
+
+```tsx preview
+import { BasicTable } from '@wfm/ui-components';
+
+const zhMessages = {
+  noResultsTitle: '暂无数据',
+  noResultsMessage: '请调整搜索条件后重试。',
+  noResultsAlt: '暂无数据',
+  badRequestTitle: '加载失败',
+  badRequestMessage: '数据加载时出现错误，请刷新重试。',
+  badRequestAlt: '错误',
+  refresh: '刷新',
+  paginationPrevious: '上一页',
+  paginationNext: '下一页',
+};
+
+export default function Demo() {
+  return (
+    <BasicTable
+      headers={[{ key: 'name', title: '姓名' }]}
+      data={[]}
+      messages={zhMessages}
+      currentPage={1}
+      totalPages={1}
+      onPageClick={() => {}}
+    />
+  );
+}
+```
+
+## Props
+
+| Prop                  | Type                                            | Default           | Description                                                             |
+| --------------------- | ----------------------------------------------- | ----------------- | ----------------------------------------------------------------------- |
+| `headers`             | `BasicTableColumn<T>[]`                         | —                 | Column definitions (key, title, sortable, render)                       |
+| `data`                | `T[]`                                           | —                 | Row data; each item should have a unique `id`                           |
+| `currentPage`         | `number`                                        | —                 | Active page (1-based)                                                   |
+| `totalPages`          | `number`                                        | —                 | Total number of pages                                                   |
+| `onPageClick`         | `(page: number) => void`                        | —                 | Called when a page button is clicked                                    |
+| `isFetching`          | `boolean`                                       | `false`           | Shows animated skeleton rows                                            |
+| `isRequestError`      | `boolean`                                       | `false`           | Shows the error widget                                                  |
+| `defaultSort`         | `Record<string, SortDirection>`                 | `{}`              | Initial sort state                                                      |
+| `onSortClick`         | `(sort: Record<string, SortDirection>) => void` | —                 | Called when sort changes                                                |
+| `onRefresh`           | `() => void`                                    | —                 | Refresh callback shown in the error widget                              |
+| `onAdd`               | `() => void`                                    | —                 | Shows an Add button in the default empty state; omit to hide the button |
+| `addLabel`            | `string`                                        | `'Add'`           | Label for the Add button in the empty state                             |
+| `emptyStateComponent` | `ReactNode`                                     | —                 | Overrides the default no-results widget                                 |
+| `messageComponent`    | `ReactNode`                                     | —                 | Rendered as the first row above the data rows                           |
+| `renderExpandedRow`   | `(row: T, index: number) => ReactNode`          | —                 | Makes each row expandable; returns panel content                        |
+| `messages`            | `BasicTableMessages`                            | —                 | Override display strings (see table below)                              |
+| `isMultiSorting`      | `boolean`                                       | `false`           | Allow sorting by multiple columns                                       |
+| `maxPagesCount`       | `number`                                        | `9`               | Max visible page buttons in the paginator                               |
+| `data-qa`             | `string`                                        | `'basic-table'`   | QA selector                                                             |
+| `data-component`      | `string`                                        | `'WFMBasicTable'` | Component identifier                                                    |
+
+## BasicTableColumn Props
+
+| Prop       | Type                                   | Required | Description                                     |
+| ---------- | -------------------------------------- | -------- | ----------------------------------------------- |
+| `key`      | `keyof T`                              | ✓        | Maps to a field on the row data                 |
+| `title`    | `ReactNode`                            | ✓        | Column header content                           |
+| `sortable` | `boolean`                              | —        | Enables sort indicators on this column          |
+| `tooltip`  | `string`                               | —        | Info-icon tooltip shown beside the header title |
+| `width`    | `ColumnWidth`                          | —        | Column width (percentage or `'min'`)            |
+| `render`   | `(row: T, index: number) => ReactNode` | —        | Custom cell renderer                            |
+
+## BasicTableMessages
+
+All keys are optional. Omitted keys fall back to English defaults.
+
+| Key                  | Default                                   |
+| -------------------- | ----------------------------------------- |
+| `noResultsTitle`     | `'No results found'`                      |
+| `noResultsMessage`   | `'Try adjusting your search or filters.'` |
+| `noResultsAlt`       | `'No results'`                            |
+| `badRequestTitle`    | `'Something went wrong'`                  |
+| `badRequestMessage`  | `'An error occurred while loading data.'` |
+| `badRequestAlt`      | `'Error'`                                 |
+| `refresh`            | `'Refresh'`                               |
+| `paginationPrevious` | `'Previous'`                              |
+| `paginationNext`     | `'Next'`                                  |
+
+## SortDirection Enum
+
+| Value                    | String   | Description     |
+| ------------------------ | -------- | --------------- |
+| `SortDirection.ASC`      | `'asc'`  | Ascending sort  |
+| `SortDirection.DESC`     | `'desc'` | Descending sort |
+| `SortDirection.UNSORTED` | `''`     | No sort applied |

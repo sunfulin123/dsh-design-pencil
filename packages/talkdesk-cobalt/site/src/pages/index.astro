@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+import Page from '../layouts/Page.astro';
+import Example from '../components/Example.astro';
+import registry from '../../../registry/authoring.json';
+const entries = await getCollection('reference');
+const featured = ['AppPage', 'BasicTable', 'Button', 'FormField', 'DatePicker', 'Dropdown', 'SidePanel', 'SelectGroup'];
+const components = registry.components.filter(component => featured.includes(component.name)).sort((a, b) => featured.indexOf(a.name) - featured.indexOf(b.name));
+const description = (path: string) => entries.find(entry => entry.id === path.replace(/\.mdx$/, ''))?.body?.split('\n').find(line => line.trim() && !line.startsWith('#'))?.replaceAll('`', '').split(/(?<=\.)\s/)[0] ?? '';
+---
+<Page title="Cobalt design library" section="Overview">
+  <div class="page-heading" data-enter>
+    <h1>Cobalt design library</h1>
+    <p>Design guidance, React components and page recipes for building Talkdesk applications.</p>
+    <div class="library-counts"><span><strong>{registry.components.length}</strong> Cobalt Extensions</span><span><strong>{registry.examples.length}</strong> runnable examples</span><span><strong>{registry.recipes.length}</strong> page recipes</span></div>
+    <div class="overview-actions"><a class="doc-button primary" href="#component-list">Browse components</a><a class="doc-button" href="/recipes/">View recipes <span aria-hidden="true">&nbsp;↗</span></a></div>
+  </div>
+  <section aria-labelledby="recipes-title">
+    <div class="section-heading"><h2 id="recipes-title">Start with a page recipe</h2><a href="/recipes/">View all recipes →</a></div>
+    <Example id="recipe.extensions.users-list" height={360} />
+  </section>
+  <section id="component-list" aria-labelledby="components-title">
+    <div class="section-heading"><h2 id="components-title">Cobalt Extensions</h2><span class="inline-link">{registry.components.length} in the library</span></div>
+    <div class="component-list">{components.map(component => <a class="component-link" href={'/reference/' + component.documentation.replace(/\.mdx$/, '') + '/'}><strong>{component.name}<span aria-hidden="true"> ↗</span></strong><p>{description(component.documentation)}</p></a>)}</div>
+  </section>
+</Page>

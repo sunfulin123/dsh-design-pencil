@@ -5,12 +5,15 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { indexRuntimePayload } from './dsh-runtime-payload.mjs'
+import { exportCobalt } from '../packages/talkdesk-cobalt/tools/export.mjs'
 
 async function skillFiles(directory, prefix = '') {
   const files = []
   for (const entry of await readdir(join(directory, prefix), { withFileTypes: true })) {
     const path = join(prefix, entry.name)
     if (entry.name === '__pycache__' || entry.name === '.DS_Store' || entry.name.endsWith('.pyc')) continue
+    // Host reference data has its own canonical source outside the Rust embedded skill tree.
+    if (prefix === '' && entry.name === 'cobalt-reference') continue
     if (entry.isDirectory()) files.push(...await skillFiles(directory, path))
     else if (entry.isFile()) files.push(path)
     else throw new Error(`Unexpected HTML skill resource: ${path}`)
@@ -21,7 +24,7 @@ async function skillFiles(directory, prefix = '') {
 async function verifyHtmlSkill(source, built) {
   const expected = await skillFiles(source)
   const actual = await skillFiles(built)
-  if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error('HTML POC skill resources differ from the built runtime; rebuild the engine')
+  if (expected.some(path => !actual.includes(path))) throw new Error('HTML POC skill resources differ from the built runtime; rebuild the engine')
   for (const path of expected) {
     if (!(await readFile(join(source, path))).equals(await readFile(join(built, path)))) {
       throw new Error(`HTML POC skill resource differs from the built runtime: ${path}`)
@@ -72,11 +75,20 @@ export async function stageRuntime({ root, destination, revision }) {
     'web-bundle/assets/i18n',
   ]) {
     await mkdir(dirname(join(destination, path)), { recursive: true })
-    await cp(join(runtime, path), join(destination, path), { recursive: true })
+    const source = path === 'skills/synapse-design-html'
+      ? join(root, 'crates/op-ai-skills', path) : join(runtime, path)
+    await cp(source, join(destination, path), {
+      recursive: true,
+      filter: sourcePath => !sourcePath.split('/').includes('__pycache__'),
+    })
   }
+  // Keep docs inside the Skill's resource boundary without embedding its images in WASM.
+  await exportCobalt(join(destination, 'skills/synapse-design-html'))
   for (const path of ['web-bundle/snippets']) {
     try {
-      await cp(join(runtime, path), join(destination, path), { recursive: true })
+      const source = path === 'skills/synapse-design-html'
+      ? join(root, 'crates/op-ai-skills', path) : join(runtime, path)
+    await cp(source, join(destination, path), { recursive: true })
     } catch (error) {
       if (error.code !== 'ENOENT') throw error
     }

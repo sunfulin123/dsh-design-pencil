@@ -1,0 +1,14 @@
+/* The Cobalt root setup from the docs' Develop page, for the shell and the app's frame. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--text-default);
+  background-color: var(--background-color);
+}

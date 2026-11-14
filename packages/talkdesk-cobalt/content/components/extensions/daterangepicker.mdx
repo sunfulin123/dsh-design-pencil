@@ -1,0 +1,132 @@
+# DateRangePicker
+
+A date-range input that opens a Cobalt calendar popup for selecting start and end dates, accepting and returning `{ startDate, endDate }` as plain JS `Date` values.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { DateRangePicker } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+A minimal `DateRangePicker` requires `selectedRange` (an object with optional `startDate` and `endDate`) and an `onRangeChange` callback. Once the user selects a start date, the input shows `"StartDate →"` until an end date is also chosen.
+
+<Example id="extensions.daterangepicker.001" />
+
+## With Label and Required
+
+Use `label` to render a descriptive label above the input. Add `isRequired` to show a required marker next to the label.
+
+<Example id="extensions.daterangepicker.002" />
+
+## Empty State (No Selection)
+
+When `selectedRange` contains no dates, the trigger shows the `placeholder` text. The default placeholder is `"Select date range"`.
+
+<Example id="extensions.daterangepicker.003" />
+
+## Sizes
+
+Use `size` to match the surrounding form density. `'medium'` (default) suits standard forms; `'small'` suits compact toolbars and filter bars.
+
+- Left: `size="small"`
+- Right: `size="medium"` (default)
+
+<Example id="extensions.daterangepicker.004" />
+
+## Full Width
+
+Set `isFullWidth={true}` to stretch the trigger input to fill its container. The popup width matches the trigger.
+
+<Example id="extensions.daterangepicker.005" />
+
+## Without Calendar Icon
+
+Set `hasIcon={false}` to remove the calendar icon prefix. Use this in compact inline forms or when the label already provides enough context.
+
+<Example id="extensions.daterangepicker.006" />
+
+## Custom Date Formatter
+
+Use `formatDate` to control how each date in the range appears in the trigger input. The function receives a `Date` and must return a string. It is applied to both the start and end dates.
+
+<Example id="extensions.daterangepicker.007" />
+
+## Validation States
+
+Use `variation` to apply a colored border to the input group for form validation feedback.
+
+- Left: `variation="error"` — red border
+- Right: `variation="warning"` — amber border
+
+<Example id="extensions.daterangepicker.008" />
+
+## Disabled Days
+
+Pass `disabledDays` to prevent selecting certain dates. Accepts Cobalt's `DaysType` format — an array of exact-date objects `{ year, month, day }` or range objects `{ start?, end? }`.
+
+<Example id="extensions.daterangepicker.009" />
+
+## Popup Position
+
+Use `direction` and `origin` to control where the calendar popup opens relative to the trigger. `direction` is the cardinal point on the trigger that anchors the popup; `origin` is the corner of the popup that aligns to it. Use this when the picker is near the bottom or right edge of the viewport.
+
+- Default `direction="SE"` — popup opens below and to the right of the input
+- `direction="NE" origin="SW"` — popup opens above the input
+
+<Example id="extensions.daterangepicker.010" />
+
+## Helper Text
+
+Pass `description` to show neutral helper text below the input. Requires `label`. The text persists regardless of `variation` — use it for permanent guidance rather than validation feedback.
+
+<Example id="extensions.daterangepicker.011" />
+
+## Calendar Options
+
+Use `isHighlightToday` to accent today's date. Pass `highlightedDays` to visually mark specific dates without selecting them. Use `weekStart={1}` to begin the week on Monday. Restrict the year dropdown with `availableYears`.
+
+<Example id="extensions.daterangepicker.012" />
+
+## Localised Calendar
+
+Pass `months` to override the calendar's month name labels — useful for non-English locales.
+
+<Example id="extensions.daterangepicker.013" />
+
+## Props
+
+| Prop               | Type                                   | Default                | Description                                                     |
+| ------------------ | -------------------------------------- | ---------------------- | --------------------------------------------------------------- |
+| `selectedRange`    | `{ startDate?: Date; endDate?: Date }` | —                      | Currently selected date range                                   |
+| `onRangeChange`    | `(range: DateRange) => void`           | —                      | Called when the user changes the selection                      |
+| `label`            | `string`                               | —                      | Label rendered above the input                                  |
+| `isRequired`       | `boolean`                              | `false`                | Shows a required marker next to the label                       |
+| `placeholder`      | `string`                               | `'Select date range'`  | Placeholder text when no range is selected                      |
+| `size`             | `'small' \| 'medium'`                  | `'medium'`             | Input size                                                      |
+| `isFullWidth`      | `boolean`                              | `false`                | Stretches the trigger input to fill its container               |
+| `hasIcon`          | `boolean`                              | `true`                 | Shows the calendar icon prefix                                  |
+| `formatDate`       | `(date: Date) => string`               | `"MMMM D, YYYY"`       | Custom formatter for each date in the trigger display           |
+| `variation`        | `'error' \| 'warning'`                 | —                      | Validation border colour on the input group                     |
+| `description`      | `string`                               | —                      | Helper or validation message below the input (requires `label`) |
+| `direction`        | `CardinalPoint`                        | `'SE'`                 | Direction the popup opens relative to the trigger               |
+| `origin`           | `CardinalPoint`                        | `'SW'`                 | Origin corner of the popup that aligns to the trigger           |
+| `availableYears`   | `number[]`                             | ±3 years from today    | Years shown in the calendar's year dropdown                     |
+| `disabledDays`     | `CobaltDaysType`                       | —                      | Dates that cannot be selected                                   |
+| `highlightedDays`  | `CobaltDaysType`                       | —                      | Dates visually highlighted without being selected               |
+| `isHighlightToday` | `boolean`                              | `false`                | Highlights today's date on the calendar                         |
+| `weekStart`        | `0 \| 1`                               | `0`                    | First day of the week (`0` = Sunday, `1` = Monday)              |
+| `months`           | `CobaltMonths`                         | English names          | Custom month names                                              |
+| `weekdays`         | `CobaltWeekdays`                       | English names          | Custom weekday names                                            |
+| `data-qa`          | `string`                               | —                      | QA selector                                                     |
+| `data-component`   | `string`                               | `'WFMDateRangePicker'` | Component identifier                                            |
+
+## DateRange Type
+
+```ts
+type DateRange = {
+  startDate?: Date;
+  endDate?: Date;
+};
+```

@@ -219,3 +219,7 @@ CI 的 [maintenance workflow](.github/workflows/maintenance.yml) 执行行数、
 详见 [lint 修复 notes](docs/notes/implemented/lint-errors.md)。Rust 1.96.0 Clippy 仍存在 warning；
 日常维护门禁通过不代表未执行的全量检查也通过。
 只有 error 阻塞 CI；warning 不算失败。不使用 continue-on-error 吞掉真实 error。
+
+## Local Cobalt authoring and documentation
+
+After `bun install --frozen-lockfile` in `packages/`, run `bun run docs:dev`, `bun run docs:build`, `bun run test:unit`, `bun run test:browser` or `bun run bundle:build` in `packages/talkdesk-cobalt/`. See its [README](packages/talkdesk-cobalt/README.md) for wrapper checks, source ownership and refresh procedure. Talkdesk packages require its registry/VPN; the static site output is `site/dist/`. Cargo invokes Node.js to discover `packages/design-data/styles/` before embedding style data. Style or Rust changes require rebuilding the engine and web runtime. Documentation and component-source updates use `bundle:build` followed by SS's `stage-local-runtime.mjs` with this checkout path; no Rust rebuild is needed for those content-only changes.

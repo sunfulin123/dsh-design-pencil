@@ -1,0 +1,216 @@
+# Textarea
+
+A naked multi-line text-input control built on Cobalt `Textarea`. For labels, descriptions, hints, and character counters, compose with [`FormField`](/components/formfield) externally.
+
+```ts
+import { Textarea } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The bare textarea — a controlled value with a `placeholder`. Defaults to 4 rows and is user-resizable.
+
+```tsx preview
+import { useState } from 'react';
+import { Textarea } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  const [value, setValue] = useState('');
+
+  return (
+    <Box style={{ width: 360 }}>
+      <Textarea
+        isFullWidth
+        value={value}
+        placeholder="Add notes for the next shift…"
+        onChange={(e) => setValue(e.target.value)}
+      />
+    </Box>
+  );
+}
+```
+
+## With FormField
+
+For labels, helper text, validation messages, and character counters, wrap `Textarea` in `FormField`. `FormField` owns all surrounding chrome; `Textarea` owns only the editable control. When using the counter, set `maxLength` on **both** sides — `FormField` shows the counter tag, `Textarea` enforces the native limit.
+
+```tsx preview
+import { useState } from 'react';
+import { Textarea, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [reason, setReason] = useState('');
+  const [bio, setBio] = useState('Workforce planner based in Lisbon.');
+
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <FormField
+        isRequired
+        label="Reason for change"
+        description="Visible to schedule reviewers."
+      >
+        <Textarea
+          isFullWidth
+          rows={3}
+          value={reason}
+          placeholder="Describe the schedule change…"
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </FormField>
+      <FormField label="Short bio" maxLength={120} currentInput={bio.length}>
+        <Textarea
+          isFullWidth
+          rows={4}
+          maxLength={120}
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Sizes
+
+`size="small"` for dense layouts, `size="medium"` (default) for standard forms.
+
+```tsx preview
+import { Textarea } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={3} style={{ width: 360 }}>
+      <Textarea isFullWidth size="small" rows={3} placeholder="Small" />
+      <Textarea isFullWidth size="medium" rows={3} placeholder="Medium" />
+    </Flex>
+  );
+}
+```
+
+## Rows and Resize
+
+`rows` controls the initial visible height. Set `isResizable={false}` to lock the height — useful in toolbars or fixed-height side panels.
+
+```tsx preview
+import { Textarea } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={3} style={{ width: 360 }}>
+      <Textarea
+        isFullWidth
+        rows={2}
+        placeholder="Compact (rows=2, resizable)"
+      />
+      <Textarea
+        isFullWidth
+        rows={6}
+        isResizable={false}
+        placeholder="Locked height (rows=6, isResizable=false)"
+      />
+    </Flex>
+  );
+}
+```
+
+## Validation States
+
+Set the same `variation` on both `FormField` and `Textarea` — `FormField` uses it to gate which hint row to render (`errorHint` for `'error'`, `warningHint` for `'warning'`) and `Textarea` uses it to colour the border.
+
+```tsx preview
+import { Textarea, FormField } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <FormField
+        label="Reason for change"
+        variation="error"
+        errorHint="Reason is required before submitting."
+      >
+        <Textarea
+          isFullWidth
+          rows={3}
+          value=""
+          variation="error"
+          onChange={() => null}
+        />
+      </FormField>
+      <FormField
+        label="Notes"
+        variation="warning"
+        warningHint="Notes will be visible to all reviewers."
+      >
+        <Textarea
+          isFullWidth
+          rows={3}
+          value="Holiday rota draft."
+          variation="warning"
+          onChange={() => null}
+        />
+      </FormField>
+    </Flex>
+  );
+}
+```
+
+## Disabled and Read-only
+
+`disabled` blocks all interaction and greys out the control; `readOnly` keeps the value selectable but prevents editing — use it for derived/computed values.
+
+```tsx preview
+import { Textarea } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap={4} style={{ width: 360 }}>
+      <Textarea
+        isFullWidth
+        disabled
+        rows={3}
+        value="This field is disabled."
+        onChange={() => null}
+      />
+      <Textarea
+        isFullWidth
+        readOnly
+        rows={3}
+        value="Auto-generated summary — read only."
+        onChange={() => null}
+      />
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                            | Default         | Description                                                                       |
+| ---------------- | ----------------------------------------------- | --------------- | --------------------------------------------------------------------------------- |
+| `value`          | `string \| number`                              | —               | Controlled textarea value                                                         |
+| `onChange`       | `(e: ChangeEvent<HTMLTextAreaElement>) => void` | —               | Native onChange — read `e.target.value`                                           |
+| `rows`           | `number`                                        | `4`             | Visible row count (initial height)                                                |
+| `size`           | `'small' \| 'medium'`                           | `'medium'`      | Textarea height preset                                                            |
+| `variation`      | `'error' \| 'warning'`                          | —               | Validation state — colours the border. Pair with `FormField` for the hint row     |
+| `isResizable`    | `boolean`                                       | `true`          | Allow the user to drag-resize the textarea                                        |
+| `placeholder`    | `string`                                        | —               | Placeholder text                                                                  |
+| `disabled`       | `boolean`                                       | `false`         | Disables interaction                                                              |
+| `readOnly`       | `boolean`                                       | `false`         | Marks the textarea as read-only                                                   |
+| `name`           | `string`                                        | —               | Native `name` attribute                                                           |
+| `autoFocus`      | `boolean`                                       | `false`         | Focus the textarea on mount                                                       |
+| `maxLength`      | `number`                                        | —               | Native `maxLength` — pair with `FormField`'s `currentInput` to render the counter |
+| `id`             | `string`                                        | —               | Native textarea id — pass to link an external `FormField` / `<Label htmlFor>`     |
+| `forwardedRef`   | `Ref<HTMLTextAreaElement>`                      | —               | Ref forwarded to the underlying `<textarea>`                                      |
+| `onBlur`         | `FocusEventHandler<HTMLTextAreaElement>`        | —               | Native onBlur                                                                     |
+| `onFocus`        | `FocusEventHandler<HTMLTextAreaElement>`        | —               | Native onFocus                                                                    |
+| `onKeyDown`      | `KeyboardEventHandler<HTMLTextAreaElement>`     | —               | Native onKeyDown                                                                  |
+| `isFullWidth`    | `boolean`                                       | `false`         | Stretch the wrapper to fill its container                                         |
+| `data-qa`        | `string`                                        | —               | QA selector                                                                       |
+| `data-component` | `string`                                        | `'WFMTextarea'` | Component identifier                                                              |

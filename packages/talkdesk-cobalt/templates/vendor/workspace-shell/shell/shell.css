@@ -1,0 +1,1674 @@
+/*
+  Workspace stand-in shell. Values are ported from atlas packages/ui/src (the
+  *.module.css files next to each component); the source file is noted per block.
+  Cobalt adds its component styles after this file, so overrides of Cobalt
+  components use !important, as atlas does.
+*/
+
+/* ---- Page and prototype bar (not part of Workspace) ---------------------- */
+
+.ws-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--gray-5, #d8dadd);
+}
+
+.ws-proto-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  background: #1f2328;
+  color: #e6e8ea;
+  font-family: var(--font-family);
+  font-size: 12px;
+  line-height: 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.ws-proto-bar__label {
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.ws-proto-bar__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ws-proto-bar button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.ws-proto-bar button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ws-proto-bar button[aria-pressed="true"],
+.ws-proto-bar button[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ws-proto-bar button:focus-visible {
+  outline: 2px solid #8cb4ff;
+  outline-offset: 0;
+}
+
+.ws-proto-bar__readout {
+  margin-left: auto;
+  color: #aeb3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-proto-flags {
+  position: fixed;
+  top: 36px;
+  z-index: 3000;
+  width: 340px;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 8px 0;
+  background: #ffffff;
+  color: #1f2328;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.ws-proto-flags label {
+  display: flex;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.ws-proto-flags label:hover {
+  background: #f2f4f5;
+}
+
+.ws-proto-flags small {
+  display: block;
+  color: #5b6065;
+  font-size: 12px;
+}
+
+.ws-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+}
+
+.ws-stage--framed {
+  padding: 16px;
+}
+
+.ws-stage--tight {
+  padding: 0;
+}
+
+.ws-stage--framed .ws-window {
+  margin: auto;
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ---- Workspace window ----------------------------------------------------- */
+
+.ws-window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: "Roboto", "Helvetica Neue", Arial, Helvetica, sans-serif;
+  color: var(--text-default, #202830);
+  font-size: 1rem;
+  line-height: 1.5;
+  user-select: none;
+  background-color: var(--background-color);
+}
+
+.ws-window--fill {
+  width: 100%;
+  height: 100%;
+}
+
+.ws-skip-nav {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 2000;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--background-color, #fff);
+  color: var(--text-primary, var(--primary-11));
+  font-size: 14px;
+}
+
+.ws-skip-nav:focus {
+  left: 8px;
+}
+
+.ws-container {
+  display: flex;
+  width: 100%;
+  height: calc(100% - 40px);
+  min-height: 0;
+  background-color: var(--background-color);
+}
+
+.ws-areas {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+}
+
+.ws-group {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.ws-primary {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ws-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.ws-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-description);
+}
+
+/* ---- Title bar: title.bar.root, title-bar-frame, logo ------------------- */
+
+.ws-titlebar {
+  --titlebar-default: var(--primary-9);
+  --titlebar-raised: var(--primary-11, var(--primary-600));
+
+  position: relative;
+  z-index: 1400;
+  flex-shrink: 0;
+  width: 100%;
+  height: 40px;
+  min-width: 414px;
+}
+
+.ws-titlebar__frame {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding-left: 12px;
+  background-color: var(--titlebar-default, var(--primary-700));
+  color: var(--primary-contrast);
+}
+
+.ws-titlebar__logo {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-right: 16px;
+}
+
+.ws-titlebar__logo img {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+.ws-titlebar__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 24px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.ws-titlebar__search {
+  position: relative;
+  width: 360px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.ws-titlebar__search--small {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.ws-titlebar__drag {
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+.ws-titlebar__right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ws-titlebar__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1;
+}
+
+/* search.input.module.css */
+.ws-search-input {
+  height: 28px !important;
+  width: 100% !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 0 var(--spacing-micro, 8px) !important;
+  background: var(--titlebar-raised, rgba(250, 250, 250, 0.2)) !important;
+  backdrop-filter: brightness(0.9) !important;
+  transition-property: background-color !important;
+  transition-duration: 0.5s !important;
+  transition-timing-function: ease !important;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.ws-search-input:hover {
+  background: var(--primary-8, rgba(250, 250, 250, 0.2)) !important;
+}
+
+.ws-search-input:focus-visible {
+  outline: 2px solid var(--border-focus-color, var(--primary-500)) !important;
+}
+
+.ws-search-input__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+.ws-search-input__icon,
+.ws-search-input__shortcut {
+  display: flex;
+  padding: 4px;
+}
+
+.ws-search-input__text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.ws-search-input__shortcut span {
+  background-color: var(--primary-9, rgba(255, 255, 255, 0.1)) !important;
+  color: var(--primary-contrast, var(--primary-400)) !important;
+}
+
+/* notification-button.module.css (also used by the small search button) */
+.ws-round-button-wrap {
+  --button-size: 28px;
+
+  position: relative;
+  height: var(--button-size);
+  width: var(--button-size);
+}
+
+.ws-titlebar .ws-round-button {
+  box-sizing: border-box;
+  height: 28px !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  border: 2px solid transparent !important;
+  padding: 0 !important;
+  font-size: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+}
+
+.ws-titlebar .ws-round-button [data-co-name="Icon"],
+.ws-titlebar .ws-round-button [data-co-name="Icon"] {
+  color: var(--primary-contrast, var(--primary-400)) !important;
+}
+
+.ws-titlebar .ws-round-button:hover:not(.ws-active) {
+  background: var(--primary-11, var(--primary-600)) !important;
+}
+
+.ws-titlebar .ws-round-button:focus-visible {
+  border-color: var(--border-focus-color, var(--primary-500)) !important;
+}
+
+.ws-titlebar .ws-round-button.ws-active {
+  background: var(--primary-contrast, var(--primary-200)) !important;
+}
+
+.ws-titlebar .ws-round-button.ws-active [data-co-name="Icon"],
+.ws-titlebar .ws-round-button.ws-active [data-co-name="Icon"] {
+  color: var(--titlebar-default, var(--primary-600)) !important;
+}
+
+.ws-notification-badge {
+  font-size: 9px !important;
+  position: absolute !important;
+  right: 0;
+  top: 0;
+  transform: translate3d(15%, 5%, 0);
+  pointer-events: none;
+}
+
+/* status.button.module.css + title.bar.button.component.module.css */
+.ws-status-button {
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 103px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  --background-color: rgba(250, 250, 250, 0.2);
+  background-color: var(--background-color);
+  font-family: var(--font-family);
+  color: #fff;
+  outline: 0;
+}
+
+.ws-status-button:hover:not(.ws-active) {
+  --background-color: rgba(250, 250, 250, 0.3);
+}
+
+.ws-status-button.ws-active {
+  --background-color: rgba(250, 250, 250, 0.4);
+}
+
+.ws-status-button:focus-visible {
+  outline: 2px solid var(--border-focus-color, var(--primary-500));
+}
+
+.ws-status-button__row {
+  display: flex;
+  align-items: center;
+}
+
+.ws-status-button__texts {
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px;
+  text-align: start;
+}
+
+.ws-status-button__name {
+  width: 46px;
+  font-size: 10px !important;
+  line-height: normal !important;
+  color: #fff !important;
+}
+
+.ws-status-button__timer {
+  min-width: 47px;
+  font-size: 12px !important;
+  line-height: normal !important;
+  color: var(--primary-contrast, var(--white)) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-status-button__chevron {
+  transition-property: transform;
+  transition-duration: 0.5s;
+  border-radius: 50%;
+}
+
+.ws-active .ws-status-button__chevron {
+  transform: rotate(180deg);
+}
+
+.ws-status-badge {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* profile.module.css */
+.ws-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 16px;
+  z-index: 1;
+}
+
+.ws-avatar-button {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  display: inline-flex;
+}
+
+.ws-avatar-button:focus-visible {
+  outline: 2px solid var(--border-focus-color, var(--primary-500));
+}
+
+/* Title bar avatar: 28px, 24px in a small window (title-bar.mdx). */
+.ws-avatar-button [data-co-name="Avatar"] {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+}
+
+.ws-avatar-button--small [data-co-name="Avatar"] {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+}
+
+.ws-popup-profile {
+  width: 246px !important;
+  height: auto;
+  max-height: calc(100vh - 50px);
+  padding: 8px 0 8px 0 !important;
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+.ws-popup-profile li,
+.ws-popup-submenu li {
+  padding: 0 8px 4px 8px !important;
+}
+
+.ws-popup-profile li:last-child,
+.ws-popup-submenu li:last-child {
+  padding: 0 8px 0 8px !important;
+}
+
+.ws-popup-profile li > a,
+.ws-popup-profile li > button,
+.ws-popup-submenu li > a {
+  width: 100%;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+/* popup.options.submenu.item.module.css */
+.ws-popup-submenu {
+  padding: 8px !important;
+  margin-right: 4px;
+  box-shadow: 0 1px 1px 0 rgb(0 0 0 / 14%), 0 2px 1px -1px rgb(0 0 0 / 12%), 0 1px 3px 0 rgb(0 0 0 / 20%) !important;
+  height: fit-content;
+  width: 258px !important;
+}
+
+/* profile.divider.module.css */
+.ws-profile-divider,
+.ws-popup-profile li.ws-profile-divider,
+.ws-popup-submenu li.ws-profile-divider {
+  margin: 8px -10px;
+  padding: 0 !important;
+  list-style: none;
+}
+
+/* popup.options.item.button.module.css */
+.ws-menu-button {
+  appearance: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background: none;
+  border: 1px solid transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  display: block;
+  border-radius: var(--border-radius-xsmall, 4px);
+  outline: none;
+  cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+.ws-menu-button:hover,
+.ws-menu-button[data-hover="true"] {
+  background-color: var(--secondary-2, var(--basic-200, #f2f4f5));
+}
+
+.ws-menu-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--border-focus-color, var(--primary-500, #aeb3b8));
+}
+
+.ws-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.ws-menu-row__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ws-menu-about {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  user-select: text;
+}
+
+/* profile.status.module.css */
+.ws-popup-status {
+  width: 280px !important;
+  padding: 0 !important;
+}
+
+.ws-status-section-title {
+  padding: 12px 0 0 16px;
+}
+
+.ws-status-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding-left: 8px;
+}
+
+.ws-status-row__name {
+  flex: 1 1 auto;
+  width: 0;
+  padding: 0 8px;
+}
+
+.ws-tooltip-popup {
+  padding: 8px !important;
+  pointer-events: none;
+}
+
+/* secondary.area.module.css (title bar button) */
+.ws-secondary-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.ws-secondary-toggle::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  background-color: var(--primary-4, var(--primary-400));
+  opacity: 0.5;
+}
+
+.ws-titlebar .ws-secondary-toggle__button {
+  box-sizing: border-box !important;
+  height: 40px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+  font-size: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: 2px solid transparent !important;
+  background: transparent !important;
+}
+
+.ws-titlebar .ws-secondary-toggle__button [data-co-name="Icon"],
+.ws-titlebar .ws-secondary-toggle__button [data-co-name="Icon"] {
+  color: var(--primary-contrast, var(--primary-400)) !important;
+}
+
+.ws-titlebar .ws-secondary-toggle__button:hover:not(.ws-active) {
+  background: var(--titlebar-raised) !important;
+}
+
+.ws-titlebar .ws-secondary-toggle__button:focus-visible {
+  border-color: var(--border-focus-color, var(--primary-500)) !important;
+}
+
+.ws-titlebar .ws-secondary-toggle__button.ws-active {
+  background: var(--primary-contrast, var(--white)) !important;
+}
+
+.ws-titlebar .ws-secondary-toggle__button.ws-active [data-co-name="Icon"],
+.ws-titlebar .ws-secondary-toggle__button.ws-active [data-co-name="Icon"] {
+  color: var(--titlebar-default, var(--primary-600)) !important;
+}
+
+/* ---- Dock: dock.root, dock.component, dock.bar --------------------------- */
+
+.ws-dock-root {
+  height: 100%;
+  flex-shrink: 0;
+
+  --dock-drawer-title: var(--text-default, var(--secondary-800));
+  --dock-drawer-bg: var(--gray-2, var(--secondary-200));
+  --dock-drawer-link: var(--secondary-12, var(--secondary-800));
+  --dock-drawer-link-border: var(--border-focus-color, var(--primary-500));
+  --dock-drawer-link-active: var(--primary-11, var(--primary-600));
+  --dock-drawer-link-hover: var(--text-default, var(--secondary-800));
+  --dock-drawer-link-bg-active: var(--secondary-3, var(--secondary-300));
+  --dock-drawer-link-bg-hover: var(--secondary-4, var(--secondary-300));
+
+  --dock-bar-bg: var(--gray-2, var(--secondary-200));
+  --dock-horizontal-divider-bg: var(--gray-4, var(--secondary-400));
+  --dock-vertical-divider-bg: var(--secondary-4, var(--secondary-300));
+  --dock-button-icon: var(--gray-11, var(--secondary-700));
+  --dock-button-bg-active: var(--primary-9, var(--primary-600));
+  --dock-button-bg-hover: var(--gray-4, var(--secondary-400));
+  --dock-button-outline-focus: var(--border-focus-color, var(--primary-500));
+  --dock-button-icon-active: var(--primary-contrast, var(--primary-200));
+
+  --dock-button-border-width: 2px;
+  --dock-button-height: 36px;
+  --dock-button-width: 36px;
+  --dock-button-icon-size: 24px;
+}
+
+.ws-dock {
+  --drawer-width: 0px;
+  --dock-margin: 0px;
+  --drawer-layer-opacity: 0;
+  --drawer-layer-pointer-events: none;
+  --dock-width: 58px;
+  --drawer-close-button-width: 24px;
+  --dock-transition-duration: 300ms;
+  --dock-transition-easing: ease;
+
+  position: relative;
+  display: inline-flex;
+  height: 100%;
+  margin-right: var(--dock-margin);
+  z-index: 1350;
+  transition: margin-right var(--dock-transition-duration) var(--dock-transition-easing);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-dock {
+    --dock-transition-duration: 0ms;
+  }
+}
+
+.ws-dock--has-drawer {
+  --drawer-width: 16px;
+  --dock-margin: 16px;
+}
+
+.ws-dock--has-drawer.ws-dock--small {
+  --drawer-width: 10px;
+  --dock-margin: 10px;
+}
+
+.ws-dock--has-drawer.ws-dock--drawer-open {
+  --drawer-width: 212px;
+  --drawer-layer-opacity: 1;
+  --drawer-layer-pointer-events: auto;
+}
+
+.ws-dock--has-drawer.ws-dock--drawer-open.ws-dock--drawer-fixed:not(.ws-dock--small) {
+  --dock-margin: var(--drawer-width);
+}
+
+.ws-dock--expanded {
+  --dock-width: 240px;
+}
+
+.ws-dock__bar {
+  display: flex;
+  flex-direction: column;
+  width: var(--dock-width);
+  height: 100%;
+  padding: 8px;
+  background-color: var(--dock-bar-bg);
+  border-right: 2px solid var(--dock-vertical-divider-bg);
+  z-index: 1350;
+  box-sizing: border-box;
+  transition: width var(--dock-transition-duration) var(--dock-transition-easing);
+}
+
+.ws-dock__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ws-dock__container:last-child {
+  padding-bottom: 4px;
+}
+
+.ws-dock__container--maximal {
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.ws-dock__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* menu.module.css */
+.ws-dock__scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  outline: none;
+}
+
+.ws-dock__scroll--scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ws-dock__divider {
+  width: 100%;
+  flex-shrink: 0;
+  margin: var(--spacing-micro, 8px) 0;
+}
+
+.ws-dock__divider::before {
+  content: "";
+  display: block;
+  height: 2px;
+  background-color: var(--dock-horizontal-divider-bg);
+}
+
+.ws-dock-button-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+
+.ws-dock-button-wrap:not(:last-child) {
+  margin-bottom: 2px;
+}
+
+.ws-dock .ws-dock-button {
+  flex-shrink: 0;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding: 0 calc(var(--spacing-nano, 4px) + var(--spacing-pico, 2px)) !important;
+  gap: 0 !important;
+  border-radius: 50% !important;
+  transition: none !important;
+  overflow: hidden;
+}
+
+.ws-dock .ws-dock-button:not(.ws-dock-button--active):hover {
+  background-color: var(--dock-button-bg-hover) !important;
+}
+
+.ws-dock .ws-dock-button--expanded {
+  width: 100% !important;
+  justify-content: flex-start !important;
+  gap: var(--spacing-xsmall, 12px) !important;
+  border-radius: var(--border-radius-xsmall, 4px) !important;
+}
+
+.ws-dock .ws-dock-button--expanded:focus-visible {
+  outline: none !important;
+  box-shadow: inset 0 0 0 var(--dock-button-border-width, 2px) var(--dock-button-outline-focus) !important;
+}
+
+.ws-dock-button__inner {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
+  min-width: 0;
+}
+
+.ws-dock-button--expanded .ws-dock-button__inner {
+  gap: 12px;
+}
+
+/* dock.app.button.module.css */
+.ws-dock-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.ws-dock-icon .ws-svg {
+  display: block;
+  height: var(--dock-button-icon-size);
+  width: var(--dock-button-icon-size);
+}
+
+.ws-dock-icon .ws-svg {
+  background-color: var(--dock-button-icon);
+}
+
+.ws-dock-button--active .ws-dock-icon .ws-svg {
+  background-color: var(--dock-button-icon-active);
+}
+
+.ws-dock .ws-dock-button [data-co-name="Icon"],
+.ws-dock .ws-dock-button [data-co-name="Icon"] {
+  color: var(--dock-button-icon) !important;
+  flex-shrink: 0;
+}
+
+.ws-dock .ws-dock-button--active [data-co-name="Icon"],
+.ws-dock .ws-dock-button--active [data-co-name="Icon"] {
+  color: var(--dock-button-icon-active) !important;
+}
+
+.ws-dock-icon__initials {
+  width: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--dock-button-icon);
+}
+
+.ws-dock-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 0 !important;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+  opacity: 0 !important;
+  color: var(--text-default);
+}
+
+.ws-dock-button--active .ws-dock-label {
+  color: var(--primary-contrast);
+}
+
+.ws-dock-label--expanded {
+  max-width: 100% !important;
+  opacity: 1 !important;
+}
+
+.ws-dock-badge {
+  position: absolute !important;
+  left: 32px;
+  top: 14px;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ws-dock-button-wrap--expanded .ws-dock-badge {
+  left: 32px;
+}
+
+/* expand.toggle.module.css */
+.ws-dock-expand {
+  flex-shrink: 0;
+}
+
+.ws-dock-expand--expanded {
+  align-self: flex-end !important;
+}
+
+/* dock.nav.overflow.module.css */
+.ws-overflow-popup {
+  height: auto;
+  padding: 10px !important;
+  max-height: calc(80vh - 40px);
+  overflow-y: auto;
+  min-width: 220px;
+  --dock-button-icon: var(--gray-11, var(--secondary-700));
+}
+
+.ws-overflow-popup li:not(:last-child) {
+  margin-bottom: 4px !important;
+}
+
+.ws-overflow-popup .ws-svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.ws-overflow-popup .ws-svg {
+  background-color: currentColor !important;
+}
+
+.ws-overflow-tag {
+  padding-right: 6px;
+  padding-left: 6px;
+  height: 16px;
+  line-height: 16px;
+  min-width: 16px;
+}
+
+/* ---- Drawer: dock.drawer.component.module.css ---------------------------- */
+
+.ws-drawer-wrap {
+  position: initial;
+}
+
+.ws-drawer {
+  position: absolute;
+  top: 0;
+  left: var(--dock-width);
+  height: 100%;
+  width: var(--drawer-width) !important;
+  overflow: hidden;
+  color: var(--dock-drawer-title) !important;
+  background-color: var(--dock-drawer-bg) !important;
+  box-shadow: var(--secondary-6, var(--secondary-400, transparent)) 1px 0 0 0;
+  transition:
+    width var(--dock-transition-duration) var(--dock-transition-easing),
+    left var(--dock-transition-duration) var(--dock-transition-easing);
+}
+
+.ws-drawer__layer {
+  display: flex;
+  flex-direction: column;
+  width: 212px;
+  height: 100%;
+  opacity: var(--drawer-layer-opacity);
+  pointer-events: var(--drawer-layer-pointer-events);
+}
+
+.ws-drawer__header {
+  padding: 24px 20px;
+  color: var(--dock-drawer-title);
+}
+
+.ws-drawer__list {
+  flex-grow: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 12px;
+}
+
+.ws-drawer__list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-drawer-item {
+  display: block;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.ws-drawer .ws-drawer-item[data-co-active],
+.ws-drawer .ws-drawer-item.ws-drawer-item--active {
+  background-color: var(--dock-drawer-link-bg-active) !important;
+}
+
+.ws-drawer .ws-drawer-item:not(.ws-drawer-item--active):hover {
+  color: var(--dock-drawer-link-hover) !important;
+  background-color: var(--dock-drawer-link-bg-hover) !important;
+}
+
+.ws-drawer .ws-drawer-item:focus,
+.ws-drawer .ws-drawer-item:focus-visible {
+  outline: 2px solid var(--dock-drawer-link-border);
+  outline-offset: 0;
+}
+
+.ws-drawer-item__text {
+  display: block;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.ws-drawer-group__title {
+  padding: 4px 8px;
+}
+
+.ws-drawer-actions {
+  padding: 8px 0;
+}
+
+.ws-drawer-edge {
+  width: calc(100% + 24px);
+  margin-left: -12px;
+}
+
+.ws-drawer__hamburger,
+.ws-drawer__hamburger::before,
+.ws-drawer__hamburger::after {
+  position: absolute;
+  width: 6px;
+  height: 1.3px;
+  background-color: var(--secondary-12, var(--secondary-800));
+}
+
+.ws-drawer__hamburger {
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ws-drawer__hamburger::before {
+  content: "";
+  top: -3px;
+}
+
+.ws-drawer__hamburger::after {
+  content: "";
+  bottom: -3px;
+}
+
+.ws-drawer__actions {
+  position: absolute;
+  top: 8px;
+  left: calc(var(--dock-width) + calc(var(--drawer-close-button-width) / 2) + var(--drawer-width) - var(--drawer-close-button-width));
+  width: min-content;
+  height: min-content;
+  z-index: 2;
+  transition: left var(--dock-transition-duration) var(--dock-transition-easing);
+}
+
+.ws-drawer-toggle {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  height: 24px;
+  width: 24px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--secondary-12, var(--secondary-800));
+  background-color: var(--gray-2, var(--secondary-300));
+  border: 1px solid var(--gray-5, var(--secondary-400));
+  cursor: pointer;
+  outline: 0;
+}
+
+.ws-drawer-toggle [data-co-name="Icon"],
+.ws-drawer-toggle [data-co-name="Icon"] {
+  width: 16px !important;
+  height: 16px !important;
+  font-size: 16px !important;
+  user-select: none;
+  color: inherit !important;
+}
+
+.ws-drawer-toggle--fixed [data-co-name="Icon"],
+.ws-drawer-toggle--fixed [data-co-name="Icon"] {
+  transform: rotate(180deg);
+}
+
+.ws-drawer-toggle:focus-visible {
+  border-color: var(--border-focus-color, var(--primary-500));
+}
+
+.ws-drawer-toggle:active {
+  background-color: var(--gray-5, var(--secondary-400));
+  border-color: var(--gray-6, var(--secondary-500));
+}
+
+/* ---- Secondary area: secondary.area, header, app.selector --------------- */
+
+.ws-secondary {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+  background-color: var(--background-color);
+  border-left: 2px solid var(--secondary-4, var(--gray-300));
+  box-sizing: border-box;
+}
+
+.ws-secondary--resizable {
+  border-left: 0;
+}
+
+.ws-separator {
+  flex-shrink: 0;
+  width: 2px;
+  background-color: var(--secondary-4, var(--secondary-300));
+  cursor: col-resize;
+  outline: none;
+}
+
+.ws-separator:hover {
+  background-color: var(--secondary-6, var(--secondary-400));
+}
+
+.ws-separator--active {
+  background-color: var(--secondary-8, var(--secondary-500)) !important;
+}
+
+.ws-separator:focus-visible {
+  background-color: var(--secondary-8, var(--secondary-500));
+}
+
+.ws-secondary__header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 20px 12px;
+  box-sizing: border-box;
+}
+
+.ws-secondary__title-row {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ws-secondary__icon .ws-svg {
+  display: block;
+  height: 24px;
+  width: 24px;
+}
+
+.ws-secondary__icon .ws-svg {
+  background-color: var(--gray-12, var(--gray-800));
+}
+
+.ws-secondary__title {
+  min-width: 0;
+  font-size: 20px !important;
+  line-height: 24px !important;
+  margin: 0 !important;
+}
+
+.ws-secondary .ws-secondary__switcher {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 0 !important;
+  background-color: var(--secondary-5, var(--gray-300)) !important;
+}
+
+.ws-secondary .ws-secondary__switcher:hover:not(.ws-active) {
+  background-color: var(--secondary-6, var(--gray-400)) !important;
+}
+
+.ws-secondary .ws-secondary__switcher.ws-active {
+  background-color: var(--secondary-6, var(--gray-500)) !important;
+}
+
+.ws-secondary__close {
+  padding-left: 12px;
+}
+
+.ws-secondary__frames {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ws-app-selector {
+  padding: 8px;
+}
+
+.ws-app-selector__heading {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 8px 8px;
+}
+
+.ws-app-selector__item-row {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+}
+
+.ws-app-selector__icon {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-shrink: 0;
+  margin-right: 12px;
+  background-color: var(--gray-3, var(--primary-200)) !important;
+  height: 32px !important;
+  width: 32px !important;
+  border-radius: 8px !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.ws-app-selector__icon .ws-svg {
+  height: 20px !important;
+  width: 20px !important;
+}
+
+.ws-app-selector__icon .ws-svg {
+  background-color: var(--text-default, var(--primary-600)) !important;
+}
+
+.ws-app-selector__icon--active {
+  background-color: var(--primary-5, var(--primary-400)) !important;
+}
+
+.ws-app-selector__icon--active path {
+  fill: var(--primary-11, var(--primary-600)) !important;
+}
+
+.ws-app-selector__title--active {
+  color: var(--primary-11, var(--primary-600)) !important;
+}
+
+/* ---- Banners: messages/components/banner -------------------------------- */
+
+.ws-banners {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex-shrink: 0;
+  transition: height 200ms ease-in-out;
+}
+
+.ws-banner {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+}
+
+.ws-banner__body {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.ws-banner__row {
+  display: flex;
+  width: 100%;
+}
+
+.ws-banner__content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ws-banner__text {
+  display: flex;
+  flex-grow: 1;
+  min-width: 0;
+  padding: 2px 8px 0;
+}
+
+.ws-banner__divider {
+  height: 24px;
+  padding: 0 12px;
+}
+
+/* ---- Toaster: toast/components/toaster ---------------------------------- */
+
+.ws-toaster > div {
+  position: absolute !important;
+  bottom: var(--base-spacing-8, 32px) !important;
+}
+
+.ws-toast {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.ws-toast__body {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.ws-toast__texts {
+  padding-bottom: 12px;
+}
+
+.ws-toast__buttons {
+  display: grid;
+  grid-template-columns: minmax(60px, auto) minmax(60px, auto);
+  gap: 12px;
+  width: fit-content;
+}
+
+.ws-toast__close {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+}
+
+/* ---- Notification center: notifications-panel + history ----------------- */
+
+.ws-notifications-layer {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1390;
+  pointer-events: none;
+}
+
+.ws-notifications-layer > * {
+  pointer-events: auto;
+}
+
+.ws-notifications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.ws-notifications__header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ws-notifications__title {
+  flex-grow: 1;
+}
+
+.ws-notifications__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+}
+
+.ws-notifications__list-title {
+  padding: 32px 24px 24px;
+}
+
+.ws-notifications ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-notification-card {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  padding: 16px;
+}
+
+.ws-notification-card--link:hover {
+  cursor: pointer;
+  background-color: var(--secondary-3, var(--gray-200));
+}
+
+.ws-notification-card__icon {
+  align-self: flex-start;
+  min-width: 40px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.ws-notification-card__icon .ws-svg,
+.ws-notification-card__icon img {
+  display: block;
+  height: 18px;
+  width: 18px;
+}
+
+.ws-notification-card__icon .ws-svg {
+  background-color: var(--gray-12, var(--gray-800));
+}
+
+.ws-notification-card__main {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.ws-notification-card__title-row {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 250px;
+  align-items: baseline;
+}
+
+.ws-notification-card__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ws-notification-card__date {
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.ws-notification-card__unread {
+  display: flex;
+  padding-left: 8px;
+  height: 100%;
+  cursor: pointer;
+}
+
+.ws-notifications__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+}
+
+.ws-system-notification {
+  display: flex;
+  gap: 8px;
+  padding: 16px 12px;
+}
+
+/* ---- Error screen: canvas/components/error-component -------------------- */
+
+.ws-error {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 0 16px;
+  background: var(--background-color);
+}
+
+.ws-error--large {
+  grid-template-columns: 1fr 1fr;
+}
+
+.ws-error__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.ws-error--large .ws-error__text {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.ws-error__icon-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ws-error__icon {
+  font-size: 150px !important;
+  width: 150px !important;
+  height: 150px !important;
+}
+
+.ws-error--large .ws-error__icon {
+  font-size: 375px !important;
+  width: 375px !important;
+  height: 375px !important;
+}
+
+.ws-error__title {
+  font-size: 38px !important;
+  line-height: 1.2 !important;
+}
+
+.ws-error--medium .ws-error__title {
+  font-size: 44px !important;
+}
+
+.ws-error--large .ws-error__title {
+  font-size: 64px !important;
+  line-height: 1 !important;
+}
+
+.ws-error__description {
+  padding: 24px 0;
+}
+
+/* ---- Workspace panel and modal over the app area ------------------------ */
+
+.ws-panel-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ws-panel-layer > * {
+  pointer-events: auto;
+}
+
+.ws-workspace-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ws-workspace-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+}
+
+.ws-workspace-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ws-workspace-panel__tabs {
+  display: flex;
+  gap: 16px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--secondary-4);
+}
+
+.ws-workspace-panel__tab {
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.ws-workspace-panel__tab--active {
+  border-bottom-color: var(--primary-9);
+  color: var(--primary-11);
+}
+
+.ws-workspace-panel__body {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-description);
+}
+
+.ws-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Workspace draws these panels edge to edge: no Cobalt Panel padding. */
+.ws-notifications-layer [role="dialog"],
+.ws-notifications-layer [data-co-name],
+.ws-panel-layer [role="dialog"],
+.ws-panel-layer [data-co-name="Panel"] {
+  --panel-padding: 0px !important;
+}
+
+/* App icons (shell/SvgIcon.tsx): the SVG is a mask over a box filled with the icon's colour. */
+.ws-svg {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-color: currentColor;
+  -webkit-mask: var(--ws-icon-url) center / contain no-repeat;
+  mask: var(--ws-icon-url) center / contain no-repeat;
+}

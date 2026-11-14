@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="Image placeholder">
+  <rect x="1" y="1" width="638" height="358" rx="8" fill="#f4f4f6" stroke="#b8b8c4" stroke-width="2" stroke-dasharray="10 8"/>
+  <g fill="none" stroke="#8a8a99" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="268" y="120" width="104" height="80" rx="6"/>
+    <path d="M276 190l28-30 20 20 14-14 26 24"/>
+  </g>
+  <circle cx="346" cy="142" r="8" fill="#8a8a99"/>
+  <text x="320" y="248" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#5c5c6b">Image to be added</text>
+</svg>

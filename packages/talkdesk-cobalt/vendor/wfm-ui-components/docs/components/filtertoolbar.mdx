@@ -1,0 +1,322 @@
+# FilterToolbar
+
+A filter summary bar that renders active filters as dismissable `Tag` elements grouped by category, and hides itself automatically when no filters are active.
+
+```ts
+import { FilterToolbar } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+Each `FilterGroup` in `filters` renders its `label` followed by individual `Tag` elements for each active option. Clicking the × icon on a tag calls `onDeleteTag`; clicking "Clear All" calls `onClearAll`.
+
+```tsx preview
+import { useState } from 'react';
+import { FilterToolbar } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+const INITIAL_FILTERS = [
+  {
+    key: 'status',
+    label: 'Status',
+    options: [
+      { id: 'active', value: 'Active' },
+      { id: 'inactive', value: 'Inactive' },
+    ],
+  },
+  {
+    key: 'team',
+    label: 'Team',
+    options: [
+      { id: 'support', value: 'Support' },
+      { id: 'sales', value: 'Sales' },
+    ],
+  },
+];
+
+export default function Demo() {
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+
+  const handleDeleteTag = (filterKey, optionId) => {
+    setFilters((prev) =>
+      prev.map((group) =>
+        group.key === filterKey
+          ? {
+              ...group,
+              options: group.options.filter((o) => o.id !== optionId),
+            }
+          : group
+      )
+    );
+  };
+
+  const handleClearAll = () => {
+    setFilters((prev) => prev.map((group) => ({ ...group, options: [] })));
+  };
+
+  return (
+    <Box width="100%">
+      <FilterToolbar
+        filters={filters}
+        onDeleteTag={handleDeleteTag}
+        onClearAll={handleClearAll}
+        data-qa="demo-filter-toolbar"
+      />
+    </Box>
+  );
+}
+```
+
+## Custom Labels
+
+Use `filtersLabel` and `clearAllLabel` to localise or override the default English strings.
+
+```tsx preview
+import { FilterToolbar } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <FilterToolbar
+      filters={[
+        {
+          key: 'priority',
+          label: 'Prioridad',
+          options: [
+            { id: 'high', value: 'Alta' },
+            { id: 'low', value: 'Baja' },
+          ],
+        },
+      ]}
+      filtersLabel="Filtros"
+      clearAllLabel="Borrar todo"
+      onDeleteTag={() => {}}
+      onClearAll={() => {}}
+    />
+  );
+}
+```
+
+## Empty State (renders null)
+
+When all filter groups have no active options, the component returns `null` and occupies no space.
+
+```tsx preview
+import { FilterToolbar, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+export default function Demo() {
+  return (
+    <Box padding={4}>
+      <Typography variant="caption">
+        No active filters — FilterToolbar renders nothing below:
+      </Typography>
+      <FilterToolbar
+        filters={[{ key: 'status', label: 'Status', options: [] }]}
+        onDeleteTag={() => {}}
+        onClearAll={() => {}}
+      />
+    </Box>
+  );
+}
+```
+
+## maxRender — Overflow Badge
+
+Set `maxRender` to limit how many tags are shown per group. Tags beyond the limit collapse into a `+N` badge.
+
+```tsx preview
+import { useState } from 'react';
+import { FilterToolbar } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+
+const INITIAL_FILTERS = [
+  {
+    key: 'queues',
+    label: 'Queues',
+    options: [
+      { id: 'q1', value: 'agent1' },
+      { id: 'q2', value: 'agent2' },
+      { id: 'q3', value: 'agent3' },
+      { id: 'q4', value: 'agent4' },
+      { id: 'q5', value: 'agent5' },
+      { id: 'q6', value: 'agent6' },
+      { id: 'q7', value: 'agent7' },
+      { id: 'q8', value: 'agent8' },
+      { id: 'q9', value: 'agent9' },
+      { id: 'q10', value: 'agent10' },
+      { id: 'q11', value: 'agent11' },
+      { id: 'q12', value: 'agent12' },
+      { id: 'q13', value: 'agent13' },
+      { id: 'q14', value: 'agent14' },
+      { id: 'q15', value: 'agent15' },
+      { id: 'q16', value: 'agent16' },
+      { id: 'q17', value: 'agent17' },
+      { id: 'q18', value: 'agent18' },
+      { id: 'q19', value: 'agent19' },
+      { id: 'q20', value: 'agent20' },
+      { id: 'q21', value: 'agent21' },
+      { id: 'q22', value: 'agent22' },
+      { id: 'q23', value: 'agent23' },
+      { id: 'q24', value: 'agent24' },
+      { id: 'q25', value: 'agent25' },
+      { id: 'q26', value: 'agent26' },
+      { id: 'q27', value: 'agent27' },
+      { id: 'q28', value: 'agent28' },
+      { id: 'q29', value: 'agent29' },
+      { id: 'q30', value: 'agent30' },
+      { id: 'q31', value: 'agent31' },
+      { id: 'q32', value: 'agent32' },
+      { id: 'q33', value: 'agent33' },
+      { id: 'q34', value: 'agent34' },
+    ],
+  },
+  {
+    key: 'tags',
+    label: 'Tags',
+    options: [{ id: 't1', value: '345667435335' }],
+  },
+];
+
+export default function Demo() {
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+
+  const handleDeleteTag = (filterKey, optionId) => {
+    setFilters((prev) =>
+      prev.map((group) =>
+        group.key === filterKey
+          ? {
+              ...group,
+              options: group.options.filter((o) => o.id !== optionId),
+            }
+          : group
+      )
+    );
+  };
+
+  const handleClearAll = () => {
+    setFilters((prev) => prev.map((group) => ({ ...group, options: [] })));
+  };
+
+  return (
+    <Box width="100%">
+      <FilterToolbar
+        filters={filters}
+        maxRender={3}
+        onDeleteTag={handleDeleteTag}
+        onClearAll={handleClearAll}
+        clearAllLabel="Clear all"
+        data-qa="demo-filter-toolbar-maxrender"
+      />
+    </Box>
+  );
+}
+```
+
+## Dividers
+
+Use `isTopDivider` and `isBottomDivider` to render a 1 px Cobalt `Divider` above and/or below the toolbar. This is useful when the toolbar sits between sections that share the same `basic100` background and need a visual separator.
+
+- `isTopDivider` — adds a divider above the tag row
+- `isBottomDivider` — adds a divider below the tag row
+
+```tsx preview
+import { FilterToolbar, Typography } from '@wfm/ui-components';
+import Box from '@talkdesk/cobalt-react-box';
+import Flex from '@talkdesk/cobalt-react-flex';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+
+const FILTERS = [
+  {
+    key: 'status',
+    label: 'Status',
+    options: [
+      { id: 'active', value: 'Active' },
+      { id: 'inactive', value: 'Inactive' },
+    ],
+  },
+];
+
+function Section({ label, children }) {
+  const theme = useTheme();
+  return (
+    <Box
+      width="100%"
+      style={{ border: `1px solid ${theme.basic300}`, borderRadius: 4 }}
+    >
+      <Box padding={3} backgroundColor={theme.basic100}>
+        <Typography variant="caption" color={theme.basic600}>
+          {label}
+        </Typography>
+      </Box>
+      {children}
+      <Box padding={3}>
+        <Typography variant="caption">Content below toolbar</Typography>
+      </Box>
+    </Box>
+  );
+}
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="6" padding="4">
+      <Section label="isTopDivider">
+        <FilterToolbar
+          isTopDivider
+          filters={FILTERS}
+          onDeleteTag={() => {}}
+          onClearAll={() => {}}
+        />
+      </Section>
+      <Section label="isBottomDivider">
+        <FilterToolbar
+          isBottomDivider
+          filters={FILTERS}
+          onDeleteTag={() => {}}
+          onClearAll={() => {}}
+        />
+      </Section>
+      <Section label="isTopDivider + isBottomDivider">
+        <FilterToolbar
+          isTopDivider
+          isBottomDivider
+          filters={FILTERS}
+          onDeleteTag={() => {}}
+          onClearAll={() => {}}
+        />
+      </Section>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+### FilterToolbar
+
+| Prop              | Type                                            | Default              | Description                                              |
+| ----------------- | ----------------------------------------------- | -------------------- | -------------------------------------------------------- |
+| `filters`         | `FilterGroup[]`                                 | —                    | Array of filter groups to display                        |
+| `onDeleteTag`     | `(filterKey: string, optionId: string) => void` | —                    | Called when a tag's × is clicked                         |
+| `onClearAll`      | `() => void`                                    | —                    | Called when "Clear All" is clicked                       |
+| `maxRender`       | `number`                                        | —                    | Hard cap on tags shown per group before overflow applies |
+| `filtersLabel`    | `string`                                        | `"Filters"`          | Label before the filter groups                           |
+| `clearAllLabel`   | `string`                                        | `"Clear All"`        | Text of the clear button                                 |
+| `isTopDivider`    | `boolean`                                       | `false`              | Renders a 1 px Cobalt Divider above the toolbar          |
+| `isBottomDivider` | `boolean`                                       | `false`              | Renders a 1 px Cobalt Divider below the toolbar          |
+| `data-qa`         | `string`                                        | —                    | Test selector for the toolbar root                       |
+| `data-component`  | `string`                                        | `"WFMFilterToolbar"` | Component identifier                                     |
+
+### FilterGroup
+
+| Prop      | Type             | Description                         |
+| --------- | ---------------- | ----------------------------------- |
+| `key`     | `string`         | Unique identifier for the group     |
+| `label`   | `string`         | Display label shown before the tags |
+| `options` | `FilterOption[]` | Active filter options               |
+
+### FilterOption
+
+| Prop    | Type     | Description              |
+| ------- | -------- | ------------------------ |
+| `id`    | `string` | Unique option identifier |
+| `value` | `string` | Display text for the tag |

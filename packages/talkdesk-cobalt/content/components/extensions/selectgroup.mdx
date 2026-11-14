@@ -1,0 +1,70 @@
+# SelectGroup
+
+A button-group selector supporting single-select and multi-select modes as a fully controlled component via `options`, `value`, and `onChange`.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { SelectGroup } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+Use `mode="single"` (the default) when exactly one option must be active at a time. Pass the current value as `value` and update it with `onChange`. This pattern suits view-switchers, period selectors, and other mutually-exclusive choices.
+
+<Example id="extensions.selectgroup.001" />
+
+## Multi-Select
+
+Set `mode="multi"` when the user may activate several options independently. `value` becomes a `string[]` and `onChange` receives the updated array after each toggle. Add `shape="fullWidth"` to stretch the group across the available container width — useful for day-of-week pickers and similar full-row layouts.
+
+- `mode="multi"` — multiple options can be active at the same time
+- `shape="fullWidth"` — group fills the container width evenly
+
+<Example id="extensions.selectgroup.002" />
+
+## Sizes
+
+The `size` prop accepts `small`, `medium` (default), and `large`. Use `small` for dense toolbars and `large` for prominent top-level controls.
+
+- Top: `size="small"`
+- Middle: `size="medium"` — default
+- Bottom: `size="large"`
+
+<Example id="extensions.selectgroup.003" />
+
+## Outline Style
+
+Set `type="outline"` to render a bordered variant instead of the default filled style. Useful when the group sits on a surface where the filled style would compete with surrounding UI.
+
+<Example id="extensions.selectgroup.004" />
+
+## Validation States
+
+Use `variation="warning"` or `variation="error"` to communicate field-level validation feedback. The surrounding border changes color while the options remain interactive.
+
+- Left: `variation="warning"` — advisory state, selection is valid but needs attention
+- Right: `variation="error"` — invalid state, user must correct the selection
+
+<Example id="extensions.selectgroup.005" />
+
+## Disabled Options
+
+Set `disabled: true` on individual items in the `options` array to prevent interaction with specific choices while keeping the rest of the group active.
+
+<Example id="extensions.selectgroup.006" />
+
+## Props
+
+| Prop             | Type                                                      | Default            | Description                                                  |
+| ---------------- | --------------------------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| `options`        | `SelectGroupOption[]`                                     | —                  | Required. Array of `{ value, label, disabled? }` items.      |
+| `value`          | `string` \| `string[]`                                    | —                  | Required. Selected value(s). `string[]` when `mode="multi"`. |
+| `onChange`       | `(value: string) => void` \| `(values: string[]) => void` | —                  | Required. Called on every selection change.                  |
+| `mode`           | `'single' \| 'multi'`                                     | `'single'`         | Selection mode.                                              |
+| `size`           | `'small' \| 'medium' \| 'large'`                          | `'medium'`         | Control size.                                                |
+| `shape`          | `'fullWidth'`                                             | —                  | Stretches the group to fill the container width.             |
+| `type`           | `'outline'`                                               | —                  | Outlined border style instead of filled.                     |
+| `variation`      | `'warning' \| 'error'`                                    | —                  | Validation state border color.                               |
+| `data-qa`        | `string`                                                  | —                  | QA selector attribute.                                       |
+| `data-component` | `string`                                                  | `'WFMSelectGroup'` | Component identifier attribute.                              |

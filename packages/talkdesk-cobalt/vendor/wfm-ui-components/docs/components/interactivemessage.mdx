@@ -1,0 +1,204 @@
+# InteractiveMessage
+
+A status message banner for `info`, `success`, `warning`, and `error` feedback, with optional icon, dismiss button, loading spinner, and action button.
+
+```ts
+import { InteractiveMessage } from '@wfm/ui-components';
+```
+
+## Variations
+
+Use the `variation` prop to communicate semantic meaning. The icon and action button color are automatically derived from the variation.
+
+| `variation` | Icon           | Use case                               |
+| ----------- | -------------- | -------------------------------------- |
+| `info`      | `info`         | General information (**default**)      |
+| `success`   | `check_circle` | Operation completed successfully       |
+| `warning`   | `warning`      | Potential issue, user attention needed |
+| `error`     | `error`        | Operation failed                       |
+| `feature`   | `star_circle`  | New feature highlight                  |
+| `primary`   | `info`         | Primary branded message                |
+| `secondary` | `info`         | Neutral secondary message              |
+
+```tsx preview
+import { InteractiveMessage } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      <InteractiveMessage variation="info">
+        This is an informational message.
+      </InteractiveMessage>
+      <InteractiveMessage variation="success">
+        Operation completed successfully.
+      </InteractiveMessage>
+      <InteractiveMessage variation="warning">
+        Please review before proceeding.
+      </InteractiveMessage>
+      <InteractiveMessage variation="error">
+        Something went wrong. Please try again.
+      </InteractiveMessage>
+      <InteractiveMessage variation="feature">
+        New feature available — try it now.
+      </InteractiveMessage>
+    </Flex>
+  );
+}
+```
+
+## With Action Button
+
+Provide both `actionLabel` and `onAction` to render an action button inside the message. The button's color type is automatically matched to the `variation`.
+
+```tsx preview
+import { InteractiveMessage } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      <InteractiveMessage
+        variation="warning"
+        actionLabel="Retry"
+        onAction={() => alert('retry clicked')}
+      >
+        Upload failed — check your connection.
+      </InteractiveMessage>
+      <InteractiveMessage
+        variation="info"
+        actionLabel="Learn more"
+        onAction={() => alert('learn more clicked')}
+      >
+        Your data is syncing in the background.
+      </InteractiveMessage>
+    </Flex>
+  );
+}
+```
+
+## With Dismiss
+
+Provide `onDismiss` to render a close icon on the right side. When clicked it calls the callback — the caller is responsible for removing the component from the tree.
+
+```tsx preview
+import { InteractiveMessage } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+import { useState } from 'react';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(true);
+
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      {visible ? (
+        <InteractiveMessage
+          variation="info"
+          onDismiss={() => setVisible(false)}
+        >
+          Dismiss this message by clicking the close icon.
+        </InteractiveMessage>
+      ) : (
+        <InteractiveMessage variation="success">
+          Message dismissed.
+        </InteractiveMessage>
+      )}
+    </Flex>
+  );
+}
+```
+
+## With Loader
+
+Set `withLoader={true}` to replace the variation icon with a spinner. Use this while an async operation is in progress.
+
+- Left: `withLoader={false}` — shows variation icon (default)
+- Right: `withLoader={true}` — shows Cobalt spinner
+
+```tsx preview
+import { InteractiveMessage } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      <InteractiveMessage variation="info">Ready.</InteractiveMessage>
+      <InteractiveMessage variation="info" withLoader>
+        Loading data, please wait…
+      </InteractiveMessage>
+    </Flex>
+  );
+}
+```
+
+## Block Layout
+
+Set `block={true}` when the message content spans multiple lines. This aligns the icon to the top and stacks content vertically.
+
+- `block={false}` — icon and text are vertically centered in a single row (default)
+- `block={true}` — icon anchored to top, content can wrap freely
+
+```tsx preview
+import { InteractiveMessage } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      <InteractiveMessage
+        variation="warning"
+        block
+        actionLabel="Resolve"
+        onAction={() => {}}
+      >
+        <strong>Multiple issues found.</strong>
+        <br />
+        Please review each item before saving.
+        <br />
+        Items with errors cannot be submitted.
+      </InteractiveMessage>
+    </Flex>
+  );
+}
+```
+
+## Banner vs Floating
+
+Use the `type` prop to switch between `'banner'` (full-width, anchored to its container) and `'floating'` (inline, sizes to its content). The default renders without a `type`, deferring to Cobalt's component default.
+
+- `type="banner"` — spans the full width of its parent container
+- `type="floating"` — width follows the content
+
+```tsx preview
+import { InteractiveMessage } from '@wfm/ui-components';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="4" padding="4">
+      <InteractiveMessage variation="info" type="banner">
+        Banner — spans the full width of this container.
+      </InteractiveMessage>
+      <InteractiveMessage variation="success" type="floating">
+        Floating — only as wide as its content.
+      </InteractiveMessage>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop              | Type                                                                                   | Default                   | Description                                                          |
+| ----------------- | -------------------------------------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
+| `variation`       | `'info' \| 'success' \| 'warning' \| 'error' \| 'feature' \| 'primary' \| 'secondary'` | `'info'`                  | Semantic style — controls icon and action button color               |
+| `type`            | `'banner' \| 'floating'`                                                               | —                         | Message layout type (`'banner'` = full width, `'floating'` = inline) |
+| `actionLabel`     | `string`                                                                               | —                         | Label for the action button                                          |
+| `onAction`        | `() => void`                                                                           | —                         | Action button click handler. Button only renders when provided.      |
+| `isActionLoading` | `boolean`                                                                              | `false`                   | Shows a loading spinner on the action button while in-flight         |
+| `onDismiss`       | `() => void`                                                                           | —                         | Close icon click handler. Icon only renders when provided.           |
+| `withLoader`      | `boolean`                                                                              | `false`                   | Replaces variation icon with a spinner                               |
+| `block`           | `boolean`                                                                              | `false`                   | Aligns icon to top and stacks content vertically                     |
+| `children`        | `ReactNode`                                                                            | —                         | Message body content                                                 |
+| `data-qa`         | `string`                                                                               | `'interactiveMessage'`    | QA selector attribute                                                |
+| `data-component`  | `string`                                                                               | `'WFMInteractiveMessage'` | Component identifier                                                 |

@@ -1,0 +1,24 @@
+---
+import { documentationNavigation } from '../lib/catalog';
+const groups = await documentationNavigation();
+const current = Astro.url.pathname.replace(/\/$/, '') || '/';
+const active = (href: string) => (href.replace(/\/$/, '') || '/') === current;
+---
+<aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation">
+  <div class="sidebar-mobile-heading"><strong>Documentation</strong><button class="icon-button" data-close-menu aria-label="Close navigation">✕</button></div>
+  <label for="docs-search" class="search-label">Search docs</label>
+  <div class="sidebar-search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+    <input id="docs-search" type="search" aria-label="Search documentation" placeholder="Search docs…" autocomplete="off" />
+    <kbd aria-hidden="true">⌘ K</kbd>
+  </div>
+  <p class="search-feedback" aria-live="polite" hidden></p>
+  <nav aria-label="Documentation">
+    {groups.map((group, index) => <details class="nav-group" open={index === 0 || group.items.some(item => active(item.href))} data-nav-group>
+      <summary>{group.title}<span class="nav-count">{group.items.length}</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></summary>
+      <ul>{group.items.map(item => <li data-search-entry={item.search.toLowerCase()}><a href={item.href} aria-current={active(item.href) ? 'page' : undefined}>{item.title}</a></li>)}</ul>
+    </details>)}
+    <p class="search-empty" hidden>No matching pages. Try a component name.</p>
+  </nav>
+  <div class="sidebar-foot"><span class="status-dot"></span>Local library<span>React 18</span></div>
+</aside>

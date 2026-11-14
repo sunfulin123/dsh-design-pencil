@@ -1,0 +1,5 @@
+# Keep the explicit React 18 baseline; older Cobalt peer ranges remain visible warnings.
+autoInstallPeers: false
+strictPeerDependencies: false
+allowBuilds:
+  esbuild: true

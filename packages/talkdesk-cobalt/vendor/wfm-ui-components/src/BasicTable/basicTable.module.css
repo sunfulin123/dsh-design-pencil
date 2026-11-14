@@ -1,0 +1,155 @@
+/* =========================================================================
+   BasicTable
+   ========================================================================= */
+
+/* Wrapper — fills its container, adds a rounded bordered card look */
+.wrapper {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gray-4);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-elevation-1);
+}
+
+/* Make the table area fill the wrapper without stretching pagination */
+.wrapper .tableArea {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---- Table ---- */
+.wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* ---- Header row ---- */
+.wrapper thead tr {
+  background: var(--gray-2);
+  border-bottom: 1px solid var(--gray-4);
+}
+
+.wrapper thead th {
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-description);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Body rows ---- */
+.wrapper tbody tr {
+  border-bottom: 1px solid var(--gray-3);
+  transition: background 0.12s ease;
+}
+
+.wrapper tbody tr:last-child {
+  border-bottom: none;
+}
+
+.wrapper tbody tr:hover {
+  background: var(--gray-2);
+}
+
+.wrapper tbody td {
+  padding: 10px 16px;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+/* Cell content div should fill the td height */
+.wrapper td > div {
+  height: 100%;
+}
+
+/* ---- Text ellipsis utility ---- */
+.wrapper .ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ---- Empty / Error state cell ---- */
+/* Applied to the Cobalt Cell wrapper around state widgets */
+.wrapper .stateInner {
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---- Sort arrows ---- */
+.wrapper .sortArrows {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 14px;
+  margin-left: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.wrapper .sortDropUp,
+.wrapper .sortDropDown {
+  width: 10px;
+  height: 6px;
+  position: relative;
+  color: var(--text-placeholder);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.wrapper .sortDropUp:hover,
+.wrapper .sortDropDown:hover {
+  color: var(--primary-9);
+}
+
+.wrapper .sortDropUp::before {
+  content: '▲';
+  font-size: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  line-height: 1;
+  color: inherit;
+}
+
+.wrapper .sortDropDown::before {
+  content: '▼';
+  font-size: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  line-height: 1;
+  color: inherit;
+}
+
+.wrapper .sortDropUp.sortActive,
+.wrapper .sortDropDown.sortActive {
+  color: var(--primary-9);
+}
+
+/* ---- Pagination bar ---- */
+.wrapper .pagination {
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid var(--gray-4);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  background: var(--surface-elevation-1);
+  flex: 0 0 auto;
+}

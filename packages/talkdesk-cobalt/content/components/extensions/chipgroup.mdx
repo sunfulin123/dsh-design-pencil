@@ -1,0 +1,72 @@
+# ChipGroup
+
+A compact horizontal group of tag chips that collapses overflow into a clickable `+N` chip with a popup of the remaining items.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { ChipGroup } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+Pass `items` and the group renders one chip per entry, separated by a 4px gap. Each item needs a unique `id` and a plain-text `label`; `content` is optional for richer chip bodies.
+
+<Example id="extensions.chipgroup.001" />
+
+## Overflow with `maxVisible`
+
+`maxVisible` (default `2`) caps how many chips render inline. Anything beyond that collapses into a `+N` overflow chip — clicking it opens a popup that lists the full set.
+
+<Example id="extensions.chipgroup.002" />
+
+## Popup Content — `all` vs `hidden`
+
+`popupContent` controls what appears inside the overflow popup. `'all'` (default) lists every chip so users can re-scan the entire set; `'hidden'` lists only the chips that did not fit inline.
+
+<Example id="extensions.chipgroup.003" />
+
+## Color Variants
+
+`color` switches the Cobalt tag palette: `default` for neutral metadata, `info` for informational emphasis, `theme` for primary brand emphasis.
+
+<Example id="extensions.chipgroup.004" />
+
+## Size Variants
+
+`size` mirrors the Cobalt `Tag` scale. Use `tiny` inside dense rows or table cells, `small` (default) for general metadata, and `medium` when chips share a row with body text.
+
+<Example id="extensions.chipgroup.005" />
+
+## Long Labels — `maxChipWidth`
+
+Inline chips truncate with ellipsis once they exceed `maxChipWidth` (default `120`). The full label is preserved in the chip's native `title` tooltip and inside the overflow popup.
+
+<Example id="extensions.chipgroup.006" />
+
+## Custom Chip Content
+
+Provide `content` on an item to render anything richer than plain text — for example an icon next to the label. `label` is still required as the truncation tooltip and popup fallback.
+
+<Example id="extensions.chipgroup.007" />
+
+## Props
+
+| Prop             | Type                             | Default          | Description                                                                       |
+| ---------------- | -------------------------------- | ---------------- | --------------------------------------------------------------------------------- |
+| `items`          | `ChipGroupItem[]`                | —                | Chips to render, in order.                                                        |
+| `maxVisible`     | `number`                         | `2`              | Maximum chips shown inline before collapsing into a `+N` overflow chip.           |
+| `color`          | `'default' \| 'info' \| 'theme'` | `'default'`      | Visual emphasis of the chips.                                                     |
+| `size`           | `'tiny' \| 'small' \| 'medium'`  | `'small'`        | Chip size.                                                                        |
+| `maxChipWidth`   | `number \| string`               | `120`            | Maximum width of an individual inline chip; longer labels truncate with ellipsis. |
+| `popupContent`   | `'all' \| 'hidden'`              | `'all'`          | What the overflow popup lists — every chip, or only the ones that did not fit.    |
+| `data-qa`        | `string`                         | —                | QA selector. Suffixes `-{id}`, `-overflow`, `-popup`, `-popup-{id}` are derived.  |
+| `data-component` | `string`                         | `'WFMChipGroup'` | Component identifier.                                                             |
+
+### `ChipGroupItem`
+
+| Field     | Type        | Required | Description                                                                                      |
+| --------- | ----------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `id`      | `string`    | yes      | Unique identifier — used as React `key` and inside derived `data-qa` selectors.                  |
+| `label`   | `string`    | yes      | Plain-text label. Used as the chip body fallback, the truncation `title`, and the popup display. |
+| `content` | `ReactNode` | no       | Optional custom chip body (e.g. icon + label). Falls back to `label` when omitted.               |

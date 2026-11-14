@@ -1,0 +1,282 @@
+# Dialog
+
+A modal dialog component with a structured header (title + optional subtitle + X close button), a scrollable content area, and a footer with cancel and confirm actions.
+
+```ts
+import { Dialog } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+`visible` controls whether the dialog is open. `onClose` is called by the X button, the cancel button, and the backdrop click. `onConfirm` is called when the confirm button is clicked.
+
+```tsx preview
+import { useState } from 'react';
+import { Dialog, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="primary" onClick={() => setVisible(true)}>
+        Open Dialog
+      </Button>
+
+      <Dialog
+        visible={visible}
+        title="Daily Meeting"
+        onClose={() => setVisible(false)}
+        onConfirm={() => setVisible(false)}
+      >
+        <Typography variant="body">
+          Configure the details for this meeting event before saving. All
+          participants will be notified once the event is confirmed.
+        </Typography>
+      </Dialog>
+    </Flex>
+  );
+}
+```
+
+## With Subtitle
+
+Pass `subtitle` to render a muted secondary line below the title — useful for timestamps, record identifiers, or supporting context.
+
+```tsx preview
+import { useState } from 'react';
+import { Dialog, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="primary" onClick={() => setVisible(true)}>
+        Open Dialog with Subtitle
+      </Button>
+
+      <Dialog
+        visible={visible}
+        title="Daily Meeting"
+        subtitle="Created at 05:44 AM, Apr 20, 2026"
+        onClose={() => setVisible(false)}
+        onConfirm={() => setVisible(false)}
+      >
+        <Typography variant="body">
+          Review the meeting details. The subtitle above provides the creation
+          timestamp for this event.
+        </Typography>
+      </Dialog>
+    </Flex>
+  );
+}
+```
+
+## Sizes
+
+Use `size` to control the dialog width. The three presets map directly to Cobalt Modal sizes: `'small'` for brief confirmations, `'medium'` (default) for standard forms, and `'large'` for complex content.
+
+```tsx preview
+import { useState } from 'react';
+import { Dialog, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [openSize, setOpenSize] = useState(null);
+
+  return (
+    <Flex gap="3" padding="4" alignX="center">
+      {['small', 'medium', 'large'].map((s) => (
+        <Button key={s} type="secondary" onClick={() => setOpenSize(s)}>
+          {s}
+        </Button>
+      ))}
+
+      {['small', 'medium', 'large'].map((s) => (
+        <Dialog
+          key={s}
+          visible={openSize === s}
+          title={`${s.charAt(0).toUpperCase() + s.slice(1)} Dialog`}
+          subtitle={`size="${s}"`}
+          size={s}
+          onClose={() => setOpenSize(null)}
+          onConfirm={() => setOpenSize(null)}
+        >
+          <Typography variant="body">This is a {s}-sized dialog.</Typography>
+        </Dialog>
+      ))}
+    </Flex>
+  );
+}
+```
+
+## Danger Variant
+
+Set `confirmButtonType="danger"` for destructive actions. Combine with `messages` to override the default button labels.
+
+```tsx preview
+import { useState } from 'react';
+import { Dialog, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="danger" onClick={() => setVisible(true)}>
+        Delete Schedule
+      </Button>
+
+      <Dialog
+        visible={visible}
+        title="Delete Schedule"
+        subtitle="This action cannot be undone"
+        size="small"
+        confirmButtonType="danger"
+        messages={{ confirmLabel: 'Delete', cancelLabel: 'Keep it' }}
+        onClose={() => setVisible(false)}
+        onConfirm={() => setVisible(false)}
+      >
+        <Typography variant="body">
+          Are you sure you want to permanently delete this schedule? All
+          associated shifts and assignments will be removed.
+        </Typography>
+      </Dialog>
+    </Flex>
+  );
+}
+```
+
+## Confirm Loading State
+
+Set `isConfirmLoading` to `true` while an async operation is in progress. The confirm button switches to an inline spinner and becomes non-interactive until you set it back to `false`.
+
+```tsx preview
+import { useState } from 'react';
+import { Dialog, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setVisible(false);
+    }, 2000);
+  };
+
+  return (
+    <Flex padding="4" alignX="center">
+      <Button type="primary" onClick={() => setVisible(true)}>
+        Save Meeting
+      </Button>
+
+      <Dialog
+        visible={visible}
+        title="Save Meeting"
+        subtitle="Changes will be applied to all future occurrences"
+        isConfirmLoading={loading}
+        messages={{ confirmLabel: 'Save' }}
+        onClose={() => !loading && setVisible(false)}
+        onConfirm={handleConfirm}
+      >
+        <Typography variant="body">
+          Click Save to apply your changes. The confirm button shows a loading
+          state while the request is in progress.
+        </Typography>
+      </Dialog>
+    </Flex>
+  );
+}
+```
+
+## Disabled Confirm
+
+Set `isConfirmDisabled={true}` to prevent the user from submitting the dialog — useful when form validation is incomplete. The confirm button is grayed out and non-interactive; the cancel button remains active.
+
+```tsx preview
+import { useState } from 'react';
+import { Dialog, Typography } from '@wfm/ui-components';
+import Button from '@talkdesk/cobalt-react-button';
+import Flex from '@talkdesk/cobalt-react-flex';
+
+export default function Demo() {
+  const [visible, setVisible] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+
+  return (
+    <Flex padding="4" alignX="center">
+      <Button
+        type="primary"
+        onClick={() => {
+          setVisible(true);
+          setAgreed(false);
+        }}
+      >
+        Open Dialog
+      </Button>
+
+      <Dialog
+        visible={visible}
+        title="Accept Terms"
+        subtitle="You must accept before continuing"
+        isConfirmDisabled={!agreed}
+        messages={{ confirmLabel: 'Accept &amp; Continue' }}
+        onClose={() => setVisible(false)}
+        onConfirm={() => setVisible(false)}
+      >
+        <Flex direction="column" gap="3">
+          <Typography variant="body">
+            Review the terms below before proceeding.
+          </Typography>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+            />
+            I accept the terms and conditions
+          </label>
+        </Flex>
+      </Dialog>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop                | Type                                   | Default       | Description                                                                                |
+| ------------------- | -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| `visible`           | `boolean`                              | —             | Controls dialog visibility                                                                 |
+| `onClose`           | `() => void`                           | —             | Called when X button, cancel button, or backdrop is clicked                                |
+| `onConfirm`         | `() => void`                           | —             | Called when the confirm button is clicked                                                  |
+| `title`             | `string`                               | —             | Primary heading in the dialog header                                                       |
+| `subtitle`          | `string`                               | —             | Optional muted secondary line below the title                                              |
+| `children`          | `ReactNode`                            | —             | Dialog body content — scrolls if it overflows                                              |
+| `size`              | `'small' \| 'medium' \| 'large'`       | `'medium'`    | Dialog width preset                                                                        |
+| `confirmButtonType` | `'primary' \| 'secondary' \| 'danger'` | `'primary'`   | Visual style of the confirm button                                                         |
+| `isConfirmLoading`  | `boolean`                              | `false`       | Shows an inline loading spinner on the confirm button                                      |
+| `isConfirmDisabled` | `boolean`                              | `false`       | Disables the confirm button                                                                |
+| `messages`          | `DialogMessages`                       | —             | Override user-visible labels — see table below                                             |
+| `data-qa`           | `string`                               | —             | QA selector prefix. Suffixes: `-cancel-button`, `-confirm-button`, `-content`, `-subtitle` |
+| `data-component`    | `string`                               | `'WFMDialog'` | Component identifier                                                                       |
+
+## DialogMessages
+
+| Field          | Type     | Default     | Description          |
+| -------------- | -------- | ----------- | -------------------- |
+| `cancelLabel`  | `string` | `'Cancel'`  | Cancel button label  |
+| `confirmLabel` | `string` | `'Confirm'` | Confirm button label |

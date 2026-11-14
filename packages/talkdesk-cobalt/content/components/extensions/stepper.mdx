@@ -1,0 +1,55 @@
+# Stepper
+
+A vertical timeline indicator that renders a list of steps — each with a `status` dot (`complete`, `active`, `error`, or `idle`) — connected by lines.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Stepper, StepStatus } from './components/cobalt-extensions';
+```
+
+## Step States
+
+Use the `status` prop to control the visual style of the step indicator dot.
+
+| `status`             | Dot style              | Meaning                   |
+| -------------------- | ---------------------- | ------------------------- |
+| `undefined`          | Gray filled circle     | Not yet reached (default) |
+| `StepStatus.VISITED` | Purple filled circle   | Step completed            |
+| `StepStatus.ACTIVE`  | Purple outlined circle | Currently active step     |
+
+<Example id="extensions.stepper.001" />
+
+## End Step
+
+Use `isEnd={true}` on the last step to hide the vertical connector line below the dot.
+
+- `isEnd={false}` — connector line extends downward to the next step
+- `isEnd={true}` — no connector line (must be set on the final item)
+
+<Example id="extensions.stepper.002" />
+
+## All States in a Timeline
+
+A realistic example combining all three states in a sequential workflow.
+
+<Example id="extensions.stepper.003" />
+
+## Props
+
+| Prop             | Type                                                   | Default               | Description                                                               |
+| ---------------- | ------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------- |
+| `status`         | `StepStatus.VISITED \| StepStatus.ACTIVE \| undefined` | `undefined`           | Visual state of the step dot                                              |
+| `isEnd`          | `boolean`                                              | —                     | **Required.** Hides the connector line when `true` — set on the last step |
+| `children`       | `ReactNode`                                            | —                     | Content rendered to the right of the step indicator                       |
+| `data-qa`        | `string`                                               | `'stepper-container'` | QA selector attribute                                                     |
+| `data-component` | `string`                                               | `'WFMStepper'`        | Component identifier                                                      |
+
+## StepStatus Enum
+
+```ts
+enum StepStatus {
+  VISITED = 'visited', // Completed step — solid purple dot
+  ACTIVE = 'active', // Current step  — outlined purple dot
+}
+```

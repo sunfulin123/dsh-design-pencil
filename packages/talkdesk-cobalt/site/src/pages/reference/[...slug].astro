@@ -1,0 +1,12 @@
+---
+import { getCollection, render } from 'astro:content';
+import Page from '../../layouts/Page.astro';
+import Example from '../../components/Example.astro';
+import { documentTitle } from '../../lib/catalog';
+export async function getStaticPaths() { return (await getCollection('reference')).map(entry => ({ params: { slug: entry.id }, props: { entry } })); }
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const title = documentTitle(entry);
+const section = entry.id.startsWith('components/extensions/') ? 'Cobalt Extensions' : entry.id.startsWith('components/core/') ? 'Cobalt core' : entry.id.startsWith('components/marketplace/') ? 'Cobalt marketplace' : entry.id.split('/')[0];
+---
+<Page title={title} section={`${section} / ${title}`}><article class="article"><Content components={{ Example }} /></article></Page>

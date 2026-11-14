@@ -1,0 +1,51 @@
+# Card
+
+A surface container with a fixed Cobalt drop-shadow + 1px inset border. Only `padding`, `margin`, `width`, and `height` are configurable — the visual style is locked to the design spec.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Card } from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The card has a fixed white background, 4px corner radius, and the standard Cobalt `--shadow-1` + inset border. Default padding is `'4'` (16px) and width is `'100%'`.
+
+<Example id="extensions.card.001" />
+
+## Padding
+
+`padding` accepts any Cobalt space token (`'0'`–`'12'`, where each unit = 4px). Use `paddingX` / `paddingY` to override one axis — when either is set, `padding` is ignored.
+
+<Example id="extensions.card.002" />
+
+## Margin
+
+`margin`, `marginX`, and `marginY` use the same `'0'`–`'12'` tokens. Setting either `marginX` or `marginY` overrides the all-sides `margin`.
+
+<Example id="extensions.card.003" />
+
+## Width and Height
+
+`width` defaults to `'100%'`. Both props accept any valid CSS value.
+
+<Example id="extensions.card.004" />
+
+## Props
+
+| Prop             | Type                      | Default     | Description                                                                                |
+| ---------------- | ------------------------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `children`       | `ReactNode`               | —           | Card content                                                                               |
+| `padding`        | `'0'`–`'12'`              | `'4'`       | All-sides padding (Cobalt space token, ×4px). Ignored when `paddingX` or `paddingY` is set |
+| `paddingX`       | `'0'`–`'12'`              | —           | Horizontal padding override                                                                |
+| `paddingY`       | `'0'`–`'12'`              | —           | Vertical padding override                                                                  |
+| `margin`         | `'0'`–`'12'`              | —           | All-sides margin. Ignored when `marginX` or `marginY` is set                               |
+| `marginX`        | `'0'`–`'12'`              | —           | Horizontal margin override                                                                 |
+| `marginY`        | `'0'`–`'12'`              | —           | Vertical margin override                                                                   |
+| `width`          | `CSSProperties['width']`  | `'100%'`    | Card width                                                                                 |
+| `height`         | `CSSProperties['height']` | —           | Card height                                                                                |
+| `data-qa`        | `string`                  | —           | QA selector                                                                                |
+| `data-component` | `string`                  | `'WFMCard'` | Component identifier                                                                       |
+
+> Background color, corner radius, and shadow are intentionally not configurable — they are pinned to the Cobalt design spec (`--shadow-1` + inset border, `--border-radius-xsmall`, `theme.basic000`). To customise these, use a `Box` directly instead of `Card`.

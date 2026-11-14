@@ -1,0 +1,314 @@
+# Typography
+
+A single text component that switches between Cobalt `Heading` and `Text` via a semantic `variant` prop, with overrides for level, weight, font, color tone, and skeleton loading.
+
+```ts
+import { Typography } from '@wfm/ui-components';
+```
+
+## Basic Usage
+
+The default `variant="body"` renders 14px regular text — the WFM body baseline. Pass any string or React node as children.
+
+```tsx preview
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Typography data-qa="basic-typography">
+      Body text rendered as a paragraph.
+    </Typography>
+  );
+}
+```
+
+## Variants — Heading and Text in one API
+
+`variant` is the only switch between heading and body roles. Heading variants render Cobalt `Heading` (semantic `<h1>`–`<h6>`); body variants render Cobalt `Text`. All seven are shown side-by-side so the size hierarchy is visible at a glance.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="3">
+      <Typography variant="page-title">Page title — 28px heading</Typography>
+      <Typography variant="section-title">
+        Section title — 24px heading
+      </Typography>
+      <Typography variant="card-title">Card title — 18px heading</Typography>
+      <Typography variant="body-large">Body large — 16px text</Typography>
+      <Typography variant="body">Body — 14px regular text (default)</Typography>
+      <Typography variant="body-emphasis">
+        Body emphasis — 14px medium weight
+      </Typography>
+      <Typography variant="caption">Caption — 12px helper text</Typography>
+    </Flex>
+  );
+}
+```
+
+## Tone — semantic color without `useTheme()`
+
+`tone` is a shortcut for the most common colors and resolves internally via `useTheme()`. Use this instead of importing `useTheme` for one-off color decisions; fall back to `color` when you need a token outside this set.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Typography tone="default">Default — primary text color</Typography>
+      <Typography tone="subdued">Subdued — secondary metadata color</Typography>
+      <Typography tone="primary">Primary — brand emphasis</Typography>
+      <Typography tone="success">Success — confirmation text</Typography>
+      <Typography tone="warning">Warning — caution text</Typography>
+      <Typography tone="error">Error — destructive / failure text</Typography>
+      <Typography tone="info">Info — informational note</Typography>
+    </Flex>
+  );
+}
+```
+
+## Custom color via `color`
+
+When `tone` doesn't cover what you need, pass any CSS color string via `color`. Always prefer a `useTheme()` token over a hex value. `tone` takes precedence when both are set.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  const theme = useTheme();
+  return (
+    <Flex direction="column" gap="2">
+      <Typography color={theme.basic800}>
+        Custom color via theme.basic800
+      </Typography>
+      <Typography color={theme.primary9}>
+        Custom color via theme.primary9
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Weight Override — text variants only
+
+Override the default weight for body/caption variants. Headings always use the Cobalt heading scale and ignore this prop.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Typography variant="body" weight="light">
+        Body — light weight
+      </Typography>
+      <Typography variant="body" weight="regular">
+        Body — regular weight (default)
+      </Typography>
+      <Typography variant="body" weight="medium">
+        Body — medium weight
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Font — `mono` for IDs and timestamps
+
+Set `font="mono"` to switch to Roboto Mono for machine-readable values such as IDs, timestamps, and code snippets (style-standard §3.4).
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Typography font="sans">Sans (default) — Roboto regular text</Typography>
+      <Typography font="mono">
+        Mono — req_8a3f9c12-4d5e-2026-04-28T14:30:00Z
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Semantic Override — `asLevel`
+
+`asLevel` decouples the visual size from the semantic heading level. Use it when the page outline doesn't match the visual hierarchy — for example, a section that should still register as `<h3>` for screen readers without changing how it looks. Heading variants only.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Typography variant="section-title">
+        Section title — visual + semantic both h2
+      </Typography>
+      <Typography variant="section-title" asLevel={3}>
+        Section title — visual h2, semantic h3 via asLevel
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Truncation
+
+Set `truncated` to clip overflowing content with an ellipsis. The parent must constrain the width — Cobalt only adds the ellipsis CSS, it does not box the content.
+
+```tsx preview
+import Box from '@talkdesk/cobalt-react-box';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Box width="240px">
+      <Typography variant="card-title" truncated>
+        A very long card title that will not fit inside this fixed-width
+        container
+      </Typography>
+    </Box>
+  );
+}
+```
+
+## Loading Skeleton
+
+`loading` renders an animated full-width skeleton placeholder instead of the real content. Pass `true` for a single-line skeleton, or a number to render multiple lines (text variants only).
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="3">
+      <Typography variant="card-title" loading>
+        Loaded card title
+      </Typography>
+      <Typography variant="body" loading>
+        Single body line
+      </Typography>
+      <Typography variant="body" loading={3}>
+        Three body lines
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Alignment
+
+`textAlign` works on both heading and body variants. Three alignments are stacked so the difference is obvious without interaction.
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import Box from '@talkdesk/cobalt-react-box';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex direction="column" gap="2">
+      <Box width="320px">
+        <Typography variant="body" textAlign="left">
+          Left-aligned body text
+        </Typography>
+      </Box>
+      <Box width="320px">
+        <Typography variant="body" textAlign="center">
+          Center-aligned body text
+        </Typography>
+      </Box>
+      <Box width="320px">
+        <Typography variant="body" textAlign="right">
+          Right-aligned body text
+        </Typography>
+      </Box>
+    </Flex>
+  );
+}
+```
+
+## Inline Text
+
+Set `inline` to render body variants as a `<span>` instead of `<p>` — useful for placing text next to icons or inline controls. Ignored for heading variants and mutually exclusive with `textAlign` (Cobalt rule).
+
+```tsx preview
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Typography } from '@wfm/ui-components';
+
+export default function Demo() {
+  return (
+    <Flex alignY="center" gap="2">
+      <Typography variant="body" inline>
+        Status:
+      </Typography>
+      <Typography variant="body-emphasis" tone="success" inline>
+        Active
+      </Typography>
+    </Flex>
+  );
+}
+```
+
+## Props
+
+| Prop             | Type                                                             | Default           | Description                                                              |
+| ---------------- | ---------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `variant`        | `TypographyVariant`                                              | `'body'`          | Semantic role. Drives whether `Heading` or `Text` is rendered.           |
+| `children`       | `ReactNode`                                                      | —                 | Content.                                                                 |
+| `asLevel`        | `1 \| 2 \| 3 \| 4 \| 5 \| 6`                                     | —                 | Semantic heading level override. Heading variants only.                  |
+| `weight`         | `'light' \| 'regular' \| 'medium' \| 'inherit'`                  | —                 | Font weight override. Text variants only.                                |
+| `font`           | `'sans' \| 'mono'`                                               | `'sans'`          | Font family. `'mono'` for IDs / timestamps / code-like values.           |
+| `tone`           | `TypographyTone`                                                 | —                 | Semantic color via `useTheme()`. Takes precedence over `color`.          |
+| `color`          | `CSSProperties['color']`                                         | —                 | Raw color value. Use `useTheme()` tokens. Overridden by `tone`.          |
+| `truncated`      | `boolean`                                                        | `false`           | Truncate overflowing content with an ellipsis.                           |
+| `textAlign`      | `'left' \| 'center' \| 'right' \| 'justify' \| 'start' \| 'end'` | —                 | Horizontal alignment. Ignored when `inline` is `true`.                   |
+| `inline`         | `boolean`                                                        | `false`           | Render body variants as `<span>` instead of `<p>`. Ignored for headings. |
+| `loading`        | `boolean \| number`                                              | —                 | Render an animated full-width skeleton. Number = line count.             |
+| `data-qa`        | `string`                                                         | —                 | QA selector.                                                             |
+| `data-component` | `string`                                                         | `'WFMTypography'` | Component identifier.                                                    |
+
+### `TypographyVariant`
+
+| Variant           | Renders   | Cobalt config                  | Visual size        | Use for                                      |
+| ----------------- | --------- | ------------------------------ | ------------------ | -------------------------------------------- |
+| `'page-title'`    | `Heading` | `level=1, scale='large'`       | 28px               | Single page-level heading                    |
+| `'section-title'` | `Heading` | `level=2, scale='medium'`      | 24px               | Major page section                           |
+| `'card-title'`    | `Heading` | `level=4, scale='small'`       | 18px               | Card or local content block title            |
+| `'body-large'`    | `Text`    | `size='medium'`, 16px override | 16px               | Limited emphasis in spacious layouts         |
+| `'body'`          | `Text`    | `size='medium'`, regular       | 14px               | Default body, form values, table cells       |
+| `'body-emphasis'` | `Text`    | `size='medium'`, medium        | 14px medium weight | Inline emphasis without promoting to heading |
+| `'caption'`       | `Text`    | `size='small'`, regular        | 12px               | Helper text, captions, dense metadata        |
+
+### `TypographyTone`
+
+| Tone        | Resolves to (`useTheme()`) | Use for                               |
+| ----------- | -------------------------- | ------------------------------------- |
+| `'default'` | `theme.textDefault`        | Default primary text                  |
+| `'subdued'` | `theme.basic600`           | Secondary metadata / helper text      |
+| `'primary'` | `theme.primary11`          | Brand emphasis                        |
+| `'error'`   | `theme.textError`          | Validation errors, destructive states |
+| `'success'` | `theme.success10`          | Confirmation messages                 |
+| `'warning'` | `theme.warning10`          | Caution states                        |
+| `'info'`    | `theme.info10`             | Informational notes                   |
+| `'inverse'` | `theme.basic000`           | Text on dark backgrounds              |
+
+### `TypographyLoading`
+
+| Form                  | Meaning                                      |
+| --------------------- | -------------------------------------------- |
+| `true`                | Single-line animated skeleton at 100% width  |
+| `number` (e.g. `3`)   | Multi-line animated skeleton (text variants) |
+| `false` / `undefined` | No skeleton — render real content            |

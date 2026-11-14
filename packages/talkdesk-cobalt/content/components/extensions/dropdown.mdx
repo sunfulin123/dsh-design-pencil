@@ -1,0 +1,112 @@
+# Dropdown
+
+A single-select dropdown that renders a list of options and supports fully customisable option rows via per-option or global render functions — backed by the Cobalt Marketplace dropdown.
+
+The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
+
+```ts
+import { Dropdown } from './components/cobalt-extensions';
+import type {
+  DropdownOption,
+  DropdownOptionValue,
+  DropdownOptionRenderContext,
+  DropdownMessages,
+} from './components/cobalt-extensions';
+```
+
+## Basic Usage
+
+The simplest form: pass `options` with `value` and `label`, and a controlled `value` + `onChange`. Each option renders as a standard Cobalt option row.
+
+<Example id="extensions.dropdown.001" />
+
+## Option Metadata (Icon, Description, Right Slot)
+
+Each option may declare `icon`, `description`, `right`, or `borderBottom` to enrich the built-in row layout — no custom renderer required.
+
+<Example id="extensions.dropdown.002" />
+
+## Searchable
+
+Set `searchable` to enable a built-in client-side filter on the option `label`. The list is filtered as the user types, and `messages.noResults` is shown when nothing matches.
+
+<Example id="extensions.dropdown.003" />
+
+## Custom Option (Per-Option `render`)
+
+A single option can override its row markup by setting `render`. The renderer receives a context object with `selected` and `onSelect` — call `onSelect()` to commit the choice and close the dropdown. Use this for one-off custom rows like a "Create new" entry.
+
+<Example id="extensions.dropdown.004" />
+
+## Custom Option (Global `renderOption`)
+
+Pass a `renderOption` prop to apply the same custom layout to every option. Per-option `render` still takes precedence over the global one. Use this when the entire list shares a non-standard row format such as avatars, swatches, or rich previews.
+
+<Example id="extensions.dropdown.005" />
+
+## States: Disabled, Loading, Error
+
+Use `disabled` to freeze interaction, `loading` to indicate the trigger is fetching its value, and `error` to mark the trigger as invalid (e.g. failed validation in a form).
+
+<Example id="extensions.dropdown.006" />
+
+## Load More (Pagination)
+
+Provide `hasMore` and `onLoadMore` to render a full-width "Load more" button at the bottom of the list. Clicking it does not close the dropdown. Set `isLoadingMore` while the request is in flight to disable the button and swap the label to `messages.loading`. Combine with `onSearch` + `isSearching` for paginated server-side search.
+
+<Example id="extensions.dropdown.007" />
+
+## Props
+
+| Prop             | Type                                | Default      | Description                                                                                                                               |
+| ---------------- | ----------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `string \| number \| null`          | —            | Currently selected option value                                                                                                           |
+| `options`        | `DropdownOption[]`                  | —            | List of options to render                                                                                                                 |
+| `onChange`       | `(value: string \| number) => void` | —            | Fired when the user picks an option                                                                                                       |
+| `renderOption`   | `(option, ctx) => ReactNode`        | —            | Global custom renderer applied to every option without its own `render`                                                                   |
+| `searchable`     | `boolean`                           | `false`      | Enables a built-in client-side search filter on `option.label`                                                                            |
+| `onSearch`       | `(query: string) => void`           | —            | Server-side search callback. When provided, client-side filtering is disabled and the parent must update `options`. Implies `searchable`. |
+| `isSearching`    | `boolean`                           | `false`      | While `true`, swaps the empty-list text to `messages.searching` (use with `onSearch`)                                                     |
+| `hasMore`        | `boolean`                           | `false`      | Renders a full-width "Load more" button at the bottom of the list                                                                         |
+| `isLoadingMore`  | `boolean`                           | `false`      | Disables the load-more button and shows `messages.loading` while a request is in flight                                                   |
+| `onLoadMore`     | `() => void`                        | —            | Called when the user clicks the load-more button                                                                                          |
+| `size`           | `'small' \| 'medium'`               | `'medium'`   | Trigger height. Use `'small'` to align with `DatePicker`/`Input size="small"` in toolbars                                                 |
+| `disabled`       | `boolean`                           | `false`      | Disables interaction                                                                                                                      |
+| `loading`        | `boolean`                           | `false`      | Shows a loading state on the trigger                                                                                                      |
+| `error`          | `boolean`                           | `false`      | Marks the trigger as in an error state                                                                                                    |
+| `messages`       | `DropdownMessages`                  | —            | Customise visible text strings (see below)                                                                                                |
+| `data-qa`        | `string`                            | —            | QA selector — also propagated to each option as `${data-qa}-option-${value}`                                                              |
+| `data-component` | `string`                            | `'Dropdown'` | Component identifier                                                                                                                      |
+
+### `DropdownOption`
+
+| Field          | Type                                              | Default | Description                                                                                                              |
+| -------------- | ------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `value`        | `string \| number`                                | —       | Unique value submitted on selection                                                                                      |
+| `label`        | `string`                                          | —       | Display label, also used as the trigger text when selected                                                               |
+| `disabled`     | `boolean`                                         | `false` | Prevents the option from being selected                                                                                  |
+| `description`  | `string`                                          | —       | Secondary line shown below the label (built-in renderer only)                                                            |
+| `icon`         | `IconName \| JSX.Element`                         | —       | Cobalt icon name or element shown to the left of the label (built-in renderer only)                                      |
+| `right`        | `ReactNode`                                       | —       | Content rendered to the right of the label, e.g. a `Tag` (built-in renderer only)                                        |
+| `borderBottom` | `boolean`                                         | `false` | Draws a divider below this option (built-in renderer only)                                                               |
+| `render`       | `(ctx: DropdownOptionRenderContext) => ReactNode` | —       | Per-option custom renderer. Takes precedence over the global `renderOption`. Call `ctx.onSelect()` to commit the choice. |
+
+### `DropdownOptionRenderContext`
+
+| Field      | Type         | Description                                                    |
+| ---------- | ------------ | -------------------------------------------------------------- |
+| `selected` | `boolean`    | Whether this option matches the current `value`                |
+| `onSelect` | `() => void` | Commit selection — closes the dropdown and triggers `onChange` |
+
+### `DropdownMessages`
+
+| Field               | Type     | Default              | Description                                                                    |
+| ------------------- | -------- | -------------------- | ------------------------------------------------------------------------------ |
+| `placeholder`       | `string` | `'Select an option'` | Trigger placeholder when no value set                                          |
+| `searchPlaceholder` | `string` | `'Search'`           | Search input placeholder                                                       |
+| `noResults`         | `string` | `'No results found'` | Empty state when search has no matches                                         |
+| `searching`         | `string` | `'Searching…'`       | Empty state shown while a server-side search is in flight (with `isSearching`) |
+| `loadMore`          | `string` | `'Load more…'`       | Label on the load-more button                                                  |
+| `loading`           | `string` | `'Loading…'`         | Label on the load-more button while `isLoadingMore` is `true`                  |
+
+Pass `aria-labelledby` with the ID of the visible field label when composing a form dropdown. This names the control independently of its selected value; ListPage uses it for the user Role field.
