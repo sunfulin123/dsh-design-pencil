@@ -1,4 +1,5 @@
 /* eslint-disable react/jsx-props-no-spreading */
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 import React, { useMemo } from 'react';
 import CobaltDatePicker from '@talkdesk/cobalt-marketplace-react-datepicker';
 import type { DatePickerProps as CobaltDatePickerProps } from '@talkdesk/cobalt-marketplace-react-datepicker';
@@ -162,6 +163,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   'data-qa': dataQa,
   'data-component': dataComponent = 'WFMDatePicker',
 }) => {
+  const nativeTarget = React.useRef<HTMLElement | null>(null);
   const years = useMemo(
     () => availableYears ?? buildAvailableYears(DEFAULT_YEAR_RANGE),
     [availableYears],
@@ -190,6 +192,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       direction={direction}
       fullWidthTarget={isFullWidth}
       origin={origin}
+      targetProps={{
+        onPointerDownCapture: (event) => {
+          nativeTarget.current = event.currentTarget;
+        },
+        onFocusCapture: (event) => {
+          nativeTarget.current = event.currentTarget;
+        },
+      }}
       target={
         <Flex
           direction="column"
@@ -222,23 +232,25 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         </Flex>
       }
     >
-      {(close) => (
-        <CobaltDatePicker
-          withNavigation
-          availableYears={years}
-          data-qa={dataQa && `${dataQa}-calendar`}
-          disabledDays={disabledDays}
-          highlightToday={isHighlightToday}
-          highlightedDays={highlightedDays}
-          months={months}
-          {...(selectedDay ? { selectedDay } : {})}
-          weekStart={weekStart}
-          weekdays={weekdays}
-          onDayClick={(day) => {
-            onChange?.(dayToDate(day));
-            close();
-          }}
-        />
+      {(close, { isVisible }) => (
+        <PopupDismissBoundary close={close} active={isVisible} trigger={() => nativeTarget.current}>
+          <CobaltDatePicker
+            withNavigation
+            availableYears={years}
+            data-qa={dataQa && `${dataQa}-calendar`}
+            disabledDays={disabledDays}
+            highlightToday={isHighlightToday}
+            highlightedDays={highlightedDays}
+            months={months}
+            {...(selectedDay ? { selectedDay } : {})}
+            weekStart={weekStart}
+            weekdays={weekdays}
+            onDayClick={(day) => {
+              onChange?.(dayToDate(day));
+              close();
+            }}
+          />
+        </PopupDismissBoundary>
       )}
     </StatefulPopup>
   );

@@ -126,3 +126,7 @@ Pass `months` and `weekdays` to fully localise the calendar header labels. `mont
 | `weekdays`         | `string[]`               | English names     | Custom weekday name labels.                                                                                                             |
 | `data-qa`          | `string`                 | —                 | QA selector. Also used as prefix for `-input` and `-calendar` child selectors.                                                          |
 | `data-component`   | `string`                 | `'WFMDatePicker'` | Component identifier attribute.                                                                                                         |
+
+## Dismissal
+
+Escape closes the innermost open popup and restores its trigger focus. Clicking outside, moving keyboard focus outside the trigger/popup boundary, or leaving the business iframe closes it without moving focus back. Internal search, focus movement and selection retain native behavior. Nested dropdown dismissal does not dismiss its parent Dialog or SidePanel.

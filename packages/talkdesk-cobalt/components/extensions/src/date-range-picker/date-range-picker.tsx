@@ -1,4 +1,5 @@
 /* eslint-disable react/jsx-props-no-spreading */
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Day, DaysRange } from '@talkdesk/cobalt-marketplace-react-datepicker-utils';
 import type { DateRangePickerProps as CobaltDateRangePickerProps } from '@talkdesk/cobalt-marketplace-react-daterangepicker';
@@ -135,6 +136,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   'data-qa': dataQa,
   'data-component': dataComponent = 'WFMDateRangePicker',
 }) => {
+  const nativeTarget = React.useRef<HTMLElement | null>(null);
   const { startDate, endDate } = selectedRange;
 
   // Internal Cobalt DaysRange state
@@ -203,6 +205,14 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       direction={direction}
       fullWidthTarget={isFullWidth}
       origin={origin}
+      targetProps={{
+        onPointerDownCapture: (event) => {
+          nativeTarget.current = event.currentTarget;
+        },
+        onFocusCapture: (event) => {
+          nativeTarget.current = event.currentTarget;
+        },
+      }}
       target={
         <Flex
           direction="column"
@@ -240,19 +250,23 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         </Flex>
       }
     >
-      <CobaltDateRangePicker
-        withNavigation
-        availableYears={years}
-        data-qa={dataQa && `${dataQa}-calendar`}
-        disabledDays={disabledDays}
-        highlightToday={isHighlightToday}
-        highlightedDays={highlightedDays}
-        months={months}
-        selectedDay={cobaltRange}
-        weekStart={weekStart}
-        weekdays={weekdays}
-        onDayClick={handleRangeChange}
-      />
+      {(close, { isVisible }) => (
+        <PopupDismissBoundary close={close} active={isVisible} trigger={() => nativeTarget.current}>
+          <CobaltDateRangePicker
+            withNavigation
+            availableYears={years}
+            data-qa={dataQa && `${dataQa}-calendar`}
+            disabledDays={disabledDays}
+            highlightToday={isHighlightToday}
+            highlightedDays={highlightedDays}
+            months={months}
+            selectedDay={cobaltRange}
+            weekStart={weekStart}
+            weekdays={weekdays}
+            onDayClick={handleRangeChange}
+          />
+        </PopupDismissBoundary>
+      )}
     </StatefulPopup>
   );
 

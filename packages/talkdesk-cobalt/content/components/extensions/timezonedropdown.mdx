@@ -70,3 +70,7 @@ Use the `messages` prop to override every visible string in the component — se
 | `searchPlaceholder` | `string` | `'Search'`           | Placeholder text inside the search input         |
 | `noResults`         | `string` | `'No results found'` | Shown when the search query matches no timezone  |
 | `showMore`          | `string` | `'Show more…'`       | Label on the button that loads additional groups |
+
+## Dismissal
+
+Escape closes the innermost open popup and restores its trigger focus. Clicking outside, moving keyboard focus outside the trigger/popup boundary, or leaving the business iframe closes it without moving focus back. Internal search, focus movement and selection retain native behavior. Nested dropdown dismissal does not dismiss its parent Dialog or SidePanel.

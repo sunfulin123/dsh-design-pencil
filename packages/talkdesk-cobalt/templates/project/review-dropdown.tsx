@@ -6,7 +6,7 @@ export function ReviewDropdown({ id, label, trigger, children }: {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ left: 12, top: 56 });
+  const [position, setPosition] = useState({ left: 12, top: 44 });
   const close = () => { setOpen(false); button.current?.focus(); };
   useLayoutEffect(() => {
     if (!open) return;
@@ -37,7 +37,7 @@ export function ReviewDropdown({ id, label, trigger, children }: {
       data-testid={`prototype-${id}`} aria-haspopup="dialog" aria-expanded={open}
       aria-describedby={`prototype-${id}-value`}
       aria-controls={open ? `prototype-${id}-panel` : undefined}
-      onClick={() => setOpen(!open)}>{trigger}<svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m4 6 4 4 4-4"/></svg></button>
+      onClick={() => setOpen(!open)}>{trigger}<span className="review-icon review-icon--chevron" aria-hidden="true"/></button>
     {open && <div ref={panel} id={`prototype-${id}-panel`} role="dialog" aria-label={label}
       data-testid={`prototype-${id}-panel`} className={`review-panel review-panel--${id}`} style={position}
       onBlur={(event) => {

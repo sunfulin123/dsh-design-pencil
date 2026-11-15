@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export const libraryRoot = fileURLToPath(new URL('../', import.meta.url));
 export const sourcePaths = [
   'scripts/prepare-html-review.mjs',
-  ...['review.html', 'review.js', 'review.css', 'page.js'].map(name => `scripts/html-review/${name}`),
+  ...['review.html', 'review.js', 'review.css', 'chrome.css', 'page.js'].map(name => `scripts/html-review/${name}`),
 ];
 
 /** skillRoot must be a maintainer-owned build/staging directory, never an authored project. */

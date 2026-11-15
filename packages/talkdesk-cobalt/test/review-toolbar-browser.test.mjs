@@ -43,13 +43,15 @@ test('responsive prototype controls expose named locators and operate sizes, sta
  await page.getByTestId('prototype-size-panel').waitFor(); await page.keyboard.press('Escape');
  for (const scheme of ['light','dark']) {
   if (scheme==='dark') { await page.getByRole('button',{name:'Profile menu',exact:true}).click(); await page.getByRole('menuitem',{name:'Theme',exact:true}).click(); await page.getByRole('menuitemradio',{name:'Dark',exact:true}).click(); await page.keyboard.press('Escape'); }
-  for (const width of [320,390,768,1024,1440]) {
+  for (const width of [360,390,768,1024,1440]) {
    await page.setViewportSize({width,height:900});
    for (const id of ['size','state','flags']) assert.equal(await page.getByTestId(`prototype-${id}-value`).evaluate(node=>node.scrollWidth>node.clientWidth),false,`${width}: clipped ${id} value`);
    const toolbar=page.getByTestId('prototype-toolbar');
    const geometry=await toolbar.evaluate(node=>({height:node.getBoundingClientRect().height,overflow:node.scrollWidth>node.clientWidth}));
-   assert.equal(await page.getByTestId('prototype-size').evaluate(node=>node.getBoundingClientRect().height),width<=560?44:36);
-   assert.equal(geometry.height,56); assert.equal(geometry.overflow,false,`${width}: toolbar overflow`);
+   assert.equal(await page.getByTestId('prototype-size').evaluate(node=>node.getBoundingClientRect().height),width<=560?36:32);
+   const arrow=await page.getByTestId('prototype-size').locator('.review-icon--chevron').boundingBox(), button=await page.getByTestId('prototype-size').boundingBox();
+   assert.ok(Math.abs(arrow.y+arrow.height/2-button.y-button.height/2)<=1);
+   assert.equal(geometry.height,44); assert.equal(geometry.overflow,false,`${width}: toolbar overflow`);
    for (const id of ['size','state','flags']) {
     await page.getByTestId(`prototype-${id}`).click();
     const panel=page.getByTestId(`prototype-${id}-panel`);

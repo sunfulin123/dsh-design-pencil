@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import {readCaptureEvidence,archiveEvidence} from './poc-review-evidence.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { collectSourceFiles, collectEvidenceFiles, extractInteractiveBaseline, inferSurfaceScope, scanAnimationAndCraftFlags,
@@ -30,6 +31,7 @@ function parseArgs(argv) {
     mobileWidth: 390,
     timeoutMs: undefined,
     quick: false,
+    capture: null,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -44,6 +46,7 @@ function parseArgs(argv) {
     else if (arg === '--scope' || arg === '--mode') opts.scope = argv[++i];
     else if (arg === '--mobile-width') opts.mobileWidth = Number(argv[++i] ?? 390) || 390;
     else if (arg === '--timeout-ms') opts.timeoutMs = Number(argv[++i]);
+    else if (arg === '--capture') opts.capture = argv[++i];
     else if (arg === '--quick') opts.quick = true;
     else if (arg === '--help' || arg === '-h') opts.help = true;
   }
@@ -60,7 +63,7 @@ async function main() {
   if (opts.help) {
     console.log(`Usage:
   node scripts/verify-surface.mjs --snapshot-before <path> --out .synapse/html-design/baseline.json
-  node scripts/verify-surface.mjs --url <url-or-html> --source <path> --out .synapse/html-design [--review-root <dir>] [--baseline .synapse/html-design/baseline.json] [--quick]
+  node scripts/verify-surface.mjs --url <url-or-html> --source <path> --out .synapse/html-design [--review-root <dir>] [--baseline .synapse/html-design/baseline.json] [--quick] [--capture <final-capture.json>]
   node scripts/verify-surface.mjs --check-evidence .synapse/html-design/evidence-report.json`);
     process.exit(0);
   }
@@ -97,10 +100,10 @@ async function main() {
   }
 
   // Mode 2: Full 6-in-1 Verification Gate
-  const outDir = path.resolve(opts.out);
-  fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(path.resolve(opts.out), { recursive: true });
+  const outDir = fs.realpathSync(path.resolve(opts.out));
 
-  const sourceTarget = opts.source || (opts.url && !/^https?:\/\//i.test(opts.url) ? path.dirname(path.resolve(opts.url)) : process.cwd());
+  const sourceTarget = fs.realpathSync(opts.source || (opts.url && !/^https?:\/\//i.test(opts.url) ? path.dirname(path.resolve(opts.url)) : process.cwd()));
   const files = collectSourceFiles(sourceTarget, outDir);
   const sourceFiles = collectEvidenceFiles(sourceTarget, outDir)
     .map(file => ({ path: file, sha256: createHash('sha256').update(fs.readFileSync(file)).digest('hex') }));
@@ -154,9 +157,10 @@ async function main() {
   // 5. Multi-Viewport Browser Screenshots
   const viewports = buildViewports(opts.mobileWidth);
   const activeViewports = opts.quick ? [viewports[0], viewports[2]] : viewports;
-  const renderResult = await captureAndInspectViewports(opts.url, outDir, activeViewports, {
-    timeoutMs: opts.timeoutMs,
-  });
+  const initialArchive = !opts.capture ? archiveEvidence(outDir,'Surface verification is recapturing the prior evidence.') : null;
+  const renderResult = opts.capture
+    ? readCaptureEvidence(path.resolve(opts.capture),{source:path.resolve(sourceTarget),out:outDir,viewports:activeViewports,scope:surfaceScope})
+    : await captureAndInspectViewports(opts.url, outDir, activeViewports, {timeoutMs:opts.timeoutMs,scope:surfaceScope});
   allFindings.push(...renderResult.domFindings);
 
   // 6. Write / Merge Evidence Report
@@ -167,12 +171,16 @@ async function main() {
 
   const priorRenders = (existingReport.renderedEvidence || []).map(({ viewport, sha256 }) => ({ viewport, sha256 }));
   const currentRenders = renderResult.renderedEvidence.map(({ viewport, sha256 }) => ({ viewport, sha256 }));
-  const preserveReview = JSON.stringify(existingReport.sourceFiles) === JSON.stringify(sourceFiles)
+  const preserveReview = (!existingReport.mode||existingReport.mode==='final') && JSON.stringify(existingReport.sourceFiles) === JSON.stringify(sourceFiles)
     && JSON.stringify(priorRenders) === JSON.stringify(currentRenders);
 
   const blockingFindings = allFindings.filter(f => f.severity === 'P0' || f.severity === 'P1');
 
+  const archived = initialArchive || (existingReport.mode==='pending'?existingReport.priorReview:(!preserveReview?archiveEvidence(outDir,'Source inventory, captures or viewport coverage changed; prior review is historical.'):null));
   const report = {
+    mode:'final',
+    ...(archived ? {priorReview:archived} : {}),
+    capture: {browserLaunches:renderResult.browserLaunches??1,...(renderResult.reusedCapture?{reused:renderResult.reusedCapture}:{})},
     contract: existingReport.contract || 'Synapse Design 6-Stage Surface Contract',
     generatedAt: new Date().toISOString(),
     targetViewports: activeViewports.map(v => v.label),

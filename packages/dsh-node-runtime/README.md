@@ -180,3 +180,7 @@ Complete design and MCP parity, every sensitive host adapter, autonomous-model d
 Design authoring sources live in [`../design-data/`](../design-data/README.md) and [`../talkdesk-cobalt/`](../talkdesk-cobalt/README.md). The engine build generates and embeds the discoverable style catalogue, then assembles the local HTML Skill payload. Runtime staging retains the existing Skill paths and exports Cobalt components, executable examples and recipes with a content hash manifest; the Astro site is a separate build output.
 
 Cobalt extension components are editable source templates copied into project-local modules, never installed as `@openpencil/cobalt-extensions`. The [authoring module](../talkdesk-cobalt/README.md) owns source copying, full-code lookup, import rebasing and standalone reuse.
+
+### POC review resources
+
+The HTML Skill owns separate managed-server development checks and frozen static-delivery review through its bundled review-poc helper. Frame-aware Chromium input, cropped images and shared DOM inspection avoid temporary browser scripts and duplicate final captures. Development/history reports are rejected by the handoff ledger validator; source/PNG fingerprints and legacy final ledgers retain their existing contract. See the bundled references/poc-review.md for commands and review ownership.

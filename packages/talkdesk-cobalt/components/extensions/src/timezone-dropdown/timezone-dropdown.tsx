@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 import React, { useState } from 'react';
 import CobaltDropdown, { Option } from '@talkdesk/cobalt-marketplace-react-dropdown';
 import {
@@ -133,6 +134,7 @@ export const TimezoneDropdown: React.FC<TimezoneDropdownProps> = ({
   'data-qa': dataQa,
   'data-component': dataComponent = 'TimezoneDropdown',
 }) => {
+  const dropdownRoot = React.useRef<HTMLDivElement>(null);
   const selected = resolveSelected(value);
   const [visibleCount, setVisibleCount] = useState(INITIAL_GROUPS);
   // eslint-disable-next-line padding-line-between-statements
@@ -145,6 +147,7 @@ export const TimezoneDropdown: React.FC<TimezoneDropdownProps> = ({
 
   return (
     <CobaltDropdown
+      forwardedRef={dropdownRoot}
       searchable
       contentSize={customInput ? 'medium' : undefined}
       customInput={
@@ -171,53 +174,60 @@ export const TimezoneDropdown: React.FC<TimezoneDropdownProps> = ({
     >
       {
         // @ts-ignore: Dropdown render-prop type inconsistency
-        ({ onClick }) => (
-          <Search
-            data-qa={dataQa ? `${dataQa}-search` : 'timezone-dropdown-search'}
-            messages={{
-              noResults,
-              placeholder: searchPlaceholder,
-            }}
-            onSearch={null}
+        ({ onClick, setIsOpen }) => (
+          <PopupDismissBoundary
+            close={() => setIsOpen(false)}
+            trigger={() =>
+              dropdownRoot.current?.querySelector<HTMLElement>('button, [role="button"]')
+            }
           >
-            {(query: string) => {
-              const { groups, hasMore } = getVisibleGroups(query, selected.value, visibleCount);
+            <Search
+              data-qa={dataQa ? `${dataQa}-search` : 'timezone-dropdown-search'}
+              messages={{
+                noResults,
+                placeholder: searchPlaceholder,
+              }}
+              onSearch={null}
+            >
+              {(query: string) => {
+                const { groups, hasMore } = getVisibleGroups(query, selected.value, visibleCount);
 
-              return (
-                <>
-                  {groups.map(({ groupName, items }) => (
-                    <GroupOptions key={groupName} title={groupName}>
-                      {items.map((item) => (
-                        <Option
-                          key={item.value}
-                          data-qa={`${dataQa ? `${dataQa}-` : ''}option-${item.value}`}
-                          selected={selected.value === item.value}
-                          title={item.title}
-                          value={item.value}
-                          onClick={(option) => onClick({ ...option })}
-                        />
-                      ))}
-                    </GroupOptions>
-                  ))}
-                  {hasMore && (
-                    <Box paddingX="4" paddingY="2">
-                      {/* onMouseDown prevents the dropdown from closing before onClick fires */}
-                      <StatefulButton
-                        data-qa={dataQa ? `${dataQa}-show-more` : 'timezone-dropdown-show-more'}
-                        shape="full-width"
-                        size="small"
-                        variation="transparent"
-                        onClick={() => setVisibleCount((c) => c + LOAD_MORE_STEP)}
-                        onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
-                      >
-                        {showMore}
-                      </StatefulButton>
-                    </Box>
-                  )}
-                </>
-              );
-            }}
-          </Search>
+                return (
+                  <>
+                    {groups.map(({ groupName, items }) => (
+                      <GroupOptions key={groupName} title={groupName}>
+                        {items.map((item) => (
+                          <Option
+                            key={item.value}
+                            data-qa={`${dataQa ? `${dataQa}-` : ''}option-${item.value}`}
+                            selected={selected.value === item.value}
+                            title={item.title}
+                            value={item.value}
+                            onClick={(option) => onClick({ ...option })}
+                          />
+                        ))}
+                      </GroupOptions>
+                    ))}
+                    {hasMore && (
+                      <Box paddingX="4" paddingY="2">
+                        {/* onMouseDown prevents the dropdown from closing before onClick fires */}
+                        <StatefulButton
+                          data-qa={dataQa ? `${dataQa}-show-more` : 'timezone-dropdown-show-more'}
+                          shape="full-width"
+                          size="small"
+                          variation="transparent"
+                          onClick={() => setVisibleCount((c) => c + LOAD_MORE_STEP)}
+                          onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                        >
+                          {showMore}
+                        </StatefulButton>
+                      </Box>
+                    )}
+                  </>
+                );
+              }}
+            </Search>
+          </PopupDismissBoundary>
         )
       }
     </CobaltDropdown>

@@ -10,69 +10,7 @@ const SLOP_WORDS = [
 
 const VAGUE_CTA_REGEX = /<(?:button|a)\b[^>]*>\s*(?:submit|click here|learn more|read more|go)\s*<\/(?:button|a)>/gi;
 
-function isPocTaskOutputDir(dir) {
-  return ['style-context.json', 'evidence-report.json', 'DESIGN.md'].some((marker) =>
-    fs.existsSync(path.join(dir, marker)),
-  );
-}
-
-function taskArtifactDirs(targetRoot, outDir) {
-  const bases = [];
-  if (outDir) bases.push(path.resolve(outDir));
-  else if (targetRoot && isPocTaskOutputDir(targetRoot)) bases.push(targetRoot);
-  return new Set(bases.flatMap((base) => [path.join(base, 'review'), path.join(base, 'shots')]));
-}
-
-export function collectSourceFiles(target, outDir = null) {
-  if (!target || !fs.existsSync(target)) return [];
-  const stat = fs.statSync(target);
-  if (stat.isFile()) return [path.resolve(target)];
-  const resolvedTarget = path.resolve(target);
-  const exts = new Set(['.html', '.htm', '.css', '.scss', '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte', '.astro']);
-  const ignoreDirs = new Set([
-    'node_modules', '.git', '.next', 'dist', 'build', '__pycache__',
-    '.synapse', '.synapse-review', '.impeccable', '.taste-skill',
-  ]);
-  const excludedArtifactDirs = taskArtifactDirs(resolvedTarget, outDir);
-  const results = [];
-  function walk(dir) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (ignoreDirs.has(entry.name)) continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (excludedArtifactDirs.has(full)) continue;
-        walk(full);
-      } else if (exts.has(path.extname(entry.name).toLowerCase())) {
-        results.push(full);
-      }
-    }
-  }
-  walk(resolvedTarget);
-  return results;
-}
-
-/** Fingerprint all task source assets while excluding this verifier's outputs. */
-export function collectEvidenceFiles(target, outDir) {
-  if (!target || !fs.existsSync(target)) return [];
-  const output = path.resolve(outDir);
-  const ignored = new Set(['node_modules', '.git', '.next', 'dist', 'build', '__pycache__']);
-  const excluded = new Set(['evidence-report.json', 'style-context.json', 'baseline.json']);
-  const excludedArtifactDirs = taskArtifactDirs(path.resolve(target), output);
-  const files = [];
-  function visit(current) {
-    const stat = fs.lstatSync(current);
-    if (stat.isSymbolicLink()) throw new Error(`Cannot fingerprint a symbolic link: ${current}`);
-    if (stat.isDirectory()) {
-      if (ignored.has(path.basename(current)) || excludedArtifactDirs.has(current)) return;
-      for (const entry of fs.readdirSync(current).sort()) visit(path.join(current, entry));
-    } else if (stat.isFile() && !(path.dirname(current) === output && excluded.has(path.basename(current)))) {
-      if (stat.size > 32 * 1024 * 1024 || files.length >= 5000) throw new Error('POC evidence exceeds the supported file budget');
-      files.push(current);
-    }
-  }
-  visit(path.resolve(target));
-  return files;
-}
+export {collectSourceFiles,collectEvidenceFiles} from './poc-source-inventory.mjs';
 
 /** Infer sloplint scope (`page` | `app` | `component`) from explicit flag, style-context, or operational app DOM signals. */
 export function inferSurfaceScope(files, reviewRoot = null, explicitScope = null) {

@@ -26,7 +26,7 @@ test('CLI creates a self-contained Cobalt project and safely adds another real D
   let result = f.run('create')
   assert.equal(result.status, 0, result.stderr)
   const provenance = JSON.parse(await f.read('cobalt-source.json'))
-  assert.equal(provenance.adapterVersion, 6)
+  assert.equal(provenance.adapterVersion, 7)
   assert.equal(provenance.atlasChrome.designCommit, 'deb48668941974a71c7516fcaf0b53313b3d6d0f')
   assert.match(provenance.revision, /^[a-f0-9]{40}$/)
   assert.equal(provenance.branch, 'ai-docs')

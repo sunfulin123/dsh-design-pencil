@@ -10,8 +10,8 @@ const presets: { id: WindowPreset; text: string }[] = [
   { id: 'mobile', text: 'Phone · 390 × 844' },
 ];
 const names = { success: 'Ready', loading: 'Loading', empty: 'Empty', error: 'Error', partial: 'Partial', permission: 'No access' };
-function Monitor() { return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M12 17v4m-5 0h10"/></svg>; }
-function Sliders() { return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 6h18M3 12h18M3 18h18"/><path strokeWidth="4" d="M8 3v6m8 0v6M8 15v6"/></svg>; }
+function Monitor() { return <span className="review-icon review-icon--monitor" aria-hidden="true"/>; }
+function Sliders() { return <span className="review-icon review-icon--sliders" aria-hidden="true"/>; }
 export function PrototypeBar({ appWidth }: { appWidth: number }) {
   const { state, dispatch, layout } = useShell();
   const enabled = FEATURE_FLAGS.filter(flag => state.flags[flag.id]).length;
@@ -39,6 +39,6 @@ export function PrototypeBar({ appWidth }: { appWidth: number }) {
     <button type="button" className="review-reset" aria-label="Reset prototype settings" data-testid="prototype-reset" onClick={() => {
       try { localStorage.removeItem('workspace-shell:preferences'); } catch { /* Storage may be unavailable. */ }
       location.reload();
-    }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5"/></svg><span className="review-label">Reset</span></button>
+    }}><span className="review-icon review-icon--reset" aria-hidden="true"/><span className="review-label">Reset</span></button>
   </div>;
 }

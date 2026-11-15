@@ -131,3 +131,7 @@ Pass `months` and `weekdays` to localise the calendar labels.
 | `weekdays`         | `CobaltWeekdays`         | English names         | Custom weekday names                                            |
 | `data-qa`          | `string`                 | —                     | QA selector                                                     |
 | `data-component`   | `string`                 | `'WFMDateTimePicker'` | Component identifier                                            |
+
+## Dismissal
+
+The copied internal popup boundary adds Escape with trigger focus return, outside interaction, focus-leave and business-frame blur dismissal. Calendar and time inputs keep the popup open while editing. Native styles and public props remain unchanged.

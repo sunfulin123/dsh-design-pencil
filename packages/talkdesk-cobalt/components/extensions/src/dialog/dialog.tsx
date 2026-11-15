@@ -1,17 +1,17 @@
-import React, { useId, useRef } from 'react';
-import PortalProvider from '@talkdesk/cobalt-react-portal-provider';
-import DismissibleModal from '@talkdesk/cobalt-marketplace-react-dismissible-modal';
-import StatefulButton from '@talkdesk/cobalt-marketplace-react-stateful-button';
-import Box from '@talkdesk/cobalt-react-box';
-import Button from '@talkdesk/cobalt-react-button';
-import Divider from '@talkdesk/cobalt-react-divider';
-import Flex from '@talkdesk/cobalt-react-flex';
-import { useTheme } from '@talkdesk/cobalt-react-theme-provider';
-import { Heading, Text } from '@talkdesk/cobalt-react-typography';
+import React, { useId, useRef, useState, useCallback, useEffect } from "react";
+import PortalProvider from "@talkdesk/cobalt-react-portal-provider";
+import DismissibleModal from "@talkdesk/cobalt-marketplace-react-dismissible-modal";
+import StatefulButton from "@talkdesk/cobalt-marketplace-react-stateful-button";
+import Box from "@talkdesk/cobalt-react-box";
+import Button from "@talkdesk/cobalt-react-button";
+import Divider from "@talkdesk/cobalt-react-divider";
+import Flex from "@talkdesk/cobalt-react-flex";
+import { useTheme } from "@talkdesk/cobalt-react-theme-provider";
+import { Heading, Text } from "@talkdesk/cobalt-react-typography";
 
-export type DialogSize = 'small' | 'medium' | 'large';
+export type DialogSize = "small" | "medium" | "large";
 
-export type DialogConfirmButtonType = 'primary' | 'secondary' | 'danger';
+export type DialogConfirmButtonType = "primary" | "secondary" | "danger";
 
 export type DialogMessages = {
   /** Cancel button label. Default: `'Cancel'`. */
@@ -43,8 +43,8 @@ export type DialogProps = {
   isConfirmDisabled?: boolean;
   /** Overridable user-visible strings (cancel label, confirm label). */
   messages?: DialogMessages;
-  'data-qa'?: string;
-  'data-component'?: string;
+  "data-qa"?: string;
+  "data-component"?: string;
 };
 
 export const Dialog: React.FC<DialogProps> = ({
@@ -54,36 +54,88 @@ export const Dialog: React.FC<DialogProps> = ({
   title,
   subtitle,
   children,
-  size = 'medium',
-  confirmButtonType = 'primary',
+  size = "medium",
+  confirmButtonType = "primary",
   isConfirmLoading = false,
   isConfirmDisabled = false,
   messages,
-  'data-qa': dataQa,
-  'data-component': dataComponent = 'WFMDialog',
+  "data-qa": dataQa,
+  "data-component": dataComponent = "WFMDialog",
 }) => {
   const theme = useTheme();
-  const contentRef = useRef<HTMLDivElement>(null);
-  const portalId = `extension-dialog-${useId().replace(/:/g, '')}`;
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const captureContent = useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    setContent(node);
+  }, []);
+  useEffect(() => {
+    if (!visible || !content) return;
+    const doc = content.ownerDocument;
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      const dialogs = [
+        ...doc.querySelectorAll<HTMLElement>(
+          '[role="dialog"][aria-modal="true"]',
+        ),
+      ].filter((node) => node.getClientRects().length > 0);
+      // The legacy modal activates its focus trap after the entrance transition.
+      // During that interval Escape still belongs to the top modal, even if focus is on its trigger.
+      if (dialogs.at(-1) !== content.closest('[role="dialog"]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeRef.current();
+    };
+    doc.addEventListener("keydown", keydown);
+    return () => doc.removeEventListener("keydown", keydown);
+  }, [visible, content]);
+  const portalId = `extension-dialog-${useId().replace(/:/g, "")}`;
 
-  const { cancelLabel = 'Cancel', confirmLabel = 'Confirm' } = messages ?? {};
+  const { cancelLabel = "Cancel", confirmLabel = "Confirm" } = messages ?? {};
 
   return (
-    <DismissibleModal size={size} visible={visible} onDismiss={onClose}
-      role="dialog" aria-modal="true" aria-label={title} aria-busy={isConfirmLoading}
-      focusOptions={{ initialFocus: false, escapeDeactivates: false, fallbackFocus: () => contentRef.current! }}
-      onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); onClose(); } }}>
+    <DismissibleModal
+      size={size}
+      visible={visible}
+      onDismiss={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      aria-busy={isConfirmLoading}
+      focusOptions={{
+        initialFocus: () =>
+          contentRef.current?.querySelector<HTMLElement>(
+            'input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])',
+          ) ?? contentRef.current!,
+        escapeDeactivates: false,
+        fallbackFocus: () => contentRef.current!,
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <Flex
-        forwardedRef={contentRef}
+        forwardedRef={captureContent}
         tabIndex={-1}
         grow
         data-component={dataComponent}
         data-qa={dataQa}
         direction="column"
-        style={{ minHeight: 0, overflow: 'hidden' }}
+        style={{ minHeight: 0, overflow: "hidden" }}
       >
         {/* Header — title and optional subtitle; X close button is provided by DismissibleModal */}
-        <Box as="header" paddingBottom="4" paddingTop="6" paddingX="6" style={{ flexShrink: 0 }}>
+        <Box
+          as="header"
+          paddingBottom="4"
+          paddingTop="6"
+          paddingX="6"
+          style={{ flexShrink: 0 }}
+        >
           <Flex direction="column" gap="1">
             <Heading level={4}>{title}</Heading>
             {subtitle && (
@@ -110,13 +162,21 @@ export const Dialog: React.FC<DialogProps> = ({
           width="100%"
         >
           {/* Keep nested menus inside the modal focus boundary and position context. */}
-          <div id={portalId}><PortalProvider containerId={portalId}>{children}</PortalProvider></div>
+          <div id={portalId}>
+            <PortalProvider containerId={portalId}>{children}</PortalProvider>
+          </div>
         </Box>
 
         <Divider />
 
         {/* Footer — always pinned at the bottom, cancel + confirm right-aligned */}
-        <Box as="footer" paddingX="6" paddingY="4" style={{ flexShrink: 0 }} width="100%">
+        <Box
+          as="footer"
+          paddingX="6"
+          paddingY="4"
+          style={{ flexShrink: 0 }}
+          width="100%"
+        >
           <Flex grow alignX="end" gap="3" width="100%">
             <Button
               data-qa={dataQa && `${dataQa}-cancel-button`}
@@ -131,7 +191,7 @@ export const Dialog: React.FC<DialogProps> = ({
               data-qa={dataQa && `${dataQa}-confirm-button`}
               disabled={isConfirmDisabled}
               // eslint-disable-next-line no-undefined
-              state={isConfirmLoading ? 'inline-loading' : undefined}
+              state={isConfirmLoading ? "inline-loading" : undefined}
               type={confirmButtonType}
               onClick={onConfirm}
             >

@@ -15,6 +15,7 @@ import {
 } from 'node:fs/promises';
 import { dirname, join, resolve, parse, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyWorkspaceShell } from './verify-workspace-shell.mjs';
 import {
   copyComponentSources,
   sourceDestination,
@@ -33,6 +34,20 @@ const library = existsSync(join(moduleRoot, 'components/extensions/src/index.ts'
   : join(moduleRoot, 'cobalt-reference');
 const json = (value) => JSON.stringify(value, null, 2) + '\n';
 const idPattern = /^[a-z][a-z0-9-]{0,63}$/;
+const menuSource = await readFile(
+  join(template, 'vendor/workspace-shell/data/menu.generated.ts'),
+  'utf8',
+);
+const menuJson = menuSource.match(
+  /export const DEFAULT_DOCK_APPS: DockApp\[\] = (\[[\s\S]*?\n\]);/,
+);
+if (!menuJson) throw new Error('Canonical Workspace menu format changed');
+const builtinIds = new Set(JSON.parse(menuJson[1]).map((app) => app.id));
+const reviewChrome = existsSync(
+  join(moduleRoot, '../html-prototype-review/scripts/html-review/chrome.css'),
+)
+  ? join(moduleRoot, '../html-prototype-review/scripts/html-review/chrome.css')
+  : join(moduleRoot, 'scripts/html-review/chrome.css');
 
 function validate(spec) {
   if (!Array.isArray(spec?.apps) || !spec.apps.length || spec.apps.length > 32)
@@ -44,7 +59,10 @@ function validate(spec) {
     ids.add(app.id);
     if (typeof app.title !== 'string' || !app.title.trim() || app.title.length > 120)
       throw new Error('Each app needs a title');
-    if (typeof app.iconName !== 'string' || !/^[a-z0-9_]{1,100}$/.test(app.iconName))
+    if (
+      !builtinIds.has(app.id) &&
+      (typeof app.iconName !== 'string' || !/^[a-z0-9_]{1,100}$/.test(app.iconName))
+    )
       throw new Error('Each app needs a Cobalt iconName');
     if (!Array.isArray(app.pages) || !app.pages.length || app.pages.length > 32)
       throw new Error('Provide 1–32 pages per app');
@@ -61,7 +79,7 @@ function validate(spec) {
     apps: spec.apps.map((app) => ({
       id: app.id,
       title: app.title,
-      iconName: app.iconName,
+      ...(!builtinIds.has(app.id) ? { iconName: app.iconName } : {}),
       pages: app.pages.map((page) => ({ id: page.id, title: page.title })),
     })),
   };
@@ -128,7 +146,14 @@ async function createProject(out, spec) {
   }
   const chrome = new Map();
   const chromeHashes = {};
-  for (const name of ['space.ts', 'title-bar.tsx', 'workspace-chrome.css', 'status-pill.tsx', 'profile-menu.tsx', 'notifications.tsx']) {
+  for (const name of [
+    'space.ts',
+    'title-bar.tsx',
+    'workspace-chrome.css',
+    'status-pill.tsx',
+    'profile-menu.tsx',
+    'notifications.tsx',
+  ]) {
     const content = await readFile(join(template, 'chrome', name), 'utf8');
     chrome.set(name, content);
     chromeHashes[name] = createHash('sha256').update(content).digest('hex');
@@ -140,7 +165,10 @@ async function createProject(out, spec) {
       throw new Error(`Atlas primitive snapshot checksum mismatch: ${path}`);
     shell.set(path, content);
   }
-  shell.set('helpers/class.name.formatter.d.ts', await readFile(join(template, 'chrome/class-name-formatter.d.ts'), 'utf8'));
+  shell.set(
+    'helpers/class.name.formatter.d.ts',
+    await readFile(join(template, 'chrome/class-name-formatter.d.ts'), 'utf8'),
+  );
   adaptShell(shell, chrome);
   const dependencies = JSON.parse(await readFile(join(template, 'dependencies.json'), 'utf8'));
   await mkdir(dirname(out), { recursive: true });
@@ -151,6 +179,7 @@ async function createProject(out, spec) {
       // Runtime templates are a small, explicit flat set, independent from upstream files.
       const paths = {
         'main.tsx': 'src/main.tsx',
+        'dock-registry.ts': 'src/prototype-runtime/dock-registry.ts',
         'apps.ts': 'src/prototype-runtime/apps.ts',
         'app.tsx': 'src/prototype-runtime/app.tsx',
         'scenarios.tsx': 'src/prototype-runtime/scenarios.tsx',
@@ -160,20 +189,59 @@ async function createProject(out, spec) {
       };
       await put(stage, paths[name] ?? name, await readFile(join(template, 'project', name)));
     }
+    await put(stage, 'src/prototype-runtime/review-chrome.css', await readFile(reviewChrome));
+    await put(
+      stage,
+      'tools/verify-workspace-shell.mjs',
+      await readFile(new URL('./verify-workspace-shell.mjs', import.meta.url)),
+    );
     await writeSourceResources(library, stage);
     const sourceDependencies = JSON.parse(
       await readFile(join(library, 'components/extensions/dependencies.json'), 'utf8'),
     );
     await writeApps(stage, spec.apps);
     await put(stage, 'talkdesk-prototype.json', json({ schemaVersion: 1, ...spec }));
+    const protectedFiles = {};
+    async function fingerprint(path) {
+      const target = join(stage, path);
+      if ((await lstat(target)).isDirectory()) {
+        for (const name of (await readdir(target)).sort()) await fingerprint(`${path}/${name}`);
+      } else
+        protectedFiles[path] = createHash('sha256')
+          .update(await readFile(target))
+          .digest('hex');
+    }
+    for (const path of [
+      'src/main.tsx',
+      'src/workspace-shell',
+      'src/prototype-runtime',
+      'tools/verify-workspace-shell.mjs',
+    ])
+      await fingerprint(path);
     await put(
       stage,
       'cobalt-source.json',
       json({
         ...manifest,
-        adapterVersion: 6,
+        adapterVersion: 7,
+        protectedFiles,
         atlasChrome: { ...atlasChrome, templates: chromeHashes },
-        adaptedFiles: ['config.ts', 'shell/state.ts', 'title.bar/primitives/title-bar-button-frame.tsx', 'mount.tsx', 'space.ts', 'shell/Shell.tsx', 'shell/Primary.tsx', 'shell/PrototypeBar.tsx', 'shell/TitleBar.tsx', 'shell/Notifications.tsx', 'shell/StatusPill.tsx', 'shell/ProfileMenu.tsx', 'shell/Drawer.tsx', 'shell/workspace-chrome.css'],
+        adaptedFiles: [
+          'config.ts',
+          'shell/state.ts',
+          'title.bar/primitives/title-bar-button-frame.tsx',
+          'mount.tsx',
+          'space.ts',
+          'shell/Shell.tsx',
+          'shell/Primary.tsx',
+          'shell/PrototypeBar.tsx',
+          'shell/TitleBar.tsx',
+          'shell/Notifications.tsx',
+          'shell/StatusPill.tsx',
+          'shell/ProfileMenu.tsx',
+          'shell/Drawer.tsx',
+          'shell/workspace-chrome.css',
+        ],
       }),
     );
     await put(
@@ -186,7 +254,7 @@ async function createProject(out, spec) {
         packageManager: 'pnpm@11.7.0',
         scripts: {
           dev: 'vite --host 127.0.0.1',
-          build: 'vite build',
+          build: 'node tools/verify-workspace-shell.mjs && vite build',
           preview: 'vite preview --host 127.0.0.1',
         },
         dependencies: {
@@ -197,6 +265,7 @@ async function createProject(out, spec) {
         },
         devDependencies: {
           vite: '6.4.1',
+          '@vitejs/plugin-react': '4.7.0',
           typescript: '5.8.3',
           '@types/react': '18.3.20',
           '@types/react-dom': '18.3.6',
@@ -281,8 +350,12 @@ async function main() {
   const [action, ...args] = process.argv.slice(2);
   if (action === '--help') {
     console.log(
-      'cobalt-project.mjs create|add --out <project-directory> --spec <apps.json>; copy-source --out <existing-project>',
+      'cobalt-project.mjs create|add --out <project-directory> --spec <apps.json>; copy-source --out <existing-project>; verify-shell --out <project>',
     );
+    return;
+  }
+  if (action === 'verify-shell' && args.length === 2 && args[0] === '--out') {
+    console.log(json(await verifyWorkspaceShell(resolve(args[1]))));
     return;
   }
   if (action === 'copy-source' && args.length === 2 && args[0] === '--out') {
@@ -304,7 +377,7 @@ async function main() {
     args[2] !== '--spec'
   ) {
     throw new Error(
-      'Usage: cobalt-project.mjs create|add --out <project-directory> --spec <apps.json>; copy-source --out <existing-project>',
+      'Usage: cobalt-project.mjs create|add --out <project-directory> --spec <apps.json>; copy-source --out <existing-project>; verify-shell --out <project>',
     );
   }
   const spec = validate(JSON.parse(await readFile(resolve(args[3]), 'utf8')));

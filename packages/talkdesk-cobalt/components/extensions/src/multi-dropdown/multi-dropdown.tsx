@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 import React from 'react';
 import CobaltMultiDropdown, {
   Option,
@@ -205,7 +206,16 @@ export const MultiDropdown: React.FC<MultiDropdownProps> = ({
     trigger.setAttribute('aria-disabled', String(disabled || loading));
     if (hiddenInput) hiddenInput.tabIndex = -1;
 
+    // Native close renders remove tabindex from FakeInput; keep the labelled trigger focusable.
+    const syncTabIndex = () => {
+      const value = disabled || loading ? -1 : 0;
+      if (trigger.tabIndex !== value) trigger.tabIndex = value;
+    };
+    const observer = new MutationObserver(syncTabIndex);
+    observer.observe(trigger, { attributes: true, attributeFilter: ['tabindex'] });
+
     return () => {
+      observer.disconnect();
       const restoreAttribute = (
         element: HTMLElement,
         name: string,
@@ -389,49 +399,59 @@ export const MultiDropdown: React.FC<MultiDropdownProps> = ({
     >
       {
         // @ts-ignore: cobalt-marketplace-react-multi-dropdown render-prop generic
-        ({ onClick }) => {
-          if (isSearchEnabled) {
-            return (
-              <Search
-                data-qa={dataQa ? `${dataQa}-search` : null}
-                messages={{
-                  noResults: isSearching ? searching : noResults,
-                  placeholder: searchPlaceholder,
-                }}
-                onSearch={null}
-              >
-                {(query: string) => {
-                  onSearch?.(query);
+        ({ onClick, setIsOpen }) => {
+          const content = () => {
+            if (isSearchEnabled) {
+              return (
+                <Search
+                  data-qa={dataQa ? `${dataQa}-search` : null}
+                  messages={{
+                    noResults: isSearching ? searching : noResults,
+                    placeholder: searchPlaceholder,
+                  }}
+                  onSearch={null}
+                >
+                  {(query: string) => {
+                    onSearch?.(query);
 
-                  if (onSearch) {
+                    if (onSearch) {
+                      return (
+                        <>
+                          {renderRows(options, onClick)}
+                          {renderLoadMore()}
+                        </>
+                      );
+                    }
+
+                    const filtered = query
+                      ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+                      : options;
+
                     return (
                       <>
-                        {renderRows(options, onClick)}
+                        {renderRows(filtered, onClick)}
                         {renderLoadMore()}
                       </>
                     );
-                  }
+                  }}
+                </Search>
+              );
+            }
 
-                  const filtered = query
-                    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
-                    : options;
-
-                  return (
-                    <>
-                      {renderRows(filtered, onClick)}
-                      {renderLoadMore()}
-                    </>
-                  );
-                }}
-              </Search>
+            return (
+              <>
+                {renderRows(options, onClick)}
+                {renderLoadMore()}
+              </>
             );
-          }
-
+          };
           return (
-            <>
-              {renderRows(options, onClick)}
-              {renderLoadMore()}
-            </>
+            <PopupDismissBoundary
+              close={() => setIsOpen(false)}
+              trigger={() => containerRef.current?.querySelector<HTMLElement>('[role="button"]')}
+            >
+              {content()}
+            </PopupDismissBoundary>
           );
         }
       }

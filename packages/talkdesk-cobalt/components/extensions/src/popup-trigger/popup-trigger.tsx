@@ -1,3 +1,4 @@
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 import React from 'react';
 import StatefulPopup, {
   StatefulPopupProps,
@@ -72,6 +73,7 @@ export const PopupTrigger: React.FC<PopupTriggerProps> = ({
   'data-qa': dataQa,
   'data-component': dataComponent = 'PopupTrigger',
 }) => {
+  const nativeTarget = React.useRef<HTMLElement | null>(null);
   return (
     <StatefulPopup
       data-component={dataComponent}
@@ -83,14 +85,26 @@ export const PopupTrigger: React.FC<PopupTriggerProps> = ({
       origin={origin}
       size={size}
       target={children}
+      targetProps={{
+        onPointerDownCapture: (event) => {
+          nativeTarget.current = event.currentTarget;
+        },
+        onFocusCapture: (event) => {
+          nativeTarget.current = event.currentTarget;
+        },
+      }}
       width={width}
     >
-      <Box
-        data-qa={dataQa ? `${dataQa}-content` : 'popup-trigger-content'}
-        padding={contentPadding}
-      >
-        {content}
-      </Box>
+      {(close, { isVisible }) => (
+        <PopupDismissBoundary close={close} active={isVisible} trigger={() => nativeTarget.current}>
+          <Box
+            data-qa={dataQa ? `${dataQa}-content` : 'popup-trigger-content'}
+            padding={contentPadding}
+          >
+            {content}
+          </Box>
+        </PopupDismissBoundary>
+      )}
     </StatefulPopup>
   );
 };

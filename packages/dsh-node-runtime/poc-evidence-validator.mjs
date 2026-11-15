@@ -142,6 +142,7 @@ export function parseAndValidateEvidenceLedgerJson(rawBytes) {
     throw new Error('POC evidence ledger must be valid JSON produced by verify-surface.mjs');
   }
   if (!isRecord(parsed)) throw new Error('POC evidence ledger must be a JSON object');
+  if (parsed.mode && parsed.mode !== 'final') throw new Error('Development/history review reports cannot be used for POC handoff');
   const unverified = [];
   for (const key of ['accessibility', 'responsive', 'visualReview']) {
     assertHonestGateEntry(parsed, key, unverified);

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 import React from 'react';
 import CobaltDropdown, { Option } from '@talkdesk/cobalt-marketplace-react-dropdown';
 import { OnChangeOption, Search } from '@talkdesk/cobalt-marketplace-react-dropdown-utils';
@@ -137,6 +138,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   'data-qa': dataQa,
   'data-component': dataComponent = 'Dropdown',
 }) => {
+  const dropdownRoot = React.useRef<HTMLDivElement>(null);
   const {
     placeholder = 'Select an option',
     searchPlaceholder = 'Search',
@@ -221,6 +223,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
   return (
     <CobaltDropdown
+      forwardedRef={dropdownRoot}
       aria-labelledby={ariaLabelledBy}
       data-component={dataComponent}
       data-qa={dataQa}
@@ -240,49 +243,61 @@ export const Dropdown: React.FC<DropdownProps> = ({
     >
       {
         // @ts-ignore: cobalt-marketplace-react-dropdown render-prop generic
-        ({ onClick }) => {
-          if (isSearchEnabled) {
-            return (
-              <Search
-                data-qa={dataQa ? `${dataQa}-search` : null}
-                messages={{
-                  noResults: isSearching ? searching : noResults,
-                  placeholder: searchPlaceholder,
-                }}
-                onSearch={null}
-              >
-                {(query: string) => {
-                  onSearch?.(query);
+        ({ onClick, setIsOpen }) => {
+          const content = () => {
+            if (isSearchEnabled) {
+              return (
+                <Search
+                  data-qa={dataQa ? `${dataQa}-search` : null}
+                  messages={{
+                    noResults: isSearching ? searching : noResults,
+                    placeholder: searchPlaceholder,
+                  }}
+                  onSearch={null}
+                >
+                  {(query: string) => {
+                    onSearch?.(query);
 
-                  if (onSearch) {
+                    if (onSearch) {
+                      return (
+                        <>
+                          {renderRows(options, onClick)}
+                          {renderLoadMore()}
+                        </>
+                      );
+                    }
+
+                    const filtered = query
+                      ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+                      : options;
+
                     return (
                       <>
-                        {renderRows(options, onClick)}
+                        {renderRows(filtered, onClick)}
                         {renderLoadMore()}
                       </>
                     );
-                  }
+                  }}
+                </Search>
+              );
+            }
 
-                  const filtered = query
-                    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
-                    : options;
-
-                  return (
-                    <>
-                      {renderRows(filtered, onClick)}
-                      {renderLoadMore()}
-                    </>
-                  );
-                }}
-              </Search>
+            return (
+              <>
+                {renderRows(options, onClick)}
+                {renderLoadMore()}
+              </>
             );
-          }
-
+          };
           return (
-            <>
-              {renderRows(options, onClick)}
-              {renderLoadMore()}
-            </>
+            <PopupDismissBoundary
+              close={() => setIsOpen(false)}
+              trigger={() =>
+                dropdownRoot.current?.querySelector<HTMLElement>('button, [role="button"]')
+              }
+            >
+              {content()}
+            </PopupDismissBoundary>
           );
         }
       }

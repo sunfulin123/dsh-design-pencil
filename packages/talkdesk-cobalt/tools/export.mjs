@@ -25,9 +25,11 @@ export async function exportCobalt(destination) {
     await rm(join(destination, path), { recursive: true, force: true });
   }
   await copy(join(root, 'templates'), join(destination, 'templates/cobalt'));
+  await copy(join(root, '../html-prototype-review/scripts/html-review/chrome.css'), join(destination, 'scripts/html-review/chrome.css'));
   await copy(join(root, 'skill/references'), join(destination, 'references'));
   for (const name of [
     'cobalt-project.mjs',
+    'verify-workspace-shell.mjs',
     'cobalt-shell-adapter.mjs',
     'cobalt-lookup.mjs',
     'cobalt-source-templates.mjs',

@@ -1,50 +1,10 @@
 import fs from 'node:fs';
+import {readSurfaceGeometry,surfaceFindings} from './poc-surface-inspection.mjs';
 import path from 'node:path';
-import http from 'node:http';
+import {startStaticServer} from './poc-preview-server.mjs';
 import { createHash } from 'node:crypto';
 import { loadHeadlessLauncher } from './poc-browser-runner.mjs';
 
-function startStaticServer(rootDir, entryFile) {
-  const mimeTypes = {
-    '.html': 'text/html; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8',
-    '.mjs': 'application/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.svg': 'image/svg+xml',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.woff2': 'font/woff2',
-  };
-
-  return new Promise((resolve, reject) => {
-    const server = http.createServer((req, res) => {
-      let reqPath;
-      try { reqPath = decodeURIComponent((req.url || '/').split('?')[0]); }
-      catch { res.writeHead(400).end('Bad request'); return; }
-      const relPath = reqPath === '/' ? entryFile : reqPath.replace(/^\/+/, '');
-      const fullPath = path.resolve(rootDir, relPath);
-      let realFile;
-      try { realFile = fs.realpathSync(fullPath); } catch { res.writeHead(404).end('Not found'); return; }
-      const relative = path.relative(fs.realpathSync(rootDir), realFile);
-      if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative) || fs.statSync(realFile).isDirectory()) {
-        res.statusCode = 404;
-        res.end('Not found');
-        return;
-      }
-      const ext = path.extname(fullPath).toLowerCase();
-      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-      fs.createReadStream(realFile).pipe(res);
-    });
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      resolve({ server, url: `http://127.0.0.1:${addr.port}/` });
-    });
-    server.on('error', reject);
-  });
-}
 
 export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewports, options = {}) {
   const totalTimeoutMs = Math.max(500, Math.min(120_000, Number(options.timeoutMs) || 45_000));
@@ -189,108 +149,9 @@ export async function captureAndInspectViewports(targetUrlOrFile, outDir, viewpo
         currentStage = `inspect:${vp.label}`;
 
         // Live DOM geometry & Second-Order Slop check at this exact viewport
-        const evalRes = await sendCDP('Runtime.evaluate', {
-          returnByValue: true,
-          expression: `(() => {
-            const overflowPx = document.documentElement.scrollWidth - window.innerWidth;
-            const brokenImgs = [...document.querySelectorAll('img')].filter(i => i.complete && i.naturalWidth === 0).length;
-            // Count small bordered pill/chip containers visible in the viewport (Pill Soup detector)
-            const smallBorderedPills = [...document.querySelectorAll('span, button, li, div')].filter(el => {
-              const r = el.getBoundingClientRect();
-              if (r.width === 0 || r.height === 0 || r.height > 46 || r.width > 240) return false;
-              const cs = getComputedStyle(el);
-              return parseFloat(cs.borderTopWidth) >= 1 && cs.borderTopStyle !== 'none' && cs.borderTopColor !== 'rgba(0, 0, 0, 0)';
-            }).length;
-            const describeCtrl = el => el.id ? '#' + el.id : (el.name ? el.tagName.toLowerCase() + '[name="' + el.name + '"]' : el.tagName.toLowerCase());
-            const selectChevronIssues = [];
-            for (const sel of document.querySelectorAll('select:not([multiple])')) {
-              const sz = parseInt(sel.getAttribute('size') || '1', 10);
-              if (sz > 1) continue;
-              const r = sel.getBoundingClientRect();
-              if (r.width === 0 || r.height === 0) continue;
-              const cs = getComputedStyle(sel);
-              if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) continue;
-              const bordered = parseFloat(cs.borderRightWidth) >= 1 && cs.borderRightStyle !== 'none' && cs.borderRightColor !== 'rgba(0, 0, 0, 0)';
-              const filled = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent';
-              if (!bordered && !filled) continue;
-              const appearance = cs.appearance || cs.webkitAppearance || 'auto';
-              const padR = parseFloat(cs.paddingRight) || 0;
-              const parentCs = sel.parentElement ? getComputedStyle(sel.parentElement) : null;
-              const hasOverlayIcon = parentCs && parentCs.position !== 'static'
-                && [...sel.parentElement.querySelectorAll('svg, [data-chevron], [aria-hidden="true"]')].some(ic => {
-                  const ir = ic.getBoundingClientRect();
-                  return ir.width > 0 && ir.right <= r.right && (r.right - ir.right) >= 8;
-                });
-              if (appearance !== 'none') {
-                selectChevronIssues.push(describeCtrl(sel) + ' uses native UA appearance ("' + appearance + '"), gluing the dropdown arrow to the right border');
-              } else if (cs.backgroundImage === 'none' && !hasOverlayIcon) {
-                selectChevronIssues.push(describeCtrl(sel) + ' sets appearance:none without a visible custom chevron indicator');
-              } else if (padR < 32) {
-                selectChevronIssues.push(describeCtrl(sel) + ' has padding-right=' + Math.round(padR) + 'px (< 32px), causing text to collide with the dropdown chevron');
-              } else if (cs.backgroundImage !== 'none') {
-                const posX = (cs.backgroundPositionX || cs.backgroundPosition || '').trim();
-                const rightPx = /^calc\\(\\s*100%\\s*-\\s*([\\d.]+)px\\s*\\)$/i.exec(posX) || /\\bright\\s+([\\d.]+)px\\b/i.exec(posX);
-                if (/^(?:100%|right)$/i.test(posX) || (rightPx && parseFloat(rightPx[1]) < 8)) {
-                  selectChevronIssues.push(describeCtrl(sel) + ' places its chevron flush with the right edge (' + posX + '); inset it 12px-16px from the right border');
-                }
-              }
-            }
-            for (const trig of document.querySelectorAll('[role="combobox"], button[aria-haspopup="listbox"], button[aria-haspopup="menu"]')) {
-              const r = trig.getBoundingClientRect();
-              if (r.width === 0 || r.height === 0) continue;
-              const cs = getComputedStyle(trig);
-              if (cs.display === 'none' || cs.visibility === 'hidden') continue;
-              const icon = [...trig.querySelectorAll('svg, [data-chevron], i')].at(-1);
-              if (!icon) continue;
-              const ir = icon.getBoundingClientRect();
-              const borderR = parseFloat(cs.borderRightWidth) || 0;
-              const gapRight = (r.right - borderR) - ir.right;
-              if (ir.width > 0 && gapRight >= -2 && gapRight < 8) {
-                selectChevronIssues.push(describeCtrl(trig) + ' trailing chevron sits only ' + Math.round(gapRight) + 'px from the right border (need 12px-16px)');
-              }
-            }
-            return { overflowPx, brokenImgs, smallBorderedPills, selectChevronIssues };
-          })()`,
-        });
-
-        const geom = evalRes?.result?.value;
-        if (!geom || evalRes.exceptionDetails) throw new Error(`DOM inspection failed at ${vp.label}`);
-        if (geom.overflowPx > 2) {
-          domFindings.push({
-            severity: 'P0',
-            category: 'responsive-dom',
-            rule: 'horizontal-overflow',
-            location: vp.label,
-            message: `Horizontal overflow of ${geom.overflowPx}px detected at ${vp.width}x${vp.height}.`,
-          });
-        }
-        if (geom.brokenImgs > 0) {
-          domFindings.push({
-            severity: 'P1',
-            category: 'responsive-dom',
-            rule: 'broken-image',
-            location: vp.label,
-            message: `${geom.brokenImgs} broken image(s) (naturalWidth === 0) detected at ${vp.label}.`,
-          });
-        }
-        if (Array.isArray(geom.selectChevronIssues) && geom.selectChevronIssues.length > 0 && vp.width >= 1280) {
-          domFindings.push({
-            severity: 'P1',
-            category: 'craft-floor',
-            rule: 'dropdown-chevron-inset',
-            location: vp.label,
-            message: `Dropdown/select chevron inset defect: ${geom.selectChevronIssues.slice(0, 3).join('; ')}. Use appearance: none, inset the chevron 12px-16px from the right border, and set padding-right: 36px-40px.`,
-          });
-        }
-        if (vp.width >= 1280 && geom.smallBorderedPills > 22) {
-          domFindings.push({
-            severity: 'P1',
-            category: 'second-order-slop',
-            rule: 'pill-soup-overload',
-            location: vp.label,
-            message: `Pill & Box Soup detected: ${geom.smallBorderedPills} small bordered pill/chip boxes on screen (max 22). Replace bordered pills/chips with open typographic hierarchy and whitespace.`,
-          });
-        }
+        const geom = await readSurfaceGeometry(page, undefined, remaining(currentStage));
+        if (!geom) throw new Error(`DOM inspection failed at ${vp.label}`);
+        domFindings.push(...surfaceFindings(geom,vp,options.scope));
 
         currentStage = `screenshot:${vp.label}`;
         const outFile = path.join(outDir, vp.file);

@@ -110,3 +110,7 @@ Provide `hasMore` and `onLoadMore` to render a full-width "Load more" button at 
 | `loading`           | `string` | `'Loading…'`         | Label on the load-more button while `isLoadingMore` is `true`                  |
 
 Pass `aria-labelledby` with the ID of the visible field label when composing a form dropdown. This names the control independently of its selected value; ListPage uses it for the user Role field.
+
+## Dismissal
+
+Escape closes the innermost open popup and restores its trigger focus. Clicking outside, moving keyboard focus outside the trigger/popup boundary, or leaving the business iframe closes it without moving focus back. Internal search, focus movement and selection retain native behavior. Nested dropdown dismissal does not dismiss its parent Dialog or SidePanel.

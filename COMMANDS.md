@@ -223,3 +223,13 @@ CI 的 [maintenance workflow](.github/workflows/maintenance.yml) 执行行数、
 ## Local Cobalt authoring and documentation
 
 After `bun install --frozen-lockfile` in `packages/`, run `bun run docs:dev`, `bun run docs:build`, `bun run test:unit`, `bun run test:browser` or `bun run bundle:build` in `packages/talkdesk-cobalt/`. See its [README](packages/talkdesk-cobalt/README.md) for wrapper checks, source ownership and refresh procedure. Talkdesk packages require its registry/VPN; the static site output is `site/dist/`. Cargo invokes Node.js to discover `packages/design-data/styles/` before embedding style data. Style or Rust changes require rebuilding the engine and web runtime. Documentation and component-source updates use `bundle:build` followed by SS's `stage-local-runtime.mjs` with this checkout path; no Rust rebuild is needed for those content-only changes.
+
+## HTML POC development and final review
+
+Read the [POC review guide](crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md) for frame paths, plan selection and evidence acceptance. Development uses the existing managed server and does not build delivery or change the official ledger. Final review captures the static artifact once; its pending manual fields still require review and `check-evidence.mjs` before handoff.
+
+```sh
+node crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs dev --source /absolute/task --out /absolute/task --url http://127.0.0.1:4173 --steps /absolute/task/review/steps.json --sessions main,dialog,drawer
+node crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs final --source /absolute/task --out /absolute/task --project /absolute/task/project --scope app
+DSH_E2E_CHROME=1 node --test packages/dsh-node-runtime/poc-review-workflow.test.mjs packages/dsh-node-runtime/html-skill-migration.test.mjs
+```

@@ -31,3 +31,9 @@ Theme regression compares rendered default/hover/expanded control styles to an u
 The pinned Atlas frame imports Tag v2 by default; the generated copy changes only that import to the named Tag export required by Cobalt v3. Original primitive bytes and hashes remain intact, and `primitiveAdaptations` records this API-only adjustment.
 
 The phone review preset uses prototype-size-mobile (390 × 844). Notification history uses compact rows, an Older group and per-row named read actions; desktopUpdateEntry adds a compact update row. The default history in main.tsx is explicitly local sample content.
+
+## Canonical registration and integrity
+
+Built-in Dock items keep their original icons, metadata and drawer model. Generated main.tsx delegates to the copied dock-registry helper; register only business routes through talkdesk-prototype.json. In particular WFM uses its official WFM.svg and must not be replaced with an invented font icon. iconName is optional and ignored for built-ins, required for custom apps. Adapter 7 records protectedFiles hashes and verifies the copied shell/runtime before build; business pages and copied Extensions remain editable. Never remove the verifier or rewrite provenance to accept a modified shell.
+
+The preview-only top controls share the ordinary HTML library's canonical 44px chrome and icon masks. They are separate from the 44px native Workspace title bar described above.

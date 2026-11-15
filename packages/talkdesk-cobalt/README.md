@@ -65,7 +65,7 @@ Workspace prototypes use pnpm 11.7.0 (`pnpm install`, `pnpm run dev`, `pnpm run 
 
 The owned `templates/project/review-toolbar*` and `review-dropdown.tsx` supply responsive prototype-only controls. The shell adapter redirects the copied PrototypeBar to that runtime; no upstream toolbar file is edited. The companion owns accessible-name and test-ID guidance for dimensions, scenarios and Feature flags.
 
-Prototype review controls use 36px desktop triggers and 44px narrow-screen touch controls in a 56px bar, without a leading Prototype wordmark/icon. Accessible names and prototype-* locators are independent of visual density.
+Prototype review controls use 32px desktop triggers and 36px narrow-screen touch controls in a 44px bar, without a leading Prototype wordmark/icon. Accessible names and prototype-* locators are independent of visual density.
 
 New Workspace projects apply the pinned Atlas redesign through owned `templates/chrome/` sources. Their source manifest records Atlas provenance separately from the immutable ai-docs input. The adapter updates presentation, layout geometry and accessible locators while retaining SDK stand-ins and review controls. No new-UI flag or Atlas service dependency is introduced. Small prototype windows use compact search below the production 414px minimum. `add` preserves existing shells. See `skill/references/cobalt/workspace-chrome.md` for the geometry and review contract.
 
@@ -86,3 +86,7 @@ Compact Users title/description groups use copied Typography page-title with nat
 Insights header actions use native SplitButton, chevron_down and core Popover for CSV/JSON sample exports. Ask Copilot is a native transparent action before Export and opens a native ModalPanel with ChatBubble messages and a fixed 120-character Textarea composer. Replies are local examples; Enter sends and Shift+Enter inserts a newline. Preserve insights-* locators, keyboard/focus behavior and both schemes when adapting.
 
 The Active call recipe reproduces the reference Conversations/Callbacks surface with Cobalt components and glyphs, a bounded queue/content layout and pinned call controls. Its local Hold/Mute/Recording, keypad, callback and confirmation workflows are examples; the embedding application owns authorized telephony and persistence. Read `recipes/active-call.md` and copy all listed support sources.
+
+Prototype controls share the ordinary HTML library’s compact visual source. Generated Workspace builds verify protected shell/runtime hashes; built-in app icons remain canonical when business pages are registered. Copied popup and calendar wrappers provide keyboard, outside-focus and iframe dismissal.
+
+Generated prototypes use the pinned React Vite plugin for Fast Refresh. Business routes load through stable lazy imports, with chart code in a deferred chunk; the shell and list route do not eagerly import every recipe. Use the managed dev server for selected interaction checks and build static delivery at the final checkpoint. The HTML Skill’s [POC review guide](../../crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md) owns the development/final capture and evidence rules.

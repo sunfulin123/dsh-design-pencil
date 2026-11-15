@@ -60,12 +60,16 @@ The chrome follows the system light/dark preference independently of business st
 
 ## Capture and handoff
 
-Capture and `verify-surface` against **businessEntry**, with `?prototypeState=<id>` for a server URL when checking a forced state. This keeps the real business DOM, selected design and requested pixel viewport under review; a wrapper-only scan would miss iframe content. A file-path capture defaults to Ready; use a local HTTP Preview URL to capture other states. The review chrome has its own neutral palette and does not count as business design content.
+The shared final review helper resolves this wrapper to **businessEntry** for its required surface captures; when using lower-level capture/verification tools directly, also target businessEntry, with `?prototypeState=<id>` for a server URL when checking a forced state. This keeps the real business DOM, selected design and requested pixel viewport under review; a wrapper-only scan would miss iframe content. A file-path capture defaults to Ready; use a local HTTP Preview URL to capture other states. The review chrome has its own neutral palette and does not count as business design content.
 
 Also exercise the wrapper's size/state/Reset controls with actual page visibility and iframe viewport assertions. A changed dropdown label alone is not evidence that content changed. Review both themes and relevant narrow widths.
 
-Keep `verify-surface --source <whole-task-dir>` so business files, preview HTML and all `prototype-review/` assets remain fingerprinted. Register the generated **entry** for Preview handoff, include both business and helper source files (plus other authored assets and DESIGN.md), and record business screenshots with their actual viewport widths. The helper's returned source list does not discover other authored screens, CSS or images. Re-run capture/evidence after edits using the existing workflow; no Cucumber/E2E-document generation is added.
+Keep `verify-surface --source <whole-task-dir>` so business files, preview HTML and all `prototype-review/` assets remain fingerprinted. Register the generated **entry** for Preview handoff, include both business and helper source files (plus other authored assets and DESIGN.md), and record business screenshots with their actual viewport widths. The helper's returned source list does not discover other authored screens, CSS or images. Use focused development checks while editing and a new frozen final review after related edits are complete; no Cucumber/E2E-document generation is added.
 
 ## POC to high-fidelity boundary
 
 Size, Page state, Reset, Feature flags and the outer preview frame are review tools, never high-fidelity business content, including in strict-fidelity mode. Do not reproduce their controls, dimensions, neutral toolbar palette or wrapper padding as canvas nodes. Read the preview’s `prototype-review-config` JSON to resolve its `entry` relative to the preview HTML when the business entry is not already known. Use the original business source and business-only captures; retain real navigation, business actions and requested Workspace title bar/Dock/app menus. Dropping review chrome is not a missing screen or a scope deviation.
+
+## Development and final checks
+
+Use [the shared POC review workflow](poc-review.md): ordinary HTML uses the existing HTTP preview for focused development checks and the static preview.html entry for final review. Frame-aware native actions exercise the real wrapper/business boundary. Development reports do not replace the final ledger; prior final records and images stay archived. Keep all business and review resources in the frozen source inventory.

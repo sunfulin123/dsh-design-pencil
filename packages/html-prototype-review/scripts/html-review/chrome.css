@@ -1,0 +1,44 @@
+/* Canonical preview-only visual source shared by HTML and Workspace adapters. */
+.prototype-toolbar, .review-toolbar {
+  --review-bg: #fff; --review-fg: #20242b; --review-text: var(--review-fg);
+  --review-muted: #626a75; --review-line: #dce0e5; --review-hover: #f2f4f6;
+  --review-focus: #3567d6; --review-success: #278543; --review-error: #bf3636; --review-warning: #b27800;
+  box-sizing: border-box; display: flex; align-items: center; flex: none; gap: 12px;
+  width: 100%; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--review-line);
+  background: var(--review-bg); color: var(--review-fg); font: 13px/20px system-ui, sans-serif;
+}
+html[data-co-colorscheme="dark"] .review-toolbar {
+  --review-bg: #202428; --review-fg: #edf0f3; --review-muted: #b3bbc6;
+  --review-line: #454d57; --review-hover: #30373f; --review-focus: #91b6ff;
+}
+@media (prefers-color-scheme: dark) {
+  .prototype-toolbar { --review-bg: #202428; --review-fg: #edf0f3; --review-muted: #b3bbc6; --review-line: #454d57; --review-hover: #30373f; --review-focus: #91b6ff; }
+}
+.prototype-toolbar button, .review-toolbar button { font: inherit; color: inherit; cursor: pointer; }
+.prototype-trigger, .prototype-reset, .review-trigger, .review-reset {
+  box-sizing: border-box; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; gap: 8px; padding: 0 12px; white-space: nowrap;
+  border: 1px solid var(--review-line); border-radius: 6px; background: var(--review-bg);
+}
+.prototype-trigger:hover, .prototype-reset:hover, .review-trigger:hover, .review-reset:hover,
+.prototype-trigger[aria-expanded="true"], .review-trigger[aria-expanded="true"] { background: var(--review-hover); }
+.prototype-toolbar button:focus-visible, .review-toolbar button:focus-visible, .review-toolbar input:focus-visible {
+  outline: 2px solid var(--review-focus); outline-offset: 2px;
+}
+.prototype-label, .review-label { color: var(--review-muted); }
+.prototype-trigger strong, .review-trigger [data-testid$="-value"] { font-weight: 600; }
+.review-icon { display: inline-block; flex: none; width: 18px; height: 18px; background: currentColor;
+  -webkit-mask: var(--review-icon-image) center / contain no-repeat;
+  mask: var(--review-icon-image) center / contain no-repeat;
+}
+.review-icon--chevron { width: 14px; height: 14px; }
+.review-icon--chevron { --review-icon-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E"); }
+.review-icon--monitor { --review-icon-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%224%22%20width%3D%2218%22%20height%3D%2213%22%20rx%3D%221%22%2F%3E%3Cpath%20d%3D%22M12%2017v4m-5%200h10%22%2F%3E%3C%2Fsvg%3E"); }
+.review-icon--reset { --review-icon-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M21%2012a9%209%200%201%201-2.64-6.36L21%208M21%203v5h-5%22%2F%3E%3C%2Fsvg%3E"); }
+.review-icon--sliders { --review-icon-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%206h18M3%2012h18M3%2018h18%22%2F%3E%3Cpath%20stroke-width%3D%224%22%20d%3D%22M8%203v6m8%200v6M8%2015v6%22%2F%3E%3C%2Fsvg%3E"); }
+@media (max-width: 560px) {
+  .prototype-toolbar, .review-toolbar { gap: 8px; padding: 0 12px; }
+  .prototype-trigger, .prototype-reset, .review-trigger, .review-reset { height: 36px; padding: 0 6px; gap: 4px; font-size: 12px; }
+  .prototype-reset, .review-reset { width: 36px; padding: 0; flex: 0 0 36px; }
+  .review-icon:not(.review-icon--chevron) { width: 16px; height: 16px; }
+}

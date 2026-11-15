@@ -1,3 +1,4 @@
+import { PopupDismissBoundary } from '../internal/popup-dismiss-boundary';
 /* eslint-disable complexity */
 /* eslint-disable react/jsx-props-no-spreading */
 import React, { useEffect, useMemo, useState } from 'react';
@@ -336,6 +337,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   'data-component': dataComponent = 'WFMDateTimePicker',
 }) => {
   const theme = useTheme();
+  const nativeTarget = React.useRef<HTMLElement | null>(null);
 
   const validDate = value instanceof Date && !Number.isNaN(value.getTime()) ? value : null;
 
@@ -429,6 +431,14 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   const popup = (
     <StatefulPopup
       keepOpen
+      targetProps={{
+        onPointerDownCapture: (event: React.PointerEvent<HTMLElement>) => {
+          nativeTarget.current = event.currentTarget;
+        },
+        onFocusCapture: (event: React.FocusEvent<HTMLElement>) => {
+          nativeTarget.current = event.currentTarget;
+        },
+      }}
       direction={direction}
       fullWidthTarget={isFullWidth}
       origin={origin}
@@ -472,74 +482,83 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
         </Flex>
       }
     >
-      <Flex direction="column">
-        {/* Calendar */}
-        <Box width="100%">
-          <CobaltDatePicker
-            withNavigation
-            availableYears={years}
-            data-qa={dataQa && `${dataQa}-calendar`}
-            disabledDays={disabledDays}
-            highlightToday={isHighlightToday}
-            highlightedDays={highlightedDays}
-            months={months}
-            {...(selectedDay ? { selectedDay } : {})}
-            weekStart={weekStart}
-            weekdays={weekdays}
-            onDayClick={handleDayClick}
-          />
-        </Box>
+      {(close, { isVisible }) => (
+        <PopupDismissBoundary close={close} active={isVisible} trigger={() => nativeTarget.current}>
+          <Flex direction="column">
+            {/* Calendar */}
+            <Box width="100%">
+              <CobaltDatePicker
+                withNavigation
+                availableYears={years}
+                data-qa={dataQa && `${dataQa}-calendar`}
+                disabledDays={disabledDays}
+                highlightToday={isHighlightToday}
+                highlightedDays={highlightedDays}
+                months={months}
+                {...(selectedDay ? { selectedDay } : {})}
+                weekStart={weekStart}
+                weekdays={weekdays}
+                onDayClick={handleDayClick}
+              />
+            </Box>
 
-        {/* Time picker */}
-        <Divider />
-        <Flex alignY="center" paddingX="4" paddingY="1" style={{ flexWrap: 'nowrap', height: 40 }}>
-          <Icon
-            name="time"
-            size="tiny"
-            style={{
-              color: theme.textDescription,
-              flexShrink: 0,
-              marginRight: 8,
-              marginLeft: 8,
-            }}
-          />
-          <TimeInputField
-            disabled={disabled}
-            max={maxHours}
-            min={minHours}
-            value={displayHours}
-            onBlur={onBlur}
-            onChange={handleHoursChange}
-          />
-          <Flex
-            alignY="center"
-            style={{
-              fontWeight: 500,
-              fontSize: 14,
-              color: 'var(--text-default)',
-              padding: '0 2px',
-              flexShrink: 0,
-            }}
-          >
-            :
+            {/* Time picker */}
+            <Divider />
+            <Flex
+              alignY="center"
+              paddingX="4"
+              paddingY="1"
+              style={{ flexWrap: 'nowrap', height: 40 }}
+            >
+              <Icon
+                name="time"
+                size="tiny"
+                style={{
+                  color: theme.textDescription,
+                  flexShrink: 0,
+                  marginRight: 8,
+                  marginLeft: 8,
+                }}
+              />
+              <TimeInputField
+                disabled={disabled}
+                max={maxHours}
+                min={minHours}
+                value={displayHours}
+                onBlur={onBlur}
+                onChange={handleHoursChange}
+              />
+              <Flex
+                alignY="center"
+                style={{
+                  fontWeight: 500,
+                  fontSize: 14,
+                  color: 'var(--text-default)',
+                  padding: '0 2px',
+                  flexShrink: 0,
+                }}
+              >
+                :
+              </Flex>
+              <TimeInputField
+                disabled={disabled || disabledMinutes}
+                max={59}
+                min={0}
+                value={localMinutes}
+                onBlur={onBlur}
+                onChange={handleMinutesChange}
+              />
+              {is12H && (
+                <MeridianToggle
+                  disabled={disabled}
+                  meridian={meridian}
+                  onClick={handleMeridianToggle}
+                />
+              )}
+            </Flex>
           </Flex>
-          <TimeInputField
-            disabled={disabled || disabledMinutes}
-            max={59}
-            min={0}
-            value={localMinutes}
-            onBlur={onBlur}
-            onChange={handleMinutesChange}
-          />
-          {is12H && (
-            <MeridianToggle
-              disabled={disabled}
-              meridian={meridian}
-              onClick={handleMeridianToggle}
-            />
-          )}
-        </Flex>
-      </Flex>
+        </PopupDismissBoundary>
+      )}
     </StatefulPopup>
   );
 

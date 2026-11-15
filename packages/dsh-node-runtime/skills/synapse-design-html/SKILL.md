@@ -30,6 +30,8 @@ Follow the same three-layer conversation, project/document, and requirements/sty
 
 ## Stage C — Build the Standalone Prototype
 
+Read `references/poc-review.md` before implementation. Use its managed development server and focused checks while editing; freeze and review static delivery after related changes are complete. Keep the confirmed business scope and establish shared sample-data/action relationships first. Read pinned component sources before changing their behavior.
+
 When the confirmed style id is `talkdesk-cobalt`, read `references/cobalt-workspace.md` before authoring. For Workspace prototypes use its bundled `cobalt-project.mjs` tool to copy the official shell and register Dock apps/pages; explicitly standalone prototypes skip the shell. Keep Stages A–E and the evidence contract, using the compiled `project/delivery/index.html` as the POC entry. Other styles keep the ordinary HTML workflow.
 
 - Author clean HTML/CSS/JavaScript inside `.synapse/html-design/tasks/<taskId>/` covering every planned screen from Stage A and applicable states from Stage B.
@@ -40,15 +42,12 @@ When the confirmed style id is `talkdesk-cobalt`, read `references/cobalt-worksp
 
 ## Stage D — Browser Capture, Surface Gate & Visual Review
 
-1. Capture real Chromium screenshots and run interactive checks in **one single browser session** using `scripts/capture-poc.mjs`:
-   - For ordinary HTML wrappers, capture and scan the helper's **businessEntry** directly, while fingerprinting the whole task directory. Also exercise the wrapper's actual viewport/state/Reset behavior; never treat an empty iframe DOM scan or a changed state label as a passing business-page review. Handoff registers the helper's generated **entry**, with both business and review assets listed in `files`.
-   - **Multi-viewport & interactive plan (preferred whenever checking multiple viewports, states, or interactive controls):** Write `<task-dir>/review/steps.json` (`{ "timeoutMs": 35000, "sessions": [{ "name": "desktop", "width": 1440, "height": 900, "steps": [...] }, { "name": "mobile", "width": 390, "height": 844, "steps": [...] }] }`, using actions `click`, `fill`, `select`, `submit`, `focus`, `press`, `waitFor`, `assertText`, `assertVisible`, `assertCount`, and `screenshot`) and run:
-     `node scripts/capture-poc.mjs --url <local-html-or-server> --steps <task-dir>/review/steps.json [--timeout-ms 35000] [--allow-unverified]`
-   - **Single static capture:** `node scripts/capture-poc.mjs --url <local-html-or-server> --out <task-dir>/shots/<name>.png --width <viewportWidth> --height <viewportHeight> [--timeout-ms 35000] [--allow-unverified]`
-   - Default viewports are **`1440×900` desktop and `390×844` mobile** (pass `375×812` and `--mobile-width 375` only when the user explicitly requested `375px`). **Never write custom ad-hoc scripts importing `chrome-cdp.mjs` or `launchHeadlessPage` directly.**
-   - Then run the surface verification scan:
-     `node scripts/verify-surface.mjs --url <local-html-or-server> --source <task-dir> --out <task-dir> [--scope app|page] [--timeout-ms 45000]`
-     Note: `verify-surface.mjs` automatically excludes helper directories (`shots/`, `review/`), switches operational workspaces/chat/dashboards to `--scope app`, and fingerprints every prototype source file in `<task-dir>` outside `shots/`, `review/`, `evidence-report.json`, `style-context.json`, and `baseline.json`. If you add or edit any prototype file in `<task-dir>` later, re-run `verify-surface.mjs` so source fingerprints stay current.
+1. Use `scripts/review-poc.mjs` and `references/poc-review.md`:
+   - During development, use `dev --url <managed-preview-url> --source <task-dir> --out <task-dir> --steps <task-dir>/review/steps.json --sessions main,dialog,drawer`. Reuse SS Preview's Vite/HMR server for Cobalt and existing HTTP preview for ordinary HTML. Check the affected two or three sessions; do not build or overwrite the final ledger for each adjustment.
+   - At a checkpoint, run `final --project <task-dir>/project --source <task-dir> --out <task-dir> --steps <task-dir>/review/steps.json --scope app` for Cobalt, or `final --entry <task-dir>/preview.html --source <task-dir> --out <task-dir> --steps <task-dir>/review/steps.json` for ordinary HTML. Cobalt builds once. One browser performs interactions, frame-aware DOM checks and full viewport/detail screenshots. The verifier reuses those frozen captures; do not immediately run a second capture/scan.
+   - Plans support `click`, `fill`, `select`, `submit`, `focus`, `press`, `waitFor`, `assertText`, `assertVisible`, `assertCount`, `assertValue`, `assertFocused` and `screenshot`. Use `frame` to target the actual business iframe and `selector`/`clip` on screenshots for details. Crops cannot replace final full-viewport coverage.
+   - Default final viewports are **1440x900**, **768x1024** and **390x844**. Keep additional user-required widths in the plan. Ordinary review chrome stays outside business content; check its Size/state/Reset separately and inspect the business frame rather than an empty outer DOM.
+   - Final evidence stays in `evidence-report.json`; development reports never supply handoff evidence. Previous final records/images remain under `review/history/`. Source or artifact changes invalidate prior acceptance; batch fixes before repeating final review. Never write ad-hoc scripts importing `chrome-cdp.mjs` or `launchHeadlessPage` directly.
 2. Inspect the actual captured PNGs with an image-capable tool (`read_image`). Confirm content completeness first (planned content vs. markup vs. the capture; a gap left by missing content is not whitespace), then review at three scales (whole screen, groups, details) across all five rubric dimensions (`task_integrity`, `structure_overflow`, `hierarchy_density`, `style_consistency`, `content_states`). Record what was actually done in `<task-dir>/evidence-report.json`:
    - `accessibility`, `responsive`, `visualReview`: `status: "pass"` + `evidence` naming what was observed, or `status: "unverified"` + `uncovered` naming what was not checked. A tab-order check alone does not verify accessibility; record the rest as `unverified`.
    - `contentStates.*`: `pass` + `evidence`, `not-applicable` + `reason`, or `unverified` + `uncovered`.
@@ -57,7 +56,7 @@ When the confirmed style id is `talkdesk-cobalt`, read `references/cobalt-worksp
    Then confirm `GATE: PASS`:
    `node scripts/verify-surface.mjs --check-evidence <task-dir>/evidence-report.json`
 3. Fix blocking defects (missing content, unreachable actions, clipping, overlap, overflow, missing key states), then contrast and style drift, and re-verify (at most three corrective rounds). Never treat source-only checks, missing/blank captures, or uninspected screenshots as passing evidence, and never change a status to reach `GATE: PASS`.
-4. For revision feedback, locate the defect in a fresh capture, fix its cause, check siblings and other screens for the same problem, re-capture the affected scope, and report what was found, what changed and what remains unverified. A problem raised twice means the first diagnosis was wrong.
+4. For revision feedback, locate the defect with a focused development capture, fix its cause and affected siblings together, then run one new final review after edits are complete, and report what was found, what changed and what remains unverified. A problem raised twice means the first diagnosis was wrong.
 
 ## Stage E — Mandatory POC Presentation, Screenshot Echo & Handoff
 

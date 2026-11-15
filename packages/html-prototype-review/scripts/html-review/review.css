@@ -1,3 +1,4 @@
+@import "./chrome.css";
 /* Neutral review chrome is isolated from the selected business-page design system. */
 :root { color-scheme: light dark; --review-bg:#fff; --review-fg:#20242b; --review-muted:#626a75; --review-line:#dce0e5; --review-hover:#f2f4f6; --review-stage:#eef0f3; --review-focus:#3567d6; }
 @media(prefers-color-scheme:dark) { :root { --review-bg:#202428; --review-fg:#edf0f3; --review-muted:#b3bbc6; --review-line:#454d57; --review-hover:#30373f; --review-stage:#171a1d; --review-focus:#91b6ff; } }
@@ -8,10 +9,7 @@ body { display:flex; flex-direction:column; color:var(--review-fg); background:v
 button { font:inherit; color:inherit; cursor:pointer; }
 button:disabled { cursor:default; opacity:.55; }
 button:focus-visible { outline:2px solid var(--review-focus); outline-offset:2px; }
-.prototype-toolbar { height:56px; flex:none; display:flex; align-items:center; gap:12px; padding:0 16px; border-bottom:1px solid var(--review-line); }
-.prototype-trigger,.prototype-reset { height:36px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--review-line); border-radius:6px; background:var(--review-bg); padding:0 12px; white-space:nowrap; }
 .prototype-trigger[aria-expanded=true],button:hover:not(:disabled) { background:var(--review-hover); }
-.prototype-trigger svg,.prototype-reset svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; flex:none; }
 .prototype-label,.prototype-readout { color:var(--review-muted); }
 .prototype-readout { margin-left:auto; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .prototype-reset { margin-left:auto; }
@@ -35,7 +33,7 @@ iframe { display:block; border:0; flex:none; width:100%; height:100%; background
 @media(max-width:560px) {
   .prototype-toolbar { padding:0 12px; gap:8px; }
   .prototype-label { display:none; }
-  .prototype-trigger { height:44px; flex:1; min-width:0; padding:0 8px; }
-  .prototype-reset { width:44px; height:44px; padding:0; flex:none; }
+  .prototype-trigger { flex:1; min-width:0; }
+
   .prototype-option { min-height:44px; }
 }

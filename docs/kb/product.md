@@ -1,8 +1,12 @@
 # 当前产品知识入口
 
+HTML and Workspace preview controls share fixed visual source: a 44px bar, 32px desktop buttons, 36px narrow buttons, identical arrows/Reset and light/dark colors. Only Workspace exposes Feature flags. Built-in Dock icons and shell metadata are preserved by canonical merging and checked before builds; business pages and copied Extensions remain editable. Popup wrappers close on innermost Escape, outside interaction, focus leaving their region or business-frame blur while retaining internal search, selection and parent modals.
+
 Cobalt recipe 目录提供 Card widgets（指标/圆环、模板、空图、用例、情绪、关键词和班次分布）、ECharts gallery（预测/历史、双图预测与情景比较）和 Team Schedule（24 小时时间轴、六行 staffing 指标、代理行、事件与固定分页；331px 业务 iframe 下分页换行保持可见，手机指标行随表格滚动以露出代理行）。精简 Users list 示例由 Card widgets 取代；完整 List page 保留。图表使用真实 Apache ECharts，控件、图标及主题来自 Cobalt/复制的 Extensions；排班网格为自有组合布局。WFM 源文件 revision/哈希记录在 recipe 的 support/recipe-sources.json，不引入其服务、鉴权或 store。数据与保存均为本地演示，日期/时区不代表真实查询或转换；Card 编辑角标不提供拖拽缩放。Add callback 的 Note 使用三行 Cobalt Textarea 并保留换行。
 
 范围：当前 DSH Rust/WASM 引擎、Node MCP host 和浏览器设计页面，不泛化为保留的上游产品。
+
+HTML POC 开发检查使用已有本地服务，按需选择少量场景；正式验收才构建静态交付，并复用同一次浏览器采集的交互、截图和 DOM 结果。开发报告与旧历史不能作为正式交接证据，变更后人工评审保持待确认。Cobalt 新项目支持 React Fast Refresh 和按页面延迟加载，图表依赖不进入 Users 首屏。
 
 ## AI 设计风格
 
@@ -162,43 +166,43 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "6d1d1f6e-a6b4-416a-9e96-3360017e04d9",
-  "verified_at": "2026-11-15T12:16:13.497345+00:00",
+  "task_id": "5a57ac5e-6a4d-47b7-ad9a-7102de78a7cc",
+  "verified_at": "2026-11-15T16:31:24.648599+00:00",
   "sources": {
-    "ARCHITECTURE.md": "47e1e3bdf352e9577ed54a9b1c3f573ea49f1c68992d819d573549ace2383bed",
+    "ARCHITECTURE.md": "7c8acd29156336718e52be26518648b444b641f0ad113f7df1487557e958bf8c",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
-    "COMMANDS.md": "f30f51e300674d7aa5f62af5210442135d0dbb29215d7ca75f4c6c06902e6f34",
+    "COMMANDS.md": "fc439fbaddb4d86839d98b4d531b7bd35ad6b20744db148d4fa96f46fbe8da08",
     "crates/op-dsh-engine/src/tool_catalog.rs": "2453cce3b0c9f8c336fd92bc6397f2653272e2ae21c76b528063ab4a6e033785",
     "crates/op-editor-core/src/text_selection.rs": "270195a858b26d0a27ece525db94258ecc543877cd7b60b913499ae34a9a7956",
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "40b120742f7dab06f5d236c8e9e89410025941af68c73055b04784a3cf6a1427",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "f0d75e139d52389406f8c056a0eb991f4b12d1ea55bb87f0a86a045ff8e4d2c4",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "30c2f054ae484ae07a97a4e29d1dac027d9d11060897681bab259367048d23ab",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "f9d5e0c58ff49c9c5032dad4e367e364059ab02b2966f86b446b49362042171c",
     "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "6eb8c4570fbf4a69c22b596a0560ccc2ce01aa7cbf733111bdd9f1895534ad8a",
     "crates/op-ai-skills/skills/synapse-design/review.md": "b5fb28762adab2638ca3ba9a85eb4dbea80924fba439538453e1a370c0569872",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "32f914b3104e84b4f5ef7d867ba08d6bb61fd2bba683faff1877906e78be3426",
     "packages/dsh-node-runtime/selection-visual-evidence.mjs": "25f99b077d23174e6390fe61378ae02a384d737548739b8177cab6c0103a7f2d",
     "packages/dsh-node-runtime/device-frame.mjs": "dd38bfa8577554ad9be31ff6a4e29110d992603214be70be4b50890c64ed11ea",
     "packages/dsh-node-runtime/draft-review-gate.mjs": "e73282d119171b72a771c9c3e4507d324bf25623ea1474fec7869bcc6a9e0128",
-    "packages/dsh-node-runtime/poc-evidence-validator.mjs": "9c33e8cfe2c6ee68098e2251af4945f3faa015d5aa978a397d076a816bde8d81",
+    "packages/dsh-node-runtime/poc-evidence-validator.mjs": "670ef4888077dca2a8e56c8bfc41ddde0b8ed619e0dc787286e2f48132670f4a",
     "scripts/stage-dsh-runtime.mjs": "bba05df06c22238965d555277ac5d5058315dac905a709a1c8ffc2bd20661cdb",
     "packages/design-data/tools/catalog.mjs": "f425a059eb255b857eb94ac0dd3cf0b55b207d436367abd6938add949485b9b3",
-    "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "7792d69f8047490c2cc8e0cc3a3e9b90dbeecefd3a19575d39d7b37b2b6a0d25",
+    "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
-    "packages/talkdesk-cobalt/tools/export.mjs": "b5c6293a0803a728927b87d222b62e71f031b8675ab8723f3fc09c0f8f479fe6",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "2264154daf9e3d0008c1281ab2d1f9845c859c551921c38d0daaf8d3f3c92799",
+    "packages/talkdesk-cobalt/tools/export.mjs": "a7b0475adf1146f0764e3b3786b6bc42aa7e06d82fb437ba1cc2a85850bd0cbd",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "016cab09a784c3173c2af0634d0350fb70fe0a6efe89300e8ba1ecd697d12513",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "a855ad8fc7f66ac7f1d859cbcd751203aa2356d57a89174ab77e4914d76082f1",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "239e1d5bda494fea70ec312c91b852fce4079430f0d849d47404ff326dc36d0c",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
     "packages/talkdesk-cobalt/test/export.test.mjs": "f06e3140f0e3281c7fe27acb1528841ce30eeddd4aef25c08bcb3d5033b4e48d",
@@ -212,16 +216,16 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/tools/cobalt-source-templates.mjs": "6585fca5a1a23ab52d2b9785c425dbf0cc645a9e2761e9f62ce890bed4ce20cc",
     "packages/talkdesk-cobalt/recipes/support/list-page-dialogs.tsx": "05fad0774d1ef661b216bf83536cc58217bd8f2beefb782874c54ff877f230a0",
     "packages/talkdesk-cobalt/recipes/support/list-user-fields.tsx": "21838a42f97e6582831103d8edcbf57c649b1ca6827c648181b51eb8c79b69b6",
-    "packages/talkdesk-cobalt/components/extensions/src/dialog/dialog.tsx": "25aa3f8551f7ff2b823b3536fc1124a28ac8948250f95dadf845f44b9b49f3e1",
-    "packages/talkdesk-cobalt/components/extensions/src/dropdown/dropdown.tsx": "6fb4943517a1315a9dd45d270940b73e55c67e003380b20e9e0a522f4d30209b",
+    "packages/talkdesk-cobalt/components/extensions/src/dialog/dialog.tsx": "853ef3df233c1c0144b56ad7b4f778c3bd552b289366e7ddaf693acf9d5731c1",
+    "packages/talkdesk-cobalt/components/extensions/src/dropdown/dropdown.tsx": "82538bc740c9e856bdb684f5e7f17832ee6b0d0ff5005b0621ca579157a78bce",
     "packages/talkdesk-cobalt/components/extensions/src/upload-file/upload-file.tsx": "fa941f2220bd5234f6b93fb5cbc49eb9964b8a0700ec83f904b48f2472b53432",
-    "packages/talkdesk-cobalt/test/list-dialogs-browser.test.mjs": "34d3d4d3d1534fd7d4cc0b3d725cb9c8f11a8a4722ce7c960a0427fa2f86b342",
-    "packages/html-prototype-review/README.md": "b328990ac0937bf93e8c94c5689942377a17ee260b6baf74302b3178168f54c1",
-    "packages/html-prototype-review/scripts/prepare-html-review.mjs": "f3ddf6c0f6735d284c4eff8113240143599ef5e3ce5294c927787da110cd9c82",
+    "packages/talkdesk-cobalt/test/list-dialogs-browser.test.mjs": "7ca21cf570b0aee36f9242cc04d273364505fd8a85d5091271daada9fb70a8d6",
+    "packages/html-prototype-review/README.md": "a0fb4dae3fd8365ee693cc54c8934825040825f5000ae0a0000bb59354fed548",
+    "packages/html-prototype-review/scripts/prepare-html-review.mjs": "09efdc25d3a7f44d74e32b1aab9651f1b21cbeadf5975e67974af6a00a5610ae",
     "packages/html-prototype-review/scripts/html-review/review.js": "14f546e4facb31f548bf526bb80850a860171e45b63f22706ea7a17e6caf9fff",
     "packages/html-prototype-review/scripts/html-review/page.js": "280733ad82cd7e1381afcc5a236096900c555e7578b4035f010ced14c33dfaf9",
-    "packages/html-prototype-review/tools/export.mjs": "2977e7d07ac375b8b762684d441ba92c2a1d899ded3b181e2900359c15025ab2",
-    "crates/op-ai-skills/skills/synapse-design-html/references/html-review.md": "9ac0daf119efc4dedd55f38e89dff10205e773dca7c196ceb2376a3ab584a031",
+    "packages/html-prototype-review/tools/export.mjs": "2f31aac86a2e429212ce43045ffb670b1db71b0e7325587f537dcc120efab75e",
+    "crates/op-ai-skills/skills/synapse-design-html/references/html-review.md": "e15f080c88d4e06d174ce217cc70e2b32d661e79750c437ac23818a6f3124e6d",
     "packages/talkdesk-cobalt/recipes/active-call.tsx": "38aff19bfabff66a07e5556bf6e66ef19e71cddfd37e84b4d9e1527f762112ad",
     "packages/talkdesk-cobalt/recipes/support/conversation-queue.tsx": "f21f968f745400393cb180fa06bf756260d7311d44f9e499508d18601c9be9c4",
     "packages/talkdesk-cobalt/recipes/support/call-dialogs.tsx": "ef9256ce86a4f279df0241a30c5133c8b18c64852d99af3b3a85b8c43b511b92",
@@ -243,13 +247,22 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/recipes/support/widget-gallery.css": "9b3f65b5a9ec7e54268375ae015bdcb3ed1abaa46b8c745d2a7bcaf3b82c1f87",
     "packages/talkdesk-cobalt/recipes/support/recipe-sources.json": "6fcb0a5ab65c02d3c8def00d1612380b40cc65380be78d4fc94bd348c0a92e44",
     "packages/talkdesk-cobalt/test/reference-recipes-browser.test.mjs": "b029cebfd5043859484da3d01344775c77e33e273be9ddee0daa9235d490cf78",
-    "packages/talkdesk-cobalt/components/extensions/src/timezone-dropdown/timezone-dropdown.tsx": "eca9fbcc8971ddd216f9dc77a7ae9526f0e2ed35d70ac9fd65e4c6c58090e4f0",
-    "packages/talkdesk-cobalt/content/components/extensions/timezonedropdown.mdx": "3a5849963efb44c83dfa4bd3ca0281581f21fdc5888fbc55e184d4ac45527f43",
+    "packages/talkdesk-cobalt/components/extensions/src/timezone-dropdown/timezone-dropdown.tsx": "e1133785f2188c8b25843f9df6b73fa8576d521d893c038ef57130ec1eb72783",
+    "packages/talkdesk-cobalt/content/components/extensions/timezonedropdown.mdx": "f316d12e54dfe896e2170471734b951902b4ea3188a12ef49e7a4145ca5c0a96",
     "packages/talkdesk-cobalt/recipes/support/filter-button.tsx": "c62bb83168efb253664d55e044479df56daaeeff4db0ff2926f460d0c0e4af42",
-    "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0"
+    "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "d3c9fab6aba15891356744eee98e59fe321436b35db846b0d18bb08c7d9800fc",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-browser-actions.mjs": "1433ae1a1abd96041355621e4a77754008e130c11ff21afc4b12c5536378e66f",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-capture-plan.mjs": "f0e9d3ac9d4f6a7936f9875e6f30e7c7e0e5b91f268d899960d63f9ba6898d0a",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-review-evidence.mjs": "bcceaa942ff1ebdba2dffe7a8d57a1312794fd9b0a2ee260b9826a7cedf051b3",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-source-inventory.mjs": "51cae6bd081f6ff4f17b4311c4127c8a7686470cfb40f697e625949ccd35bb2e",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs": "7d47e1cf7316f79397aa200ebfc00c9575b76adf54a75ad8395680b7f9b85139",
+    "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
+    "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
+    "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c"
   },
-  "reason": "Team Schedule agent search now keeps a fixed 160px width inside its wrapping native Toolbar.",
-  "evidence": "team-schedule.css, recipe catalog, Workspace AI guidance and pre-fix browser width reproduction inspected."
+  "reason": "Rechecked the completed 20-test workflow suite, including wrapper provenance and delayed resources; documented iteration and final review behavior remains accurate.",
+  "evidence": "20/20 POC/migration tests, real packaged capture with painted official assets, Fast Refresh and lazy-loading browser proof."
 }
 ```
 

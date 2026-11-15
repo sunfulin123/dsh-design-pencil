@@ -1,29 +1,11 @@
-/* Review chrome owns its neutral semantic palette; Workspace and business frames keep their theme owners. */
-.review-toolbar {
-  --review-bg: #fff; --review-text: #20242b; --review-muted: #626a75; --review-line: #dce0e5;
-  --review-hover: #f2f4f6; --review-focus: #3567d6; --review-success: #278543;
-  --review-error: #bf3636; --review-warning: #936600;
-  display: flex; align-items: center; flex-shrink: 0; gap: 12px; height: 56px; padding: 0 16px;
-  background: var(--review-bg); color: var(--review-text); border-bottom: 1px solid var(--review-line);
-  box-sizing: border-box; font: 13px/20px var(--font-family, sans-serif); position: relative; z-index: 3100;
-}
-html[data-co-colorscheme="dark"] .review-toolbar {
-  --review-bg: #202428; --review-text: #edf0f3; --review-muted: #b3bbc6; --review-line: #454d57;
-  --review-hover: #30373f; --review-focus: #91b6ff; --review-success: #71ca88;
-  --review-error: #ff9797; --review-warning: #e3bf6b;
-}
-.review-toolbar button { font: inherit; color: inherit; cursor: pointer; }
-.review-trigger, .review-reset {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 12px;
-  background: var(--review-bg); border: 1px solid var(--review-line); border-radius: 6px; white-space: nowrap;
-}
+@import "./review-chrome.css";
+.review-toolbar { position: relative; z-index: 3100; }
 .review-trigger { min-width: 0; }
 .review-trigger > :last-child { margin-left: auto; }
-.review-label, .review-readout { color: var(--review-muted); }
+.review-readout { color: var(--review-muted); }
 .review-readout { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .review-reset { margin-left: 0; }
 .review-trigger:hover, .review-reset:hover, .review-toolbar .review-option:hover { background: var(--review-hover); }
-.review-toolbar button:focus-visible, .review-toolbar input:focus-visible { outline: 2px solid var(--review-focus); outline-offset: 2px; }
 .review-trigger[aria-expanded="true"] { border-color: var(--review-muted); background: var(--review-hover); }
 .review-panel {
   position: fixed; z-index: 3200; width: 288px; max-width: calc(100vw - 24px); max-height: calc(100dvh - 80px);
@@ -51,20 +33,17 @@ html[data-co-colorscheme="dark"] .review-toolbar {
 .review-dot--loading { background: var(--review-focus); }
 .review-dot--partial { background: var(--review-warning); }
 /* Keep value text readable before collapsing secondary labels. */
-.review-trigger svg { flex-shrink: 0; }
 .review-trigger [data-testid$="-value"] { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
 .review-trigger #prototype-flags-value { padding: 0 7px; border-radius: 4px; background: var(--review-hover); }
 @media (max-width: 1180px) { .review-readout { display: none; } .review-reset { margin-left: auto; } }
 @media (max-width: 960px) { .review-label { display: none; } }
 @media (max-width: 560px) {
   .review-toolbar { padding: 0 12px; gap: 8px; }
-  .review-trigger, .review-reset { height: 44px; }
+
   .review-toolbar .review-option { min-height: 44px; }
-  .review-toolbar .review-trigger { flex: 1 1 0; padding: 0 6px; gap: 4px; font-size: 12px; }
-  .review-reset { flex: 0 0 44px; width: 44px; padding: 0; }
+  .review-toolbar .review-trigger { flex: 1 1 0; }
+
   .review-panel { width: calc(100vw - 24px); }
   .review-panel--flags { max-height: min(420px, calc(100dvh - 80px)); }
-  .review-trigger svg { width: 16px; height: 16px; }
-  .review-trigger > svg:last-child { width: 12px; height: 12px; }
   .review-trigger #prototype-flags-value { padding: 0; background: none; }
 }

@@ -51,11 +51,15 @@ test('generic review controls resize the real page, switch states, reset and ret
     await frame.getByRole('heading', { name: 'Project overview', exact: true }).waitFor();
     await frame.getByRole('heading', { name: 'success', exact: true }).waitFor();
     assert.equal(await page.getByTestId('prototype-size-value').innerText(), 'Fill');
-    for (const width of [360,390,640,1024,1440]) {
+    for (const width of [360,390,768,1024,1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.waitForFunction(() => document.querySelector('iframe').getBoundingClientRect().width === document.querySelector('.prototype-stage').clientWidth);
       assert.equal(await frame.locator('html').evaluate(() => innerWidth), width);
       assert.ok(await page.locator('html').evaluate(node => node.scrollWidth <= innerWidth));
+      assert.equal((await page.getByTestId('prototype-toolbar').boundingBox()).height,44);
+      const trigger=page.getByTestId('prototype-size-trigger');assert.equal((await trigger.boundingBox()).height,width<=560?36:32);
+      const arrow=await trigger.locator('.review-icon--chevron').boundingBox(), button=await trigger.boundingBox();
+      assert.ok(Math.abs(arrow.y+arrow.height/2-button.y-button.height/2)<=1);
       await page.screenshot({ path: `/private/tmp/html-prototype-review-${scheme}-${width}.png` });
     }
   }

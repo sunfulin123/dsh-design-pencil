@@ -66,7 +66,7 @@ async function prepare(argv) {
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   const assets = join(dirname(entry), 'prototype-review');
   await noLinks(root, assets);
-  const files = ['review.js', 'review.css', 'page.js', 'manifest.json'];
+  const files = ['review.js', 'review.css', 'chrome.css', 'page.js', 'manifest.json'];
   for (const file of files) await noLinks(root, join(assets, file));
   let existingAssets;
   try { existingAssets = await lstat(assets); } catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -82,7 +82,7 @@ async function prepare(argv) {
   const template = await readFile(join(resourceRoot, 'review.html'), 'utf8');
   const hashes = {};
   await mkdir(assets, { recursive: true });
-  for (const file of files.slice(0, 3)) {
+  for (const file of files.slice(0, -1)) {
     const text = await readFile(join(resourceRoot, file), 'utf8');
     await atomicWrite(join(assets, file), text);
     hashes[file] = createHash('sha256').update(text).digest('hex');

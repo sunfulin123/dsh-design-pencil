@@ -12,6 +12,7 @@ export function checkEvidenceLedger(report, reportDir) {
   const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 
   if (!isObj(report)) return ['Report must be a JSON object'];
+  if (report.mode && report.mode !== 'final') errors.push('Development/history reports cannot be used for POC handoff');
   if (!nonEmptyText(report.contract)) errors.push('contract is required');
 
   const targets = Array.isArray(report.targetViewports) ? report.targetViewports : [];

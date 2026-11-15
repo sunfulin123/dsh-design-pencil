@@ -72,3 +72,7 @@ Set `isConfirmDisabled={true}` to prevent the user from submitting the dialog â€
 The title also names the dialog for assistive technology. Escape invokes onClose; while submitting, callers should guard onClose and keep isConfirmLoading true. The cancel action is disabled during confirmation. ListPage composes this source with form and upload controls for its create/import workflows.
 
 Dialog owns a local PortalProvider for nested dropdowns so their menus stay inside the modal focus and positioning boundary. Do not move those menus to the outer application portal.
+
+## Initial keyboard focus
+
+The copied Dialog moves focus into its first enabled form/control target, falling back to its focusable content region. Escape therefore works immediately after opening, before typing or clicking a field; native focus trapping returns focus when the dialog closes. Nested popup Escape remains owned by the child boundary.

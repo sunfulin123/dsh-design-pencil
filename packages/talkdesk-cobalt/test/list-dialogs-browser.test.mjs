@@ -12,6 +12,8 @@ test('ListPage creates users and prepares CSV imports through Extensions dialogs
  const url=s.url+'/demos/?entry=recipes/list-page.tsx';
  await page.goto(url);await page.getByTestId('list-create-user').click();
  const create=page.getByRole('dialog',{name:'New user',exact:true});await create.waitFor();
+ await page.keyboard.press('Escape');await create.waitFor({state:'hidden'});
+ await page.getByTestId('list-create-user').click();await create.waitFor();
  assert.equal(await create.locator('[data-component="WFMDialog"]').count(),1);
  await create.getByRole('button',{name:'Create user',exact:true}).click();
  await create.getByText('Enter a full name.',{exact:true}).waitFor();

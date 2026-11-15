@@ -187,14 +187,16 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
 
 原生 TagGroup 是默认满宽的字段，嵌入已应用条件栏时必须显式 width auto、flex none，并验证标签与计数的中心线；仅检查页面没有横向溢出会遗漏多行回归。Insights 条件栏保持 48px 单行，窄屏只在该栏内滚动；Team Schedule 工具栏按业务视口换行，不能用固定 min-width 与横向滚动藏住操作。
 
+POC review 的开发和正式模式共用有界 Chromium runner：开发模式使用受管 URL 并只写独立报告；正式模式校验 DESIGN 与外壳完整性后构建一次，再一次采集交互、完整视口/裁剪截图和 live DOM。`verify-surface --capture` 检查来源、静态入口、PNG 字节/尺寸/哈希及所需完整视口后复用采集，不再次启动浏览器。手动质量判定仍需确认；开发、历史和中断模式不可交接，先前正式账本及图片保存到 history。显式同源 frame 路径支持真实鼠标、键盘、Tab 和焦点断言，跨源 frame 拒绝检查。源码 lint 排除编译 delivery 和哈希匹配的受保护外壳，完整产物指纹仍覆盖它们；可编辑 Extensions 不豁免。
+
 ## Provenance
 
 ```json
 {
   "version": 1,
   "status": "verified",
-  "task_id": "6d1d1f6e-a6b4-416a-9e96-3360017e04d9",
-  "verified_at": "2026-11-15T12:16:13.993946+00:00",
+  "task_id": "5a57ac5e-6a4d-47b7-ad9a-7102de78a7cc",
+  "verified_at": "2026-11-15T16:31:25.183930+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -210,7 +212,7 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "afb1aa67c917a6424ec7dbc7b7ec392ce7fd14ed72c83c89655ac4382020acbf",
+    "packages/bun.lock": "33cc3aaae3b8df0a7e42e3fce072992de210f683fca8cf3291adcceaa2ad37f0",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -230,7 +232,7 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "40b120742f7dab06f5d236c8e9e89410025941af68c73055b04784a3cf6a1427",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "f0d75e139d52389406f8c056a0eb991f4b12d1ea55bb87f0a86a045ff8e4d2c4",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -262,7 +264,7 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
     "crates/op-host-web/src/canvaskit/mount_keyboard.rs": "14733985448414a0eeaa03eecc167cf2b364b658b2c36f15f2c730fcf63b98ad",
     "crates/op-editor-core/src/bridge_protocol.rs": "7797cc7ac863d799a8358049a334dfbfea052fbd78e56eb4aa2bad55aec409be",
     "crates/op-dsh-engine/src/quality_variables.rs": "a609755711312f70becd1602b5ab1af179962eb2b0b69366a45fd889de501209",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "3354d25276378bc2890227e286fc8deb734b61b7b00117ae35e992f4aa421180",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "e3158b307af38cf7198bb93668de601d05032159d09416c1ab6e436510f6c225",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/resolve-theme.mjs": "45978c4de0de9de54e12a77ccd1f67df649ed94c48feee68719634423c012206",
     "packages/dsh-node-runtime/html-skill-migration.test.mjs": "8cf16b450633883576e9466c3ef5820d9ad78b04aecd45cb6a39a0d8bf61bd1c",
     "packages/dsh-node-runtime/html-skill-browser.test.mjs": "215b53b2725e63e8f3757cd49914b2306a0485493b3e14967ccbf6a7ea9f268b",
@@ -286,15 +288,15 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
     "packages/dsh-node-runtime/managed-daemon-client.mjs": "4477fa8eb6cce9aa5148b19e80cb446e0787cd336db476f87efee784ac1b2ca4",
     "packages/dsh-node-runtime/plugin-domain-migration.test.mjs": "593b5f2dfb9c085a8ebdb88f925efb399a1d73bfe89be0188150d07e3ab9a444",
     "packages/design-data/tools/catalog.mjs": "f425a059eb255b857eb94ac0dd3cf0b55b207d436367abd6938add949485b9b3",
-    "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "7792d69f8047490c2cc8e0cc3a3e9b90dbeecefd3a19575d39d7b37b2b6a0d25",
+    "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
-    "packages/talkdesk-cobalt/tools/export.mjs": "b5c6293a0803a728927b87d222b62e71f031b8675ab8723f3fc09c0f8f479fe6",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "2264154daf9e3d0008c1281ab2d1f9845c859c551921c38d0daaf8d3f3c92799",
+    "packages/talkdesk-cobalt/tools/export.mjs": "a7b0475adf1146f0764e3b3786b6bc42aa7e06d82fb437ba1cc2a85850bd0cbd",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "016cab09a784c3173c2af0634d0350fb70fe0a6efe89300e8ba1ecd697d12513",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "a855ad8fc7f66ac7f1d859cbcd751203aa2356d57a89174ab77e4914d76082f1",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "239e1d5bda494fea70ec312c91b852fce4079430f0d849d47404ff326dc36d0c",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
     "packages/talkdesk-cobalt/test/export.test.mjs": "f06e3140f0e3281c7fe27acb1528841ce30eeddd4aef25c08bcb3d5033b4e48d",
@@ -308,16 +310,16 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
     "packages/talkdesk-cobalt/tools/cobalt-source-templates.mjs": "6585fca5a1a23ab52d2b9785c425dbf0cc645a9e2761e9f62ce890bed4ce20cc",
     "packages/talkdesk-cobalt/recipes/support/list-page-dialogs.tsx": "05fad0774d1ef661b216bf83536cc58217bd8f2beefb782874c54ff877f230a0",
     "packages/talkdesk-cobalt/recipes/support/list-user-fields.tsx": "21838a42f97e6582831103d8edcbf57c649b1ca6827c648181b51eb8c79b69b6",
-    "packages/talkdesk-cobalt/components/extensions/src/dialog/dialog.tsx": "25aa3f8551f7ff2b823b3536fc1124a28ac8948250f95dadf845f44b9b49f3e1",
-    "packages/talkdesk-cobalt/components/extensions/src/dropdown/dropdown.tsx": "6fb4943517a1315a9dd45d270940b73e55c67e003380b20e9e0a522f4d30209b",
+    "packages/talkdesk-cobalt/components/extensions/src/dialog/dialog.tsx": "853ef3df233c1c0144b56ad7b4f778c3bd552b289366e7ddaf693acf9d5731c1",
+    "packages/talkdesk-cobalt/components/extensions/src/dropdown/dropdown.tsx": "82538bc740c9e856bdb684f5e7f17832ee6b0d0ff5005b0621ca579157a78bce",
     "packages/talkdesk-cobalt/components/extensions/src/upload-file/upload-file.tsx": "fa941f2220bd5234f6b93fb5cbc49eb9964b8a0700ec83f904b48f2472b53432",
-    "packages/talkdesk-cobalt/test/list-dialogs-browser.test.mjs": "34d3d4d3d1534fd7d4cc0b3d725cb9c8f11a8a4722ce7c960a0427fa2f86b342",
-    "packages/html-prototype-review/README.md": "b328990ac0937bf93e8c94c5689942377a17ee260b6baf74302b3178168f54c1",
-    "packages/html-prototype-review/scripts/prepare-html-review.mjs": "f3ddf6c0f6735d284c4eff8113240143599ef5e3ce5294c927787da110cd9c82",
+    "packages/talkdesk-cobalt/test/list-dialogs-browser.test.mjs": "7ca21cf570b0aee36f9242cc04d273364505fd8a85d5091271daada9fb70a8d6",
+    "packages/html-prototype-review/README.md": "a0fb4dae3fd8365ee693cc54c8934825040825f5000ae0a0000bb59354fed548",
+    "packages/html-prototype-review/scripts/prepare-html-review.mjs": "09efdc25d3a7f44d74e32b1aab9651f1b21cbeadf5975e67974af6a00a5610ae",
     "packages/html-prototype-review/scripts/html-review/review.js": "14f546e4facb31f548bf526bb80850a860171e45b63f22706ea7a17e6caf9fff",
     "packages/html-prototype-review/scripts/html-review/page.js": "280733ad82cd7e1381afcc5a236096900c555e7578b4035f010ced14c33dfaf9",
-    "packages/html-prototype-review/tools/export.mjs": "2977e7d07ac375b8b762684d441ba92c2a1d899ded3b181e2900359c15025ab2",
-    "crates/op-ai-skills/skills/synapse-design-html/references/html-review.md": "9ac0daf119efc4dedd55f38e89dff10205e773dca7c196ceb2376a3ab584a031",
+    "packages/html-prototype-review/tools/export.mjs": "2f31aac86a2e429212ce43045ffb670b1db71b0e7325587f537dcc120efab75e",
+    "crates/op-ai-skills/skills/synapse-design-html/references/html-review.md": "e15f080c88d4e06d174ce217cc70e2b32d661e79750c437ac23818a6f3124e6d",
     "packages/talkdesk-cobalt/recipes/card-widgets.tsx": "59efa6de48c184edca0be1a80013662b99a58e9e77047a5201c4d06974522783",
     "packages/talkdesk-cobalt/recipes/echarts-gallery.tsx": "e646abb507aa5087f38745c974501e68d0831893cbe5d0c78c6435e50eb5af8d",
     "packages/talkdesk-cobalt/recipes/team-schedule.tsx": "416fd94b7b677a0958c31eca6460990aeea89a840301fc0777151d734dfc0966",
@@ -330,13 +332,22 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
     "packages/talkdesk-cobalt/recipes/support/widget-gallery.css": "9b3f65b5a9ec7e54268375ae015bdcb3ed1abaa46b8c745d2a7bcaf3b82c1f87",
     "packages/talkdesk-cobalt/recipes/support/recipe-sources.json": "6fcb0a5ab65c02d3c8def00d1612380b40cc65380be78d4fc94bd348c0a92e44",
     "packages/talkdesk-cobalt/test/reference-recipes-browser.test.mjs": "b029cebfd5043859484da3d01344775c77e33e273be9ddee0daa9235d490cf78",
-    "packages/talkdesk-cobalt/components/extensions/src/timezone-dropdown/timezone-dropdown.tsx": "eca9fbcc8971ddd216f9dc77a7ae9526f0e2ed35d70ac9fd65e4c6c58090e4f0",
-    "packages/talkdesk-cobalt/content/components/extensions/timezonedropdown.mdx": "3a5849963efb44c83dfa4bd3ca0281581f21fdc5888fbc55e184d4ac45527f43",
+    "packages/talkdesk-cobalt/components/extensions/src/timezone-dropdown/timezone-dropdown.tsx": "e1133785f2188c8b25843f9df6b73fa8576d521d893c038ef57130ec1eb72783",
+    "packages/talkdesk-cobalt/content/components/extensions/timezonedropdown.mdx": "f316d12e54dfe896e2170471734b951902b4ea3188a12ef49e7a4145ca5c0a96",
     "packages/talkdesk-cobalt/recipes/support/filter-button.tsx": "c62bb83168efb253664d55e044479df56daaeeff4db0ff2926f460d0c0e4af42",
-    "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0"
+    "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "d3c9fab6aba15891356744eee98e59fe321436b35db846b0d18bb08c7d9800fc",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-browser-actions.mjs": "1433ae1a1abd96041355621e4a77754008e130c11ff21afc4b12c5536378e66f",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-capture-plan.mjs": "f0e9d3ac9d4f6a7936f9875e6f30e7c7e0e5b91f268d899960d63f9ba6898d0a",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-review-evidence.mjs": "bcceaa942ff1ebdba2dffe7a8d57a1312794fd9b0a2ee260b9826a7cedf051b3",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-source-inventory.mjs": "51cae6bd081f6ff4f17b4311c4127c8a7686470cfb40f697e625949ccd35bb2e",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs": "7d47e1cf7316f79397aa200ebfc00c9575b76adf54a75ad8395680b7f9b85139",
+    "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
+    "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
+    "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c"
   },
-  "reason": "The CSS field-width adjustment retains the same source-copy export, native controls and wrapping integration boundaries.",
-  "evidence": "CSS allocation delta, build/export callers and current native toolbar/source-template guidance inspected."
+  "reason": "Final ordinary-wrapper regression verifies business captures and full wrapper source provenance; no contract change after the reviewed implementation.",
+  "evidence": "20/20 workflow/migration tests, source/image corruption and history/interrupted-final checks, packaged SS parser and resource tests."
 }
 ```
 
@@ -344,7 +355,7 @@ Cobalt 运行时资源由 `packages/talkdesk-cobalt/tools/export.mjs` 输出到�
 
 Workspace 脚手架固定 pnpm 11.7.0，并生成独立的 pnpm-workspace.yaml 以保留 React 18、显示旧 Cobalt peer 警告并允许 esbuild。shell/shell.css 的居中适配只写入项目副本；BasicTable 源码、完整 List page recipe、组件 API、集成说明与 Cobalt 提示词共同约束表格无外框、无圆角和无左右包裹留白。
 
-原型顶部 UI 由自有 review-toolbar、review-dropdown 和 scenario 模板提供，复制后的官方 PrototypeBar 只重导出自有实现。顶部控件无独立品牌字样或图标，保持独立主题、56px 单行工具栏、36px 桌面触发器、44px 窄屏触控目标与弹层边界；原型状态通道不变，文档描述稳定的 prototype-* 定位与无障碍名称。
+Both preview adapters copy the canonical HTML review chrome.css: 44px including border, 32px desktop buttons and 36px narrow buttons. Workspace retains review-toolbar/review-dropdown/scenario state wiring and Feature flags; ordinary HTML has Size, Page state and Reset only. Shared SVG masks and theme colors preserve stable accessible names and prototype-* locators.
 
 ListPage 的创建和导入通过复制的 Extensions Dialog/FormField/Input/Dropdown/UploadFile 实现，支持 TSX 工作流辅助源码随 recipe 一起索引和复制。Dialog 内的 PortalProvider 将嵌套菜单留在模态焦点边界内；无后端时只演示内存创建或文件选择，异步宿主失败保持弹窗以便重试。
 
@@ -365,3 +376,7 @@ Copilot 消息的内容列使用 width auto 与非增长 flex，发送气泡靠�
 Card widgets、ECharts gallery 与 Team Schedule 通过同一 recipe/source-copy 导出链分发，支持文件包含共享 ECharts 渲染器、样例指标/事件和局部 CSS。主题和视口观察器在卸载时释放。静态原型的菜单注册由宿主项目配置控制；recipe 的可发现性不自动修改已有项目的 Dock 或页面路由。
 
 TimezoneDropdown 的可选 customInput 由原生 marketplace Dropdown 连接点击/ref；本地触发器桥同步 disabled 与 aria-expanded。默认字段模式保留。该适配、角标、工具栏和图表布局均属于复制到项目的源码，不更改 upstream、MCP 或 SS Host/Client 合约。
+
+Workspace adapter 7 merges built-in Dock entries by canonical ID, preserving official SVG URLs, titles and drawer shape. Built-in iconName is optional and cannot override the official icon; custom apps retain their icon contract. Registry schemaVersion remains 1. cobalt-source.json protectedFiles inventories and hashes shell, prototype-runtime, main and the verifier; builds run verify-workspace-shell before Vite. Business pages and Extensions stay editable, and existing projects are not automatically upgraded.
+
+Copied Extensions use a private popup-dismiss-boundary with native close callbacks for innermost Escape, outside pointer/focus and business-frame blur. React portal ownership is checked after propagation; native exit animations require aria-expanded reactivation. Legacy MultiDropdown close renders can remove tabindex, so the labelled trigger preserves keyboard focus. Non-search dropdowns also accept Escape when focus remains on body. StatefulPopup keeps a normal target: changing it to a function switches to its controlled visible mode.
