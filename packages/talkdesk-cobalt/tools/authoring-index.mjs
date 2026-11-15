@@ -2,11 +2,14 @@
 import { readFile, writeFile, access } from 'node:fs/promises';
 import { join, relative, dirname, normalize } from 'node:path';
 
+const packageName = name => name.split('/').slice(0, name.startsWith('@') ? 2 : 1).join('/');
+
 export async function indexRecipes(root, recipes, components) {
   const catalog = JSON.parse(await readFile(join(root, 'recipes/catalog.json'), 'utf8'));
   const packageInfo = JSON.parse(
     await readFile(join(root, 'components/extensions/package.json'), 'utf8'),
   );
+  const dependencyVersions = JSON.parse(await readFile(join(root, 'templates/dependencies.json'), 'utf8'));
   const cobalt = JSON.parse(await readFile(join(root, 'reference/content/registry.json'), 'utf8'));
   for (const recipe of recipes) {
     const key = recipe.path.replace(/^recipes\//, '');
@@ -16,11 +19,11 @@ export async function indexRecipes(root, recipes, components) {
     const component = code.match(/export default function (\w+)/)?.[1];
     if (!component) throw new Error(`Recipe needs a named default export: ${recipe.path}`);
     const packages = [
-      ...new Set([...code.matchAll(/from\s*['"]([^.'"][^'"]+)['"]/g)].map((match) => match[1])),
+      ...new Set([...code.matchAll(/from\s*['"]([^.'"][^'"]+)['"]/g)].map((match) => packageName(match[1]))),
     ];
     const supportingSources = [
       ...new Set(
-        [...code.matchAll(/from\s*['"](\.[^'"]+)['"]/g)].map((match) =>
+        [...code.matchAll(/(?:from\s*|import\s*)['"](\.[^'"]+)['"]/g)].map((match) =>
           normalize(join(dirname(recipe.path), match[1])),
         ),
       ),
@@ -34,7 +37,11 @@ export async function indexRecipes(root, recipes, components) {
         try { await access(join(root, base + suffix)); localSupport[index] = base + suffix; break; }
         catch (error) { if (error.code !== 'ENOENT') throw error; }
       }
-      await readFile(join(root, localSupport[index]));
+      const support = await readFile(join(root, localSupport[index]), 'utf8');
+      for (const match of support.matchAll(/from\s*['"]([^.'"][^'"]+)['"]/g)) {
+        const name = packageName(match[1]);
+        if (!packages.includes(name)) packages.push(name);
+      }
     }
     const resolved = intent.composition.map((id) => {
       const extension = components.find((item) => item.id === id);
@@ -87,10 +94,10 @@ export async function indexRecipes(root, recipes, components) {
         '',
         ...packages.map(
           (name) =>
-            `- \`${name}\`${packageInfo.dependencies[name] ? ` (${packageInfo.dependencies[name]})` : ''}`,
+            `- \`${name}\`${(packageInfo.dependencies[name] ?? dependencyVersions[name.split('/').slice(0, name.startsWith('@') ? 2 : 1).join('/')]) ? ` (${packageInfo.dependencies[name] ?? dependencyVersions[name.split('/').slice(0, name.startsWith('@') ? 2 : 1).join('/')]})` : ''}`,
         ),
         '',
-        'Read and copy the full referenced component implementations, types, CSS and local imports before adapting this recipe. Workspace scaffolding provides src/components/cobalt-extensions/. Standalone apps use cobalt-project.mjs copy-source --out <project> first. Rebase relative imports to the local source directory. Never install @openpencil/cobalt-extensions, create a file dependency for it, or leave a package-name import/alias. Only the official dependencies listed above may need installation.',
+        'Read and copy the full referenced component implementations, types, CSS and local imports before adapting this recipe. Workspace scaffolding provides src/components/cobalt-extensions/. Standalone apps use cobalt-project.mjs copy-source --out <project> first. Rebase relative imports to the local source directory. Never install @openpencil/cobalt-extensions, create a file dependency for it, or leave a package-name import/alias. Install only the listed runtime dependencies, including Apache echarts for the Insights recipe; never install an Extensions package.',
         '',
         `States covered: ${intent.states.join(', ')}.`,
         '',
@@ -118,7 +125,7 @@ export async function writeAuthoringIndex(root, registry) {
       '',
       '1. Read references/cobalt-workspace.md from the parent HTML Skill for build mode, shell setup and delivery workflow.',
       '2. Search [registry/authoring.json](registry/authoring.json) by purpose, keywords or exact ID. Read only the matching component and recipe docs; this index does not replace API documentation.',
-      '3. Read the complete relevant [Cobalt source templates](components/extensions/INDEX.md), including implementation, types, CSS and local dependencies; copy them to src/components/cobalt-extensions/, then adapt and import local modules. Never install @openpencil/cobalt-extensions or import/alias that package name. Official @talkdesk/* packages remain normal dependencies. Otherwise read the matching core/marketplace entry and its exact import/version in [content/registry.json](content/registry.json). Duplicate names such as Button, Table and DatePicker are separate APIs; qualify the library and import.',
+      '3. Read the complete relevant [Cobalt source templates](components/extensions/INDEX.md), including implementation, types, CSS and local dependencies; copy them to src/components/cobalt-extensions/, then adapt and import local modules. Never install @openpencil/cobalt-extensions or import/alias that package name. Official @talkdesk/* packages remain normal dependencies. Otherwise read the matching core/marketplace entry and its exact import/version in [content/registry.json](content/registry.json). Duplicate names such as Button, Table and DatePicker are separate APIs; qualify the library and import. Reuse existing controls for tags, badges, avatars and empty states before adding UI. Retain specialized chart/schedule layouts and requested motion as composition, and document any missing component capability.',
       '4. Use lookup --id <component-ID> --read-source to inspect full source before reuse. Workspace creation copies all templates; standalone/existing apps use cobalt-project.mjs copy-source --out <project>. Read the recipe integration contract, then the actual TSX. Extend the source and connect required callbacks instead of copying old inline snippets from migrated pages.',
       '5. Preserve source qualifications. Migrated examples marked check.ok=false or “Doesn’t compile” are not executable templates. The maintained recipes/examples are checked separately; their build success does not validate all migrated snippets.',
       '6. Test the requested states, callbacks, keyboard behavior, themes and target Workspace app widths. Keep prototype controls in the host toolbar.',

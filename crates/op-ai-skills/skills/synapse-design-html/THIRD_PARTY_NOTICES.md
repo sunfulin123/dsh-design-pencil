@@ -36,3 +36,7 @@ single top-level license or a complete provenance map; retain its source notes
 and review further third-party material before redistributing it.
 
 The runtime `cobalt-reference/` directory contains Talkdesk component and design reference text from the same pinned ai-docs revision, and the referenced documentation images from source revision `589b433ee00187a62e0da360b7215c2699eedac7`. Its `source.json` records hashes, original repository provenance and the owned local workflow entry that replaces upstream checkout instructions. Original reference text and image rights remain with their owners.
+
+## Atlas title-bar primitives
+
+`templates/cobalt/vendor/atlas-titlebar/` contains pinned Talkdesk/atlas stateless title-bar primitive and helper sources, plus original button/status/timer CSS. `templates/cobalt/chrome/source.json` records the Atlas revision, source hashes and copied-file hashes. Original files remain unchanged; the helper declaration is an owned TypeScript companion. Talkdesk source and trademark rights remain with their owners. Official Cobalt packages are declared runtime dependencies.

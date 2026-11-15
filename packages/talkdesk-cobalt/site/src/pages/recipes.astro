@@ -3,10 +3,14 @@ import Page from '../layouts/Page.astro';
 import registry from '../../../registry/authoring.json';
 import { recipeTitles, recipeHref } from '../lib/catalog';
 const descriptions: Record<string, string> = {
+  'recipe.active-call': 'An active voice call with Conversations, callbacks, history and a pinned call-control bar.',
   'recipe.list-page': 'A page header, search and filters, sortable table, details panel and pagination.',
   'recipe.detail-page': 'A detail page composition for reviewing a record and its related information.',
   'recipe.form-page': 'A form page composition with labeled fields and primary actions.',
-  'recipe.extensions.users-list': 'A user list with search, a create panel and review states using Cobalt Extensions.',
+  'recipe.card-widgets': 'Metric, donut, template, sentiment, keyword and shift-distribution cards.',
+  'recipe.echarts-gallery': 'Prediction, forecast and scenario comparison charts with real Apache ECharts.',
+  'recipe.team-schedule': 'A 24-hour agent timeline with staffing metrics, filters and events.',
+  'recipe.echart-insights': 'Insights with date navigation, agent filters and Copilot chat.',
 };
 ---
 <Page title="Page recipes" section="Recipes">

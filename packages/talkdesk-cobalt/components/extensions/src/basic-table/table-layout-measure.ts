@@ -69,20 +69,16 @@ export function useTableLayoutMeasure({
   }, [measure]);
 
   React.useLayoutEffect(() => {
-    // Skip the resize listener when running inside an iframe (e.g. doc-site
-    // sandbox previews). The iframe-follow plugin resizes the iframe to match
-    // content, which fires window resize inside the iframe. Listening to that
-    // would update layout → re-render → height change → iframe resizes again.
-    const inIframe = typeof window !== 'undefined' && window.self !== window.top;
-
-    if (!inIframe) {
-      window.addEventListener('resize', measure);
-    }
-
+    // Observe the host allocation, not the row content: row scrolling must not resize its iframe.
+    const parent = wrapperRef.current?.parentElement;
+    const bounded = parent && getComputedStyle(parent).overflow === 'hidden';
+    const observer = bounded ? new ResizeObserver(measure) : null;
+    if (parent && observer) observer.observe(parent);
+    const inIframe = window.self !== window.top;
+    if (bounded || !inIframe) window.addEventListener('resize', measure);
     return () => {
-      if (!inIframe) {
-        window.removeEventListener('resize', measure);
-      }
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
     };
-  }, [measure]);
+  }, [measure, wrapperRef]);
 }

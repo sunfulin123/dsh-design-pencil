@@ -1,0 +1,42 @@
+{
+  "repository": "https://github.com/Talkdesk/atlas.git",
+  "revision": "7014efc11635c53d3c8b751bbe025c5e496e9288",
+  "designCommit": "deb48668941974a71c7516fcaf0b53313b3d6d0f",
+  "files": {
+    "packages/ui/src/common/styles/variables.css": "a766230aa45847f30d8b49172e1c9a46aede742ba9cd7bb85b11f473df269b23",
+    "packages/ui/src/common/constants.js": "169e560cb72868ec555343f1307ea0eb3661bc87911732962163fb1e7fa3be9a",
+    "packages/ui/src/ui.container.module.css": "e1a974e0cc5b380ae96469d5efa0c474738cec0fcd93f167167a7a73b134eca7",
+    "packages/ui/src/ui.manager/selectors.ts": "1f2b68e253fac79f0f366ee2cca0e8445204fc307387f71ada186804edbafdb6",
+    "packages/ui/src/title.bar/constants.js": "4872f2aed339633563656b6fc392512e94e8ef0df8c1e0a0849f0874b4b67a6d",
+    "packages/ui/src/title.bar/primitives/title-bar-button.tsx": "2cbfc5f0b0f1eb410e229f2912c81fbf215788939dd80adc99da47e426160ce4",
+    "packages/ui/src/title.bar/primitives/title-bar-logo.module.css": "99b6f382e995d407b01f6d321eecdfdd94cd7a2e96aef618ac10eb49f0c36597",
+    "packages/ui/src/dock/components/dock/dock.component.module.css": "7260c97e946b41b384abfd5c9b66982addf348e9e82505617fb1ead5bfd8ddad",
+    "packages/ui/src/dock/components/dock/dock.bar/dock.bar.component.module.css": "848b5a5d69b34cc48a9cce8ee4b44c98861163401617459b4d935f0cbe642b6c",
+    "packages/ui/src/title.bar/primitives/title-bar-button-frame.tsx": "dbb60107169b70f599346b61f3e34a4e1ba4969b50db497b9c18256e918dd3af",
+    "packages/ui/src/title.bar/primitives/title-bar-button.module.css": "1866fa1c81005adaf3b27bd2d543e49702636916c77725d5f4359680eeab9bb8",
+    "packages/ui/src/title.bar/primitives/title-bar-tooltip.tsx": "6d16bd839f6636c55e2cfee1aa1ee64bcd1e9dddb51f0805a83dee237060e09e",
+    "packages/ui/src/title.bar/primitives/title-bar-tooltip.module.css": "66831c242ee221c921b749174f047caf7bd7f547e2f51e5e536a8eec065decc6",
+    "packages/ui/src/helpers/class.name.formatter.js": "0b0ab2f021542bef04a1ca42bc4054f70356d51946a192af0e204cc02022f4e6",
+    "packages/ui/src/title.bar/components/profile/components/profile-status/status.button.module.css": "47e254efb4f73f61f5269f09acb17b30c9865abf27ed4155b207b4f3e86b0508",
+    "packages/ui/src/title.bar/components/profile/components/profile-timer/profile.timer.module.css": "70ed60e166eb699003ed94119933cdc067960bc974dcd5b2d3792b0f639a74d3"
+  },
+  "adaptations": [
+    "Web prototype only; existing SDK stand-ins and review controls remain.",
+    "Compact title bar supports widths below Atlas minimum 414px.",
+    "No production services, Redux store or native window controls are copied.",
+    "Stateless TitleBarButton/frame/tooltip and status/timer CSS are copied byte-for-byte. Existing stand-in menus and SDK actions are retained."
+  ],
+  "primitives": {
+    "title.bar/primitives/title-bar-button.tsx": "2cbfc5f0b0f1eb410e229f2912c81fbf215788939dd80adc99da47e426160ce4",
+    "title.bar/primitives/title-bar-button-frame.tsx": "dbb60107169b70f599346b61f3e34a4e1ba4969b50db497b9c18256e918dd3af",
+    "title.bar/primitives/title-bar-button.module.css": "1866fa1c81005adaf3b27bd2d543e49702636916c77725d5f4359680eeab9bb8",
+    "title.bar/primitives/title-bar-tooltip.tsx": "6d16bd839f6636c55e2cfee1aa1ee64bcd1e9dddb51f0805a83dee237060e09e",
+    "title.bar/primitives/title-bar-tooltip.module.css": "66831c242ee221c921b749174f047caf7bd7f547e2f51e5e536a8eec065decc6",
+    "helpers/class.name.formatter.js": "0b0ab2f021542bef04a1ca42bc4054f70356d51946a192af0e204cc02022f4e6",
+    "title.bar/components/profile/components/profile-status/status.button.module.css": "47e254efb4f73f61f5269f09acb17b30c9865abf27ed4155b207b4f3e86b0508",
+    "title.bar/components/profile/components/profile-timer/profile.timer.module.css": "70ed60e166eb699003ed94119933cdc067960bc974dcd5b2d3792b0f639a74d3"
+  },
+  "primitiveAdaptations": {
+    "title.bar/primitives/title-bar-button-frame.tsx": "Tag v2 default import is changed to the pinned Cobalt v3 named export in the generated copy; rendering and styles are unchanged."
+  }
+}

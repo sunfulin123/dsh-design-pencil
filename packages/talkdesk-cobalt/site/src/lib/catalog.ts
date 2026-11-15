@@ -26,9 +26,13 @@ export function documentTitle(entry: CollectionEntry<'reference'>): string {
 
 export const recipeTitles: Record<string, string> = {
   'recipe.list-page': 'List page',
+  'recipe.active-call': 'Active call',
   'recipe.detail-page': 'Detail page',
   'recipe.form-page': 'Form page',
-  'recipe.extensions.users-list': 'Users list with extensions',
+  'recipe.card-widgets': 'Card widgets',
+  'recipe.echarts-gallery': 'ECharts gallery',
+  'recipe.echart-insights': 'Echart insights',
+  'recipe.team-schedule': 'Team Schedule',
 };
 export const recipeHref = (id: string) =>
   '/recipes/' + id.replace(/^recipe\./, '').replaceAll('.', '-') + '/';

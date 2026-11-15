@@ -1,0 +1,23 @@
+.container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.flex {
+  padding-inline: var(--spacing-inset-micro, 8px) !important;
+}
+
+.no-padding {
+  padding-inline: 0 !important;
+}
+
+.badge {
+  font-size: 10px !important;
+  /* Cobalt's tag is relative at the same specificity; load order decides. */
+  position: absolute !important;
+  right: 0px;
+  top: 0px;
+  transform: translate3d(40%, -15%, 0px);
+  pointer-events: none;
+}

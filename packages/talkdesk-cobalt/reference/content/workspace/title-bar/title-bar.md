@@ -1,8 +1,10 @@
 # Title bar
 
+> The local scaffold follows Atlas redesign `deb486689` at revision `7014efc11`. Historical images below predate its shared light/dark chrome. The production redesign has no separate UI feature flag; existing flags control individual features.
+
 ## Guidance
 
-The title bar is the 40px bar Workspace draws across the top of the window. It holds the controls that apply
+The title bar is the 44px bar Workspace draws across the top of the window. It holds the controls that apply
 to every app: search, the user's status, notifications, the profile menu and the secondary area toggle. Apps
 don't draw it and can't add buttons to it. This page describes what's in it, when each part shows, and how
 it changes between the browser and the desktop app.
@@ -21,35 +23,35 @@ The order of its parts is fixed. From left to right:
 
 | Part                                  | When it shows                                                                                           | Size and look                                                                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Talkdesk logo                         | In the browser and the installed web app.                                                               | 28 × 28px, white. An account with its own branding shows its own logo.                                                                   |
+| Talkdesk logo                         | In the browser and the installed web app.                                                               | 28 × 28px, using the scheme-appropriate brand mark. An account with its own branding shows its own logo.                                                                   |
 | Space for the macOS window controls   | In the desktop app on macOS.                                                                            | 70px                                                                                                                                     |
 | Search                                | On by default.                                                                                          | A 360px field. In a small window (up to 640px wide), a search button instead. See [Search and notifications](#search-and-notifications). |
 | Empty space                           | Always. It fills the rest of the bar.                                                                   | On the desktop app, the user drags the window from here.                                                                                 |
 | Virtual desktop status                | When the account uses virtual desktops (VDI), and the window is wider than 640px.                       | An icon with a tooltip.                                                                                                                  |
 | Network status                        | When the connection changes. It stays while the user is offline, and shows "back online" for 3 seconds. | Text and a Wi-Fi icon. In a small window, the icon only.                                                                                 |
 | Call quality                          | When the calling app reports call quality.                                                              | An icon, with the call's statistics on hover.                                                                                            |
-| User status                           | When an app turns it on, such as Conversations.                                                         | A 103 × 28px pill in translucent white, with the status, its colour and a timer.                                                         |
-| Notifications                         | **Behind a feature flag.**                                                                              | A 28px round button with the unread count. See [Search and notifications](#search-and-notifications).                                    |
-| Profile menu                          | Always.                                                                                                 | A 28 × 28px avatar (24px in a small window).                                                                                             |
-| Secondary area toggle                 | When the user has at least one app for the secondary area.                                              | A 40 × 40px button after a thin divider. White while the secondary area is open.                                                         |
+| User status                           | When an app turns it on, such as Conversations.                                                         | A 32px-tall secondary pill, with the status, its colour and a timer.                                                         |
+| Notifications                         | **Behind a feature flag.**                                                                              | A 32px round button with the unread count. See [Search and notifications](#search-and-notifications).                                    |
+| Profile menu                          | Always.                                                                                                 | A 32 × 32px avatar control.                                                                                             |
+| Secondary area toggle                 | When the user has at least one app for the secondary area.                                              | A 32 × 32px round button. Primary fill while the secondary area is open.                                                         |
 | Space for the Windows window controls | In the desktop app on Windows.                                                                          | 108px                                                                                                                                    |
 
-The bar is at least 414px wide, except in the desktop app on Windows.
+Production Atlas sets a 414px minimum. The owned web prototype deliberately supports 360/390px through its compact search layout.
 
 ### Colour
 
-* **Background:** Primary 9 (`--primary-9`).
-* **Hover on its buttons:** Primary 11 (`--primary-11`).
-* **Text and icons:** the primary contrast colour (`--primary-contrast`), white in the default theme.
+* **Background:** shared Workspace chrome token, Primary 3 in light and Primary 2 in dark.
+* **Control styling:** the pinned Atlas TitleBarButton delegates its colors, alpha fills, hover, expanded and focus states to Cobalt Button. Do not replace its alpha tokens with solid secondary ramp colors.
+* **Text and icons:** the default text token; expanded/selected controls use primary fill and primary contrast text.
 * **Focus:** a 2px ring in the focus colour (`--border-focus-color`).
 
 ### Search and notifications
 
-* **Search field:** a 28px-tall pill in Primary 11 (`--primary-11`), Primary 8 (`--primary-8`) on hover, with a
-  search icon, the text "Search apps, actions and more..." in the primary contrast colour, and the shortcut
+* **Search field:** a small filled secondary Cobalt Button: 32px tall, 12px medium-weight text, with the theme's alpha background and hover tokens, with a
+  search icon, the text "Search apps, actions and more..." in the default text colour, and the shortcut
   (⌘K, or Ctrl+Shift+F) at its end. The text isn't a placeholder: the field is a button that opens search.
 * **Notifications button:** a 28px circle with the bell icon. Primary 11 on hover; while the notification center
-  is open, the button is in the primary contrast colour and the icon in Primary 9.
+  is open, the button is in the default text colour and the icon in Primary 9.
 * **Unread count:** a tiny red Cobalt [Tag](/components/core/tag/) at the button's top right, with the number
   of unread notifications, up to "99+". It shows "!" when notifications fail to load.
 

@@ -124,3 +124,7 @@ Set `inline` to render body variants as a `<span>` instead of `<p>` — useful f
 | `true`                | Single-line animated skeleton at 100% width  |
 | `number` (e.g. `3`)   | Multi-line animated skeleton (text variants) |
 | `false` / `undefined` | No skeleton — render real content            |
+
+## Compact page headings
+
+Use `variant="page-title" scale="medium"` for a compact list heading: the native Cobalt heading remains an h1 and uses its 24px font / 32px line-height scale. The default page-title scale remains unchanged for other consumers. A title followed by a body description can use a zero-gap Cobalt Flex stack; judge the rendered text boxes as well as the token gap. The scale prop only affects heading variants.

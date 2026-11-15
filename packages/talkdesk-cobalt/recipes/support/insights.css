@@ -1,0 +1,109 @@
+/* Business controls use Cobalt styles; these rules only define page allocation. */
+[data-component='EchartInsights'] {
+  color: var(--text-default);
+  background: var(--surface-elevation-1);
+}
+.insights-tabs {
+  display: flex;
+  gap: 20px;
+}
+[data-component='EchartInsights'] .insights-heading-row {
+  padding-block: 20px 32px;
+}
+.insights-controls {
+  flex: none;
+  width: 100%;
+}
+.insights-date {
+  width: 220px;
+  flex: none;
+}
+.insights-main {
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: var(--gray-2);
+}
+.insights-main > * {
+  flex-shrink: 0;
+}
+[data-testid='insights-applied-filters'] {
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .insights-main {
+    padding: 12px;
+  }
+  .insights-controls .insights-time-controls {
+    flex-basis: 100% !important;
+  }
+}
+.insights-overflow-tag {
+  padding: 0;
+  min-width: 0;
+  align-self: center;
+}
+.insights-copilot-panel[data-testid='insights-copilot-panel'] {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.insights-copilot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  border-bottom: 1px solid var(--gray-4);
+  flex: none;
+}
+.insights-copilot-messages {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.insights-copilot-message {
+  flex: none;
+  overflow-wrap: anywhere;
+}
+.insights-copilot-avatar {
+  flex: none;
+  margin-top: 24px;
+}
+.insights-copilot-composer {
+  padding: 16px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Native TagGroup is a field and defaults to full width; keep this metadata strip inline. */
+.insights-filter-scroll {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+.insights-filter-start > p {
+  flex: none;
+  white-space: nowrap;
+}
+.insights-filter-start [class*='co-tag-group__items'] {
+  flex-wrap: nowrap;
+  gap: 8px;
+}

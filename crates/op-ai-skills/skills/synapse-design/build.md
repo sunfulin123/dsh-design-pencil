@@ -2,6 +2,8 @@
 
 Mandatory construction rules for Synapse high-fidelity canvas design. User requirements and the selected product `DESIGN` supply all visual identity (palette, typography scale, corner radii, surface tokens, elevation); this guide governs how to translate that design into valid, non-overflowing, editable OP nodes.
 
+Before constructing from a POC, apply the main Design Skill’s Stage C review-chrome exclusion: the Size/Page state review toolbar and preview wrapper are not business design content, including for strict replicas.
+
 ## 1. Progressive Skeleton & Canvas Contract
 
 - **Use the host's seeded root when present:** In a DSH private draft, `synapse_design_pipeline_begin` seeds one page root (`rootNodeId`) at the authoritative width (`1440×900` web, `390×844` mobile—the unified modern iPhone 14/15/16 logical viewport shared with HTML POC unless the user explicitly requested another width such as `375`). Build inside `rootNodeId`; never insert a second top-level page root for the first screen.

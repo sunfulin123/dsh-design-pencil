@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import Flex from '@talkdesk/cobalt-react-flex';
+import Button from '@talkdesk/cobalt-react-button';
 import { Tag } from '@talkdesk/cobalt-react-tag';
 import { PopupTrigger } from '../popup-trigger';
 
@@ -131,14 +132,18 @@ export const ChipGroup: React.FC<ChipGroupProps> = React.memo(
             origin="SW"
             size="small"
           >
-            <Tag
-              color="theme"
+            <Button
+              type="secondary"
+              variation="transparent"
+              size="tiny"
+              aria-label={`Show ${hiddenCount} more values`}
               data-qa={dataQa ? `${dataQa}-overflow` : undefined}
-              size={size}
-              style={{ cursor: 'pointer' }}
+              style={{ padding: 0, minWidth: 0, height: 'auto' }}
             >
-              +{hiddenCount}
-            </Tag>
+              <Tag color="theme" size={size}>
+                +{hiddenCount}
+              </Tag>
+            </Button>
           </PopupTrigger>
         )}
       </Flex>

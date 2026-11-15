@@ -7,12 +7,12 @@ This package owns the local Talkdesk design guidance, pinned Workspace shell, ge
 | Directory | Maintained content |
 | --- | --- |
 | `templates/vendor/workspace-shell/` | Unmodified official `ai-docs` shell snapshot; `templates/source.json` records revision and hashes |
-| `templates/project/`, `tools/cobalt-shell-adapter.mjs` | Our project setup, multiple Dock apps and review controls; adapters change the generated copy |
+| `templates/project/`, `templates/chrome/`, `tools/cobalt-shell-adapter.mjs` | Our project setup, multiple Dock apps and review controls; adapters change the generated copy |
 | `reference/content/` | Migrated Cobalt Markdown, registry and referenced images; `reference/source.json` records provenance and explicit adaptations |
 | `components/extensions/src/` | Maintained component implementation upgraded to the pinned local Cobalt registry; copy implementations into their project and use relative imports |
 | `content/components/extensions/*.mdx` | Component purpose, API, states, usage and qualifications; `<Example id="…" />` references executable source |
 | `examples/extensions/*.tsx` | Runnable usage examples shared by the website, AI reference and generated projects |
-| `recipes/` | Maintained list/detail/form compositions, supporting sample data and the compact users workflow; `catalog.json` owns intent and integration limits |
+| `recipes/` | Maintained list/detail/form/Insights/active-call compositions, supporting sample data and the compact users workflow; `catalog.json` owns intent and integration limits |
 | `vendor/wfm-ui-components/` | Original WFM code and docs, unchanged; `wfm-source.json` records provenance |
 | `skill/references/` | Local Design workflow and reference index |
 | `registry/authoring.json` | Generated component/example/recipe/style index; never edit by hand |
@@ -66,3 +66,23 @@ Workspace prototypes use pnpm 11.7.0 (`pnpm install`, `pnpm run dev`, `pnpm run 
 The owned `templates/project/review-toolbar*` and `review-dropdown.tsx` supply responsive prototype-only controls. The shell adapter redirects the copied PrototypeBar to that runtime; no upstream toolbar file is edited. The companion owns accessible-name and test-ID guidance for dimensions, scenarios and Feature flags.
 
 Prototype review controls use 36px desktop triggers and 44px narrow-screen touch controls in a 56px bar, without a leading Prototype wordmark/icon. Accessible names and prototype-* locators are independent of visual density.
+
+New Workspace projects apply the pinned Atlas redesign through owned `templates/chrome/` sources. Their source manifest records Atlas provenance separately from the immutable ai-docs input. The adapter updates presentation, layout geometry and accessible locators while retaining SDK stand-ins and review controls. No new-UI flag or Atlas service dependency is introduced. Small prototype windows use compact search below the production 414px minimum. `add` preserves existing shells. See `skill/references/cobalt/workspace-chrome.md` for the geometry and review contract.
+
+Content generation and runtime staging regenerate shared authoring indexes. Complete builds/exports before starting readers or browser checks; run combined runtime packaging/scaffold tests with `--test-concurrency=1` because packaging also exports those resources.
+
+Atlas title-bar primitives and their CSS are copied byte-for-byte from the pinned revision under `templates/vendor/atlas-titlebar/`, with per-file hashes checked before project publication. Owned trigger compositions retain mock menus/actions while using those primitives. Cobalt Button supplies all control colors and states; the adapter styles only shell geometry. The official Tooltip and classnames dependencies are declared, not shimmed.
+
+The pinned Atlas frame imports Tag v2 by default; the generated copy changes only that import to the named Tag export required by Cobalt v3. Original primitive bytes and hashes remain intact, and `primitiveAdaptations` records this API-only adjustment.
+
+The Echart insights recipe uses Apache echarts 6.0.0 and Cobalt controls, with local sample predictions, agent filters and Summary. Recipe indexing includes support-file imports and CSS so AI can retrieve the complete source closure. List page uses the local AppPageHeader, a draft filter SidePanel and BasicTable minTableWidth; pagination is outside both row scrolling and horizontal column scrolling. The review Phone preset is fixed at 390 × 844. Notifications show compact, theme-aware sample history rows.
+
+Insights uses the native @talkdesk/cobalt-react-selection-group for Day/Week/Month, an 8px date-to-navigation gap and the copied Extensions MultiDropdown for Agent selection. Applied Agent tags and the +N overflow tag share core Tag size small; retain the count button accessibility while leaving its surface to Tag.
+
+Users list headers reuse copied AppPageHeader and Typography page-title/body semantics. The Users Filters trigger is medium (40px); the compact Insights toolbar keeps its small trigger. FormField leaves 8px below labels and gives direct controls a 20px line-height so checkboxes retain their painted height. Verify these dimensions in the rendered page and modal, including both schemes.
+
+Compact Users title/description groups use copied Typography page-title with native Cobalt scale medium (24px/32px) and body text in a Flex gap 0 stack. Preserve h1 semantics and center the complete text group with actions; inspect the visible typography spacing rather than relying only on a nominal gap value.
+
+Insights header actions use native SplitButton, chevron_down and core Popover for CSV/JSON sample exports. Ask Copilot is a native transparent action before Export and opens a native ModalPanel with ChatBubble messages and a fixed 120-character Textarea composer. Replies are local examples; Enter sends and Shift+Enter inserts a newline. Preserve insights-* locators, keyboard/focus behavior and both schemes when adapting.
+
+The Active call recipe reproduces the reference Conversations/Callbacks surface with Cobalt components and glyphs, a bounded queue/content layout and pinned call controls. Its local Hold/Mute/Recording, keypad, callback and confirmation workflows are examples; the embedding application owns authorized telephony and persistence. Read `recipes/active-call.md` and copy all listed support sources.

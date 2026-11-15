@@ -1,0 +1,144 @@
+/* Owned Atlas chrome adaptation. The source manifest pins the reference revision.
+   Scope tokens to each prototype window; never recolor its business iframe. */
+.ws-window {
+  --atlas-title-bar-height: 44px;
+  --atlas-chrome-background: var(--primary-3, var(--primary-200));
+  --atlas-chrome-border-color: var(--secondary-4, var(--secondary-300));
+  --atlas-chrome-border-width: 2px;
+  --atlas-chrome-gap: 10px;
+  --atlas-dock-width: 48px;
+  --chrome-text: var(--text-default, var(--secondary-12));
+  --chrome-focus: var(--border-focus-color, var(--primary-500));
+}
+[data-co-colorscheme="dark"] .ws-window {
+  --atlas-chrome-background: var(--primary-2, var(--primary-200));
+}
+.ws-container {
+  height: calc(100% - var(--atlas-title-bar-height));
+  background: var(--atlas-chrome-background);
+}
+.ws-areas {
+  box-sizing: border-box;
+  height: calc(100% - var(--atlas-chrome-gap));
+  margin-inline-end: var(--atlas-chrome-gap);
+  border: var(--atlas-chrome-border-width) solid var(--atlas-chrome-border-color);
+  border-radius: var(--border-radius-small, 8px);
+  overflow: hidden;
+  background: var(--background-color);
+}
+.ws-window--drawer .ws-areas {
+  border-inline-start-width: 1px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+.ws-window--small .ws-areas {
+  height: 100%;
+  margin-inline-end: 0;
+  border-inline-end-width: 0;
+  border-block-end-width: 0;
+  border-radius: 0;
+}
+.ws-window--small:not(.ws-window--drawer) .ws-areas {
+  border-start-start-radius: var(--border-radius-small, 8px);
+}
+.ws-titlebar {
+  height: var(--atlas-title-bar-height);
+  min-width: 0;
+}
+.ws-titlebar__frame {
+  box-sizing: border-box;
+  height: var(--atlas-title-bar-height);
+  padding-inline: 12px;
+  background: var(--atlas-chrome-background);
+  color: var(--chrome-text);
+  gap: 8px;
+}
+.ws-titlebar__logo {
+  width: 28px;
+  padding: 0;
+  flex: 0 0 28px;
+  justify-content: center;
+  margin-inline-start: -2px;
+}
+.ws-titlebar__logo .ws-logo-dark { display: none; }
+[data-co-colorscheme="dark"] .ws-titlebar__logo .ws-logo-light { display: none; }
+[data-co-colorscheme="dark"] .ws-titlebar__logo .ws-logo-dark { display: block; }
+.ws-titlebar__left { padding: 0; }
+.ws-titlebar__search { width: auto; min-width: 0; }
+.ws-titlebar__search--small { width: auto; }
+.ws-titlebar__drag { min-width: 0; }
+.ws-titlebar__user { gap: 8px; }
+.ws-profile { padding: 0; }
+.ws-titlebar__right { gap: 8px; }
+.ws-secondary-toggle::before { display: none; }
+.ws-dock-root {
+  --dock-bar-bg: var(--atlas-chrome-background);
+  --dock-drawer-bg: var(--primary-1, var(--secondary-200));
+  --dock-button-height: 32px;
+  --dock-button-width: 32px;
+  --dock-button-icon-size: 20px;
+}
+.ws-dock { --dock-width: var(--atlas-dock-width); }
+.ws-dock--expanded { --dock-width: 240px; }
+.ws-dock__bar { padding: 8px; border: 0; }
+.ws-dock .ws-dock-button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+}
+.ws-dock .ws-dock-button--expanded {
+  width: 100% !important;
+  padding-inline-start: 5px !important;
+}
+.ws-dock-button:not(.ws-dock-button--expanded) .ws-dock-button__inner {
+  justify-content: center;
+}
+.ws-dock-button:not(.ws-dock-button--expanded) .ws-dock-label { display: none; }
+.ws-dock .ws-dock-button [data-co-name="Icon"] {
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 20px !important;
+}
+.ws-dock-button-wrap:not(:last-child) { margin-bottom: 4px; }
+.ws-drawer {
+  box-sizing: border-box;
+  height: calc(100% - var(--atlas-chrome-gap));
+  border: 2px solid var(--atlas-chrome-border-color);
+  border-inline-end-width: 0;
+  border-start-start-radius: var(--border-radius-small, 8px);
+  border-end-start-radius: var(--border-radius-small, 8px);
+  box-shadow: none;
+}
+.ws-dock--drawer-open .ws-drawer { border-inline-end-width: 1px; }
+.ws-dock--drawer-open.ws-dock--drawer-fixed:not(.ws-dock--small) .ws-drawer {
+  border-inline-end-width: 0;
+}
+.ws-window--small .ws-drawer {
+  height: 100%;
+  border-block-end-width: 0;
+  border-end-start-radius: 0;
+}
+.ws-drawer__actions { margin-inline-start: 0.5px; }
+.ws-drawer-toggle {
+  background: var(--background-color);
+  border-color: var(--atlas-chrome-border-color);
+}
+.ws-secondary { border-color: var(--atlas-chrome-border-color); }
+.ws-window--small .ws-titlebar__frame { gap: 8px; }
+.ws-window--small .ws-titlebar__left { flex-shrink: 0; }
+
+/* Compact notification history shares the active Cobalt surface and typography. */
+.ws-notifications { width: min(360px, 100vw); max-width: 100%; }
+.ws-notifications__header { min-height: 84px; padding: 20px 24px; box-sizing: border-box; gap: 16px; }
+.ws-notifications__header h3 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 400; }
+.ws-notifications__list-title { padding: 28px 24px 12px; }
+.ws-notifications__list-title h4 { margin: 0; font-size: 16px; line-height: 24px; }
+.ws-notification-card { display: flex; align-items: flex-start; gap: 12px; padding: 16px 24px; min-height: 88px; box-sizing: border-box; }
+.ws-notification-card__icon { flex: 0 0 20px; min-width: 20px; padding: 2px 0 0; }
+.ws-notification-card__main { flex: 1; min-width: 0; }
+.ws-notification-card__title-row { display: flex; align-items: baseline; gap: 0; }
+.ws-notification-card__title { font-size: 14px; line-height: 20px; }
+.ws-notification-card__date { flex: none; white-space: nowrap; }
+.ws-notification-card__unread { align-self: center; flex: none; height: 32px; padding: 0; margin-inline-end: -12px; }

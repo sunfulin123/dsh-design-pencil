@@ -16,25 +16,33 @@
  *
  * Compiled against the published packages on every docs build (scripts/check-examples.mjs).
  */
-import React, { useState } from "react";
-import Button from "@talkdesk/cobalt-react-button";
-import Divider from "@talkdesk/cobalt-react-divider";
-import { Dropdown, DropdownItem } from "@talkdesk/cobalt-react-dropdown";
-import Flex from "@talkdesk/cobalt-react-flex";
-import { Tag } from "@talkdesk/cobalt-react-tag";
-import { TextInput } from "@talkdesk/cobalt-react-text-input";
-import { Toggle, ToggleGroup } from "@talkdesk/cobalt-react-toggle";
-import { Heading, Text } from "@talkdesk/cobalt-react-typography";
-import { useViewport } from "@talkdesk/cobalt-react-viewport-provider";
+import React, { useState } from 'react';
+import Button from '@talkdesk/cobalt-react-button';
+import Divider from '@talkdesk/cobalt-react-divider';
+import { Dropdown, DropdownItem } from '@talkdesk/cobalt-react-dropdown';
+import Flex from '@talkdesk/cobalt-react-flex';
+import { Tag } from '@talkdesk/cobalt-react-tag';
+import { TextInput } from '@talkdesk/cobalt-react-text-input';
+import { Toggle, ToggleGroup } from '@talkdesk/cobalt-react-toggle';
+import { Heading, Text } from '@talkdesk/cobalt-react-typography';
+import { useViewport } from '@talkdesk/cobalt-react-viewport-provider';
 
 // Page padding and the space around dividers: 12px / 16px / 24px on small / medium / large viewports.
 const PAGE_PADDING = { small: 12, medium: 16, large: 24 } as const;
 // 16px between inputs, and between a section title and its first input.
 const INPUT_GAP = 4;
 
+import {
+  FormControlExamples,
+  SAMPLE_CONTROLS,
+  type FormControlValues,
+} from './support/form-control-examples';
+
 /* ---------- data: replace with yours --------------------------------------------------- */
 
 export interface Profile {
+  /** Controlled Extensions values returned by Save; Dates use the local calendar. */
+  controlExamples?: FormControlValues;
   firstName: string;
   lastName: string;
   role: string | null;
@@ -44,17 +52,18 @@ export interface Profile {
   team: string | null;
 }
 
-const ROLES = ["Administrator", "Supervisor", "Agent"];
-const NO_TEAM = "none";
-const TEAMS = ["Team Alpha", "Team Beta", "Team Gamma", "Team Delta"];
+const ROLES = ['Administrator', 'Supervisor', 'Agent'];
+const NO_TEAM = 'none';
+const TEAMS = ['Team Alpha', 'Team Beta', 'Team Gamma', 'Team Delta'];
 
 // A fictional person; @example.com addresses only.
 export const SAMPLE_PROFILE: Profile = {
-  firstName: "Avery",
-  lastName: "Example",
-  role: "Agent",
+  controlExamples: SAMPLE_CONTROLS,
+  firstName: 'Avery',
+  lastName: 'Example',
+  role: 'Agent',
   active: true,
-  email: "avery.example@example.com",
+  email: 'avery.example@example.com',
   externalId: null,
   team: null,
 };
@@ -63,10 +72,11 @@ type Errors = Partial<Record<keyof Profile, string>>;
 
 function validate(p: Profile): Errors {
   const errors: Errors = {};
-  if (!p.firstName.trim()) errors.firstName = "Enter a first name.";
-  if (!p.role) errors.role = "Select a role.";
-  if (!p.email.trim()) errors.email = "Enter an email.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim())) errors.email = "Enter an email like name@example.com.";
+  if (!p.firstName.trim()) errors.firstName = 'Enter a first name.';
+  if (!p.role) errors.role = 'Select a role.';
+  if (!p.email.trim()) errors.email = 'Enter an email.';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email.trim()))
+    errors.email = 'Enter an email like name@example.com.';
   return errors;
 }
 
@@ -86,7 +96,12 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <Flex direction="column" alignX="stretch" gap={INPUT_GAP} style={{ padding, width, boxSizing: "border-box" }}>
+    <Flex
+      direction="column"
+      alignX="stretch"
+      gap={INPUT_GAP}
+      style={{ padding, width, boxSizing: 'border-box' }}
+    >
       {title && (
         <Heading level={2} asLevel={6}>
           {title}
@@ -122,13 +137,17 @@ interface Props {
 export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }: Props) {
   const viewport = useViewport();
   const padding = PAGE_PADDING[viewport];
-  const columnWidth = viewport === "small" ? "100%" : "50%";
-  const [form, setForm] = useState<Profile>(initial);
+  const columnWidth = viewport === 'small' ? '100%' : '50%';
+  const [form, setForm] = useState<Profile>(() => ({
+    ...initial,
+    controlExamples: initial.controlExamples ?? SAMPLE_CONTROLS,
+  }));
   const [touched, setTouched] = useState<Set<keyof Profile>>(new Set());
   const [submitted, setSubmitted] = useState(false);
 
   const errors = validate(form);
-  const errorFor = (field: keyof Profile) => (submitted || touched.has(field) ? errors[field] : undefined);
+  const errorFor = (field: keyof Profile) =>
+    submitted || touched.has(field) ? errors[field] : undefined;
   const update = <K extends keyof Profile>(field: K, value: Profile[K]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
   const leave = (field: keyof Profile) => () => setTouched((prev) => new Set(prev).add(field));
@@ -136,7 +155,12 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
   const save = () => {
     setSubmitted(true);
     if (Object.keys(errors).length) return;
-    onSave?.({ ...form, firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim() });
+    onSave?.({
+      ...form,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      email: form.email.trim(),
+    });
   };
 
   return (
@@ -150,7 +174,7 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
           </Text>
           <Heading level={1}>{`${initial.firstName} ${initial.lastName}`.trim()}</Heading>
         </Flex>
-        <Flex gap={3} alignY="center" style={{ flex: "none" }}>
+        <Flex gap={3} alignY="center" style={{ flex: 'none' }}>
           <Button type="secondary" onPress={onCancel}>
             Cancel
           </Button>
@@ -174,23 +198,27 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
             isRequired
             validationBehavior="aria"
             value={form.firstName}
-            onChange={(v) => update("firstName", v)}
-            onBlur={leave("firstName")}
-            isInvalid={!!errorFor("firstName")}
-            errorMessage={errorFor("firstName")}
+            onChange={(v) => update('firstName', v)}
+            onBlur={leave('firstName')}
+            isInvalid={!!errorFor('firstName')}
+            errorMessage={errorFor('firstName')}
           />
-          <TextInput label="Last name" value={form.lastName} onChange={(v) => update("lastName", v)} />
+          <TextInput
+            label="Last name"
+            value={form.lastName}
+            onChange={(v) => update('lastName', v)}
+          />
           <Dropdown
             label="Role"
             isRequired
             validationBehavior="aria"
             value={form.role}
             onChange={(key) => {
-              update("role", key ? String(key) : null);
-              leave("role")();
+              update('role', key ? String(key) : null);
+              leave('role')();
             }}
-            isInvalid={!!errorFor("role")}
-            errorMessage={errorFor("role")}
+            isInvalid={!!errorFor('role')}
+            errorMessage={errorFor('role')}
           >
             {ROLES.map((r) => (
               <DropdownItem key={r} id={r}>
@@ -202,8 +230,8 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
               isSelected is ignored. */}
           <ToggleGroup
             label="Activation"
-            value={form.active ? ["active"] : []}
-            onChange={(values) => update("active", values.includes("active"))}
+            value={form.active ? ['active'] : []}
+            onChange={(values) => update('active', values.includes('active'))}
           >
             <Toggle value="active">Active</Toggle>
           </ToggleGroup>
@@ -217,16 +245,16 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
             isRequired
             validationBehavior="aria"
             value={form.email}
-            onChange={(v) => update("email", v)}
-            onBlur={leave("email")}
-            isInvalid={!!errorFor("email")}
-            errorMessage={errorFor("email")}
+            onChange={(v) => update('email', v)}
+            onBlur={leave('email')}
+            isInvalid={!!errorFor('email')}
+            errorMessage={errorFor('email')}
           />
         </Section>
 
         <Divider />
         <Section title="Employee information" padding={padding} width={columnWidth}>
-          <ReadOnlyValue label="External ID" value={form.externalId ?? "N/A"} />
+          <ReadOnlyValue label="External ID" value={form.externalId ?? 'N/A'} />
         </Section>
 
         <Divider />
@@ -234,11 +262,11 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
           <Dropdown
             label="Team"
             value={form.team ?? NO_TEAM}
-            onChange={(key) => update("team", key && key !== NO_TEAM ? String(key) : null)}
+            onChange={(key) => update('team', key && key !== NO_TEAM ? String(key) : null)}
           >
             {[NO_TEAM, ...TEAMS].map((t) => (
               <DropdownItem key={t} id={t}>
-                {t === NO_TEAM ? "None" : t}
+                {t === NO_TEAM ? 'None' : t}
               </DropdownItem>
             ))}
           </Dropdown>
@@ -247,6 +275,13 @@ export default function FormPage({ initial = SAMPLE_PROFILE, onCancel, onSave }:
               Fix the highlighted fields to save.
             </Text>
           )}
+        </Section>
+        <Divider />
+        <Section title="Scheduling and preferences" padding={padding} width={columnWidth}>
+          <FormControlExamples
+            value={form.controlExamples ?? SAMPLE_CONTROLS}
+            onChange={(value) => update('controlExamples', value)}
+          />
         </Section>
       </form>
     </Flex>

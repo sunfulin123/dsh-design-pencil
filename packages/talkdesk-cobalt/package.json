@@ -11,8 +11,8 @@
     "demos:build": "vite build --config demos/vite.config.mts",
     "bundle:build": "node tools/build-skill.mjs",
     "examples:check": "tsc --project demos/tsconfig.json --noEmit",
-    "test:unit": "node --test test/export.test.mjs test/wfm-upgrade.test.mjs",
-    "test:browser": "node --test test/site-browser.test.mjs test/form-field-browser.test.mjs test/table-edge-browser.test.mjs test/list-dialogs-browser.test.mjs",
+    "test:unit": "node --test test/export.test.mjs test/wfm-upgrade.test.mjs test/chrome-layout.test.mjs",
+    "test:browser": "node --test test/site-browser.test.mjs test/form-field-browser.test.mjs test/table-edge-browser.test.mjs test/list-dialogs-browser.test.mjs test/review-toolbar-browser.test.mjs test/chrome-browser.test.mjs test/titlebar-theme-browser.test.mjs test/list-viewport-browser.test.mjs test/insights-browser.test.mjs test/notification-mobile-browser.test.mjs test/insights-controls-browser.test.mjs test/users-header-filters-browser.test.mjs test/insights-copilot-browser.test.mjs test/insights-workspace-browser.test.mjs test/active-call-browser.test.mjs test/form-controls-browser.test.mjs test/reference-recipes-browser.test.mjs",
     "docs:check": "tsc --project site/tsconfig.json --noEmit"
   },
   "devDependencies": {
@@ -73,6 +73,11 @@
     "@types/react": "18.3.28",
     "@types/react-dom": "18.3.6",
     "vite": "6.4.1",
-    "playwright": "1.62.1"
+    "playwright": "1.62.1",
+    "@talkdesk/cobalt-react-tooltip": "1.0.1",
+    "classnames": "2.5.1",
+    "echarts": "6.0.0",
+    "@talkdesk/cobalt-react-popover": "1.2.1",
+    "@talkdesk/cobalt-react-chat-bubble": "2.2.5"
   }
 }

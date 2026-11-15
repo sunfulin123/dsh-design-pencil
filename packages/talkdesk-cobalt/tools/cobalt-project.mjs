@@ -126,7 +126,22 @@ async function createProject(out, spec) {
       throw new Error(`Shell snapshot checksum mismatch: ${path}`);
     shell.set(path, bytes.toString('utf8'));
   }
-  adaptShell(shell);
+  const chrome = new Map();
+  const chromeHashes = {};
+  for (const name of ['space.ts', 'title-bar.tsx', 'workspace-chrome.css', 'status-pill.tsx', 'profile-menu.tsx', 'notifications.tsx']) {
+    const content = await readFile(join(template, 'chrome', name), 'utf8');
+    chrome.set(name, content);
+    chromeHashes[name] = createHash('sha256').update(content).digest('hex');
+  }
+  const atlasChrome = JSON.parse(await readFile(join(template, 'chrome/source.json'), 'utf8'));
+  for (const [path, hash] of Object.entries(atlasChrome.primitives)) {
+    const content = await readFile(join(template, 'vendor/atlas-titlebar', path), 'utf8');
+    if (createHash('sha256').update(content).digest('hex') !== hash)
+      throw new Error(`Atlas primitive snapshot checksum mismatch: ${path}`);
+    shell.set(path, content);
+  }
+  shell.set('helpers/class.name.formatter.d.ts', await readFile(join(template, 'chrome/class-name-formatter.d.ts'), 'utf8'));
+  adaptShell(shell, chrome);
   const dependencies = JSON.parse(await readFile(join(template, 'dependencies.json'), 'utf8'));
   await mkdir(dirname(out), { recursive: true });
   const stage = await mkdtemp(join(dirname(out), '.cobalt-project-'));
@@ -156,8 +171,9 @@ async function createProject(out, spec) {
       'cobalt-source.json',
       json({
         ...manifest,
-        adapterVersion: 3,
-        adaptedFiles: ['shell/Shell.tsx', 'shell/Primary.tsx', 'shell/PrototypeBar.tsx', 'shell/shell.css'],
+        adapterVersion: 6,
+        atlasChrome: { ...atlasChrome, templates: chromeHashes },
+        adaptedFiles: ['config.ts', 'shell/state.ts', 'title.bar/primitives/title-bar-button-frame.tsx', 'mount.tsx', 'space.ts', 'shell/Shell.tsx', 'shell/Primary.tsx', 'shell/PrototypeBar.tsx', 'shell/TitleBar.tsx', 'shell/Notifications.tsx', 'shell/StatusPill.tsx', 'shell/ProfileMenu.tsx', 'shell/Drawer.tsx', 'shell/workspace-chrome.css'],
       }),
     );
     await put(

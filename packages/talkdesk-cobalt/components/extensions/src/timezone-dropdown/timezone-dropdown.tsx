@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useState } from 'react';
 import CobaltDropdown, { Option } from '@talkdesk/cobalt-marketplace-react-dropdown';
-import { GroupOptions, Search } from '@talkdesk/cobalt-marketplace-react-dropdown-utils';
+import {
+  GroupOptions,
+  Search,
+  useDropdown,
+} from '@talkdesk/cobalt-marketplace-react-dropdown-utils';
 import StatefulButton from '@talkdesk/cobalt-marketplace-react-stateful-button';
 import Box from '@talkdesk/cobalt-react-box';
 import { Text } from '@talkdesk/cobalt-react-typography';
@@ -27,6 +31,8 @@ export type TimezoneDropdownProps = {
   value: string;
   /** Called with the new IANA timezone string when the user selects an option. */
   onChange: (value: string) => void;
+  /** Optional Cobalt trigger element. The native dropdown wires its click/ref; it keeps the same searchable timezone popup. */
+  customInput?: React.ReactElement;
   /** Disables interaction when true. */
   disabled?: boolean;
   /** Customise visible text strings. All fields are optional — defaults are provided. */
@@ -104,9 +110,24 @@ function getVisibleGroups(
 // Component
 // ---------------------------------------------------------------------------
 
+/** Keep a custom trigger named and synchronized with the native popup state. */
+const TimezoneTrigger = React.forwardRef<
+  HTMLElement,
+  {
+    input: React.ReactElement;
+    disabled: boolean;
+    onClick?: React.MouseEventHandler<HTMLElement>;
+  }
+>(({ input, disabled, onClick }, ref) => {
+  const { inputProps } = useDropdown();
+  return React.cloneElement(input, { ref, disabled, onClick, 'aria-expanded': inputProps.open });
+});
+TimezoneTrigger.displayName = 'TimezoneTrigger';
+
 export const TimezoneDropdown: React.FC<TimezoneDropdownProps> = ({
   value,
   onChange,
+  customInput,
   disabled = false,
   messages,
   'data-qa': dataQa,
@@ -125,6 +146,10 @@ export const TimezoneDropdown: React.FC<TimezoneDropdownProps> = ({
   return (
     <CobaltDropdown
       searchable
+      contentSize={customInput ? 'medium' : undefined}
+      customInput={
+        customInput ? <TimezoneTrigger input={customInput} disabled={disabled} /> : undefined
+      }
       data-component={dataComponent}
       data-qa={dataQa}
       disabled={disabled}

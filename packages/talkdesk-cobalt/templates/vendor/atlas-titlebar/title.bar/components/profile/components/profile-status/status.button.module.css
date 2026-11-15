@@ -1,0 +1,15 @@
+/* Long status names truncate instead of pushing the rest of the bar. Cobalt
+   caps buttons at a wider width with a more specific selector. */
+.button {
+  max-width: 110px !important;
+}
+
+/* Sets the badge in from the pill's rounded end without moving the name and
+   timer, which the cap leaves no room to spare. */
+.badge {
+  translate: var(--spacing-pico, 2px);
+}
+
+.name {
+  font-size: 10px !important;
+}

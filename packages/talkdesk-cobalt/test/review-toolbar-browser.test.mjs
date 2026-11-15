@@ -15,10 +15,10 @@ test('responsive prototype controls expose named locators and operate sizes, sta
  const app = page.frameLocator('iframe[data-primary-frame]');
  await app.getByRole('heading', {name: 'Users', exact: true}).waitFor();
  assert.equal(await page.locator('.review-brand').count(),0);
- for (const preset of ['1920','1440','1280','1024','640','desktop','fill']) {
+ for (const preset of ['1920','1440','1280','1024','640','mobile','fill']) {
   await page.getByTestId('prototype-size').click();
   await page.getByTestId(`prototype-size-${preset}`).click();
-  if (preset !== 'fill') await page.waitForFunction(width => Math.abs(document.querySelector('[data-testid="workspace-window"]').getBoundingClientRect().width-width)<1, preset==='desktop'?424:Number(preset));
+  if (preset !== 'fill') await page.waitForFunction(width => Math.abs(document.querySelector('[data-testid="workspace-window"]').getBoundingClientRect().width-width)<1, preset==='mobile'?390:Number(preset));
  }
  for (const state of ['loading','empty','error','partial','permission','success']) {
   await page.getByRole('button', {name: 'Page state', exact: true}).click();

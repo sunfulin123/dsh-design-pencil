@@ -1,0 +1,32 @@
+<!-- synapse-html-review:1 -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Prototype review</title>
+  <link rel="stylesheet" href="./prototype-review/review.css">
+  <script id="prototype-review-config" type="application/json">@@CONFIG@@</script>
+  <script src="./prototype-review/review.js" defer></script>
+</head>
+<body>
+  <header class="prototype-toolbar" role="region" aria-label="Prototype controls" data-testid="prototype-toolbar">
+    <button type="button" class="prototype-trigger" id="size-trigger" aria-label="Window size" aria-haspopup="dialog" aria-controls="size-panel" aria-expanded="false" data-testid="prototype-size-trigger">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M12 17v4m-5 0h10"/></svg><span class="prototype-label">Size</span><strong id="size-value" data-testid="prototype-size-value">Fill</strong><span aria-hidden="true">⌄</span>
+    </button>
+    <button type="button" class="prototype-trigger" id="state-trigger" aria-label="Page state" aria-haspopup="dialog" aria-controls="state-panel" aria-expanded="false" data-testid="prototype-state-trigger">
+      <span id="state-dot" class="prototype-dot" aria-hidden="true"></span><span class="prototype-label">Page state</span><strong id="state-value" data-testid="prototype-state-value">Ready</strong><span aria-hidden="true">⌄</span>
+    </button>
+    <output id="readout" class="prototype-readout" data-testid="prototype-viewport-readout"></output>
+    <button type="button" class="prototype-reset" aria-label="Reset prototype settings" data-testid="prototype-reset"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5"/></svg><span class="prototype-label">Reset</span></button>
+  </header>
+  <section class="prototype-panel" id="size-panel" role="dialog" aria-label="Window size options" hidden>
+    <header><strong>Window size</strong><button type="button" aria-label="Close window size options" data-close="size">×</button></header><div id="size-options"></div>
+  </section>
+  <section class="prototype-panel" id="state-panel" role="dialog" aria-label="Page state options" hidden>
+    <header><strong>Page state</strong><button type="button" aria-label="Close page state options" data-close="state">×</button></header><div id="state-options"></div>
+  </section>
+  <p id="review-status" role="status" hidden></p>
+  <main class="prototype-stage"><div class="prototype-canvas"><iframe title="Prototype business page" data-testid="prototype-page"></iframe></div></main>
+</body>
+</html>

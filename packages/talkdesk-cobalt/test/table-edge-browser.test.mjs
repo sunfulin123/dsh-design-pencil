@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { serveStatic } from './static-server.mjs';
 
-test('BasicTable and both list recipes have square borderless surfaces with flush page edges', async (t) => {
+test('BasicTable and the full list recipe have square borderless surfaces with flush page edges', async (t) => {
   const server = await serveStatic(fileURLToPath(new URL('../site/dist', import.meta.url)));
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
   t.after(async () => { await browser.close(); await server.close(); });
@@ -13,7 +13,7 @@ test('BasicTable and both list recipes have square borderless surfaces with flus
   for (const scheme of ['light', 'dark']) {
     for (const width of [360, 640, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const entry of ['recipes/list-page.tsx', 'recipes/extensions/users-list.tsx']) {
+      for (const entry of ['recipes/list-page.tsx']) {
         await page.goto(`${server.url}/demos/?entry=${entry}&scheme=${scheme}`);
         const table = page.locator('[data-component="WFMBasicTable"]');
         await table.waitFor();
@@ -29,7 +29,7 @@ test('BasicTable and both list recipes have square borderless surfaces with flus
         assert.ok(geometry.radii.every((n) => parseFloat(n) === 0), JSON.stringify(geometry));
         assert.ok(Math.abs(geometry.left) <= 0.5, `${entry}: left gap ${geometry.left}`);
         assert.ok(Math.abs(geometry.rowLeft - geometry.left) <= 0.5, 'row inset');
-        assert.ok(Math.abs(geometry.rowWidth - geometry.width) <= 1, 'row does not fill table');
+        assert.ok(geometry.rowWidth >= geometry.width - 1, 'rows must fill or horizontally scroll within the table');
         assert.ok(geometry.width >= width - 1, 'table does not fill page');
       }
     }

@@ -22,5 +22,10 @@
   "@talkdesk/cobalt-react-theme-provider": "4.6.3",
   "@talkdesk/cobalt-react-typography": "3.0.2",
   "@talkdesk/cobalt-react-viewport-provider": "2.2.5",
-  "@talkdesk/cobalt-theme-base": "2.5.0"
+  "@talkdesk/cobalt-theme-base": "2.5.0",
+  "@talkdesk/cobalt-react-tooltip": "1.0.1",
+  "classnames": "2.5.1",
+  "echarts": "6.0.0",
+  "@talkdesk/cobalt-react-popover": "1.2.1",
+  "@talkdesk/cobalt-react-chat-bubble": "2.2.5"
 }

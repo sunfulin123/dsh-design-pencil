@@ -8,7 +8,7 @@ next to a minimum width for the app, and it decides between them by what the use
 gives the rules, the window widths they lead to, and how much width an app ends up with.
 
 :::note
-Checked against the Workspace source code in October 2026. Where the code and the Workspace design guidance
+Checked against the Workspace source code in Atlas revision 7014efc11 (November 2026). Where the code and the Workspace design guidance
 disagree, this page follows the code and lists the difference under [Open questions](#open-questions).
 :::
 
@@ -24,9 +24,9 @@ window.
 
 ## How Workspace shares the width
 
-1. **It starts from the window's width** and sets aside 418px: 360px for the app and 58px for the dock.
+1. **It starts from the window's width** and sets aside 422px: 360px for the app, 48px for the dock and 14px for the main-area borders and gap.
 2. **It goes through the parts the user wants open**, most recently opened first: the drawer (212px), the
-   secondary area (360px) and, **behind a feature flag**, the expanded dock (182px more).
+   secondary area (360px) and, **behind a feature flag**, the expanded dock (192px more).
 3. **It shows each part while the remaining width covers it**, and stops at the first one that doesn't fit.
    The parts after it stay hidden too, even if they would have fitted.
 
@@ -42,13 +42,13 @@ default.
 | Window width    | What can show beside the app                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Up to 640px     | Neither the drawer nor the secondary area. The drawer opens only on hover, over the app.                                              |
-| 641px to 777px  | The drawer, unless the secondary area is on and comes first in the order: then nothing shows (see [Open questions](#open-questions)). |
-| 778px to 989px  | The drawer or the secondary area: the one the user opened last.                                                                       |
-| 990px and wider | Both.                                                                                                                                 |
+| 641px to 781px  | The drawer, unless the secondary area is on and comes first in the order: then nothing shows (see [Open questions](#open-questions)). |
+| 782px to 993px  | The drawer or the secondary area: the one the user opened last.                                                                       |
+| 994px and wider | Both.                                                                                                                                 |
 
-The expanded dock needs 182px on top of these, and is never shown up to 640px.
+The expanded dock needs 192px on top of these, and is never shown up to 640px.
 
-In practice, this means that between 778px and 989px wide, opening one of the drawer and the secondary area
+In practice, this means that between 782px and 993px wide, opening one of the drawer and the secondary area
 hides the other, and closing it brings the other back.
 
 ### What the user sees
@@ -58,8 +58,8 @@ column says otherwise.
 
 | Case                                                      | In the guidance                                              | In the code                                                                             |
 | --------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| First sign-in, large window                               | The drawer and the secondary area are open                   | Both open from 990px                                                                    |
-| First sign-in, medium window                              | The secondary area is open and the drawer closed             | The same from 778px to 989px; from 641px to 777px, neither shows                        |
+| First sign-in, large window                               | The drawer and the secondary area are open                   | Both open from 994px                                                                    |
+| First sign-in, medium window                              | The secondary area is open and the drawer closed             | The same from 782px to 993px; from 641px to 781px, neither shows                        |
 | First sign-in, small window                               | Both are closed; the drawer opens on hover                   | The same                                                                                |
 | Moving to another app                                     | The drawer and the secondary area stay as they were          | The same; an app without sections has no drawer                                         |
 | Both kept open, widening from small to large              | The secondary area opens first, then the drawer              | The one the user opened last comes first; the secondary area, if the user hasn't chosen |
@@ -89,21 +89,22 @@ Preferences are kept in the browser's storage, so they don't follow the user to 
 
 The app's width is the window's width minus:
 
-* **58px** for the dock (240px when expanded);
+* **48px** for the dock (240px when expanded);
 * **212px** when the drawer is open beside the app, or **16px** for the drawer's closed strip (10px up to 640px)
   when the app has sections. An app without sections has no strip;
-* the secondary area's width when it's open: **400px** by default.
+* the secondary area's width when it's open: **400px** by default, plus the **2px** resize separator when enabled;
+* the main-area chrome: **13px** with a drawer strip, or **14px** without one, above 640px. At smaller widths the end/bottom gap and end border disappear, leaving a **1px** start border with a drawer or **2px** without one.
 
 Some examples, for an app with sections:
 
 | Window                           | Open beside the app       | App width | Cobalt viewport in the app |
 | -------------------------------- | ------------------------- | --------- | -------------------------- |
-| 424px, desktop app on first open | Nothing (strip only)      | 356px     | Small                      |
-| 1024px                           | Drawer                    | 754px     | Medium                     |
-| 1024px                           | Drawer and secondary area | 354px     | Small                      |
-| 1280px                           | Drawer and secondary area | 610px     | Small                      |
-| 1440px                           | Drawer and secondary area | 770px     | Medium                     |
-| 1920px                           | Drawer and secondary area | 1250px    | Large                      |
+| 424px, desktop app on first open | Nothing (strip only)      | 365px     | Small                      |
+| 1024px                           | Drawer                    | 751px     | Medium                     |
+| 1024px                           | Drawer and secondary area | 349px     | Small                      |
+| 1280px                           | Drawer and secondary area | 605px     | Small                      |
+| 1440px                           | Drawer and secondary area | 765px     | Medium                     |
+| 1920px                           | Drawer and secondary area | 1245px    | Large                      |
 
 **Design every app to work at 360px wide, and to stay usable a little below it.** The Workspace guidance
 expects over 80% of agents to use the desktop app in a small window next to their CRM, and on many common
@@ -121,11 +122,11 @@ do, follow the code.
 * **Priority.** The guidance gives a fixed priority: the app, then the secondary area, then the drawer. The
   code uses the order in which the user last opened them.
 * **Everything open from large.** The guidance says everything can be open at a large viewport. The code needs
-  a 990px window for the drawer and the secondary area together, and more for the expanded dock.
+  a 994px window for the drawer and the secondary area together, and more for the expanded dock.
 * **First sign-in.** The guidance says that in a medium viewport, the secondary area starts open and the drawer
-  closed. In the code that's what the default order produces between 778px and 989px; from 990px both start
-  open, and up to 777px neither shows (next point).
-* **Nothing shown between 641px and 777px.** When both the secondary area and the drawer are on and the
+  closed. In the code that's what the default order produces between 782px and 993px; from 994px both start
+  open, and up to 781px neither shows (next point).
+* **Nothing shown between 641px and 781px.** When both the secondary area and the drawer are on and the
   secondary area comes first in the order, which is the default, neither shows: the secondary area doesn't
   fit, and Workspace stops before the drawer, which would.
 * **The app gets less than 360px.** Workspace checks the space with a 360px secondary area and leaves out the

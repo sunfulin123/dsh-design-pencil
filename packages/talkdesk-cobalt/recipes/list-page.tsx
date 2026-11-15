@@ -7,7 +7,6 @@ import Toolbar, {
   StartContent,
   EndContent,
   Search,
-  Filters,
 } from '@talkdesk/cobalt-marketplace-react-toolbar';
 import Button from '@talkdesk/cobalt-react-button';
 import { Checkbox } from '@talkdesk/cobalt-react-checkbox';
@@ -18,9 +17,14 @@ import Icon from '@talkdesk/cobalt-react-icon';
 import { Link } from '@talkdesk/cobalt-react-link';
 import { Menu, MenuItem, MenuTrigger } from '@talkdesk/cobalt-react-menu';
 import Message from '@talkdesk/cobalt-react-message';
-import { BasicTable, SidePanel, SortDirection, type BasicTableColumn } from '../components/extensions/src';
-import Tab from '@talkdesk/cobalt-react-tab';
-import { Tag } from '@talkdesk/cobalt-react-tag';
+import {
+  AppPage,
+  BasicTable,
+  SidePanel,
+  SortDirection,
+  type BasicTableColumn,
+} from '../components/extensions/src';
+import { Tag, TagGroup } from '@talkdesk/cobalt-react-tag';
 import { Heading, Text } from '@talkdesk/cobalt-react-typography';
 import { useViewport } from '@talkdesk/cobalt-react-viewport-provider';
 
@@ -32,6 +36,9 @@ const PAGE_PADDING = { small: 12, medium: 16, large: 24 } as const;
 
 import { SAMPLE_USERS, type User } from './list-page-data';
 import { ListPageDialogs, type UserDraft, type ListWorkflow } from './support/list-page-dialogs';
+import { FilterButton } from './support/filter-button';
+import { ListPageHeader } from './support/list-page-header';
+import { ListPageFilters } from './support/list-page-filters';
 import { StatusTag, TagsCell, DetailRow } from './support/list-user-fields';
 export { SAMPLE_USERS, type User } from './list-page-data';
 
@@ -41,26 +48,6 @@ const isSortKey = (key: string): key is SortKey =>
   ['name', 'role', 'team', 'email', 'active'].includes(key);
 
 /* ---------- cells ---------------------------------------------------------------------- */
-
-/* An active filter, 20px tall as in the design: a small core Tag with a clickable close Icon. Known gaps:
-   core TagGroup won't take a small size (and names every remove button just "Remove"); Marketplace
-   DismissibleTag is small but its close button has no accessible name. The Icon's `accessibilityLabel` names
-   the button. Its 16px target passes WCAG 2.5.8 through the spacing exception: keep chips 8px apart. */
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <Tag size="small" color="light-gray">
-      <Flex alignY="center" gap={1}>
-        {label}
-        <Icon
-          name="close"
-          size="micro"
-          accessibilityLabel={`Remove filter ${label}`}
-          onClick={onRemove}
-        />
-      </Flex>
-    </Tag>
-  );
-}
 
 // Known gap: a Checkbox with no visible label collapses to 0px height and sits off-centre in a table cell;
 // the wrapper gives it its box.
@@ -100,6 +87,7 @@ export default function ListPage({
   const [tab, setTab] = useState<'users' | 'invitations'>('users');
   const [search, setSearch] = useState('');
   const [onlyActive, setOnlyActive] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [sort, setSort] = useState<Record<string, SortDirection>>({ name: SortDirection.ASC });
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -245,7 +233,7 @@ export default function ListPage({
   ];
 
   return (
-    <Flex direction="column" alignX="stretch">
+    <AppPage>
       <span
         id="list-users-search-label"
         style={{
@@ -258,88 +246,25 @@ export default function ListPage({
       >
         Search users
       </span>
-      {/* The page header is built from core parts. Marketplace Header splits its width into three equal columns,
-          which leaves the actions a third of the page: too narrow for five actions. */}
-      <Flex direction="column" alignX="stretch">
-        <Flex alignX="space-between" alignY="start" gap={2} wrap style={{ padding }}>
-          <Flex direction="column" gap={1}>
-            <Heading level={1}>Users</Heading>
-            <Flex alignY="center" gap={2}>
-              <Text variant="description">Manage users and access.</Text>
-              <Button
-                size="small"
-                variation="transparent"
-                disabled={!onRefresh}
-                onPress={onRefresh}
-                prefix={<Icon name="refresh" size="tiny" />}
-              >
-                Refresh
-              </Button>
-            </Flex>
-          </Flex>
-          {/* Natural width beside the title while they fit; when they don't, as in a 768px app, they wrap below
-              it, and on small viewports they also wrap onto more lines. */}
-          <Flex
-            gap={3}
-            alignY="center"
-            style={viewport === 'small' ? { flexWrap: 'wrap' } : { flex: 'none' }}
-          >
-            <Button
-              type="secondary"
-              variation="transparent"
-              disabled={!onBulkManagement || !selected.size}
-              onPress={() => onBulkManagement?.(users.filter((user) => selected.has(user.id)))}
-              prefix={<Icon name="all_inbox" />}
-            >
-              Bulk management
-            </Button>
-            <Divider vertical style={{ height: 40 }} />
-            {/* Icons as in the Figma layout (upload on Export, download on Import); an open question on the
-                List View page, since the opposite reading is common. */}
-            <Button
-              type="primary"
-              variation="outline"
-              disabled={!onExport}
-              onPress={onExport}
-              prefix={<Icon name="upload" />}
-            >
-              Export
-            </Button>
-            <Button
-              type="primary"
-              variation="outline"
-              onPress={() => { setDetails(null); setWorkflow('import'); }}
-              data-testid="list-import"
-              prefix={<Icon name="download" />}
-            >
-              Import
-            </Button>
-            <Button type="primary" data-testid="list-create-user" onPress={() => { setDetails(null); setWorkflow('create'); }}>
-              Create user
-            </Button>
-          </Flex>
-        </Flex>
-        <nav
-          aria-label="Users sections"
-          style={{ display: 'flex', gap: 16, paddingInline: padding }}
-        >
-          {(['users', 'invitations'] as const).map((key) => (
-            <Tab
-              key={key}
-              href={`#${key}`}
-              active={tab === key}
-              aria-current={tab === key ? 'page' : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                setTab(key);
-              }}
-            >
-              {key === 'users' ? 'Users' : 'Invitations'}
-            </Tab>
-          ))}
-        </nav>
-        <Divider />
-      </Flex>
+      <ListPageHeader
+        padding={padding}
+        viewport={viewport}
+        tab={tab}
+        setTab={setTab}
+        selectedCount={selected.size}
+        onRefresh={onRefresh}
+        onExport={onExport}
+        onBulkManagement={
+          onBulkManagement
+            ? () => onBulkManagement(users.filter((user) => selected.has(user.id)))
+            : undefined
+        }
+        onWorkflow={(value) => {
+          setDetails(null);
+          setFiltersOpen(false);
+          setWorkflow(value);
+        }}
+      />
 
       {tab === 'invitations' ? (
         <Flex padding={6}>
@@ -347,7 +272,7 @@ export default function ListPage({
         </Flex>
       ) : (
         <>
-          <Toolbar topBorder={false} data-testid="list-toolbar">
+          <Toolbar topBorder={false} paddingY={1} data-testid="list-toolbar">
             <StartContent style={{ minWidth: 0 }}>
               <Text weight="medium">
                 {scenario === 'permission'
@@ -355,7 +280,7 @@ export default function ListPage({
                   : `${filtered.length} ${filtered.length === 1 ? 'user' : 'users'}`}
               </Text>
             </StartContent>
-            <EndContent style={{ flex: 'none', width: 'auto', gap: 4 }}>
+            <EndContent alignY="center" style={{ flex: 'none', width: 'auto', gap: 4 }}>
               {viewport !== 'small' && (
                 <Search
                   aria-labelledby="list-users-search-label"
@@ -366,9 +291,13 @@ export default function ListPage({
                   onSearch={(value) => changeFilters(() => setSearch(value))}
                 />
               )}
-              <Filters
-                badgeNumber={onlyActive ? 1 : 0}
-                onClick={() => changeFilters(() => setOnlyActive(!onlyActive))}
+              <FilterButton
+                size="medium"
+                activeCount={onlyActive ? 1 : 0}
+                onPress={() => {
+                  setDetails(null);
+                  setFiltersOpen(true);
+                }}
               />
             </EndContent>
           </Toolbar>
@@ -389,10 +318,15 @@ export default function ListPage({
             <StartContent alignY="center" gap={3}>
               <Text>Filters:</Text>
               {onlyActive ? (
-                <FilterChip
-                  label="Active"
+                <TagGroup
+                  aria-label="Active user filters"
+                  size="medium"
                   onRemove={() => changeFilters(() => setOnlyActive(false))}
-                />
+                >
+                  <Tag id="active" textValue="Active">
+                    Active
+                  </Tag>
+                </TagGroup>
               ) : (
                 <Text variant="description">None</Text>
               )}
@@ -414,63 +348,114 @@ export default function ListPage({
               <Text>You do not have permission to manage users.</Text>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', width: '100%' }} data-testid="list-table-scroll">
-              <div style={{ minWidth: 1280 }}>
-                <BasicTable<TableUser>
-                  headers={headers}
-                  data={rows}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageClick={setPage}
-                  defaultSort={{ name: SortDirection.ASC }}
-                  onSortClick={(next) => {
-                    setSort(next);
-                    setPage(1);
-                  }}
-                  isFetching={scenario === 'loading'}
-                  isRequestError={scenario === 'error'}
-                  onRefresh={onRefresh}
-                  maxPagesCount={5}
-                  messageComponent={
-                    <Message variation="info" style={{ padding: '12px 24px' }} data-testid="list-selection-message">
-                      <Flex alignY="center" gap={2}>
-                        <Icon name="info_outline" />
-                        <Text weight="medium">Select users to perform batch actions.</Text>
-                      </Flex>
-                    </Message>
-                  }
-                  emptyStateComponent={
-                    <Text>
-                      {scenario === 'empty' || !users.length
-                        ? 'There are no users yet.'
-                        : 'No users match your search or filters.'}
-                    </Text>
-                  }
-                />
-              </div>
+            <div
+              style={{ flex: '1 1 0', minHeight: 0, overflow: 'hidden', width: '100%' }}
+              data-testid="list-table-scroll"
+            >
+              <BasicTable<TableUser>
+                minTableWidth={1280}
+                headers={headers}
+                data={rows}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageClick={setPage}
+                defaultSort={{ name: SortDirection.ASC }}
+                onSortClick={(next) => {
+                  setSort(next);
+                  setPage(1);
+                }}
+                isFetching={scenario === 'loading'}
+                isRequestError={scenario === 'error'}
+                onRefresh={onRefresh}
+                maxPagesCount={5}
+                messageComponent={
+                  <Message
+                    variation="info"
+                    style={{ padding: '12px 24px' }}
+                    data-testid="list-selection-message"
+                  >
+                    <Flex alignY="center" gap={2}>
+                      <Icon name="info_outline" />
+                      <Text weight="medium">Select users to perform batch actions.</Text>
+                    </Flex>
+                  </Message>
+                }
+                emptyStateComponent={
+                  <Text>
+                    {scenario === 'empty' || !users.length
+                      ? 'There are no users yet.'
+                      : 'No users match your search or filters.'}
+                  </Text>
+                }
+              />
             </div>
           )}
         </>
       )}
 
-      <div role="status" aria-live="polite" data-testid="list-workflow-status">{notice}</div>
-      {workflow && <ListPageDialogs key={workflow} workflow={workflow} users={users} onClose={() => setWorkflow(null)}
-        onCreate={async draft => {
-          await onCreate?.(draft);
-          if (!onCreate) setCreated(previous => [...previous, { ...draft, id: crypto.randomUUID(), queues: [], integration: 'Default', active: true }]);
-          setNotice(`Created ${draft.name}.`);
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="list-workflow-status"
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clipPath: 'inset(50%)',
         }}
-        onImport={async file => { await onImport?.(file); setNotice(`Selected file: ${file.name}`); }}/>}
+      >
+        {notice}
+      </div>
+      {workflow && (
+        <ListPageDialogs
+          key={workflow}
+          workflow={workflow}
+          users={users}
+          onClose={() => setWorkflow(null)}
+          onCreate={async (draft) => {
+            await onCreate?.(draft);
+            if (!onCreate)
+              setCreated((previous) => [
+                ...previous,
+                {
+                  ...draft,
+                  id: crypto.randomUUID(),
+                  queues: [],
+                  integration: 'Default',
+                  active: true,
+                },
+              ]);
+            setNotice(`Created ${draft.name}.`);
+          }}
+          onImport={async (file) => {
+            await onImport?.(file);
+            setNotice(`Selected file: ${file.name}`);
+          }}
+        />
+      )}
+      {filtersOpen && (
+        <ListPageFilters
+          active={onlyActive}
+          onClose={() => setFiltersOpen(false)}
+          onApply={(value) => {
+            changeFilters(() => setOnlyActive(value));
+            setFiltersOpen(false);
+          }}
+        />
+      )}
       <SidePanel
         title="User details"
         visible={details !== null}
         onClose={() => setDetails(null)}
         closeLabel="Close user details"
-        actions={[{
-          label: 'Edit',
-          disabled: !onEdit,
-          onClick: () => details && onEdit?.(details),
-        }]}
+        actions={[
+          {
+            label: 'Edit',
+            disabled: !onEdit,
+            onClick: () => details && onEdit?.(details),
+          },
+        ]}
       >
         {details && (
           <Flex direction="column" gap={4} width="100%">
@@ -496,6 +481,6 @@ export default function ListPage({
           </Flex>
         )}
       </SidePanel>
-    </Flex>
+    </AppPage>
   );
 }

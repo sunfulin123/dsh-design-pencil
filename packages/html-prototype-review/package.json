@@ -1,0 +1,9 @@
+{
+  "name": "@openpencil/html-prototype-review",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "DSH_E2E_CHROME=1 node --test ../dsh-node-runtime/html-review*.test.mjs"
+  }
+}

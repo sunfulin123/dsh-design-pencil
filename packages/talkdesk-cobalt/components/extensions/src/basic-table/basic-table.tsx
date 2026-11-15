@@ -33,7 +33,6 @@ import {
 const DEFAULT_MAX_PAGES = 9;
 const DEFAULT_LOADING_ROWS = 5;
 const DEFAULT_PAGINATION_HEIGHT = 50;
-const MIN_TABLE_BODY_HEIGHT = 200;
 
 // ---------------------------------------------------------------------------
 // useTableLayoutMeasure — keep body height math aligned with the wrapper.
@@ -156,6 +155,8 @@ export type BasicTableColumn<T extends BasicTableBaseType> = {
 };
 
 export type BasicTableProps<T extends BasicTableBaseType> = {
+  /** Minimum width of the scrolling table only; pagination keeps the host width. */
+  minTableWidth?: number | string;
   /** Column definitions. */
   headers: Array<BasicTableColumn<T>>;
   /** Row data. Each item should have a unique `id`. */
@@ -212,6 +213,7 @@ const BasicTableInner = <T extends BasicTableBaseType>({
   onRefresh,
   defaultSort = {},
   headers,
+  minTableWidth,
   data,
   emptyStateComponent,
   isMultiSorting,
@@ -295,7 +297,7 @@ const BasicTableInner = <T extends BasicTableBaseType>({
 
     const calcPx = getConstrainedHeight(wrapperHeight, viewportHeight);
 
-    if (calcPx > MIN_TABLE_BODY_HEIGHT) {
+    if (calcPx > 0) {
       return {
         height: `${calcPx}px`,
         overflowY: 'auto' as const,
@@ -440,7 +442,7 @@ const BasicTableInner = <T extends BasicTableBaseType>({
       forwardedRef={ref}
     >
       <Box className={styles.tableArea}>
-        <Table>
+        <Table style={{ minWidth: minTableWidth }}>
           <Head>
             <Row>
               {renderExpandedRow && <HeadCell style={{ flex: '0 0 40px', minWidth: 40 }} />}

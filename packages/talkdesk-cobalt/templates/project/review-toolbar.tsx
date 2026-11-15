@@ -7,7 +7,7 @@ import { ReviewDropdown } from './review-dropdown';
 import './review-toolbar.css';
 const presets: { id: WindowPreset; text: string }[] = [
   { id: 'fill', text: 'Fill window' }, ...(['1920', '1440', '1280', '1024', '640'] as const).map(id => ({ id, text: `${id} px` })),
-  { id: 'desktop', text: 'Desktop app · 424 × 540' },
+  { id: 'mobile', text: 'Phone · 390 × 844' },
 ];
 const names = { success: 'Ready', loading: 'Loading', empty: 'Empty', error: 'Error', partial: 'Partial', permission: 'No access' };
 function Monitor() { return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M12 17v4m-5 0h10"/></svg>; }
@@ -15,7 +15,7 @@ function Sliders() { return <svg aria-hidden="true" width="18" height="18" viewB
 export function PrototypeBar({ appWidth }: { appWidth: number }) {
   const { state, dispatch, layout } = useShell();
   const enabled = FEATURE_FLAGS.filter(flag => state.flags[flag.id]).length;
-  const size = state.preset === 'fill' ? 'Fill' : state.preset === 'desktop' ? '424 × 540' : state.preset;
+  const size = state.preset === 'fill' ? 'Fill' : state.preset === 'mobile' ? '390 × 844' : state.preset;
   const breakpoint = appWidth <= 640 ? 'Small' : appWidth <= 960 ? 'Medium' : 'Large';
   return <div className="review-toolbar" role="region" aria-label="Prototype controls" data-testid="prototype-toolbar">
     <ReviewDropdown id="size" label="Window size" trigger={<><Monitor/><span className="review-label">Size</span><span id="prototype-size-value" data-testid="prototype-size-value">{size}</span></>}>
@@ -39,6 +39,6 @@ export function PrototypeBar({ appWidth }: { appWidth: number }) {
     <button type="button" className="review-reset" aria-label="Reset prototype settings" data-testid="prototype-reset" onClick={() => {
       try { localStorage.removeItem('workspace-shell:preferences'); } catch { /* Storage may be unavailable. */ }
       location.reload();
-    }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M20 7v5h-5"/><path d="M20 12a8 8 0 1 0-2.3 5.7M20 7l-3-3"/></svg><span className="review-label">Reset</span></button>
+    }}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5"/></svg><span className="review-label">Reset</span></button>
   </div>;
 }

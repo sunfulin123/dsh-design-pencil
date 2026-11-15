@@ -154,19 +154,19 @@
     "providers/core/surface-provider/surface-provider.md": "ac874b3e213d306463925a8bc889c792c37de53651c454ff5e4f6ddb7c1e6909",
     "providers/core/theme-provider/theme-provider.md": "6a266c2e43d2474de37eae3be9bb728ec62676d8aa18d6e2a1e19b5aa0bb6771",
     "providers/core/viewport-provider/viewport-provider.md": "0068d35901a14934f9b71f0e147a17d35cd1817559be33034103927d96243de6",
-    "registry.json": "213e81da60cb7a60bc82171195233c2ea62d1b81abccb00d225dc7da73ac0d17",
+    "registry.json": "f25cca0ef89dfc4c33d7f9d3aed9ea07bf0bdfd4fa23dbfacebb5d29709438b9",
     "utils/marketplace/datepicker-utils/datepicker-utils.md": "e88e4728ab7a8a51bb0437585bf61cabb16083ac2a821e2fb89d1119590533b3",
     "utils/marketplace/dropdown-utils/dropdown-utils.md": "8e7fb8dc2415f1f19a621167cc31c23afcf41d93d0fa3bca98246ffac1cef591",
     "workspace/app-loading/app-loading.md": "f570a80981a1aaa3af95340e29fe2b3415e3aaffb6c943e55adc44ef889ad3e9",
     "workspace/app-requests/app-requests.md": "ff65cee495a573d8b246e1a258cf011b8e51faaf6ae9b67ebba6980feefe4787",
     "workspace/contributions/contributions.md": "192f1ce21f140eb257186d881e700e5a1ba975a541227ddad713e5eddc031a3c",
     "workspace/desktop-app/desktop-app.md": "197c2b0a1afa17712d590ef3b049a62b5efcd3597b753042b8663d1594a6108d",
-    "workspace/dock-and-drawer/dock-and-drawer.md": "9bd40148398d9675eeb940bd8fd3aaca044dd0893168ecc44489ada80f4bf5f6",
+    "workspace/dock-and-drawer/dock-and-drawer.md": "f9fc2e83bef5ad1c1dd92aa7519936c96fb450116d1a65715776667564afe8da",
     "workspace/messages/messages.md": "3f9663ef5736734a20eb6b54065d532a0a897a0c7716fe87520de8e0af4dc4c8",
-    "workspace/overview/overview.md": "33df52045fc1992e14a060ff977cfa97efd9d9da6d5f3e09479200e3c7405a15",
+    "workspace/overview/overview.md": "c692184d3e1b6188cc22d12b8eb4e6178fc5229f6843fbf08ee30e58822480e9",
     "workspace/secondary-area/secondary-area.md": "abb70139e386107ec19f6778a3b55e3d0dec924be733a2c8e8d60bb10988c934",
-    "workspace/space-and-viewports/space-and-viewports.md": "68e5b3b3f2133b8aed9f02887c75e7c8e265f5046be8fd1c8f811d1e337a548c",
-    "workspace/title-bar/title-bar.md": "9564bd24350cd330fe43324ff876a0a31b706956ed55f92ab4ec776eba7bab84",
+    "workspace/space-and-viewports/space-and-viewports.md": "9c3f49a530e3000ab0c011d9a0a993a7aed2396cf009a246429eac2ad0ea4b60",
+    "workspace/title-bar/title-bar.md": "345e3835dd04bc0476f2fb6a1e3e5b90b4365abeac4d75d86ff76364b9a80ae0",
     "assets/3dots/anatomy.png": "02594624044d109e447d1a63d1b490939a73b1becbda82396bd4fbd740c0a4ce",
     "assets/3dots/guidelines-when-to-use.gif": "12599cf22dab2f1a34f5ee85f704dc39772b500c3c08755cffac431897e18a4c",
     "assets/3dots/orientation-horizontal.png": "89f36ed69ad74264f267f27ccedd24bfa3df2297240e2c3e99031026d145332d",
@@ -1382,7 +1382,11 @@
     "layout-templates/form-page/form-page.md": "Owned recipe integration entry links the maintained TSX rather than duplicating executable code; ListPage uses Extensions BasicTable and marketplace Toolbar.",
     "components/marketplace/toolbar/toolbar.md": "Link the verified maintained ListPage composition and document pinned Search accessibility/state behavior; preserve migrated example compile qualifications.",
     "registry.json": "Locally adapted pages point narrative content to maintained Markdown and recipe sources; package APIs and migrated example check results remain intact. Installation examples use pnpm for the maintained prototype workflow.",
-    "components/marketplace/message/message.md": "Preserve component APIs and compile qualifications. Installation examples use pnpm for the maintained prototype workflow."
+    "components/marketplace/message/message.md": "Preserve component APIs and compile qualifications. Installation examples use pnpm for the maintained prototype workflow.",
+    "workspace/title-bar/title-bar.md": "Align maintained Workspace chrome guidance with pinned Atlas redesign deb486689; retain historical image provenance and distinguish owned compact behavior.",
+    "workspace/overview/overview.md": "Align maintained Workspace chrome guidance with pinned Atlas redesign deb486689; retain historical image provenance and distinguish owned compact behavior.",
+    "workspace/space-and-viewports/space-and-viewports.md": "Align maintained Workspace chrome guidance with pinned Atlas redesign deb486689; retain historical image provenance and distinguish owned compact behavior.",
+    "workspace/dock-and-drawer/dock-and-drawer.md": "Align Dock dimensions and shared chrome with pinned Atlas redesign; retain historical images."
   },
   "originalHashes": {
     "get-started/build-with-ai/build-with-ai.md": "4ddc4c65818cf2b9038afdf6b7952499f1260508e1a13c00a12c91350316bbe1",
@@ -1392,6 +1396,10 @@
     "layout-templates/form-page/form-page.md": "d4bd912b192a55b7b2eeb0cead351211033060a5e78211716820f4a6594daab8",
     "components/marketplace/toolbar/toolbar.md": "6293083983f3e6044d31adcf7da6b8e59b3af20cdea6007e4a696bf483e14cf1",
     "registry.json": "312b33f7744a631d2c818773627af7df84adf9722d21039ea11a2c7e67b8b8ce",
-    "components/marketplace/message/message.md": "5c37b6e9fc5b4f56f2da31014633d14dec4d37db1715635bce842c433c1cf5ac"
+    "components/marketplace/message/message.md": "5c37b6e9fc5b4f56f2da31014633d14dec4d37db1715635bce842c433c1cf5ac",
+    "workspace/title-bar/title-bar.md": "9564bd24350cd330fe43324ff876a0a31b706956ed55f92ab4ec776eba7bab84",
+    "workspace/overview/overview.md": "33df52045fc1992e14a060ff977cfa97efd9d9da6d5f3e09479200e3c7405a15",
+    "workspace/space-and-viewports/space-and-viewports.md": "68e5b3b3f2133b8aed9f02887c75e7c8e265f5046be8fd1c8f811d1e337a548c",
+    "workspace/dock-and-drawer/dock-and-drawer.md": "9bd40148398d9675eeb940bd8fd3aaca044dd0893168ecc44489ada80f4bf5f6"
   }
 }

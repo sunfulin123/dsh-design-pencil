@@ -72,3 +72,7 @@ Each object in the `actions` array is spread onto a `StatefulButton`:
 | `disabled` | `boolean`                                               | `false`       | Disables the button                                  |
 | `onClick`  | `(e: MouseEvent) => void`                               | —             | Click handler                                        |
 | `data-qa`  | `string`                                                | —             | QA selector for the individual button                |
+
+## Nested dropdowns
+
+SidePanel supplies a local Cobalt PortalProvider around its body. Marketplace dropdowns, including the copied MultiDropdown, therefore stay inside the modal focus and stacking boundary. Do not move their popups to a root portal behind the panel.

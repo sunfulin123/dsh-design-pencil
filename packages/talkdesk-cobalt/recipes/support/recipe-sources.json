@@ -1,0 +1,31 @@
+{
+  "source": "wfm-app",
+  "revision": "87bdd7763bf6f74e1422f559680afdea584e9f52",
+  "adaptation": "Read-only reference patterns; standalone Cobalt layout and synthetic screenshot data. No WFM runtime, services, authentication or stores are copied. Schedule event colors represent sample domain statuses; other surfaces and charts use theme tokens.",
+  "files": [
+    {
+      "path": "packages/avalon/src/components/forecast/ForecastChart.tsx",
+      "sha256": "40b8fe0a4049464054c07f837386827cae022e0d0a38d02ce207bbf7f8f41834"
+    },
+    {
+      "path": "packages/avalon/src/components/insights/InsightSummaryChart.tsx",
+      "sha256": "acc66ce5877b0e236534b2cd650664eef2ac6d5625f1e8cfbeda76e2ed3d00f6"
+    },
+    {
+      "path": "packages/avalon/src/utils/chartTheme.ts",
+      "sha256": "85a429d6dfc223da8d834d383350d139a0f575b03f640fa30ae7ef4228277a6a"
+    },
+    {
+      "path": "packages/scenarios/src/components/comparison/v2/stackedLineChart.options.ts",
+      "sha256": "f58a887b40c052688e7387e9599aeeda717694b6c25aa3c55f1c8f29c5e9be9d"
+    },
+    {
+      "path": "packages/configurations/src/components/BusinessHours/SingleShiftDistributionWeek.tsx",
+      "sha256": "0b363487a7b8453f980ce1d2b13bab0442a8554ffd2efccf1ec5c9e3ec446357"
+    },
+    {
+      "path": "packages/atlantis/src/components/teamSchedule/TeamCalendarTimeline.tsx",
+      "sha256": "3c8f966632131070764779c733c90446052e3d0bc458daaa149c9aa106418c59"
+    }
+  ]
+}

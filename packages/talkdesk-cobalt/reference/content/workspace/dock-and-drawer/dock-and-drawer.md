@@ -1,5 +1,7 @@
 # Dock and drawer
 
+> This maintained page follows Atlas redesign `deb486689`. Imported screenshots retain earlier shell appearances; the generated prototype owns its updated geometry.
+
 ## Guidance
 
 The dock is the rail of app icons Workspace draws down the left of the window, and the drawer is the panel
@@ -19,9 +21,9 @@ disagree, this page follows the code and lists the difference under [Open questi
 
 The first level of navigation: one button per app.
 
-* **Size:** 58px wide, including a 2px border on its right. Background Gray 2 (`--gray-2`), border Secondary 4
+* **Size:** 48px wide, without a rail border on its right. Background follows the shared light/dark chrome; the application frame owns the Secondary 4 border
   (`--secondary-4`).
-* **App buttons:** 36 × 36px circles, 2px apart, with a 24px icon in Gray 11 (`--gray-11`). The hovered button
+* **App buttons:** 32 × 32px circles, 4px apart, with a 20px icon in Gray 11 (`--gray-11`). The hovered button
   turns Gray 4 (`--gray-4`). The current app's button is Primary 9 (`--primary-9`) with its icon in the primary
   contrast colour: the whole button fills, with no separate marker.
 * **Spacing:** 8px of padding around the buttons. Dividers are 2px lines in Gray 4 (`--gray-4`), with 8px
@@ -176,8 +178,8 @@ designs differ from the code, the difference is listed under [Open questions](#o
 Differences between the code and the Workspace design guidance, for the Workspace team to settle. Until they
 do, follow the code.
 
-* **Dock width.** The guidance gives 64px and the App Shell Figma component 54px. The code is 58px.
-* **App buttons.** The App Shell Figma component has 40px buttons, 4px apart. The code has 36px buttons, 2px
+* **Dock width.** The guidance gives 64px and the App Shell Figma component 54px. The pinned Atlas redesign uses 48px.
+* **App buttons.** The App Shell Figma component has 40px buttons, 4px apart. The code has 32px buttons, 4px
   apart.
 * **Drawer width.** The App Shell Figma component is 216px open. The code is 212px.
 * **Drawer default.** The design guidance says the drawer starts hidden. In the code it starts open beside the

@@ -106,7 +106,9 @@ embedding host override > 临时 MCP override > 设备偏好。
 [design-tool-text](packages/dsh-node-runtime/design-tool-text.mjs) 定义，插件只读取。
 运行时构建将核心 skill 复制到 wasm 构建产物；发布 staging 校验源码一致并写入哈希清单。
 
-Cobalt Workspace HTML 原型通过同一 Skill 资源中的 `cobalt-project.mjs` 创建 React 18/Vite 项目；工具从版本和 SHA-256 固定的官方 `ai-docs` shell 快照复制源码，仅对项目副本应用自有多应用路由和顶部状态控件适配。`talkdesk-prototype.json` 注册 Dock 应用和业务页面，组件与设计规范读取 HTML Skill 内的 `cobalt-reference/content/` 本地资料库，`talkdesk-cobalt` 风格内置设计契约，不在用户会话下载文档。工具不启动进程或安装依赖；SS Preview 管运行环境和服务，编译产物 `delivery/index.html` 沿用现有静态 POC 交接。其他风格和直接 canvas 路线保持原有边界。
+普通 HTML POC 的尺寸/状态预览源码归属独立的 [html-prototype-review](packages/html-prototype-review/README.md) 模块，通过复制导出到核心 HTML Skill 的 [review helper](crates/op-ai-skills/skills/synapse-design-html/references/html-review.md) 提供：生成的外层工具栏调整独立业务 iframe 的真实视口，以业务页适配器和 URL 状态选择切换内容；没有 Cobalt/React 依赖或 Feature flags。截图和 DOM 检查仍直接进入业务页，完整来源指纹包含预览外层与适配资源。此能力沿用静态 POC 交接，不新增 SS Host/Client 或 MCP 协议。
+
+Cobalt Workspace HTML 原型通过同一 Skill 资源中的 `cobalt-project.mjs` 创建 React 18/Vite 项目；工具从版本和 SHA-256 固定的官方 `ai-docs` shell 快照复制源码，仅对项目副本应用自有 Atlas 外壳展示、几何计算、多应用路由和顶部状态控件适配。`talkdesk-prototype.json` 注册 Dock 应用和业务页面，组件与设计规范读取 HTML Skill 内的 `cobalt-reference/content/` 本地资料库，`talkdesk-cobalt` 风格内置设计契约，不在用户会话下载文档。工具不启动进程或安装依赖；SS Preview 管运行环境和服务，编译产物 `delivery/index.html` 沿用现有静态 POC 交接。其他风格和直接 canvas 路线保持原有边界。
 
 ## 变量集合与内置库
 

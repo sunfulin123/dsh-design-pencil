@@ -37,7 +37,7 @@ describes that behaviour, and a ready-made stand-in shell reproduces it: see
 
 | Part           | What it does                                                                                                                                                                        | Drawn by                                                 |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Title bar      | The 40px bar across the top. Holds search, notifications, the user's status and profile, and the secondary area toggle, among others; on the desktop app, also the window controls. | Workspace                                                |
+| Title bar      | The 44px bar across the top. Holds search, notifications, the user's status and profile, and the secondary area toggle, among others; on the desktop app, also the window controls. | Workspace                                                |
 | Dock           | The rail of app icons on the left: the first level of navigation.                                                                                                                   | Workspace                                                |
 | Drawer         | The current app's sections: the second level of navigation.                                                                                                                         | Workspace, from the app's menu configuration             |
 | Banners        | Messages across the top of both areas, from Workspace or from an app.                                                                                                               | Workspace                                                |
@@ -160,7 +160,7 @@ do, follow the code's value, which is what users see.
 * **Desktop app size.** The guidance says the desktop app first opens at 424 × 640px. The code opens it at
   424 × 540px, its minimum, and 640 appears nowhere in it.
 * **Dock width.** The guidance gives 64px, and works out the 424px desktop width as a 360px app plus a 64px
-  dock. The App Shell Figma component is 54px. In the web code it's 58px.
+  dock. The App Shell Figma component is 54px. The pinned Atlas redesign uses 48px; older reference images show earlier shell versions.
 * **Headless mode.** The code supports it, but where Workspace runs headless isn't documented.
 * **Feature flags.** Which of the flagged behaviours are on in production.
 * **Dark mode outside Workspace.** The theme stylesheet on npm (`@talkdesk/cobalt-theme-base` 2.5.0) has light

@@ -112,7 +112,7 @@ export const FormField: React.FC<FormFieldProps> = ({
     <Box data-component={dataComponent} data-qa={dataQa} width="100%">
       {/* Label row — label on the left, counter tag on the right. Only rendered when label is provided. */}
       {(label || showCounter) && (
-        <Flex alignX="space-between" alignY="center" paddingBottom="1">
+        <Flex alignX="space-between" alignY="center" paddingBottom="2">
           <Flex alignY="center" gap="1">
             {label && (
               <Label
@@ -175,7 +175,11 @@ export const FormField: React.FC<FormFieldProps> = ({
           )}
         </InputGroup>
       ) : (
-        children
+        // Box uses a zero line-height layout baseline. Restore body line-height so
+        // text-labelled controls, especially Checkbox, reserve their visible height.
+        <div data-qa={dataQa ? `${dataQa}-control` : undefined} style={{ width: '100%', lineHeight: '20px' }}>
+          {children}
+        </div>
       )}
 
       {/* Static description — always shown in neutral grey, no icon */}

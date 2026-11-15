@@ -1,4 +1,5 @@
 import React from 'react';
+import PortalProvider from '@talkdesk/cobalt-react-portal-provider';
 import StatefulButton from '@talkdesk/cobalt-marketplace-react-stateful-button';
 import Box from '@talkdesk/cobalt-react-box';
 import Button from '@talkdesk/cobalt-react-button';
@@ -125,6 +126,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   'data-component': dataComponent = 'WFMSidePanel',
 }) => {
   const layout = panelLayouts[variant];
+  const portalId = `cobalt-side-panel-${React.useId().replaceAll(':', '')}`;
 
   return (
     <Box data-component={dataComponent} style={{ position: 'relative', zIndex }}>
@@ -184,7 +186,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
           {/* ── Scrollable body ── */}
           <Flex grow scrollable direction="column" padding={layout.bodyPadding} width="100%">
-            {children}
+            {/* Keep legacy marketplace popups inside the modal's focus and stacking boundary. */}
+            <div id={portalId} style={{ width: '100%', minWidth: 0 }}>
+              <PortalProvider containerId={portalId}>{children}</PortalProvider>
+            </div>
           </Flex>
 
           {/* ── Fixed footer with right-aligned actions ── */}

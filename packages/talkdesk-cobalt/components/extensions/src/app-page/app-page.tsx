@@ -122,13 +122,13 @@ export const AppPageHeader: React.FC<AppPageHeaderProps> = ({
   children,
   isBordered = true,
   paddingX = 6,
-  paddingY = 6,
+  paddingY = 4,
   'data-qa': dataQa,
 }) => (
   // Outer Box is the flex item in AppPage's column (flexShrink:0).
   // Inner Box carries the padding. Divider sits below it as a block child,
   // producing the bottom border without affecting AppPageMain's height.
-  <Box data-qa={dataQa} width="100%">
+  <Box data-qa={dataQa} width="100%" style={{ flexShrink: 0 }}>
     <Box grow paddingX={paddingX} paddingY={paddingY} style={{ flexShrink: 0 }}>
       {children}
     </Box>
@@ -225,7 +225,7 @@ export const AppPage: React.FC<AppPageProps> = ({
     data-qa={dataQa}
     direction="column"
     height="100%"
-    style={{ overflow: 'hidden' }}
+    style={{ overflow: 'hidden', minHeight: 0, minWidth: 0 }}
   >
     {children}
   </Flex>

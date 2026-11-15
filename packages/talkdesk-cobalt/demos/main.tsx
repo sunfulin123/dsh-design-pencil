@@ -13,7 +13,7 @@ const recipes = import.meta.glob<{ default: React.ComponentType<{ scenario?: str
   '../recipes/**/*.tsx',
 );
 const params = new URLSearchParams(location.search);
-const path = params.get('entry') ?? 'recipes/extensions/users-list.tsx';
+const path = params.get('entry') ?? 'recipes/card-widgets.tsx';
 const load = { ...examples, ...recipes }['../' + path];
 loadThemeStylesheet();
 setColorScheme(params.get('scheme') === 'dark' ? 'dark' : 'light');

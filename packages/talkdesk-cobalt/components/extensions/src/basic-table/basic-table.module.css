@@ -24,7 +24,8 @@
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* ---- Table ---- */
@@ -156,3 +157,5 @@
   background: var(--surface-elevation-1);
   flex: 0 0 auto;
 }
+
+.wrapper .pagination nav { max-width: 100%; overflow-x: auto; }

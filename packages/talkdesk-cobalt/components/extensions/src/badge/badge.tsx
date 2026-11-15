@@ -72,24 +72,12 @@ export const Badge: React.FC<BadgeProps> = ({
   'data-qa': dataQa,
   'data-component': dataComponent = 'WFMBadge',
 }) => {
-  const badgeMode =
-    content !== undefined
-      ? ({ badgeContent: content } as const)
-      : ({ badgeNumber: count, badgeMaxNumber: maxCount } as const);
-
-  return (
-    <BadgeContainer
-      color={STATUS_TO_COLOR[status]}
-      data-component={dataComponent}
-      data-qa={dataQa}
-      directionPosition={directionPosition}
-      gapX={gapX}
-      gapY={gapY}
-      originPosition={originPosition}
-      size={size}
-      {...badgeMode}
-    >
-      {children}
-    </BadgeContainer>
-  );
+  const shared = {
+    color: STATUS_TO_COLOR[status], size, gapX, gapY, originPosition, directionPosition,
+    'data-component': dataComponent, 'data-qa': dataQa, children,
+  };
+  // Keep the mutually exclusive upstream props in separate JSX branches.
+  return content !== undefined
+    ? <BadgeContainer {...shared} badgeContent={content} />
+    : <BadgeContainer {...shared} badgeNumber={count} badgeMaxNumber={maxCount} />;
 };

@@ -17,6 +17,7 @@ test('HTML skill packages its original review, prototype, and research resources
     'references/webgl-3d/3dviz-subject-clarity-and-motion.md',
     'scripts/verify-surface.mjs', 'scripts/sloplint.mjs', 'scripts/sloplint-render.mjs',
     'scripts/copy-lint.mjs', 'scripts/search.py', 'scripts/capture-poc.mjs',
+    'references/html-review.md',
     'data/ux-guidelines.csv', 'data/typography.csv', 'data/sources.json',
     'templates/kits/README.md', 'templates/scaffold-vite-threejs/README.md',
     'assets/icons/index.json', 'THIRD_PARTY_NOTICES.md', 'third-party-licenses/taste.txt',
@@ -30,6 +31,8 @@ test('HTML skill packages its original review, prototype, and research resources
   assert.match(skill, /selected DESIGN/i)
   assert.match(skill, /verify-surface\.mjs/)
   assert.match(skill, /synapse_design_poc_handoff/)
+  assert.match(skill, /copy the fixed code library/)
+  assert.match(skill, /Exclude all prototype-only Size, Page state, Reset/)
   assert.doesNotMatch(skill, /references\/direction\/(?:design-md|themes)\/index\.json/)
   const typography = await read('references/direction/palettes-and-typography.md')
   assert.doesNotMatch(typography, /No Violet\/Purple|Verified Industry Palettes/)

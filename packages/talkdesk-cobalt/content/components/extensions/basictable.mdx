@@ -10,7 +10,7 @@ import { BasicTable, SortDirection } from './components/cobalt-extensions';
 
 ## Surface and page edges
 
-BasicTable is a structural full-width surface: no outer border, corner radius, shadow, margin or horizontal padding. Keep row separators and cell padding for readability. Do not wrap it in a rounded card. In list pages, the table starts at the business page's left edge and reaches its right edge; put title, search and form spacing on those regions rather than on the table parent. A wide table may scroll inside a full-width container. The maintained List page combines this source with marketplace Toolbar and the local Extensions SidePanel.
+BasicTable is a structural full-width surface: no outer border, corner radius, shadow, margin or horizontal padding. Keep row separators and cell padding for readability. Do not wrap it in a rounded card. In list pages, the table starts at the business page's left edge and reaches its right edge; put title, search and form spacing on those regions rather than on the table parent. Set minTableWidth on BasicTable when columns need horizontal scrolling; never put a min-width on the outer table wrapper, which would also push pagination outside the viewport. Give the host a bounded height with min-height: 0 and overflow: hidden. The maintained List page combines this source with marketplace Toolbar and the local Extensions SidePanel.
 
 ## Basic Usage
 

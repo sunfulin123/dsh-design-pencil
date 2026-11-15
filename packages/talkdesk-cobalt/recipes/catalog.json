@@ -30,6 +30,7 @@
       "submission failure"
     ],
     "composition": [
+      "extensions.app-page",
       "extensions.basic-table",
       "cobalt-marketplace:components/toolbar",
       "extensions.side-panel",
@@ -37,10 +38,13 @@
       "extensions.form-field",
       "extensions.input",
       "extensions.dropdown",
-      "extensions.upload-file"
+      "extensions.upload-file",
+      "extensions.typography",
+      "extensions.chip-group",
+      "cobalt:components/tag"
     ],
-    "usage": "Create user opens the copied Extensions Dialog with a validated FormField/Input/Dropdown form. With no onCreate callback, creation appends an in-memory user; onCreate(draft) delegates persistence and users refresh to the host. Import opens Dialog with Extensions UploadFile (.csv, up to 5 MB); onImport(file) submits to the host. Without onImport, confirmation only records the selected filename and does not parse/import CSV records. Both callbacks may return promises; failures remain in the dialog for retry. Connect onEdit, onExport, onBulkManagement and onRefresh to host workflows; unconnected host actions are disabled. Pass scenario from usePrototypeScenario() in Workspace; controls stay in the host toolbar. Details use the copied SidePanel. Keep table parents flush: no rounded card, outer border, shadow or horizontal insets. Pass batch guidance through messageComponent below the column header.",
-    "limits": "No backend or durable storage is provided. Local creation resets on remount; CSV selection is not a completed server import. The host owns duplicate/persistence validation across sessions and refreshes supplied users after successful creation. BasicTable owns rendering and pagination; the page sorts and slices data. Selection persists across pages/filters. The 48px filter Toolbar reserves space, search moves below it on small viewports, and the wide table scrolls internally."
+    "usage": "Create user opens the copied Extensions Dialog with a validated FormField/Input/Dropdown form. With no onCreate callback, creation appends an in-memory user; onCreate(draft) delegates persistence and users refresh to the host. Import opens Dialog with Extensions UploadFile (.csv, up to 5 MB); onImport(file) submits to the host. Without onImport, confirmation only records the selected filename and does not parse/import CSV records. Both callbacks may return promises; failures remain in the dialog for retry. Connect onEdit, onExport, onBulkManagement and onRefresh to host workflows; unconnected host actions are disabled. Pass scenario from usePrototypeScenario() in Workspace; controls stay in the host toolbar. Details use the copied SidePanel. Keep table parents flush: no rounded card, outer border, shadow or horizontal insets. Pass batch guidance through messageComponent below the column header. Filters opens the copied SidePanel with draft Activation filtering; Apply updates results, Cancel preserves them. AppPageHeader centers the compact title/description group with actions. Bound the AppPage height; pass minTableWidth to BasicTable, never a wide outer wrapper. The header uses copied AppPageHeader and Typography page-title/body variants with compact text spacing; do not recreate these using direct Heading/Text size overrides. Users Filters uses a medium 40px trigger aligned with Search; preserve the 48px toolbar. The panel uses FormField with an 8px label gap and a nonzero direct-control line-height. Users applied filters use the native medium 24px TagGroup with keyboard removal; queue cells use the copied ChipGroup with its complete overflow popup. The compact Users heading uses Typography page-title scale medium (native 24px/32px), body description and Cobalt Flex gap 0; do not restore the large heading line box or add a spacer between the title and description.",
+    "limits": "No backend or durable storage is provided. Local creation resets on remount; CSV selection is not a completed server import. The host owns duplicate/persistence validation across sessions and refreshes supplied users after successful creation. BasicTable owns rendering and pagination; the page sorts and slices data. Selection persists across pages/filters. The 48px filter Toolbar reserves space, search moves below it on small viewports, and the wide table scrolls internally. Pagination stays within the host width and height; only table rows and columns scroll."
   },
   "detail-page.tsx": {
     "title": "Detail page",
@@ -54,52 +58,279 @@
     "states": [
       "populated sample"
     ],
-    "composition": [],
+    "composition": [
+      "cobalt:components/avatar",
+      "cobalt:components/button",
+      "cobalt:components/tab",
+      "cobalt:components/tag",
+      "cobalt:components/typography",
+      "cobalt:components/divider"
+    ],
     "usage": "Read the Props interface in the source; pass user, onBack, onEdit and onDelete from the host. Adapt record groups and tabs to the requested domain.",
     "limits": "The sample is not a backend integration. Loading/error/permission states and routing need target-specific implementation; this recipe does not accept scenario."
   },
   "form-page.tsx": {
     "title": "Form page",
-    "description": "Editable profile form with validation and save/cancel callbacks.",
+    "description": "Editable profile form with validation and controlled Extensions date, time, date range, checkbox, radio and searchable multi-select examples.",
     "keywords": [
       "form",
       "edit",
       "validation",
-      "save"
+      "save",
+      "datepicker",
+      "timepicker",
+      "time-select-input",
+      "date range",
+      "checkbox",
+      "radio",
+      "multi-dropdown",
+      "scheduling",
+      "preferences"
     ],
     "states": [
       "form input",
-      "validation"
+      "validation",
+      "calendar open",
+      "time editing",
+      "range selection",
+      "checkbox toggled",
+      "radio selection",
+      "multi-select search"
     ],
-    "composition": [],
-    "usage": "Read the Props interface in the source; pass initial, onSave and onCancel. Connect submission and routing before delivery.",
-    "limits": "No backend or persistent save is provided. Async submit/failure and permission states require target-specific implementation; this recipe does not accept scenario."
+    "composition": [
+      "extensions.date-picker",
+      "extensions.time-select-input",
+      "extensions.date-range-picker",
+      "extensions.choice",
+      "extensions.multi-dropdown",
+      "extensions.form-field",
+      "cobalt:components/button",
+      "cobalt:components/typography"
+    ],
+    "usage": "Read the Props interface in the source; pass initial, onSave and onCancel. Connect submission and routing before delivery. Copy support/form-control-examples.tsx as well. Scheduling and preferences uses existing Extensions DatePicker, TimeSelectInput (24-hour, total minutes from midnight), DateRangePicker, Choice checkbox/radio and searchable MultiDropdown. FormPage controlExamples is controlled and returned by onSave, with a default sample when omitted. Field names, group accessible names and form-* data-qa selectors support review; native choice labels are clickable and radios share a unique name. Local Dates are sample calendar values; the embedding app owns timezone/serialization and persistence.",
+    "limits": "No backend or persistent save is provided. Async submit/failure and permission states require target-specific implementation; this recipe does not accept scenario. Scheduling examples use local calendar Dates and numeric minutes; do not silently convert to UTC or claim these are production availability data."
   },
-  "extensions/users-list.tsx": {
-    "title": "Users list with extensions",
-    "description": "A compact extension-based list demonstrating local search, a create SidePanel and prototype scenario rendering.",
+  "echart-insights.tsx": {
+    "title": "Echart insights",
+    "description": "Screenshot-based Insights with date navigation, Day/Week/Month ranges, agent filters and dual-axis Apache ECharts predictions. Includes native split export actions and a Copilot chat side panel.",
     "keywords": [
-      "users",
-      "create",
-      "side panel",
-      "local state",
-      "prototype"
+      "echart",
+      "echarts",
+      "insights",
+      "analytics",
+      "chart",
+      "prediction",
+      "ATA",
+      "AWT",
+      "zoom",
+      "agents",
+      "split button",
+      "popover",
+      "copilot",
+      "chat",
+      "export"
     ],
     "states": [
       "success",
       "loading",
       "empty",
       "error",
+      "partial",
       "permission",
-      "partial"
+      "summary",
+      "collapsed chart",
+      "agent filter draft",
+      "export options open",
+      "Copilot conversation",
+      "Copilot input"
     ],
     "composition": [
       "extensions.app-page",
-      "extensions.basic-table",
+      "extensions.card",
+      "extensions.date-picker",
       "extensions.side-panel",
-      "extensions.form-field"
+      "extensions.dialog",
+      "extensions.form-field",
+      "extensions.input",
+      "extensions.basic-table",
+      "cobalt-marketplace:components/toolbar",
+      "extensions.multi-dropdown",
+      "cobalt:components/selection-group",
+      "cobalt:components/button",
+      "cobalt:components/popover",
+      "cobalt:components/chat-bubble",
+      "cobalt:components/panel",
+      "cobalt:components/textarea",
+      "cobalt:components/avatar",
+      "cobalt:components/tag"
     ],
-    "usage": "Mount the default UsersList export and pass scenario from usePrototypeScenario(). Replace sample records and connect persistence for a real application. Keep AppPageContent padding at zero around BasicTable; inset the search region independently.",
-    "limits": "Creation is in-memory only; state is lost on remount. This compact recipe is not the full List page composition. Use ListPage for marketplace Toolbar, row selection and multi-page data."
+    "usage": "Copy the recipe and all support sources/CSS, together with the complete local Extensions source closure. Install the pinned Apache echarts dependency from templates/dependencies.json. Pass scenario from usePrototypeScenario(). The date/range controls, agent SidePanel, removable chips, Clear all, Add chart Dialog, chart menu, collapse, tooltip and data zoom are interactive. Semantic Cobalt tokens theme the chart and controls in light/dark mode. The page is bounded; only the chart content area scrolls. Keep the date field full-width inside its 220px slot, with an 8px gap to period navigation. Use native Cobalt SelectionGroup/SelectionGroupOption for the single Day/Week/Month selection. Agent filters use the copied searchable MultiDropdown inside SidePanel, with draft Apply/Clear and selectable/removable values. Applied filters and the +N overflow count use the native medium 24px Tag scale; the overflow action preserves the Tag surface inside a transparent Cobalt Button. The header uses native SplitButton with a chevron_down secondary segment opening @talkdesk/cobalt-react-popover. Export downloads the local summary as CSV; the Popover also offers JSON. Ask Copilot opens a Cobalt ModalPanel with ChatBubble messages and a fixed Textarea composer (120 characters). Enter sends, Shift+Enter inserts a newline, and IME composition does not send. Native overlays own Escape/focus restoration. Keep accessible names and insights-* data-testid locators. Copy insights-header-actions.tsx and insights-copilot.tsx with the recipe support sources. Ask Copilot precedes Export and uses native variation=\"transparent\" without a custom resting fill. Sent messages align right with intrinsic-width bubbles and a trailing tiny Cobalt Avatar; bot messages stay left. Keep timestamp alignment, preserved newlines and bounded long-word wrapping. Applied agents use native medium 24px TagGroup with accessible keyboard removal. The +N count uses a native Button and matching medium Tag; no raw button or clickable close icon. Copilot bot and user markers are native Avatar. Keep the applied-filter labels, native TagGroup and +N count inline in a 48px Toolbar: TagGroup width must be auto and flex none, and its items must not wrap. At narrow widths the applied-filter strip scrolls internally without widening the page.",
+    "limits": "All predictions, agents and summary averages are deterministic sample data; they are not production WFM metrics. Filtering changes local selection and refreshes the sample renderer; connect agent/date/range to real data for production. New charts share the sample ATA/AWT series. Local changes reset on remount. Do not copy WFM network services, authentication or API hooks. Copilot replies are deterministic local examples, with no model/network connection or durable conversation. Export contains sample summary values only. Wire a real assistant and authorized analytics/export services explicitly for production."
+  },
+  "active-call.tsx": {
+    "title": "Active call",
+    "description": "Screenshot-faithful Conversations voice-call workspace: assigned queue and search, Talking via Sales Number, call quality and recording, Snapshot/Notes/Callbacks, empty callback card, two-entry callback timeline and pinned full call controls.",
+    "keywords": [
+      "active call",
+      "in call",
+      "talking",
+      "voice",
+      "conversations",
+      "contact center",
+      "callbacks",
+      "callback thread",
+      "recording",
+      "hold",
+      "mute",
+      "dialpad",
+      "consult",
+      "blind transfer",
+      "guest"
+    ],
+    "states": [
+      "success",
+      "loading",
+      "empty",
+      "error",
+      "partial",
+      "permission",
+      "on hold",
+      "muted",
+      "recording stopped",
+      "call ended",
+      "callback scheduled",
+      "keypad",
+      "queue collapsed"
+    ],
+    "composition": [
+      "cobalt:components/button",
+      "cobalt:components/icon",
+      "cobalt:components/avatar",
+      "cobalt:components/tab",
+      "cobalt:components/typography",
+      "extensions.card",
+      "extensions.input",
+      "extensions.dialog",
+      "extensions.form-field",
+      "extensions.date-picker",
+      "cobalt:components/tag",
+      "cobalt:components/divider",
+      "extensions.time-select-input",
+      "extensions.textarea",
+      "cobalt-marketplace:components/empty-widget",
+      "cobalt-marketplace:components/badge-container"
+    ],
+    "usage": "Copy active-call.tsx, support/call-dialogs.tsx, support/conversation-queue.tsx and support/active-call.css plus the complete local Extensions source closure. Mount in a bounded full-height business surface (100% height, min-height:0); do not add another app menu inside this screenshot composition. Pass scenario from usePrototypeScenario() in Workspace. The 1386x861 reference uses a 360px queue, 164px call header, 24px content inset/gap and pinned 66px footer; only conversation/content scroll. Native Cobalt components supply all controls, typography, badges, avatars and icons. No emoji, custom SVG or external icon family. Native Cobalt DatePicker/Input/Extensions Dialog handle callback scheduling; the screenshot default has no upcoming callbacks and exactly the two sample timeline records. Every call action has an accessible name and call-* locator. Hold/Mute/Recording toggle locally; Keypad opens a local digit pad; Consult/Blind transfer/Add guest/New conversation collect a target; End call confirms and disables call controls. Queue tabs/search/compact/filter/sort are local sample interactions. Notes remain in memory. onAction(action,value) observes prototype actions; it is not a telephony transport. Under 1100px cards stack, under 600px the queue is an explicit collapsible overlay; controls remain visible and wrapping at the bottom. Theme all surfaces through Cobalt tokens. The call header renders a native Cobalt Divider under its tabs. Snapshot uses a 24px title-to-metadata gap and 4px metadata gaps; Notes uses Extensions FormField with its 8px label/control gap and 16px section/action gaps. The caller Avatar has two staggered outward CSS waves while talking; Hold/end/loading/permission stop motion, and prefers-reduced-motion retains static rings. Callback Time uses the copied TimeSelectInput, not a plain text field. It defaults to 09:00 in 24-hour format, stores total minutes locally and formats HH:mm for the Callback/onAction result; a date remains required. Callback Note uses the copied Cobalt Textarea with three visible rows; preserve multiline note text. Queue counts use native BadgeContainerWrapper; callback emptiness uses marketplace EmptyWidget; thread surfaces use copied Card and native Avatar. The callback connector is layout for the screenshot phone-avatar markers; marketplace Timeline has no custom marker slot, so do not simulate its API or overwrite its dot styles.",
+    "limits": "Carly Yates, the phone number, history names, historical timestamps, 5 assigned and 6 conversations are screenshot sample content, not live customer data. The sample list contains one active voice contact, so sorting/filtering does not invent five other records. No calling, recording, DTMF, transfers, notifications or persistence are performed. Wire authorized telephony services in the embedding app. Empty refers to callback history; the active contact/header stay visible. Partial shows one history record. Error retries local sample data. Loading/permission disable call actions. The ended state is local and resets on remount. No production audio/network integration."
+  },
+  "card-widgets.tsx": {
+    "title": "Card widgets",
+    "description": "Screenshot-based metric and donut dashboard plus reusable template, empty, use-case, sentiment, keyword and shift distribution cards.",
+    "keywords": [
+      "card",
+      "widget",
+      "dashboard",
+      "metric",
+      "donut",
+      "sentiment",
+      "keywords",
+      "shift distribution"
+    ],
+    "states": [
+      "editing",
+      "saved",
+      "widget configuration",
+      "deleted widget",
+      "shift selection"
+    ],
+    "composition": [
+      "extensions.card",
+      "extensions.dialog",
+      "extensions.form-field",
+      "extensions.dropdown",
+      "extensions.select-group",
+      "cobalt:components/button",
+      "cobalt:components/icon",
+      "cobalt:components/tag",
+      "cobalt-marketplace:components/empty-widget"
+    ],
+    "usage": "Use these cards and charts as composable visual/interaction references for AI exploration; adapt their layout, data and actions to the user request rather than treating the sample as a complete business specification. Copy the recipe and every linked support TSX/TS/CSS file together with the complete local Extensions source closure. Scaffolds already provide Cobalt theme, viewport and portal providers. Use local source imports; never install or import @openpencil/cobalt-extensions. Mount CardWidgets. Add/configure/delete widgets, commit with Done, or restore the last local checkpoint with Discard. The first six widgets reproduce the supplied dashboard. Further down, WidgetPatterns shows every additional card reference. Shift days use the copied SelectGroup; shift and break use Dropdown. Donuts use the pinned Apache ECharts dependency and theme tokens. Read support/recipe-sources.json for provenance. Keep the bounded content scroller positioned so native hidden form/focus nodes cannot create a second outer scroll area or a blank tail. Empty cards use marketplace EmptyWidget for centered title/message/icon composition.",
+    "limits": "All values and edits are local demo data. Done saves only an in-memory checkpoint; remount resets it. Corner handles illustrate edit-mode chrome; drag and resize are not implemented. No dashboard API or WFM runtime is imported."
+  },
+  "echarts-gallery.tsx": {
+    "title": "ECharts gallery",
+    "description": "Three real Apache ECharts references: prediction/history, stacked forecast and dual-axis scenario comparison with legends and zoom.",
+    "keywords": [
+      "echarts",
+      "chart",
+      "forecast",
+      "CVO",
+      "AHT",
+      "staffing",
+      "shrinkage",
+      "scenario",
+      "comparison",
+      "data zoom"
+    ],
+    "states": [
+      "three charts",
+      "chart removed",
+      "legend toggled",
+      "zoomed"
+    ],
+    "composition": [
+      "extensions.card",
+      "cobalt:components/button",
+      "cobalt:components/typography"
+    ],
+    "usage": "Use these cards and charts as composable visual/interaction references for AI exploration; adapt their layout, data and actions to the user request rather than treating the sample as a complete business specification. Copy the recipe and every linked support TSX/TS/CSS file together with the complete local Extensions source closure. Scaffolds already provide Cobalt theme, viewport and portal providers. Use local source imports; never install or import @openpencil/cobalt-extensions. Mount EchartsGallery. Copy reference-charts.tsx and widget-gallery.css. Use echarts at the pinned version in templates/dependencies.json. The prediction/history and comparison charts include a slider; the forecast contains two coordinated plots. Native ECharts tooltips, legends and responsive canvas resizing work in both themes. Reset charts restores removed cards. Read support/recipe-sources.json for the WFM patterns adapted here. Reserve 16px below slider dataZoom so the complete drag handle remains inside the canvas; retain card padding.",
+    "limits": "Synthetic series reproduce the screenshot shapes; these are not production WFM forecasts. No service, authentication, hooks or stores from WFM are bundled. The sample histories have empty series, as in the reference."
+  },
+  "team-schedule.tsx": {
+    "title": "Team Schedule",
+    "description": "A Cobalt reference composition for a team day schedule: native responsive Toolbar, badge anchors, searchable timezone selector, metrics and agent timeline.",
+    "keywords": [
+      "team schedule",
+      "WFM",
+      "calendar",
+      "timeline",
+      "staffing",
+      "shift",
+      "agent",
+      "event",
+      "timezone",
+      "toolbar",
+      "badge"
+    ],
+    "states": [
+      "success",
+      "loading",
+      "empty",
+      "error",
+      "partial",
+      "permission",
+      "filters",
+      "event creation",
+      "event editing"
+    ],
+    "composition": [
+      "extensions.date-picker",
+      "extensions.dropdown",
+      "extensions.multi-dropdown",
+      "extensions.side-panel",
+      "extensions.form-field",
+      "extensions.time-select-input",
+      "extensions.textarea",
+      "cobalt:components/button",
+      "cobalt:components/icon",
+      "cobalt:components/tag",
+      "cobalt:components/avatar",
+      "cobalt:components/pagination",
+      "extensions.timezone-dropdown",
+      "cobalt-marketplace:components/toolbar",
+      "cobalt-marketplace:components/badge-container"
+    ],
+    "usage": "Use this as a composable design reference for AI exploration: choose relevant layout and interaction patterns, adapt or omit sample controls for the requested page, and let user requirements define the business flow. Copy the recipe and every linked support TSX/TS/CSS file together with the complete local Extensions source closure. Scaffolds already provide Cobalt theme, viewport and portal providers. Use local source imports; never install or import @openpencil/cobalt-extensions. Mount TeamSchedule with scenario from usePrototypeScenario() and register it under the existing WFM team-schedule page. Preserve the bounded full-height root: only the timeline scrolls, with sticky hour/metric rows and 306px agent column; pagination stays visible. The screenshot uses November 15, 2026, Shanghai, 24 hour columns, 15-minute grid lines, six metrics and 60px agent rows. Search/sort/page size/filter drafts and local event creation/edit/delete demonstrate component composition. Events use copied TimeSelectInput minutes from midnight. Native Cobalt components supply all controls, typography, icons, tags and avatars; our grid is a layout composition because Cobalt has no complete scheduling timeline. Read support/recipe-sources.json for provenance. On phone widths up to 480px, the six metric rows scroll with the timeline so agents remain reachable below the sticky hour header; keep the bottom pagination pinned. Below 360px, pagination wraps into two rows. The controls use official marketplace Toolbar/StartContent/EndContent and wrap within the business viewport as space runs out. Use auto height, zero minimum width and wrapping start/end groups; never hide actions behind horizontal toolbar overflow. Select and intraday adherence are omitted. Requests and Filters use official BadgeContainerWrapper (the default badge-container export), outside the button content. Header timezone uses copied TimezoneDropdown with IANA values such as Asia/Shanghai, searchable region groups and native selection behavior. Keep the compact globe/city/chevron Cobalt Button as TimezoneDropdown customInput; the popup remains the shared grouped/searchable Extensions UI. The applied-filter strip also uses marketplace Toolbar/StartContent/EndContent. Both toolbar rows wrap to keep every control reachable; only the scheduling grid scrolls horizontally. Native BadgeContainerWrapper counts use positioning props to sit above the right edge of the request/filter action, not beside the label. For an attached top-right badge use originPosition=\"NE\", directionPosition=\"NW\", gapX={0}, gapY={8}: the badge extends inward/upward and overlaps the corner. SE extends the badge outside the button to its right. Agent search is a fixed 160px field (flex: 0 0 160px), never stretched to consume remaining Toolbar space. Retain the native small Cobalt control height.",
+    "limits": "The schedule uses 75 synthetic agents and screenshot sample metrics/events. Date navigation and timezone only change labels; no real timezone conversion or server query occurs. Agent filter selection is illustrative and does not model real queue membership. Metrics pin buttons toggle their pressed state; metrics remain visible. Only Day view is provided. Ask Copilot opens a deterministic local event-planning demo. Timezone selection stores an IANA value for the reference UI; implement real conversion when requested. Event colors are screenshot sample domain colors, not native-control overrides. No WFM backend, scheduling engine, drag/drop or durable storage is included."
   }
 }

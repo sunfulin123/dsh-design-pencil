@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { indexRuntimePayload } from './dsh-runtime-payload.mjs'
 import { exportCobalt } from '../packages/talkdesk-cobalt/tools/export.mjs'
+import { exportHtmlReview } from '../packages/html-prototype-review/tools/export.mjs'
 
 async function skillFiles(directory, prefix = '') {
   const files = []
@@ -83,6 +84,7 @@ export async function stageRuntime({ root, destination, revision }) {
     })
   }
   // Keep docs inside the Skill's resource boundary without embedding its images in WASM.
+  await exportHtmlReview(join(destination, 'skills/synapse-design-html'))
   await exportCobalt(join(destination, 'skills/synapse-design-html'))
   for (const path of ['web-bundle/snippets']) {
     try {

@@ -16,7 +16,7 @@ Pass `items` and the group renders one chip per entry, separated by a 4px gap. E
 
 ## Overflow with `maxVisible`
 
-`maxVisible` (default `2`) caps how many chips render inline. Anything beyond that collapses into a `+N` overflow chip — clicking it opens a popup that lists the full set.
+`maxVisible` (default `2`) caps how many chips render inline. Anything beyond that collapses into a `+N` overflow chip — activating its native Cobalt Button by pointer, Enter or Space opens a popup that lists the full set. The trigger is named `Show N more values`; `data-qa` supplies stable overflow/content selectors.
 
 <Example id="extensions.chipgroup.002" />
 

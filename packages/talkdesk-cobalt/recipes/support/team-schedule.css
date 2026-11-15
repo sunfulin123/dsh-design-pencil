@@ -1,0 +1,416 @@
+.team-schedule,
+.team-schedule * {
+  box-sizing: border-box;
+}
+.team-schedule {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-color);
+  color: var(--text-default);
+}
+.team-schedule h1,
+.team-schedule p {
+  margin: 0;
+}
+.team-schedule h1 {
+  font-size: 28px;
+  line-height: 36px;
+}
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  min-height: 104px;
+  flex: none;
+}
+.schedule-title,
+.schedule-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.schedule-header-actions {
+  gap: 16px;
+}
+
+.schedule-date {
+  width: 220px;
+  flex: none;
+}
+
+.schedule-subdued {
+  color: var(--text-description);
+  margin-left: 8px;
+}
+.schedule-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  isolation: isolate;
+}
+.schedule-table {
+  min-width: 1746px;
+  width: 100%;
+}
+.schedule-hours,
+.schedule-metrics {
+  display: grid;
+  grid-template-columns: 306px repeat(24, minmax(60px, 1fr));
+  background: var(--background-color);
+  position: sticky;
+  z-index: 4;
+}
+.schedule-hours {
+  top: 0;
+  height: 46px;
+}
+.schedule-hours > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--gray-4);
+  border-bottom: 1px solid var(--gray-4);
+}
+.schedule-queue-cell {
+  gap: 12px;
+  padding-inline: 24px;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--background-color);
+}
+.schedule-queue-cell > p {
+  white-space: nowrap;
+  font-size: 11px;
+}
+.schedule-metrics {
+  top: 46px;
+  min-height: 168px;
+}
+.schedule-metric-labels {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--background-color);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 24px;
+  border-right: 1px solid var(--gray-4);
+  border-bottom: 1px solid var(--gray-4);
+}
+.schedule-agent-total {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-direction: column;
+  white-space: nowrap;
+}
+.schedule-agent-total p {
+  font-size: 14px;
+  line-height: 20px;
+}
+.schedule-metric-label {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  white-space: nowrap;
+}
+.schedule-metric-label p {
+  font-size: 11px;
+}
+.schedule-metric-label > button {
+  width: 16px;
+  min-width: 16px;
+  height: 20px;
+  padding: 0;
+}
+.schedule-metric-values {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-block: 12px;
+  border-right: 1px solid var(--gray-4);
+  border-bottom: 1px solid var(--gray-4);
+}
+.schedule-metric-values > div {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.schedule-metric-values p {
+  font-size: 11px;
+  line-height: 16px;
+}
+.schedule-shortage p {
+  color: var(--red-9);
+}
+.schedule-agent-rows {
+  position: relative;
+}
+.schedule-agent-row {
+  display: grid;
+  grid-template-columns: 306px 1fr;
+  height: 60px;
+}
+
+.schedule-agent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  left: 0;
+  background: var(--background-color);
+  padding: 12px 24px;
+  border-right: 1px solid var(--gray-4);
+  border-bottom: 1px solid var(--gray-4);
+  z-index: 3;
+}
+.schedule-agent > a {
+  font-size: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.schedule-agent > span:last-child {
+  margin-left: auto;
+}
+.schedule-agent-track {
+  position: relative;
+  border-bottom: 1px solid var(--gray-4);
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--gray-3) 0,
+      var(--gray-3) 1px,
+      transparent 1px,
+      transparent calc(100% / 96)
+    ),
+    repeating-linear-gradient(
+      to right,
+      var(--gray-4) 0,
+      var(--gray-4) 1px,
+      transparent 1px,
+      transparent calc(100% / 24)
+    );
+}
+.team-schedule .schedule-event {
+  position: absolute;
+  top: 6px;
+  height: 46px;
+  padding: 0;
+  min-width: 2px;
+  border: 1px solid color-mix(in srgb, var(--white) 60%, transparent);
+  border-radius: 2px;
+  color: var(--text-default);
+  z-index: 1;
+  overflow: hidden;
+}
+.team-schedule .schedule-event--work {
+  background: #10b000;
+}
+.team-schedule .schedule-event--break {
+  background: #f5ec00;
+  z-index: 2;
+  height: 38px;
+  top: 8px;
+}
+.team-schedule .schedule-event--unavailable {
+  background: #9b9b9b;
+  z-index: 2;
+  height: 32px;
+}
+.team-schedule .schedule-event--striped {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0,
+    transparent 6px,
+    color-mix(in srgb, var(--gray-12) 25%, transparent) 6px,
+    color-mix(in srgb, var(--gray-12) 25%, transparent) 7px
+  );
+}
+.schedule-agent-row:nth-child(6) .schedule-event--unavailable {
+  height: 23px;
+}
+
+.schedule-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(306px + (100% - 306px) * 0.6792);
+  width: 1px;
+  background: var(--primary-9);
+  pointer-events: none;
+  z-index: 2;
+}
+.schedule-now::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 14px;
+  height: 4px;
+  background: var(--primary-9);
+  border-radius: 2px;
+}
+.schedule-pagination {
+  flex: none;
+  min-height: 56px;
+  border-top: 1px solid var(--gray-4);
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--gray-2);
+  gap: 16px;
+}
+.schedule-pagination > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.schedule-panel-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.schedule-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.schedule-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@media (max-width: 1200px) {
+  .schedule-header {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 760px) {
+  .schedule-header {
+    padding: 16px;
+  }
+  .schedule-header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .schedule-date {
+    width: 180px;
+  }
+
+  .schedule-pagination {
+    padding: 8px;
+  }
+  .schedule-pagination > div:last-child > p {
+    display: none;
+  }
+  .schedule-title {
+    flex-wrap: wrap;
+  }
+}
+
+.team-schedule {
+  --schedule-work: #10b000;
+  --schedule-break: #f5ec00;
+  --schedule-unavailable: #9b9b9b;
+}
+
+@media (max-width: 760px) {
+}
+
+/* Keep search usable when the Workspace drawer/secondary area narrows the business frame. */
+
+.schedule-search-field > [data-component] {
+  width: 100%;
+}
+@media (max-width: 760px) {
+}
+@media (max-width: 360px) {
+  .schedule-pagination {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .schedule-pagination > div:last-child {
+    margin-inline-start: auto;
+  }
+}
+@media (max-width: 480px) {
+  /* The full metric block must leave room for agent rows in short phone frames. */
+  .schedule-metrics {
+    position: relative;
+    top: auto;
+    z-index: auto;
+  }
+}
+
+.schedule-toolbar-region {
+  flex: none;
+  min-width: 0;
+  position: relative;
+  border-block: 1px solid var(--gray-4);
+}
+.team-schedule .schedule-toolbar {
+  min-width: 0;
+  width: 100%;
+  min-height: 48px;
+  height: auto;
+}
+.schedule-time-tools,
+.schedule-search-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.schedule-search-field {
+  width: 160px;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 0 160px;
+}
+.schedule-timezone {
+  width: auto;
+  max-width: 100%;
+}
+@media (max-width: 760px) {
+  .schedule-date {
+    width: 180px;
+  }
+}
+
+.team-schedule .schedule-filters {
+  min-width: 0;
+  min-height: 48px;
+}
+.schedule-filter-toolbar-region {
+  border-top: 0;
+}
+.schedule-filter-start > p {
+  flex: none;
+  white-space: nowrap;
+}
+.schedule-filter-start > [class*='co-tag-group'] {
+  width: auto;
+  flex: none;
+}
+.schedule-filter-start [class*='co-tag-group__items'] {
+  gap: 8px;
+}

@@ -9,6 +9,6 @@ const title = recipeTitles[recipe.id] ?? recipe.id;
 ---
 <Page title={title} section={`Recipes / ${title}`}>
   <div class="page-heading" data-enter><h1>{title}</h1><p>Run the composition below or switch to Code to inspect the complete React source.</p></div>
-  <Example id={recipe.id} height={600} />
+  <Example id={recipe.id} height={recipe.id === 'recipe.active-call' ? 861 : 600} />
   <p><a class="inline-link" href="/recipes/">← All page recipes</a></p>
 </Page>

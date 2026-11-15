@@ -15,6 +15,12 @@ Read the Props interface and callbacks in the source; do not infer them from oth
 
 ## Components and dependencies
 
+- `cobalt:components/avatar`: look up its exact import and props in the Cobalt registry.
+- `cobalt:components/button`: look up its exact import and props in the Cobalt registry.
+- `cobalt:components/tab`: look up its exact import and props in the Cobalt registry.
+- `cobalt:components/tag`: look up its exact import and props in the Cobalt registry.
+- `cobalt:components/typography`: look up its exact import and props in the Cobalt registry.
+- `cobalt:components/divider`: look up its exact import and props in the Cobalt registry.
 
 - `react` (18.3.1)
 - `@talkdesk/cobalt-react-avatar` (2.3.1)
@@ -27,7 +33,7 @@ Read the Props interface and callbacks in the source; do not infer them from oth
 - `@talkdesk/cobalt-react-typography` (3.0.2)
 - `@talkdesk/cobalt-react-viewport-provider` (2.2.5)
 
-Read and copy the full referenced component implementations, types, CSS and local imports before adapting this recipe. Workspace scaffolding provides src/components/cobalt-extensions/. Standalone apps use cobalt-project.mjs copy-source --out <project> first. Rebase relative imports to the local source directory. Never install @openpencil/cobalt-extensions, create a file dependency for it, or leave a package-name import/alias. Only the official dependencies listed above may need installation.
+Read and copy the full referenced component implementations, types, CSS and local imports before adapting this recipe. Workspace scaffolding provides src/components/cobalt-extensions/. Standalone apps use cobalt-project.mjs copy-source --out <project> first. Rebase relative imports to the local source directory. Never install @openpencil/cobalt-extensions, create a file dependency for it, or leave a package-name import/alias. Install only the listed runtime dependencies, including Apache echarts for the Insights recipe; never install an Extensions package.
 
 States covered: populated sample.
 

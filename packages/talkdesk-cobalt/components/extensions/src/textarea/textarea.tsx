@@ -8,7 +8,7 @@ type TextareaEvents = Pick<
   React.TextareaHTMLAttributes<HTMLTextAreaElement>,
   'onInput' | 'onFocus' | 'onBlur'
 >;
-const NativeTextarea = CobaltTextarea as React.ForwardRefExoticComponent<
+const NativeTextarea = CobaltTextarea as unknown as React.ForwardRefExoticComponent<
   Omit<React.ComponentProps<typeof CobaltTextarea>, keyof TextareaEvents> & TextareaEvents
 >;
 

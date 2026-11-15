@@ -1,0 +1,9 @@
+/*
+ * Cobalt sizes the tooltip with `fit-content`, which shrinks it to the room
+ * left of where it sits. Near the edge of the window its width then changes
+ * every time React Aria moves it, and the repositioning loops. Sizing it to its
+ * content breaks the loop; the max width still wraps long labels.
+ */
+.tooltip {
+  width: max-content !important;
+}

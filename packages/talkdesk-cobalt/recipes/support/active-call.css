@@ -1,0 +1,560 @@
+/* Source copies also run in hosts without a document-wide sizing reset. */
+.active-call,
+.active-call * {
+  box-sizing: border-box;
+}
+/* Screenshot geometry only; controls, typography and icons are Cobalt implementations. */
+.active-call {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--text-default);
+  background: var(--background-color);
+  font-family: var(--font-family);
+}
+.active-call h1,
+.active-call h2,
+.active-call h3 {
+  margin: 0;
+  font-weight: 400;
+}
+.active-call h2 {
+  font-size: 24px;
+  line-height: 32px;
+}
+.call-conversations {
+  display: flex;
+  flex-direction: column;
+  width: 360px;
+  flex: none;
+  min-height: 0;
+  background: var(--background-color);
+  border-right: 1px solid var(--gray-4);
+  box-shadow: 3px 0 7px color-mix(in srgb, var(--gray-12) 20%, transparent);
+  z-index: 1;
+}
+.call-queue-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 24px 23px;
+  height: 88px;
+  flex: none;
+}
+.call-queue-tabs {
+  display: flex;
+  gap: 24px;
+  padding-inline: 23px;
+  height: 36px;
+  border-bottom: 1px solid var(--gray-4);
+  flex: none;
+}
+.call-queue-tabs a {
+  padding-top: 4px;
+}
+.call-queue-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 23px;
+  height: 48px;
+  flex: none;
+  border-bottom: 1px solid var(--gray-4);
+  background: var(--gray-1);
+}
+.call-queue-tools > div {
+  display: flex;
+  gap: 4px;
+}
+.call-queue-body {
+  padding: 24px 23px;
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+.call-subdued {
+  color: var(--text-subtle, var(--gray-10));
+}
+.call-queue-body #call-search-hint {
+  display: block;
+  margin: 4px 0 20px;
+  line-height: 16px;
+}
+.call-search-label {
+  display: block;
+}
+.active-call .call-voice-title {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 24px;
+  margin-bottom: 20px;
+}
+.active-call .call-contact {
+  display: flex;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+.call-contact-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-left: 16px;
+}
+.call-contact-avatar {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+.call-contact-avatar > i {
+  position: absolute;
+  right: -3px;
+  top: -4px;
+  color: var(--green-9);
+  background: var(--background-color);
+  border-radius: 50%;
+}
+.call-contact--compact .call-contact-text > span:last-child {
+  display: none;
+}
+.call-new {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-top: 1px solid var(--gray-6);
+  box-shadow: 0 -1px 2px color-mix(in srgb, var(--gray-12) 15%, transparent);
+}
+.call-workspace {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+.call-header {
+  height: 164px;
+  flex: none;
+  position: relative;
+  padding: 40px 16px 0;
+  background: var(--background-color);
+}
+.call-contact-heading h1 {
+  font-size: 20px;
+  line-height: 28px;
+}
+.call-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  line-height: 24px;
+}
+.call-status > span,
+.call-positive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.call-positive {
+  color: var(--green-9);
+}
+.call-quality {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  left: 43%;
+  top: 8px;
+  white-space: nowrap;
+}
+.call-rec {
+  margin-left: 60px;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--red-9);
+}
+.call-customer-halo {
+  position: absolute;
+  top: 36px;
+  right: 12px;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--green-9) 20%, var(--background-color));
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--green-9) 6%, var(--background-color));
+}
+.call-customer-halo > div {
+  border: 2px solid var(--background-color);
+}
+.call-tabs {
+  position: absolute;
+  bottom: 0;
+  left: 24px;
+  display: flex;
+  gap: 16px;
+  height: 40px;
+}
+.call-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+  background: var(--gray-2);
+}
+.call-callback-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.call-thread {
+  min-height: 208px;
+}
+.call-thread h2 {
+  margin-bottom: 24px;
+}
+.call-thread ol {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.call-thread li {
+  display: flex;
+  gap: 24px;
+  position: relative;
+  min-height: 80px;
+}
+.call-thread li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 40px;
+  bottom: 0;
+  width: 1px;
+  background: var(--gray-3);
+}
+.call-thread-icon {
+  margin-top: 16px;
+  flex: none;
+}
+.call-thread-entry {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0 12px;
+}
+.call-thread li:not(:last-child) .call-thread-entry {
+  border-bottom: 1px solid var(--gray-3);
+}
+.call-thread-entry p {
+  margin: 0;
+  line-height: 20px;
+}
+.call-thread-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--text-subtle, var(--gray-10));
+  margin-bottom: 4px;
+}
+.call-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 24px;
+  min-height: 66px;
+  flex: none;
+  border-top: 1px solid var(--gray-6);
+  box-shadow: 0 -1px 2px color-mix(in srgb, var(--gray-12) 15%, transparent);
+  background: var(--background-color);
+}
+.call-action-list {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.call-action-list > button {
+  padding-inline: 8px;
+  white-space: nowrap;
+}
+.call-action-list [data-testid='call-stop-recording'] i {
+  color: var(--red-9);
+}
+.call-actions .call-end {
+  flex: none;
+  height: 40px;
+}
+.call-upcoming {
+  padding: 16px 0;
+  list-style: none;
+}
+.call-upcoming li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.call-loading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+.call-expand {
+  display: none;
+  position: absolute;
+  left: 4px;
+  top: 4px;
+}
+.active-call--collapsed .call-conversations {
+  display: none;
+}
+.active-call--collapsed .call-expand {
+  display: inline-flex;
+}
+.call-dialog-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.call-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.call-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .call-conversations {
+    width: 280px;
+  }
+  .call-callback-grid {
+    grid-template-columns: 1fr;
+  }
+  .call-quality {
+    left: 40%;
+  }
+  .call-actions {
+    padding-inline: 12px;
+  }
+}
+@media (max-width: 760px) {
+  .call-conversations {
+    width: 240px;
+  }
+  .call-actions {
+    align-items: flex-end;
+  }
+  .call-rec {
+    margin-left: 8px;
+  }
+  .call-quality {
+    left: 16px;
+  }
+  .call-content {
+    padding: 16px;
+  }
+}
+@media (max-width: 600px) {
+  .call-conversations {
+    display: none;
+  }
+  .call-header {
+    padding-top: 48px;
+  }
+  .call-quality {
+    left: 48px;
+  }
+  .call-customer-halo {
+    width: 56px;
+    height: 56px;
+    right: 16px;
+    top: 44px;
+  }
+  .call-thread {
+    padding: 16px;
+  }
+  .call-actions {
+    gap: 4px;
+  }
+  .call-action-list {
+    gap: 0;
+  }
+  .call-action-list > button {
+    padding-inline: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .active-call .call-expand {
+    display: inline-flex;
+  }
+  .active-call.call-queue-open .call-conversations {
+    display: flex;
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: min(360px, 90%);
+    z-index: 10;
+  }
+}
+
+/* Cobalt class rules can arrive after lazy recipe CSS; scoped selectors keep allocation stable. */
+.active-call .call-expand {
+  display: none;
+  position: absolute;
+}
+.active-call--collapsed .call-expand {
+  display: inline-flex;
+}
+.active-call .call-contact > span {
+  display: flex;
+  align-items: center;
+}
+.active-call .call-contact-avatar > i {
+  position: absolute;
+  color: var(--green-9);
+}
+.active-call .call-contact-text {
+  margin-left: 16px;
+}
+.active-call .call-subdued {
+  color: var(--gray-10);
+}
+.active-call .call-positive {
+  color: var(--green-9);
+}
+.active-call .call-calendar {
+  color: var(--gray-8);
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+}
+.active-call .call-queue-tabs a,
+.active-call .call-tabs a {
+  font-size: 16px;
+  font-weight: 500;
+}
+.active-call p {
+  font-size: 14px;
+  line-height: 20px;
+}
+.active-call .call-action-list > button,
+.active-call .call-end,
+.active-call .call-new > button {
+  font-size: 14px;
+  font-weight: 400;
+}
+.active-call .call-contact-text p {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .active-call .call-expand {
+    display: inline-flex;
+  }
+}
+
+.active-call [data-component='CallCallbacks'] h2 {
+  font-size: 22px;
+  line-height: 28px;
+}
+
+/* Tabs share Cobalt's divider; each panel owns its spacing independently of host styles. */
+.active-call .call-tabs {
+  z-index: 1;
+}
+.active-call .call-tabs-divider {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  width: 100%;
+}
+.call-notes-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.call-notes-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+.call-snapshot-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.call-snapshot-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.call-snapshot-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.active-call .call-snapshot-details p {
+  margin: 0;
+}
+/* Two staggered CSS waves expand independently; the native Cobalt Avatar remains still. */
+.call-customer-halo[data-talking='true']::before,
+.call-customer-halo[data-talking='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid var(--green-9);
+  opacity: 0;
+  animation: call-voice-ripple 2.4s cubic-bezier(0.2, 0.5, 0.5, 1) infinite;
+}
+.call-customer-halo[data-talking='true']::after {
+  animation-delay: 1.2s;
+}
+.call-customer-halo > div {
+  position: relative;
+  z-index: 1;
+}
+@keyframes call-voice-ripple {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .call-customer-halo[data-talking='true']::before,
+  .call-customer-halo[data-talking='true']::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.active-call .call-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}

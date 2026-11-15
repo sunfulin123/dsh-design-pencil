@@ -40,7 +40,7 @@ Workspace code prototypes use the generated pnpm project and commands from the c
 
 - Design loading, empty, error, partial, success and permission states where applicable, with contextual copy and a useful recovery or next action. Use concise product language, meaningful labels and clearly fictional sample data. Preserve the shared skill's UI-language policy.
 - Use the existing semantic light/dark token roles and sufficient text, icon, boundary and focus contrast. Do not solve dark theme by hard-coding a second palette. Inspect real rendered states; code inspection alone is not visual verification.
-- Code prototypes for Workspace copy the bundled official shell using the project helper and register business apps/pages in its config. Keep the top bar, Dock, drawer, secondary area and SDK stand-ins. Explicit standalone pages skip the shell; production applications use their real Workspace integration. Demo-state selectors stay in the prototype toolbar beside viewport controls, outside business content.
+- Code prototypes for Workspace use the project helper to copy the pinned shell and apply the bundled Atlas chrome adaptation and register business apps/pages in its config. Keep the generated top bar, Dock, drawer, secondary area and SDK stand-ins. New prototypes default to the Atlas redesign with shared light/dark chrome; there is no new-UI feature flag. Historical imported screenshots do not override the generated shell. Explicit standalone pages skip the shell; production applications use their real Workspace integration. Demo-state selectors stay in the prototype toolbar beside viewport controls, outside business content.
 - Validate each Dock entry, drawer page, primary action and applicable state, plus theme propagation and narrow app widths from 360px. Record screenshot-specific findings and numeric alignment/stability measurements, then fix and recheck defects. Distinguish real interactions, visual demonstrations and unsupported mock services; never report a scaffold page or uninspected screenshot as a completed design.
 
 ## Style Summary
@@ -125,3 +125,15 @@ Key aesthetics:
 - Do keep the label on `$--primary-9` as `$--primary-contrast`; never `$--surface-elevation-0`, which is dark in dark theme.
 - Don't use Neutral directly, invent token names, or create separate dark variables.
 - Don't use more than one accent colour on a screen; status colours are for status only.
+
+Use recipe.echart-insights for dual-axis prediction dashboards with date/range navigation, agent filtering, tooltips and data zoom. List pages use the copied AppPageHeader and a bounded BasicTable with minTableWidth; pagination must stay visible while only the rows/columns scroll. Filters opens the copied Extensions SidePanel. Review full-shell iframe geometry as well as isolated pages.
+
+Insights uses the native @talkdesk/cobalt-react-selection-group for Day/Week/Month, an 8px date-to-navigation gap and the copied Extensions MultiDropdown for Agent selection. Applied Agent tags and the +N overflow tag share core Tag size small; retain the count button accessibility while leaving its surface to Tag.
+
+Use the copied Extensions Typography page-title/body variants inside AppPageHeader for list title/description blocks. Users list filter actions use 40px controls; FormField owns the 8px label gap and direct-control line-height. Do not allow a zero-height checkbox to pass review based on a completed layout ledger.
+
+Compact Users title/description groups use copied Typography page-title with native Cobalt scale medium (24px/32px) and body text in a Flex gap 0 stack. Preserve h1 semantics and center the complete text group with actions; inspect the visible typography spacing rather than relying only on a nominal gap value.
+
+For Insights split actions and assistant chat, copy the Echart insights recipe support sources: native SplitButton plus Popover, and Ask Copilot opening ModalPanel/ChatBubble/Textarea. Place the native transparent Ask Copilot action before Export. Sent bubbles hug content on the right with a trailing tiny Avatar; Copilot messages stay left. Preserve Cobalt theme styles and accessible locators. The included replies and exports are local examples; connect real services explicitly.
+
+For an active voice conversation, copy the `recipe.active-call` source composition and its full support closure. It provides the Conversations queue, call header/quality/recording, Snapshot/Notes/Callbacks, callback timeline and pinned call-control bar. All controls and icons use Cobalt; telephony actions are explicitly local sample workflows until connected by the embedding app.

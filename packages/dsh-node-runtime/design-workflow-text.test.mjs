@@ -49,6 +49,8 @@ test('step instructions carry the current step, not the whole guide', () => {
   assert.match(NEXT.inspectScreenshot({ path: '/tmp/a.png', rootScreenshot: false, matchesFinalization: false }), /not a completed review/);
   assert.match(NEXT.visualReviewUnavailable, /unverified/);
   assert.match(NEXT.pocResolved, /ask the user before building it/);
+  assert.match(NEXT.pocResolved, /Exclude prototype-only Size, Page state, Reset/);
+  assert.match(NEXT.pocResolved, /even strict replicas; retain real business\/Workspace chrome/);
   assert.deepEqual(STAGE_PROMPT_MODE, { styleResolved: 'plan', draftBegun: 'build', draftResumed: 'build' });
 });
 

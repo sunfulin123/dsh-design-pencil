@@ -1,6 +1,6 @@
 # TimeSelectInput
 
-A compact time-picker control that renders adjacent hours and minutes inputs with an optional AM/PM toggle, expressing its value as total minutes from midnight.
+A compact time picker (timepicker) exported as `TimeSelectInput`: adjacent hours and minutes inputs with an optional AM/PM toggle. Values are total minutes from midnight, not an HH:mm string. There is no separate `TimePicker` export.
 
 The import below assumes a file directly under `src/`, after copying the source templates. Adjust the relative path for the target page.
 
@@ -69,3 +69,7 @@ Matches Cobalt input sizing. Use `'medium'` (default, 40px) when paired with oth
 | ----- | -------- | ------- | ----------- |
 | `am`  | `string` | `'AM'`  | AM label    |
 | `pm`  | `string` | `'PM'`  | PM label    |
+
+## Recipe integrations
+
+The Form page recipe uses this control for Start time and returns its numeric value in the profile passed to `onSave`: `profile.controlExamples.startTime`. The Active call recipe uses it in the Add callback Dialog; it starts at 09:00 (540 minutes), requires a date and formats the selected minutes as HH:mm only when scheduling. Keep `FormField` labels and the `data-qa` hours/minutes selectors when copying these examples.

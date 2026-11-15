@@ -1,6 +1,7 @@
 /** Read-only user fields shared by list cells and record details. */
 import React from 'react';
 import Flex from '@talkdesk/cobalt-react-flex';
+import { ChipGroup } from '../../components/extensions/src';
 import { Tag } from '@talkdesk/cobalt-react-tag';
 import { Text } from '@talkdesk/cobalt-react-typography';
 
@@ -12,22 +13,16 @@ export function StatusTag({ active }: { active: boolean }) {
   );
 }
 
-// The first two values as tags, the rest as a "+N" tag.
+/** Existing ChipGroup owns truncation and the complete overflow popup. */
 export function TagsCell({ values }: { values: string[] }) {
   if (!values.length) return <Text>-</Text>;
   return (
-    <Flex gap={1} alignY="center">
-      {values.slice(0, 2).map((v) => (
-        <Tag key={v} size="small" color="light-gray">
-          {v}
-        </Tag>
-      ))}
-      {values.length > 2 && (
-        <Tag size="small" color="theme">
-          {`+${values.length - 2}`}
-        </Tag>
-      )}
-    </Flex>
+    <ChipGroup
+      items={values.map((value) => ({ id: value, label: value }))}
+      maxVisible={2}
+      size="small"
+      data-qa="user-queues"
+    />
   );
 }
 

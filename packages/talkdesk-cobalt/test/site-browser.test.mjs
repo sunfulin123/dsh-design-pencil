@@ -101,8 +101,8 @@ test(
       .locator('summary')
       .filter({ hasText: /^Recipes/ })
       .click();
-    await sidebar.getByRole('link', { name: 'Users list with extensions', exact: true }).click();
-    await page.getByRole('heading', { name: 'Users list with extensions', exact: true }).waitFor();
+    await sidebar.getByRole('link', { name: 'Card widgets', exact: true }).click();
+    await page.getByRole('heading', { name: 'Card widgets', exact: true }).waitFor();
     for (const width of [1024, 820, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(
@@ -165,11 +165,11 @@ test(
       await page.waitForTimeout(70);
       assert.deepEqual(errors, [], entry.path);
     }
-    await page.goto(base + '?entry=recipes/extensions/users-list.tsx&scheme=dark');
-    await page.getByRole('button', { name: 'Create user', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Full name' }).fill('Taylor Sample');
-    await page.getByRole('button', { name: 'Save user' }).click();
-    await page.getByText('Taylor Sample', { exact: true }).waitFor();
+    await page.goto(base + '?entry=recipes/card-widgets.tsx&scheme=dark');
+    await page.getByRole('button', { name: 'Add widget', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Widget title' }).fill('Sample metric');
+    await page.getByRole('button', { name: 'Save widget' }).click();
+    await page.getByText('Sample metric', { exact: true }).waitFor();
     assert.equal(await page.locator('html').getAttribute('data-co-colorscheme'), 'dark');
   },
 );

@@ -10,6 +10,10 @@ import { FormField } from './components/cobalt-extensions';
 
 Prefix and suffix slots reserve a minimum width of 32px (small) or 40px (medium), with 8px horizontal padding and no flex shrinking. The input takes the remaining width. Keep these slots centered when adapting icon or text adornments.
 
+## Label and control spacing
+
+FormField leaves an 8px gap below the label/counter row. Direct controls sit in a 20px body line-height container, so text-labelled controls such as Checkbox reserve their painted height instead of inheriting Box's zero line-height. Keep this source behavior when copying the component; a wrapper-only padding workaround does not fix a collapsed checkbox. Prefix/suffix controls retain their InputGroup layout.
+
 ## Basic Usage
 
 A complete activity-creation form composed from `FormField` wrappers around the extension control types: text `Input`, `Dropdown`, `DatePicker` + `TimeSelectInput` paired in a single field, a single `Choice` checkbox, a 2-column grid of multi-select `Choice` checkboxes, a horizontal radio group, and a `Textarea` — closed off by a primary/secondary `Button` row. Each row keeps the standard vertical layout: label on top (with the red `*` for required fields) and helper / hint text below the control.

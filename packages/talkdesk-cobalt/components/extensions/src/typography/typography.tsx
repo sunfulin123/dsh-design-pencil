@@ -66,6 +66,8 @@ export type TypographyProps = {
   children?: React.ReactNode;
   /** Semantic role. Defaults to `'body'`. Drives whether `Heading` or `Text` is rendered. */
   variant?: TypographyVariant;
+  /** Native Cobalt heading scale override; ignored for body/caption variants. */
+  scale?: 'large' | 'medium' | 'small';
   /**
    * Override the semantic heading level (`<h1>`–`<h6>`) without changing the
    * visual size. Heading variants only — ignored for text variants.
@@ -172,6 +174,7 @@ const BODY_LARGE_STYLE: React.CSSProperties = { fontSize: 16 };
 export const Typography: React.FC<TypographyProps> = ({
   children,
   variant = 'body',
+  scale,
   asLevel,
   weight,
   font = 'sans',
@@ -205,7 +208,7 @@ export const Typography: React.FC<TypographyProps> = ({
         data-component={dataComponent}
         data-qa={dataQa}
         level={config.level}
-        scale={config.scale}
+        scale={scale ?? config.scale}
         textAlign={textAlign}
         truncated={truncated}
       >
