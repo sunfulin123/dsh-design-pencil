@@ -226,7 +226,7 @@ After `bun install --frozen-lockfile` in `packages/`, run `bun run docs:dev`, `b
 
 ## HTML POC development and final review
 
-Read the [POC review guide](crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md) for frame paths, plan selection and evidence acceptance. Development uses the existing managed server and does not build delivery or change the official ledger. Final review captures the static artifact once; its pending manual fields still require review and `check-evidence.mjs` before handoff.
+Read the [POC review guide](crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md) for frame paths, plan selection and evidence acceptance. Development prefers Browser Use on the running local page; use the retained headless helper for unavailable capabilities. Development checks do not build delivery or change the official ledger. Final review captures the static artifact once; its pending manual fields still require review and `check-evidence.mjs` before handoff.
 
 ```sh
 node crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs dev --source /absolute/task --out /absolute/task --url http://127.0.0.1:4173 --steps /absolute/task/review/steps.json --sessions main,dialog,drawer

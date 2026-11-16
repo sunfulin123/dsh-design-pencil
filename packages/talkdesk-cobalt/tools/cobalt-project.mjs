@@ -389,7 +389,7 @@ async function main() {
       status: 'ready',
       project: out,
       registry: join(out, 'talkdesk-prototype.json'),
-      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. Use SS Preview Fill with AI for managed install/start. Build delivery/index.html before POC handoff.',
+      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. In the generated project directory, run pnpm install, then pnpm run dev through shell/process tools; retain the process handle, read the actual localhost URL and verify HTTP readiness. Complete the requested business UI and review the live URL with Browser Use when available; retain the headless fallback. An empty SS service list is not a blocker. Build delivery/index.html before POC handoff.',
     }),
   );
 }

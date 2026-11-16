@@ -1,6 +1,6 @@
 # POC development checks and frozen delivery review
 
-Use the bundled `scripts/review-poc.mjs` entry point for ordinary HTML and Cobalt Workspace POCs. Development checks and delivery evidence serve different purposes; do not run the full handoff gate after every local adjustment.
+Prefer Browser Use for visible POC interaction and visual review when its tools are available. Keep the bundled `scripts/review-poc.mjs` as the headless fallback and frozen static-delivery verifier for ordinary HTML and Cobalt Workspace POCs. Development checks and delivery evidence serve different purposes; do not run the full handoff gate after every local adjustment.
 
 ## Before implementation
 
@@ -8,9 +8,37 @@ Bind the exact selected DESIGN with `resolve-theme.mjs` immediately after saving
 
 Keep the confirmed screen/action scope. Establish the main business state and action results before building secondary views: when a sample staffing change must affect a metric, both views must derive from the same local sample data. Label illustrative data. Reuse an already confirmed Workspace/standalone choice; ask only if that choice remains unclear and changes the artifact. Read the exact pinned component source and its local Extensions wrapper before adjusting popup behavior or guessing props.
 
-## Develop on the existing managed server
+## Start and reuse a local development server
 
-Use SS Preview's configured target and managed install/start lifecycle. Cobalt projects run `pnpm run dev` with Vite/HMR; install dependencies once and reuse that target. Ordinary HTML uses its existing managed local HTTP preview. The review CLI neither installs packages nor starts or stops a development server.
+Start the development server yourself using the available shell/process tools. In the generated Cobalt project directory, run `pnpm install`, then `pnpm run dev` in an owned process session. Read Vite’s actual loopback URL from its output, retain the process handle and wait for a successful HTTP response before browser checks. Vite may choose another port when its default is occupied; use the reported URL without changing or terminating another service. Reuse this process for HMR instead of reinstalling or restarting after each edit. Ordinary HTML can use an existing local HTTP server or an owned server rooted at its task directory.
+
+SS Preview Fill with AI, `.synapse/preview.json` and the SS service list are not prerequisites for POC development. Do not ask the user to configure them or treat an empty service list as a blocker. If the user already has a suitable managed service, it can be reused; do not modify its configuration or stop its process. Keep SS Preview’s static-file handoff for final presentation.
+
+Do not stop after scaffolding. Finish the requested business pages and interactions, install/start the local project and verify them before reporting completion. The review CLI consumes the running URL; it does not install or start the development server. If actual shell execution, package access or permissions are unavailable, report that specific failure and continue independent implementation; never replace the missing capability with repeated requests for Preview setup.
+
+Record the project directory, command, process handle and URL. Stop only processes created for this task, using that handle, when no longer needed; keep a requested review preview available. Never kill by name or port. Report registry/VPN failures rather than substituting components or claiming startup succeeded.
+
+Background jobs are not durable services across a Harness restart. When resuming, check the recorded process handle and actual URL instead of assuming the server survived. If your task-owned server has stopped, restart it from the recorded directory and command, read its new URL and wait for HTTP readiness; do not reinstall unchanged dependencies or stop somebody else's service.
+
+## Review the visible page with Browser Use
+
+After HTTP readiness, use `browser_open` with the actual local URL and retain the returned surfaceId. The tool performs navigation and returns the committed `url` separately from `requestedUrl`; it is not an address-bar fill operation. Confirm meaningful page content with a read and screenshot before saying the prototype is visible. On failure, inspect the returned surfaceId and stage, check your server if needed and reuse that tab. Do not create blank tabs repeatedly or treat address-bar text as proof of navigation. If a separate UI tool edits an address bar, submit with Enter and check the resulting page. Existing configured dev-server/Talkdesk services keep their managed launch, readiness and ownership rules; Talkdesk's Atlas display URL is distinct from its development-server probe URL. Use `browser_read` to get fresh control refs and framePath values; operate the business iframe through those observed frames. Use native click/type/check/select/focus/press tools, then verify the visible application result with another read or screenshot. Source inspection helps identify controls; it never substitutes for the live page. Reuse the same Preview tab so the user sees the actual review and current page state.
+
+Ordinary `browser_screenshot` uses preview quality for quick inspection. For detailed acceptance, request `browser_screenshot({ quality: "original", viewport: true })` without annotations. This opt-in retains the whole captured viewport without the 1280px resize and stores the verbatim PNG as a separate file attachment. The displayed image may still follow attachment normalization. Use the original file and capture width/height, bytes and SHA-256 as evidence; do not treat the displayed image’s dimensions as the original. Copy a needed read-only attachment to the task evidence directory through file tools and verify its hash. An annotated capture is navigation assistance, not clean visual evidence.
+
+Original quality does not resize the Preview viewport or simulate a device. Exercise the prototype’s Size/state controls and application theme in the visible page. If exact outer viewports, a missing interaction, local evidence export or structured DOM inspection cannot be obtained through the exposed tools, use the retained headless fallback for that check. Formal `verify-surface` still requires a frozen capture manifest and full viewport/DOM evidence; an image attachment alone cannot satisfy it.
+
+Do not replay a business action merely because a tool timed out or returned an uncertain result. Read the current page first. Do not assume a separate headless browser shares filled fields, storage or modal state: start a clean, reproducible fallback case and report the engine and coverage actually used. Missing Browser Use tools are a reason to use the fallback, never to ask the user to configure Preview services.
+
+## Review long content without claiming unseen coverage
+
+Use a fresh text `browser_read` to identify the relevant framePath and scrollable container ref. Frame and container scroll geometry reports x/y, viewportWidth/viewportHeight and contentWidth/contentHeight in CSS pixels. `browser_scroll` reports actual movement and the resulting geometry; a zero move can mean the wrong container or a boundary, not completed review.
+
+Capture the starting viewport, scroll about 80% of the target's viewport height, read fresh refs and capture again. Continue until the requested content and bottom controls have actually been reviewed. Record the frame/container, scroll positions and screenshots; check fixed headers, pagination and lazy-loaded content in the real scrolled views. Limit each target to 20 screenshots, and report any remaining range or infinite/virtual content as unverified instead of claiming the entire page passed. DOM text outside the viewport is not visual inspection.
+
+For an additional overview, request `browser_screenshot({ quality: "original", fullPage: true })`. Do not combine fullPage with viewport or annotated. The original PNG covers only the root document's currently loaded content without resizing or scrolling the page; iframe content, internally scrolled tables and virtual lists still require separate viewport checks. Preserve and inspect the original file, not only the normalized display image. Full-document capture is bounded by 32 million physical pixels, a 32768px edge and 20 MiB PNG bytes; use overlapping viewport captures when refused. A long overview cannot replace required viewport screenshots or frozen static evidence.
+
+## Headless development fallback
 
 Batch related fixes, then check two or three representative sessions: the main view, its principal dialog and its principal drawer. Choose actual selectors from the implementation. Do not omit requested features to make verification shorter.
 

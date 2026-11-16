@@ -183,4 +183,8 @@ Cobalt extension components are editable source templates copied into project-lo
 
 ### POC review resources
 
-The HTML Skill owns separate managed-server development checks and frozen static-delivery review through its bundled review-poc helper. Frame-aware Chromium input, cropped images and shared DOM inspection avoid temporary browser scripts and duplicate final captures. Development/history reports are rejected by the handoff ledger validator; source/PNG fingerprints and legacy final ledgers retain their existing contract. See the bundled references/poc-review.md for commands and review ownership.
+The HTML Skill owns separate local-server development checks and frozen static-delivery review through its bundled review-poc helper. Frame-aware Chromium input, cropped images and shared DOM inspection avoid temporary browser scripts and duplicate final captures. Development/history reports are rejected by the handoff ledger validator; source/PNG fingerprints and legacy final ledgers retain their existing contract. See the bundled references/poc-review.md for commands and review ownership.
+
+POC page operations prefer the available Browser Use tools on the visible Preview tab. Original-quality screenshots retain a separate verbatim PNG; a normalized display attachment is not the original evidence. The existing headless workflow remains available for missing tool capabilities, exact viewport capture and frozen final evidence.
+
+Visible POC review confirms committed navigation and records overlapping long-page coverage from document/container geometry. Optional fullPage originals are root-document overviews, not proof of iframe, virtual-list or full viewport acceptance; the existing headless/static evidence path remains available.

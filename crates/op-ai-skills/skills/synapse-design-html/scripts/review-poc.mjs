@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Fast managed-server review and a frozen static-delivery capture using the same browser pipeline. */
+/** Fast local-server review and a frozen static-delivery capture using the same browser pipeline. */
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -16,7 +16,7 @@ import {
 } from "./poc-review-evidence.mjs";
 import { collectSourceFiles, inferSurfaceScope } from "./verify-source.mjs";
 const usage =
-  "review-poc.mjs dev|final --source <task-directory> --out <task-directory> [--url <managed-dev-url> | --entry <static-html>] [--project <pnpm-project>] [--steps <plan.json>] [--sessions main,dialog,drawer] [--viewports 1440,390] [--scheme light|dark] [--scope app|page]";
+  "review-poc.mjs dev|final --source <task-directory> --out <task-directory> [--url <local-dev-url> | --entry <static-html>] [--project <pnpm-project>] [--steps <plan.json>] [--sessions main,dialog,drawer] [--viewports 1440,390] [--scheme light|dark] [--scope app|page]";
 const scripts = path.dirname(fileURLToPath(import.meta.url));
 function parse(argv) {
   const [mode, ...args] = argv;
@@ -51,7 +51,7 @@ function parse(argv) {
   if (options.scheme && !["light", "dark"].includes(options.scheme))
     throw new Error("scheme must be light or dark");
   if (mode === "dev" && (!options.url || options.entry))
-    throw new Error("Development review requires the existing managed-server --url");
+    throw new Error("Development review requires a running local-server --url");
   if (
     mode === "final" &&
     (options.url || (!options.entry && !options.project) || options.sessions || options.viewports)

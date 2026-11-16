@@ -187,7 +187,9 @@ recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口�
 
 原生 TagGroup 是默认满宽的字段，嵌入已应用条件栏时必须显式 width auto、flex none，并验证标签与计数的中心线；仅检查页面没有横向溢出会遗漏多行回归。Insights 条件栏保持 48px 单行，窄屏只在该栏内滚动；Team Schedule 工具栏按业务视口换行，不能用固定 min-width 与横向滚动藏住操作。
 
-POC review 的开发和正式模式共用有界 Chromium runner：开发模式使用受管 URL 并只写独立报告；正式模式校验 DESIGN 与外壳完整性后构建一次，再一次采集交互、完整视口/裁剪截图和 live DOM。`verify-surface --capture` 检查来源、静态入口、PNG 字节/尺寸/哈希及所需完整视口后复用采集，不再次启动浏览器。手动质量判定仍需确认；开发、历史和中断模式不可交接，先前正式账本及图片保存到 history。显式同源 frame 路径支持真实鼠标、键盘、Tab 和焦点断言，跨源 frame 拒绝检查。源码 lint 排除编译 delivery 和哈希匹配的受保护外壳，完整产物指纹仍覆盖它们；可编辑 Extensions 不豁免。
+POC 开发检查优先使用 SS Browser Use 打开实际本地 URL、读取 framePath 和新鲜引用并操作可见页面。验收截图显式请求 `quality: "original"`，保留完整视口的原始 PNG 文件和像素尺寸、CSS 视口、字节数及哈希；供模型显示的图片仍可能被附件服务缩小。原图模式不改变页面视口，不能冒充指定宽度检查。fullPage 与显式 viewport/annotated 互斥，仅捕获当前根文档；物理像素上限为 3200 万、最长边 32768px、PNG 20 MiB，超限分屏查看。browser_open 成功回执区分实际 url 和 requestedUrl，不能把地址栏文字当成成功；恢复时检查服务是否仍存活并复用已返回的 surfaceId；严格多视口、DOM 采集或静态证据要求仍由现有 headless fallback 满足。Browser Use 不可用或能力不足时保留旧 runner，已执行或结果不明的业务操作不自动重放。
+
+POC review 的开发和正式模式共用有界 Chromium runner：开发模式使用已启动的本地 URL 并只写独立报告；正式模式校验 DESIGN 与外壳完整性后构建一次，再一次采集交互、完整视口/裁剪截图和 live DOM。`verify-surface --capture` 检查来源、静态入口、PNG 字节/尺寸/哈希及所需完整视口后复用采集，不再次启动浏览器。手动质量判定仍需确认；开发、历史和中断模式不可交接，先前正式账本及图片保存到 history。显式同源 frame 路径支持真实鼠标、键盘、Tab 和焦点断言，跨源 frame 拒绝检查。源码 lint 排除编译 delivery 和哈希匹配的受保护外壳，完整产物指纹仍覆盖它们；可编辑 Extensions 不豁免。
 
 ## Provenance
 
@@ -195,8 +197,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "5a57ac5e-6a4d-47b7-ad9a-7102de78a7cc",
-  "verified_at": "2026-11-15T16:31:25.183930+00:00",
+  "task_id": "a6d34fee-b76d-46f1-9813-b769a503f3c1",
+  "verified_at": "2026-11-16T04:52:23.767483+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -232,7 +234,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "f0d75e139d52389406f8c056a0eb991f4b12d1ea55bb87f0a86a045ff8e4d2c4",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "74d3302244cde8170051c6413ba66ce29d5568deb85a7bef114e17b5ab2c68ef",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -291,12 +293,12 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "a7b0475adf1146f0764e3b3786b6bc42aa7e06d82fb437ba1cc2a85850bd0cbd",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "016cab09a784c3173c2af0634d0350fb70fe0a6efe89300e8ba1ecd697d12513",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "e986269a8fc1fe2a6b49a401f099113191957881b1fb3b0e66876605ec86ea76",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "239e1d5bda494fea70ec312c91b852fce4079430f0d849d47404ff326dc36d0c",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "89c25cebde5deb29acd02b618d1dd82bec892d624d67f6b18d4770d977f99813",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
     "packages/talkdesk-cobalt/test/export.test.mjs": "f06e3140f0e3281c7fe27acb1528841ce30eeddd4aef25c08bcb3d5033b4e48d",
@@ -336,7 +338,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/content/components/extensions/timezonedropdown.mdx": "f316d12e54dfe896e2170471734b951902b4ea3188a12ef49e7a4145ca5c0a96",
     "packages/talkdesk-cobalt/recipes/support/filter-button.tsx": "c62bb83168efb253664d55e044479df56daaeeff4db0ff2926f460d0c0e4af42",
     "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "d3c9fab6aba15891356744eee98e59fe321436b35db846b0d18bb08c7d9800fc",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "2e4b3db7273f39d264fc89b8da3626c1e4632c838788bfc492cf5145812f606a",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-browser-actions.mjs": "1433ae1a1abd96041355621e4a77754008e130c11ff21afc4b12c5536378e66f",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-capture-plan.mjs": "f0e9d3ac9d4f6a7936f9875e6f30e7c7e0e5b91f268d899960d63f9ba6898d0a",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-review-evidence.mjs": "bcceaa942ff1ebdba2dffe7a8d57a1312794fd9b0a2ee260b9826a7cedf051b3",
@@ -344,10 +346,11 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs": "7d47e1cf7316f79397aa200ebfc00c9575b76adf54a75ad8395680b7f9b85139",
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
-    "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c"
+    "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
+    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "Final ordinary-wrapper regression verifies business captures and full wrapper source provenance; no contract change after the reviewed implementation.",
-  "evidence": "20/20 workflow/migration tests, source/image corruption and history/interrupted-final checks, packaged SS parser and resource tests."
+  "reason": "Describe root-only fullPage capture and explicit nested scrolling while preserving managed Preview and headless fallback.",
+  "evidence": "packages/dsh-node-runtime/README.md; crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md"
 }
 ```
 

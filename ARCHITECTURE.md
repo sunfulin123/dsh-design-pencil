@@ -108,9 +108,9 @@ embedding host override > 临时 MCP override > 设备偏好。
 
 普通 HTML POC 的尺寸/状态预览源码归属独立的 [html-prototype-review](packages/html-prototype-review/README.md) 模块，通过复制导出到核心 HTML Skill 的 [review helper](crates/op-ai-skills/skills/synapse-design-html/references/html-review.md) 提供：生成的外层工具栏调整独立业务 iframe 的真实视口，以业务页适配器和 URL 状态选择切换内容；没有 Cobalt/React 依赖或 Feature flags。截图和 DOM 检查仍直接进入业务页，完整来源指纹包含预览外层与适配资源。此能力沿用静态 POC 交接，不新增 SS Host/Client 或 MCP 协议。
 
-Cobalt Workspace HTML 原型通过同一 Skill 资源中的 `cobalt-project.mjs` 创建 React 18/Vite 项目；工具从版本和 SHA-256 固定的官方 `ai-docs` shell 快照复制源码，仅对项目副本应用自有 Atlas 外壳展示、几何计算、多应用路由和顶部状态控件适配。`talkdesk-prototype.json` 注册 Dock 应用和业务页面，组件与设计规范读取 HTML Skill 内的 `cobalt-reference/content/` 本地资料库，`talkdesk-cobalt` 风格内置设计契约，不在用户会话下载文档。工具不启动进程或安装依赖；SS Preview 管运行环境和服务，编译产物 `delivery/index.html` 沿用现有静态 POC 交接。其他风格和直接 canvas 路线保持原有边界。
+Cobalt Workspace HTML 原型通过同一 Skill 资源中的 `cobalt-project.mjs` 创建 React 18/Vite 项目；工具从版本和 SHA-256 固定的官方 `ai-docs` shell 快照复制源码，仅对项目副本应用自有 Atlas 外壳展示、几何计算、多应用路由和顶部状态控件适配。`talkdesk-prototype.json` 注册 Dock 应用和业务页面，组件与设计规范读取 HTML Skill 内的 `cobalt-reference/content/` 本地资料库，`talkdesk-cobalt` 风格内置设计契约，不在用户会话下载文档。脚手架工具仅复制源码；AI 通过可用 shell/process 工具安装依赖并启动本任务的 Vite 服务，不以 Preview 配置为前置条件，编译产物 `delivery/index.html` 沿用现有静态 POC 交接。其他风格和直接 canvas 路线保持原有边界。
 
-HTML POC 的浏览器执行与 DOM 检查共用同一个 runner。`review-poc.mjs dev` 读取受管服务，只写独立开发报告；`final` 可构建一次静态 delivery，在同一次浏览器会话完成交互、截图与 DOM 检查，交给 verifier 校验冻结来源和截图哈希后复用。正式账本与截图保留历史，开发或中断记录不具备交接资格。显式 frame 路径只允许同源 iframe，输入通过 Chromium 原生鼠标和键盘派发；裁剪证据不能代替要求的完整视口。完整产物参与指纹，编译依赖及哈希匹配的受保护外壳不作为业务源码 lint。
+HTML POC 日常可见页面操作优先使用宿主提供的 Browser Use；其原图模式保留独立 PNG 文件，显示附件不作为原始像素证据。无头浏览器执行与 DOM 检查保留共用 runner，作为缺少能力和正式冻结证据时的 fallback。`review-poc.mjs dev` 读取已启动的本地服务，只写独立开发报告；`final` 可构建一次静态 delivery，在同一次浏览器会话完成交互、截图与 DOM 检查，交给 verifier 校验冻结来源和截图哈希后复用。正式账本与截图保留历史，开发或中断记录不具备交接资格。显式 frame 路径只允许同源 iframe，输入通过 Chromium 原生鼠标和键盘派发；裁剪证据不能代替要求的完整视口。完整产物参与指纹，编译依赖及哈希匹配的受保护外壳不作为业务源码 lint。
 
 ## 变量集合与内置库
 

@@ -29,12 +29,12 @@
 {
   "version": 1,
   "status": "verified",
-  "task_id": "5a57ac5e-6a4d-47b7-ad9a-7102de78a7cc",
-  "verified_at": "2026-11-15T16:27:34.547153+00:00",
+  "task_id": "a6d34fee-b76d-46f1-9813-b769a503f3c1",
+  "verified_at": "2026-11-16T04:52:24.639458+00:00",
   "sources": {
     "AGENTS.md": "7da0c473de69169cfb78912511768de09471c37b27dda73ffa5a7c86ba8694ce",
     "CLAUDE.md": "bc7d7d08404221dac202b49a8ae99a6d27852c065739aa56962d38354392b235",
-    "COMMANDS.md": "fc439fbaddb4d86839d98b4d531b7bd35ad6b20744db148d4fa96f46fbe8da08",
+    "COMMANDS.md": "69c13b7656a540249a0beb84c3b468564842d11cd1ca78682d1de2e0881f09a0",
     "CODING_STANDARDS.md": "ffcd96889725001358ffcddc9dd58ace062c20b286823677b25a3c28bbb5f78d",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
     "REVIEW.md": "27935d6e64cb4ed95272e396530c1aed3d1ea16f156e78b8ca8d31fc404488b4",
@@ -52,9 +52,9 @@
     ".github/instructions/rust.instructions.md": "249ba9f96f46a7f774388ee789b78fa18ee4c73c305334b63e42f72c80f44291",
     ".github/instructions/javascript.instructions.md": "258739dfde0348a64036ab71cd3a6c956cc4e641e931df8b322304ee3a160c09",
     ".github/workflows/maintenance.yml": "a766085afc8367de20e2b85778d4f1401b072a2ec09516fe317f3e9bd4bb3f0d",
-    "ARCHITECTURE.md": "7c8acd29156336718e52be26518648b444b641f0ad113f7df1487557e958bf8c"
+    "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e"
   },
-  "reason": "Architecture and Commands now route the dev/final workflow; existing maintenance, source-cap and honest evidence rules remain applicable.",
-  "evidence": "Reviewed ARCHITECTURE.md, COMMANDS.md and REVIEW.md against runtime ownership and selected actual checks."
+  "reason": "Navigation recovery and long-page coverage retain manual acceptance, static delivery and source-maintenance gates.",
+  "evidence": "DEVELOPMENT.md; REVIEW.md; crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md"
 }
 ```
