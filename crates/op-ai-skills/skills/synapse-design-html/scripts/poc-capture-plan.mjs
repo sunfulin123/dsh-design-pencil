@@ -139,6 +139,9 @@ function validateStep(step, sessionName, index) {
       },
     );
   }
+  if (step.stable !== undefined && (step.action !== "waitFor" || typeof step.stable !== "boolean"))
+    throw new Error("waitFor stable must be boolean");
+  if (step.stable && step.visible === false) throw new Error("Stable waits require a visible target");
   validateFrame(step.frame);
   return step;
 }

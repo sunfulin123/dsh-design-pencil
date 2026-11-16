@@ -123,6 +123,8 @@ export async function writeAuthoringIndex(root, registry) {
       '',
       'All paths in this page start at the bundled cobalt-reference directory. In a generated project, read registry/authoring.json again: recipe/source/README paths have been rebased to that project.',
       '',
+      'Use these fixed-version local resources if Cobalt MCP is unavailable. Ask to pause only if the user explicitly requires MCP; do not delegate configuration to the user.',
+      '',
       '1. Read references/cobalt-workspace.md from the parent HTML Skill for build mode, shell setup and delivery workflow.',
       '2. Search [registry/authoring.json](registry/authoring.json) by purpose, keywords or exact ID. Read only the matching component and recipe docs; this index does not replace API documentation.',
       '3. Read the complete relevant [Cobalt source templates](components/extensions/INDEX.md), including implementation, types, CSS and local dependencies; copy them to src/components/cobalt-extensions/, then adapt and import local modules. Never install @openpencil/cobalt-extensions or import/alias that package name. Official @talkdesk/* packages remain normal dependencies. Otherwise read the matching core/marketplace entry and its exact import/version in [content/registry.json](content/registry.json). Duplicate names such as Button, Table and DatePicker are separate APIs; qualify the library and import. Reuse existing controls for tags, badges, avatars and empty states before adding UI. Retain specialized chart/schedule layouts and requested motion as composition, and document any missing component capability.',

@@ -2,13 +2,15 @@
 
 Load this companion only after the selected style id is `talkdesk-cobalt`. Keep the HTML skill's requirements, content-state planning, layout judgement and evidence review. Use the official Cobalt docs for component imports, props, tokens, recipes, accessibility and Workspace behavior; do not maintain a second component rulebook here.
 
+Use the pinned documentation shipped with the selected runtime when Cobalt MCP is unavailable; continue without asking the user to configure MCP. Pause only when the user explicitly requires MCP as the source. Report the local version and any missing capability; do not guess undocumented props or silently switch documentation versions.
+
 ## Source-template reuse is required
 
 Cobalt Extensions are complete editable source templates, not an installable npm library. Never run npm/yarn/pnpm/bun add or install for `@openpencil/cobalt-extensions`. Never generate imports from that name, file dependencies, package wrappers or aliases for it. Official `@talkdesk/*` and React dependencies are separate. After copying, the target project’s implementation and types define the custom component API. Adapt them as needed and keep local callers, styles and index paths consistent; template documentation remains a reference baseline.
 
 Before using an extension, resolve its ID with the bundled lookup and run `--id <component-ID> --read-source`. Read all returned implementation, types, CSS and local dependency code, plus its API guidance and example. Copy the source tree into the target project's `src/components/cobalt-extensions/`, adapt the local implementation to the business requirement, and use correct relative imports from each page. Do not inline duplicate component implementations into every page, and do not modify the original templates during a design task.
 
-Workspace creation copies the source automatically. For standalone apps or an existing repository, use `node <skill-directory>/scripts/cobalt-project.mjs copy-source --out <project-directory>`. It copies the full component tree and dependencies.json without installing anything or changing package.json. If the destination exists, read and adapt that local source instead of overwriting it. Add only the required official dependencies after inspecting the target app. Do not use extension examples until their relative imports resolve to actual copied source.
+Workspace creation copies the source automatically. For standalone apps or an existing repository, use `node <skill-directory>/scripts/cobalt-project.mjs copy-source --out <project-directory>`. It copies the full component tree and dependencies.json without installing anything or changing package.json. Copy filters apply only inside the source tree, including when the runtime is installed below node_modules. The helper verifies the declared component files and copied bytes before promoting a staged project; a missing component is an error, not a usable scaffold. If the destination exists, read and adapt that local source instead of overwriting it. Add only the required official dependencies after inspecting the target app. Do not use extension examples until their relative imports resolve to actual copied source.
 
 ## Choose the build mode
 

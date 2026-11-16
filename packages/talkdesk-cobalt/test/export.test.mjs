@@ -100,7 +100,7 @@ test('AI source-template registry exposes complete implementations and never adv
 test('exported source templates create a self-contained project with local imports and no extension package or alias', async (t) => {
   const root = await realpath(await mkdtemp(join(tmpdir(), 'cobalt-source-export-')));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const skill = join(root, 'skill');
+  const skill = join(root, 'node_modules/@synapse-studio/design/runtime/skills/synapse-design-html');
   await exportCobalt(skill);
   const manifest = JSON.parse(await readFile(join(skill, 'cobalt-reference/bundle.json')));
   await exportCobalt(skill);

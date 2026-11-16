@@ -8,6 +8,7 @@ export {
  * Shared single-browser runner for HTML POC screenshots and declarative
  * interactive checks with per-stage timing and total-deadline enforcement.
  */
+import { waitForStableTarget } from "./poc-browser-stability.mjs";
 import { inspectCaptureSurface } from "./poc-surface-inspection.mjs";
 import { assertionExpression, runBrowserAction, screenshotRegion } from "./poc-browser-actions.mjs";
 import { createHash } from "node:crypto";
@@ -272,6 +273,7 @@ export async function runPocCapturePlan({
             stepStage,
             async () => {
               const waitBudget = Math.min(Number(step.timeoutMs) || 5000, remaining(stepStage));
+              if (step.stable) return waitForStableTarget(page, step, waitBudget);
               const waitEnd = Date.now() + waitBudget;
               const checkExpr = assertionExpression({
                 action: "assertVisible",

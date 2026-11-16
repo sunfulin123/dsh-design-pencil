@@ -197,8 +197,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "a6d34fee-b76d-46f1-9813-b769a503f3c1",
-  "verified_at": "2026-11-16T04:52:23.767483+00:00",
+  "task_id": "2642cbb5-6288-45b6-9932-63a39c8e25f9",
+  "verified_at": "2026-11-16T06:35:33.013031+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -293,7 +293,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "a7b0475adf1146f0764e3b3786b6bc42aa7e06d82fb437ba1cc2a85850bd0cbd",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "e986269a8fc1fe2a6b49a401f099113191957881b1fb3b0e66876605ec86ea76",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "1facdf27ff36e482ffd57524f3baf653b4997c22ad26a6772a7e316a8b6da5f6",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
@@ -301,15 +301,15 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "89c25cebde5deb29acd02b618d1dd82bec892d624d67f6b18d4770d977f99813",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
-    "packages/talkdesk-cobalt/test/export.test.mjs": "f06e3140f0e3281c7fe27acb1528841ce30eeddd4aef25c08bcb3d5033b4e48d",
+    "packages/talkdesk-cobalt/test/export.test.mjs": "cef4f733f95154705795ff754e0ed1cdba3bb55cba51e21e0d025fd25295394b",
     "packages/talkdesk-cobalt/test/site-browser.test.mjs": "784d406aa82e61d8f78c307df3d1800747a1f2e12fef73e062ea2bd82d3c475c",
-    "packages/talkdesk-cobalt/tools/authoring-index.mjs": "20406742dfa1b43636086d30baec932b39400e0183dde61c78627ca68b61b637",
+    "packages/talkdesk-cobalt/tools/authoring-index.mjs": "46c9f9b6817d89e1c05040705533b033b0c3fb81d979be794a9a90b7b98dbee2",
     "packages/talkdesk-cobalt/tools/cobalt-lookup.mjs": "e0851b36e8c8b10a1bbe6e1548c4aaeecdac9535e054869262b05eeadde407ee",
     "packages/talkdesk-cobalt/recipes/catalog.json": "18943147dbea06dfad0f4310f750e85f003078a8212d2462fbbfb93b86c3dd73",
     "packages/talkdesk-cobalt/recipes/list-page.tsx": "6b20341a78b8371b500d486bd738fe654f3d73727fca488230b7937cea473586",
     "packages/talkdesk-cobalt/recipes/list-page-data.ts": "f5c55bdece74fb250ae7d29f120d0b0e5c147ac0f0b54ccd3593c337b2b75343",
     "packages/talkdesk-cobalt/skill/references/cobalt/INDEX.md": "53267d06781ed6cc5a699f057b4614c0fedd59207846557c479345e27198f6c9",
-    "packages/talkdesk-cobalt/tools/cobalt-source-templates.mjs": "6585fca5a1a23ab52d2b9785c425dbf0cc645a9e2761e9f62ce890bed4ce20cc",
+    "packages/talkdesk-cobalt/tools/cobalt-source-templates.mjs": "5df71ea6d76e40cc59a51ba2baaddab43efcb035342fc9b5e1644212760b513f",
     "packages/talkdesk-cobalt/recipes/support/list-page-dialogs.tsx": "05fad0774d1ef661b216bf83536cc58217bd8f2beefb782874c54ff877f230a0",
     "packages/talkdesk-cobalt/recipes/support/list-user-fields.tsx": "21838a42f97e6582831103d8edcbf57c649b1ca6827c648181b51eb8c79b69b6",
     "packages/talkdesk-cobalt/components/extensions/src/dialog/dialog.tsx": "853ef3df233c1c0144b56ad7b4f778c3bd552b289366e7ddaf693acf9d5731c1",
@@ -340,17 +340,17 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "2e4b3db7273f39d264fc89b8da3626c1e4632c838788bfc492cf5145812f606a",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-browser-actions.mjs": "1433ae1a1abd96041355621e4a77754008e130c11ff21afc4b12c5536378e66f",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-capture-plan.mjs": "f0e9d3ac9d4f6a7936f9875e6f30e7c7e0e5b91f268d899960d63f9ba6898d0a",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-capture-plan.mjs": "b1a211b156d570fbfc7826b047fa49be67744ab65cac6bb2adc8de1fb4150f0c",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-review-evidence.mjs": "bcceaa942ff1ebdba2dffe7a8d57a1312794fd9b0a2ee260b9826a7cedf051b3",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-source-inventory.mjs": "51cae6bd081f6ff4f17b4311c4127c8a7686470cfb40f697e625949ccd35bb2e",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs": "7d47e1cf7316f79397aa200ebfc00c9575b76adf54a75ad8395680b7f9b85139",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs": "f29c2dd4d11a880ce2aaa97260d3aa1b9197a943765feb0713dd723fe222f5d7",
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "Describe root-only fullPage capture and explicit nested scrolling while preserving managed Preview and headless fallback.",
-  "evidence": "packages/dsh-node-runtime/README.md; crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md"
+  "reason": "Verify copied sources and viewport-aware duplicate findings, finite-motion waits, fixed local docs fallback and unchanged final evidence boundary",
+  "evidence": "packages/dsh-node-runtime/poc-stability.test.mjs; packages/dsh-node-runtime/cobalt-source-copy.test.mjs; packages/talkdesk-cobalt/test/export.test.mjs"
 }
 ```
 
@@ -383,3 +383,5 @@ TimezoneDropdown 的可选 customInput 由原生 marketplace Dropdown 连接点�
 Workspace adapter 7 merges built-in Dock entries by canonical ID, preserving official SVG URLs, titles and drawer shape. Built-in iconName is optional and cannot override the official icon; custom apps retain their icon contract. Registry schemaVersion remains 1. cobalt-source.json protectedFiles inventories and hashes shell, prototype-runtime, main and the verifier; builds run verify-workspace-shell before Vite. Business pages and Extensions stay editable, and existing projects are not automatically upgraded.
 
 Copied Extensions use a private popup-dismiss-boundary with native close callbacks for innermost Escape, outside pointer/focus and business-frame blur. React portal ownership is checked after propagation; native exit animations require aria-expanded reactivation. Legacy MultiDropdown close renders can remove tabindex, so the labelled trigger preserves keyboard focus. Non-search dropdowns also accept Escape when focus remains on body. StatefulPopup keeps a normal target: changing it to a function switches to its controlled visible mode.
+
+Component copy filters operate relative to the component source root, including installed runtime ancestors named node_modules/test/dist. Staging verifies registry-declared files and copied bytes before promotion. POC waitFor stable waits for finite target/ancestor motion and stable bounds without changing CSS; Browser Use settle supplies the visible-page equivalent. DOM inspection excludes ancestor-hidden/clipped controls and deduplicates identical observations. Local revisions use selected development sessions; whole-source/PNG fingerprints still gate final evidence, so cross-revision dependency-based reuse is not claimed. Fixed-version bundled Cobalt documentation is the default when MCP is unavailable unless the user explicitly requires MCP.

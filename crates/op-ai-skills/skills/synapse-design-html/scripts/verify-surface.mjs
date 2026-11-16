@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import { deduplicateSurfaceFindings } from './poc-surface-inspection.mjs';
 import {readCaptureEvidence,archiveEvidence} from './poc-review-evidence.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -162,6 +163,7 @@ async function main() {
     ? readCaptureEvidence(path.resolve(opts.capture),{source:path.resolve(sourceTarget),out:outDir,viewports:activeViewports,scope:surfaceScope})
     : await captureAndInspectViewports(opts.url, outDir, activeViewports, {timeoutMs:opts.timeoutMs,scope:surfaceScope});
   allFindings.push(...renderResult.domFindings);
+  allFindings.splice(0, allFindings.length, ...deduplicateSurfaceFindings(allFindings));
 
   // 6. Write / Merge Evidence Report
   const reportPath = path.join(outDir, 'evidence-report.json');

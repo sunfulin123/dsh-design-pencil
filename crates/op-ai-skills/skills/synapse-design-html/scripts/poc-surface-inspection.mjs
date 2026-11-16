@@ -11,13 +11,29 @@ const geometryExpression = `(() => {
               const cs = getComputedStyle(el);
               return parseFloat(cs.borderTopWidth) >= 1 && cs.borderTopStyle !== 'none' && cs.borderTopColor !== 'rgba(0, 0, 0, 0)';
             }).length;
-            const describeCtrl = el => el.id ? '#' + el.id : (el.name ? el.tagName.toLowerCase() + '[name="' + el.name + '"]' : el.tagName.toLowerCase());
+            const describeCtrl = el => {
+              const parts=[];
+              for(let node=el;node;node=node.parentElement) {
+                if(node.id) {parts.unshift('#'+node.id);break;}
+                const siblings=node.parentElement ? [...node.parentElement.children].filter(child=>child.tagName===node.tagName) : [node];
+                parts.unshift(node.tagName.toLowerCase()+':nth-of-type('+(siblings.indexOf(node)+1)+')');
+              }
+              return parts.join('>');
+            };
+            const painted = el => {
+              for (let node=el;node;node=node.parentElement) {
+                const cs=getComputedStyle(node);
+                if (cs.display==='none' || cs.visibility==='hidden' || cs.visibility==='collapse' || Number(cs.opacity)===0 || cs.contentVisibility==='hidden') return false;
+                if (/^rect\\(0(?:px)?,?\\s*0(?:px)?,?\\s*0(?:px)?,?\\s*0(?:px)?\\)$/.test(cs.clip) || cs.clipPath==='inset(50%)') return false;
+              }
+              return true;
+            };
             const selectChevronIssues = [];
             for (const sel of document.querySelectorAll('select:not([multiple])')) {
               const sz = parseInt(sel.getAttribute('size') || '1', 10);
               if (sz > 1) continue;
               const r = sel.getBoundingClientRect();
-              if (r.width === 0 || r.height === 0) continue;
+              if (r.width === 0 || r.height === 0 || !painted(sel)) continue;
               const cs = getComputedStyle(sel);
               if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) continue;
               const bordered = parseFloat(cs.borderRightWidth) >= 1 && cs.borderRightStyle !== 'none' && cs.borderRightColor !== 'rgba(0, 0, 0, 0)';
@@ -48,7 +64,7 @@ const geometryExpression = `(() => {
             // Menu buttons may be compact or icon-only; field inset rules apply to selection controls.
             for (const trig of document.querySelectorAll('[role="combobox"], button[aria-haspopup="listbox"]')) {
               const r = trig.getBoundingClientRect();
-              if (r.width === 0 || r.height === 0) continue;
+              if (r.width === 0 || r.height === 0 || !painted(trig)) continue;
               const cs = getComputedStyle(trig);
               if (cs.display === 'none' || cs.visibility === 'hidden') continue;
               const icon = [...trig.querySelectorAll('[data-chevron], svg, i')].filter(el => {
@@ -80,7 +96,7 @@ export function surfaceFindings(geom, vp, scope = "page") {
       severity: "P0",
       category: "responsive-dom",
       rule: "horizontal-overflow",
-      location: vp.label,
+      location: `${vp.label} (${vp.width}x${vp.height})`,
       message: `Horizontal overflow of ${geom.overflowPx}px detected at ${vp.width}x${vp.height}.`,
     });
   }
@@ -89,7 +105,7 @@ export function surfaceFindings(geom, vp, scope = "page") {
       severity: "P1",
       category: "responsive-dom",
       rule: "broken-image",
-      location: vp.label,
+      location: `${vp.label} (${vp.width}x${vp.height})`,
       message: `${geom.brokenImgs} broken image(s) (naturalWidth === 0) detected at ${vp.label}.`,
     });
   }
@@ -102,7 +118,7 @@ export function surfaceFindings(geom, vp, scope = "page") {
       severity: "P1",
       category: "craft-floor",
       rule: "dropdown-chevron-inset",
-      location: vp.label,
+      location: `${vp.label} (${vp.width}x${vp.height})`,
       message: `Dropdown/select chevron inset defect: ${geom.selectChevronIssues.slice(0, 3).join("; ")}. Use appearance: none, inset the chevron 12px-16px from the right border, and set padding-right: 36px-40px.`,
     });
   }
@@ -111,7 +127,7 @@ export function surfaceFindings(geom, vp, scope = "page") {
       severity: "P1",
       category: "second-order-slop",
       rule: "pill-soup-overload",
-      location: vp.label,
+      location: `${vp.label} (${vp.width}x${vp.height})`,
       message: `Pill & Box Soup detected: ${geom.smallBorderedPills} small bordered pill/chip boxes on screen (max 22). Replace bordered pills/chips with open typographic hierarchy and whitespace.`,
     });
   }
@@ -121,7 +137,7 @@ export function surfaceFindings(geom, vp, scope = "page") {
       severity: "P0",
       category: "6-state-verification",
       rule: "hidden-attribute-overridden",
-      location: vp.label,
+      location: `${vp.label} (${vp.width}x${vp.height})`,
       message: `${geom.brokenHidden} hidden elements remain displayed.`,
     });
   return findings;
@@ -229,4 +245,15 @@ export async function inspectCaptureSurface(
     );
   }
   return { documents: frames.length, findings };
+}
+
+/** Collapse repeated observations, retaining separate targets, sessions/frames and messages. */
+export function deduplicateSurfaceFindings(findings) {
+  const seen = new Set();
+  return findings.filter(finding => {
+    const key = JSON.stringify([finding.severity, finding.category, finding.rule, finding.location, finding.message]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

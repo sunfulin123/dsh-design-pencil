@@ -5,12 +5,38 @@ import { fileURLToPath } from 'node:url';
 
 export const sourceDestination = 'src/components/cobalt-extensions';
 const sourcePrefix = 'components/extensions/src';
-const copyFilter = (path) =>
-  !path.split('/').some((part) => ['__tests__', 'test', 'node_modules', 'dist'].includes(part));
+const excludedDirectories = new Set(['__tests__', 'test', 'node_modules', 'dist']);
+const includeSource = (path) => !path.split(/[\\/]/).some((part) => excludedDirectories.has(part));
 const json = (value) => JSON.stringify(value, null, 2) + '\n';
 
 export async function copyComponentSources(library, destination) {
-  await cp(join(library, sourcePrefix), destination, { recursive: true, filter: copyFilter });
+  const source = join(library, sourcePrefix);
+  const paths = (await filesUnder(source)).filter((path) => includeSource(relative(source, path)));
+  const registry = JSON.parse(await readFile(join(library, 'registry/authoring.json'), 'utf8'));
+  const required = new Set(['index.ts', 'INDEX.md']);
+  for (const component of registry.components) {
+    for (const path of [component.readme, ...component.sourceFiles]) {
+      if (!path.startsWith(sourcePrefix + '/') || path.split('/').includes('..')) {
+        throw new Error(`Invalid component source path: ${path}`);
+      }
+      required.add(path.slice(sourcePrefix.length + 1));
+    }
+  }
+  const available = new Set(paths.map((path) => relative(source, path)));
+  for (const path of required) {
+    if (!available.has(path)) throw new Error(`Incomplete Cobalt source library: ${path}`);
+  }
+  await cp(source, destination, {
+    recursive: true,
+    filter: (path) => includeSource(relative(source, path)),
+  });
+  // Validate within the caller's staging transaction, before the project can be promoted.
+  for (const path of paths) {
+    const copied = join(destination, relative(source, path));
+    if (!(await readFile(copied)).equals(await readFile(path))) {
+      throw new Error(`Incomplete Cobalt component copy: ${copied}`);
+    }
+  }
   await cp(
     join(library, 'components/extensions/dependencies.json'),
     join(destination, 'dependencies.json'),
