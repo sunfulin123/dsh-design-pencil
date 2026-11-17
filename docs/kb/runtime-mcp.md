@@ -197,8 +197,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "2642cbb5-6288-45b6-9932-63a39c8e25f9",
-  "verified_at": "2026-11-16T06:35:33.013031+00:00",
+  "task_id": "af26c3aa-b8dc-4ddc-b30c-2261b1bd28f6",
+  "verified_at": "2026-11-17T08:05:05.944795+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -214,7 +214,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "33cc3aaae3b8df0a7e42e3fce072992de210f683fca8cf3291adcceaa2ad37f0",
+    "packages/bun.lock": "188f2c25edb00951464ed94ddb9b9816f36b7c98e59ee74bbd3a02561471e93b",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -349,8 +349,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "Verify copied sources and viewport-aware duplicate findings, finite-motion waits, fixed local docs fallback and unchanged final evidence boundary",
-  "evidence": "packages/dsh-node-runtime/poc-stability.test.mjs; packages/dsh-node-runtime/cobalt-source-copy.test.mjs; packages/talkdesk-cobalt/test/export.test.mjs"
+  "reason": "The lock changes only the local runtime version to 0.8.5-synapse.7; QuickJS versions and WASM/MCP execution and packaging boundaries are unchanged.",
+  "evidence": "node --test packages/dsh-node-runtime/package.test.mjs scripts/check-dsh-runtime.test.mjs: 17 passed; node scripts/check-dsh-runtime-dependencies.mjs: 168 packages passed."
 }
 ```
 
