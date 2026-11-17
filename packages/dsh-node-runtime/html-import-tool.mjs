@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { basename, dirname, extname, resolve } from 'node:path';
 import { captureHtmlPage, clampViewport } from './html-browser-capture.mjs';
+import { withHtmlFontDefaults } from './html-font-defaults.mjs';
 import { registerPageFonts } from './html-fonts.mjs';
 import { fetchRemoteHtmlWithResources, validateExternalUrl } from './html-sources.mjs';
 
@@ -127,6 +128,7 @@ async function importCaptures(captures, args, deps, sourceName) {
   const y = Number(args.y) || 0;
   for (const capture of captures) {
     const snapshot = JSON.parse(capture.snapshot);
+    withHtmlFontDefaults(snapshot);
     if (sourceName && !snapshot.title) snapshot.title = sourceName;
     if (captures.length > 1)
       snapshot.title = `${snapshot.title || 'HTML Import'} · ${capture.width}px`;

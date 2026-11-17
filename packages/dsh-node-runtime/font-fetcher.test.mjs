@@ -56,3 +56,29 @@ test('Fontsource provides an explicit subset fallback when Google is unavailable
   assert.equal(out.available, true)
   assert.match(out.warning, /Fontsource latin subset/)
 })
+
+test("an already running editor discovers fonts registered by a standalone importer", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "dsh-font-live-cache-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const editor = new FontFetcher(directory);
+  const importer = new FontFetcher(directory);
+  const face = { family: "Material Icons", weight: 400, italic: false };
+  const bytes = Buffer.from([0, 1, 0, 0, 1]);
+  await importer.addFace(face, bytes);
+  assert.equal(editor.manifest().faces[0]?.family, "Material Icons");
+  assert.deepEqual(await editor.bytes(editor.manifest().faces[0].id), bytes);
+  await editor.addFace({ family: "Roboto", weight: 500 }, bytes);
+  assert.equal(new FontFetcher(directory).manifest().faces.length, 2);
+});
+
+test("independent importers retain concurrently registered faces", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "dsh-font-concurrent-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const bytes = Buffer.from([0, 1, 0, 0, 1]);
+  await Promise.all(
+    Array.from({ length: 6 }, (_, index) =>
+      new FontFetcher(directory).addFace({ family: `Face ${index}`, weight: 400 }, bytes),
+    ),
+  );
+  assert.equal(new FontFetcher(directory).manifest().faces.length, 6);
+});

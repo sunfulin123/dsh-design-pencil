@@ -124,7 +124,7 @@ export function describePage({ maxMedia }) {
   const fonts = [];
   if (document.fonts) {
     for (const face of document.fonts) {
-      if (face.status !== 'loaded') continue;
+      if (face.status !== 'loaded' && face.status !== 'error') continue;
       fonts.push({
         family: face.family.replace(/^['"]|['"]$/g, ''),
         weight: face.weight,
@@ -133,36 +133,52 @@ export function describePage({ maxMedia }) {
     }
   }
   const sources = [];
-  for (const sheet of document.styleSheets) {
+  const fontStylesheets = [];
+  const seenSheets = new Set();
+  const visitSheet = (sheet) => {
+    if (!sheet || seenSheets.has(sheet) || seenSheets.size >= 32) return;
+    seenSheets.add(sheet);
     let rules;
     try {
       rules = sheet.cssRules;
     } catch {
-      continue;
+      if (sheet.href) fontStylesheets.push(sheet.href);
+      return;
     }
-    for (const rule of rules ?? []) {
-      if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
-      const family = rule.style
-        .getPropertyValue('font-family')
-        .replace(/^['"]|['"]$/g, '')
-        .trim();
-      const src = rule.style.getPropertyValue('src');
-      const urls = [...src.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)].map((match) => {
-        try {
-          return new URL(match[1], sheet.href || document.baseURI).href;
-        } catch {
-          return null;
+    const visitRules = (entries) => {
+      for (const rule of entries ?? []) {
+        if (rule.type === CSSRule.IMPORT_RULE) {
+          visitSheet(rule.styleSheet);
+          continue;
         }
-      });
-      sources.push({
-        family,
-        weight: rule.style.getPropertyValue('font-weight') || '400',
-        style: rule.style.getPropertyValue('font-style') || 'normal',
-        urls: urls.filter(Boolean),
-      });
-    }
-  }
-  return { controls, media, fonts, fontSources: sources };
+        if (rule.type !== CSSRule.FONT_FACE_RULE) {
+          if (rule.cssRules) visitRules(rule.cssRules);
+          continue;
+        }
+        const family = rule.style
+          .getPropertyValue("font-family")
+          .replace(/^['"]|['"]$/g, "")
+          .trim();
+        const src = rule.style.getPropertyValue("src");
+        const urls = [...src.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)].flatMap(([, value]) => {
+          try {
+            return [new URL(value, sheet.href || document.baseURI).href];
+          } catch {
+            return [];
+          }
+        });
+        sources.push({
+          family,
+          weight: rule.style.getPropertyValue("font-weight") || "400",
+          style: rule.style.getPropertyValue("font-style") || "normal",
+          urls,
+        });
+      }
+    };
+    visitRules(rules);
+  };
+  for (const sheet of document.styleSheets) visitSheet(sheet);
+  return { controls, media, fonts, fontSources: sources, fontStylesheets };
 }
 
 /** Show only one captured media element so its screenshot has no overlays. */

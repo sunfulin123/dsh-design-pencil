@@ -173,6 +173,7 @@ async function captureViewport(page, network, url, viewport, options, extractorS
     snapshot: JSON.stringify(snapshot),
     fonts: facts?.fonts ?? [],
     fontSources: facts?.fontSources ?? [],
+    fontStylesheets: facts?.fontStylesheets ?? [],
     warnings,
   };
 }

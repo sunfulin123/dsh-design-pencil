@@ -76,6 +76,8 @@ through `update_node`/`batch_design`. Google Fonts faces are downloaded and
 cached by family, weight and style. Private/unavailable fonts are reported,
 not silently claimed to match.
 
+HTML browser imports, including standalone `convertHtmlToDocument`, collect rendered font faces and the source stylesheets' `@font-face` URLs. Inaccessible cross-origin sheets and their CSS imports are fetched with bounded downloads; discovery follows stylesheet semantics rather than provider or extension names. Page TTF/OTF faces are registered in the persistent host font cache, keyed by family, weight and style. Existing editor hosts refresh this inventory, and independent per-face records preserve concurrent registrations. Ordinary imported text retains its original family first and gains an Inter/system fallback when the source supplies none; icon ligatures and private-use glyphs retain their original face. WOFF/WOFF2-only and inaccessible faces remain explicit warnings. Browser loading alone does not prove that the canvas registered a font, and the local cache is not embedded into a portable `.op` file.
+
 `compare_figma_fidelity({url,nodeId})` compares official Figma PNG output with
 the editor screenshot and reports pixel differences, dimensions,
 structural deltas and text parity. Both import paths keep each layer's

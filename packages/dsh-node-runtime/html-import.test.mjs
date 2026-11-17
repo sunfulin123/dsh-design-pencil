@@ -2,11 +2,11 @@
 // Pure helpers always run; tests that drive headless Chrome need
 // DSH_E2E_CHROME=1 and must actually execute to count as acceptance.
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, mkdir, symlink } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, symlink, copyFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { EngineSession } from './engine-session.mjs';
+import { convertHtmlToDocument, EngineSession } from './engine-session.mjs';
 import { discoverChromiumBinary } from './html-browser-capture.mjs';
 import { loadedFaces, registerPageFonts } from './html-fonts.mjs';
 import { parseRenderMode, parseViewports } from './html-import-tool.mjs';
@@ -372,5 +372,42 @@ test(
       'mobile media query stacks the row',
     );
     assert.equal(mobile.width, 390);
+  },
+);
+
+test(
+  "standalone HTML conversion registers its linked font for a reopened editor",
+  { skip: CHROME_SKIP },
+  async (context) => {
+    const dir = await tempDir(context);
+    const old = process.env.DSH_FIGMA_CACHE_DIR;
+    process.env.DSH_FIGMA_CACHE_DIR = join(dir, "cache");
+    context.after(() => {
+      if (old === undefined) delete process.env.DSH_FIGMA_CACHE_DIR;
+      else process.env.DSH_FIGMA_CACHE_DIR = old;
+    });
+    await copyFile(
+      new URL(
+        "../../crates/op-host-desktop/assets/fonts/InstrumentSerif-Regular.ttf",
+        import.meta.url,
+      ),
+      join(dir, "body.ttf"),
+    );
+    const htmlPath = join(dir, "page.html");
+    await writeFile(
+      join(dir, "fonts.css"),
+      `@font-face{font-family:'Instrument Serif';src:url('./body.ttf');font-weight:400;font-style:normal}`,
+    );
+    await writeFile(
+      htmlPath,
+      `<link rel="stylesheet" href="fonts.css"><p style="font-family:'Instrument Serif';font-size:24px">Linked font</p>`,
+    );
+    const converted = await convertHtmlToDocument({ htmlPath });
+    assert.equal(converted.renderMode, "browser-snapshot");
+    const { FontFetcher } = await import("./font-fetcher.mjs");
+    const reopened = new FontFetcher(join(dir, "cache", "fonts"));
+    const face = reopened.manifest().faces.find((entry) => entry.family === "Instrument Serif");
+    assert.ok(face, "font bytes must survive conversion rather than only load in Chromium");
+    assert.deepEqual(await reopened.bytes(face.id), await readFile(join(dir, "body.ttf")));
   },
 );

@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 export function parseGoogleFontCss(css) {
@@ -31,20 +31,46 @@ export class FontFetcher {
   constructor(directory, { fetchImpl = globalThis.fetch } = {}) {
     this.#directory = directory
     this.#fetch = fetchImpl
-    const inventory = join(directory, 'manifest.json')
+    this.#refreshInventory();
+  }
+
+  #refreshInventory() {
+    const inventory = join(this.#directory, 'manifest.json');
     if (existsSync(inventory)) {
-      const saved = JSON.parse(readFileSync(inventory, 'utf8'))
-      if (!Array.isArray(saved.faces)) throw new Error('Invalid font cache manifest')
-      for (const face of saved.faces) {
-        if (!/^[a-f0-9]{64}$/.test(face.id)) throw new Error('Invalid font cache identifier')
-        this.#faces.set(face.id, face)
+      const saved = JSON.parse(readFileSync(inventory, 'utf8'));
+      if (!Array.isArray(saved.faces)) throw new Error('Invalid font cache manifest');
+      for (const face of saved.faces) this.#remember(face);
+    }
+    // Each face has its own atomic record: independent importer/host processes
+    // cannot lose one another's registrations while updating the legacy manifest.
+    let files;
+    try {
+      files = readdirSync(this.#directory);
+    } catch (error) {
+      if (error.code === 'ENOENT') return;
+      throw error;
+    }
+    for (const file of files) {
+      if (/^[a-f0-9]{64}\.json$/.test(file)) {
+        const face = JSON.parse(readFileSync(join(this.#directory, file), 'utf8'));
+        if (`${face.id}.json` !== file) throw new Error('Invalid font cache identifier');
+        this.#remember(face);
       }
     }
   }
 
-  manifest() { return { faces: [...this.#faces.values()] } }
+  #remember(face) {
+    if (!/^[a-f0-9]{64}$/.test(face.id)) throw new Error('Invalid font cache identifier');
+    this.#faces.set(face.id, face);
+  }
+
+  manifest() {
+    this.#refreshInventory();
+    return { faces: [...this.#faces.values()] };
+  }
 
   async bytes(id) {
+    this.#refreshInventory()
     if (!this.#faces.has(id)) return null
     return readFile(join(this.#directory, `${id}.ttf`))
   }
@@ -66,11 +92,15 @@ export class FontFetcher {
   }
 
   async #register(face) {
-    this.#faces.set(face.id, { ...face, path: `/api/fonts/${face.id}` })
-    await mkdir(this.#directory, { recursive: true, mode: 0o700 })
-    const temporary = join(this.#directory, `manifest.${process.pid}.tmp`)
-    await writeFile(temporary, JSON.stringify(this.manifest()), { mode: 0o600 })
-    await rename(temporary, join(this.#directory, 'manifest.json'))
+    const record = { ...face, path: `/api/fonts/${face.id}` };
+    await mkdir(this.#directory, { recursive: true, mode: 0o700 });
+    const temporary = join(this.#directory, `manifest.${process.pid}.${randomUUID()}.tmp`);
+    await writeFile(temporary, JSON.stringify(record), { mode: 0o600 });
+    await rename(temporary, join(this.#directory, `${face.id}.json`));
+    this.#refreshInventory();
+    const aggregate = join(this.#directory, `manifest.${process.pid}.${randomUUID()}.tmp`);
+    await writeFile(aggregate, JSON.stringify(this.manifest()), { mode: 0o600 });
+    await rename(aggregate, join(this.#directory, 'manifest.json'));
   }
 
   #face(font) {
@@ -106,6 +136,7 @@ export class FontFetcher {
   }
 
   async #load(face, signal) {
+    this.#refreshInventory()
     if (this.#faces.has(face.id)) return { ...this.#faces.get(face.id), available: true }
     const path = join(this.#directory, `${face.id}.ttf`)
     let bytes

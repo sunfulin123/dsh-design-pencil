@@ -1,13 +1,18 @@
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { basename, dirname, extname, resolve } from 'node:path';
-import { captureHtmlSnapshotWithBrowser } from './html-browser-capture.mjs';
+import { basename, dirname, extname, join, resolve } from 'node:path';
+import { captureHtmlPage } from './html-browser-capture.mjs';
 import {
   collectLocalHtmlResources,
   fetchRemoteHtmlWithResources,
   validateExternalUrl,
   VIRTUAL_PROJECT_ORIGIN,
 } from './html-sources.mjs';
+
+import { registerPageFonts } from './html-fonts.mjs';
+import { FontFetcher } from './font-fetcher.mjs';
+import { defaultFigmaCacheDir } from './figma-import-jobs.mjs';
+import { withHtmlFontDefaults } from './html-font-defaults.mjs';
 
 const require = createRequire(import.meta.url);
 const { DesignEngine } = require('./wasm/op_dsh_engine.js');
@@ -92,27 +97,40 @@ export async function convertHtmlToDocument({
       : Number(viewportWidth);
 
   if (preferBrowser && !isZip) {
-    const snapshotJson = await captureHtmlSnapshotWithBrowser({
+    const capture = await captureHtmlPage({
       htmlBytes: sourceBytes,
       baseDir,
       targetUrl: remoteUrl,
-      viewportWidth: Number.isFinite(width) && width > 0 ? width : 1440,
-      viewportHeight: Number.isFinite(height) && height > 0 ? height : 900,
-    });
+      viewports: [
+        {
+          width: Number.isFinite(width) && width > 0 ? width : 1440,
+          height: Number.isFinite(height) && height > 0 ? height : 900,
+        },
+      ],
+      timeoutMs: 15_000,
+    }).catch(() => null);
+    const snapshotJson = capture?.captures?.[0]?.snapshot;
     if (snapshotJson) {
+      let parsed;
       try {
-        const parsed = JSON.parse(DesignEngine.convert_snapshot_document(snapshotJson));
-        if (parsed && parsed.ok && parsed.document) {
-          if (resolvedName) parsed.document.name = resolvedName;
-          const summary = summarizeImportedDocument(parsed.document);
-          return {
-            ...parsed,
-            renderMode: 'browser-snapshot',
-            ...summary,
-          };
-        }
+        parsed = JSON.parse(DesignEngine.convert_snapshot_document(snapshotJson));
       } catch {
-        // Fall through to static CSS importer if snapshot conversion fails
+        // An unsupported browser snapshot can still use the static importer.
+      }
+      if (parsed?.ok && parsed.document) {
+        if (resolvedName) parsed.document.name = resolvedName;
+        const fonts = await registerPageFonts(capture.captures, {
+          fetcher: new FontFetcher(join(defaultFigmaCacheDir(), 'fonts')),
+          baseDir,
+        });
+        withHtmlFontDefaults(parsed.document);
+        return {
+          ...parsed,
+          warnings: [...(parsed.warnings ?? []), ...fonts.warnings],
+          renderMode: 'browser-snapshot',
+          fonts: fonts.faces,
+          ...summarizeImportedDocument(parsed.document),
+        };
       }
     }
   }
@@ -134,6 +152,7 @@ export async function convertHtmlToDocument({
   );
   const parsed = JSON.parse(raw);
   if (parsed && parsed.document) {
+    withHtmlFontDefaults(parsed.document);
     const summary = summarizeImportedDocument(parsed.document);
     return {
       ...parsed,

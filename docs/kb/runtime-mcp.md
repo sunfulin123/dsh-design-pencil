@@ -198,8 +198,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "383bf9ac-1a52-42e7-b4ae-b30823d0dce1",
-  "verified_at": "2026-11-17T12:46:22.542915+00:00",
+  "task_id": "bbadd090-99e6-4a40-8f8f-8b5afecb2aa5",
+  "verified_at": "2026-11-17T13:18:07.610918+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -235,7 +235,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "30661ddf0c8e972b05afd8eb435dce5f0a7f4a6a401ea2931ca02f9d1832748e",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "85885ba13e0ba3d58c8dd4e5b1d72328f553cedde2f784b00a41ef5524525a06",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -350,8 +350,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "Clarify dedicated host import boundary while preserving sensitive generic dispatch and source/write access checks.",
-  "evidence": "Reviewed Skill and model tool text; no runtime API or capability access classification changed."
+  "reason": "The imported-font Skill paragraph adds source acquisition guidance; it does not change renderer evidence, fontResolution reporting, POC phase gates or import authorization.",
+  "evidence": "Reviewed synapse-design Imported Fonts and runtime-mcp fontResolution/real-renderer contracts; 65 focused runtime tests passed."
 }
 ```
 

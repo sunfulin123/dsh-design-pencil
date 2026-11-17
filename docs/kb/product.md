@@ -4,6 +4,8 @@ HTML and Workspace preview controls share fixed visual source: a 44px bar, 32px 
 
 Cobalt recipe 目录提供 Card widgets（指标/圆环、模板、空图、用例、情绪、关键词和班次分布）、ECharts gallery（预测/历史、双图预测与情景比较）和 Team Schedule（24 小时时间轴、六行 staffing 指标、代理行、事件与固定分页；331px 业务 iframe 下分页换行保持可见，手机指标行随表格滚动以露出代理行）。精简 Users list 示例由 Card widgets 取代；完整 List page 保留。图表使用真实 Apache ECharts，控件、图标及主题来自 Cobalt/复制的 Extensions；排班网格为自有组合布局。WFM 源文件 revision/哈希记录在 recipe 的 support/recipe-sources.json，不引入其服务、鉴权或 store。数据与保存均为本地演示，日期/时区不代表真实查询或转换；Card 编辑角标不提供拖拽缩放。Add callback 的 Note 使用三行 Cobalt Textarea 并保留换行。
 
+HTML 导入自动识别 stylesheet、CSS imports 与 `@font-face` 字体来源并注册可支持的原字体；普通文字保留源字体优先并补默认回退，不要求用户选择陌生字体。图标字体不能替换成正文；下载或格式限制如实报告。字体缓存由本地编辑器共享，不作为跨机器便携字体包。
+
 范围：当前 DSH Rust/WASM 引擎、Node MCP host 和浏览器设计页面，不泛化为保留的上游产品。
 
 HTML POC 开发检查优先通过 Browser Use 操作已有本地服务的可见页面，确认实际提交地址及业务内容。长页面按约 80% 视口高度重叠滚动并重新读取和截图，每个目标最多 20 张；其余范围明确标记未验证。fullPage 原图只补充根文档概览，不能展开 iframe、内部表格或虚拟列表；正式验收才构建静态交付，并复用同一次浏览器采集的交互、截图和 DOM 结果。开发报告与旧历史不能作为正式交接证据，变更后人工评审保持待确认。Cobalt 新项目支持 React Fast Refresh 和按页面延迟加载，图表依赖不进入 Users 首屏。
@@ -167,8 +169,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "383bf9ac-1a52-42e7-b4ae-b30823d0dce1",
-  "verified_at": "2026-11-17T12:46:21.825672+00:00",
+  "task_id": "bbadd090-99e6-4a40-8f8f-8b5afecb2aa5",
+  "verified_at": "2026-11-17T13:15:13.107140+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -178,7 +180,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "30661ddf0c8e972b05afd8eb435dce5f0a7f4a6a401ea2931ca02f9d1832748e",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "85885ba13e0ba3d58c8dd4e5b1d72328f553cedde2f784b00a41ef5524525a06",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
@@ -263,8 +265,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "Document explicit supplied-source import as independent of new-design stages without allowing AI-authored intermediate shortcuts.",
-  "evidence": "Reviewed synapse-design standalone import guidance and design-tool-text dedicated import description; SS importer policy and mock Figma tests passed."
+  "reason": "Documents autonomous imported-font resolution and ordinary fallback while preserving source import authorization and design-phase boundaries.",
+  "evidence": "65 focused runtime tests passed; source Skill and runtime README reviewed against html-import.mjs, html-fonts.mjs and font-fetcher.mjs."
 }
 ```
 

@@ -1,6 +1,6 @@
 import { readFile, realpath } from 'node:fs/promises';
 import { isAbsolute, relative, resolve } from 'node:path';
-import { validateExternalUrl } from './html-sources.mjs';
+import { fetchFontResource, linkedFontSources } from './html-font-stylesheets.mjs';
 
 const MAX_FONT_BYTES = 20 * 1024 * 1024;
 const MAX_FACES = 24;
@@ -39,10 +39,12 @@ function sfntUrl(sources, face) {
     (source) =>
       source.family.toLowerCase() === face.family.toLowerCase() &&
       weightOf(source.weight) === face.weight &&
-      (source.style !== 'normal') === face.italic,
+      (source.style !== "normal") === face.italic,
   );
   if (!match) return { url: null, webOnly: false };
-  const url = match.urls.find((candidate) => /\.(?:ttf|otf)(?:[?#]|$)/i.test(candidate));
+  const url =
+    match.urls.find((candidate) => /\.(?:ttf|otf)(?:[?#]|$)/i.test(candidate)) ??
+    match.urls.find((candidate) => !/\.woff2?(?:[?#]|$)/i.test(candidate));
   return { url: url ?? null, webOnly: !url && match.urls.length > 0 };
 }
 
@@ -56,17 +58,13 @@ async function readLocalFont(url, baseDir) {
   return readFile(candidate);
 }
 
-async function fontBytes(url, baseDir) {
+async function fontBytes(url, baseDir, fetchImpl) {
   const parsed = new URL(url);
   const bytes =
-    parsed.hostname === '127.0.0.1'
+    parsed.hostname === "127.0.0.1"
       ? await readLocalFont(url, baseDir)
-      : Buffer.from(
-          await (
-            await fetch(validateExternalUrl(url), { signal: AbortSignal.timeout(30_000) })
-          ).arrayBuffer(),
-        );
-  if (!bytes || bytes.length > MAX_FONT_BYTES) throw new Error('font file missing or too large');
+      : (await fetchFontResource(url, MAX_FONT_BYTES, fetchImpl)).bytes;
+  if (!bytes || bytes.length > MAX_FONT_BYTES) throw new Error("font file missing or too large");
   return bytes;
 }
 
@@ -74,10 +72,14 @@ async function fontBytes(url, baseDir) {
  * Make the fonts a captured page used available to the canvas renderer:
  * the page's own TTF/OTF `@font-face` files first, then Google Fonts.
  */
-export async function registerPageFonts(captures, { fetcher, baseDir }) {
-  const sources = captures.flatMap((capture) => capture.fontSources ?? []);
+export async function registerPageFonts(
+  captures,
+  { fetcher, baseDir, fetchImpl = globalThis.fetch },
+) {
+  const linked = await linkedFontSources(captures, fetchImpl);
+  const sources = [...linked.sources, ...captures.flatMap((capture) => capture.fontSources ?? [])];
   const faces = loadedFaces(captures);
-  const warnings = [];
+  const warnings = [...linked.warnings];
   const results = [];
   const remote = [];
   for (const face of faces) {
@@ -85,9 +87,12 @@ export async function registerPageFonts(captures, { fetcher, baseDir }) {
     if (url && typeof fetcher.addFace === 'function') {
       try {
         // oxlint-disable-next-line no-await-in-loop -- faces register one at a time into one cache
-        const outcome = await fetcher.addFace(face, await fontBytes(url, baseDir));
-        results.push({ ...outcome, source: 'page' });
-        continue;
+        const outcome = await fetcher.addFace(face, await fontBytes(url, baseDir, fetchImpl));
+        if (outcome.available) {
+          results.push({ ...outcome, source: 'page' });
+          continue;
+        }
+        warnings.push(`Page font ${face.family} ${face.weight} was rejected: ${outcome.error}`);
       } catch (error) {
         warnings.push(
           `Page font ${face.family} ${face.weight} could not be loaded: ${error.message}`,
