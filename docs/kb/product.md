@@ -66,6 +66,7 @@ DSH 插件仅保留宿主会话、沙箱文件边界与前端交互适配；面�
 可按需读取的指导分区清单与发布报告措辞均由运行时的
 [design-workflow-text](../../packages/dsh-node-runtime/design-workflow-text.mjs) 与
 [design-tool-text](../../packages/dsh-node-runtime/design-tool-text.mjs) 提供，插件不再保留副本。
+用户明确要求导入已有 HTML 文件/网页或 Figma 文件/链接时，使用宿主的专用来源导入入口创建独立可编辑文档，不要求经过从零设计的风格选择和 POC 阶段；来源访问权限和认证错误仍须如实报告。禁止用 AI 自行生成的中间 HTML 绕过已约定的设计路线。
 大画布分区创建和按需浅层读取，避免将完整图层树反复加载到模型上下文；具体执行结果仍需实测。
 截图已采集不等于模型已经查看；改变原型或截图会使旧的评审证据失效。
 HTML POC 的 [capture-poc](../../crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs)
@@ -166,8 +167,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "2642cbb5-6288-45b6-9932-63a39c8e25f9",
-  "verified_at": "2026-11-16T06:39:48.301156+00:00",
+  "task_id": "383bf9ac-1a52-42e7-b4ae-b30823d0dce1",
+  "verified_at": "2026-11-17T12:46:21.825672+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -177,7 +178,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "74d3302244cde8170051c6413ba66ce29d5568deb85a7bef114e17b5ab2c68ef",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "30661ddf0c8e972b05afd8eb435dce5f0a7f4a6a401ea2931ca02f9d1832748e",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
@@ -262,8 +263,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "Final DOM dedup keys retain distinct viewport observations and the source/PNG evidence boundary is unchanged; fixed-version documentation fallback does not change the existing prototype product boundary",
-  "evidence": "packages/dsh-node-runtime/poc-stability.test.mjs; crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs; packages/dsh-node-runtime/poc-review-workflow.test.mjs"
+  "reason": "Document explicit supplied-source import as independent of new-design stages without allowing AI-authored intermediate shortcuts.",
+  "evidence": "Reviewed synapse-design standalone import guidance and design-tool-text dedicated import description; SS importer policy and mock Figma tests passed."
 }
 ```
 

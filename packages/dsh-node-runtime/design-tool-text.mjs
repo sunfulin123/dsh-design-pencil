@@ -73,7 +73,7 @@ export const LIVE_TOOL_TEXT = {
   },
   import: {
     description:
-      "Import an existing HTML file (.html/.htm/.zip), web page URL, Figma file (.fig/.fig.json), Figma design link (https://www.figma.com/design|file/...), SVG file (.svg), or web snapshot (.json) and convert it into a new editable .op design document in the workspace. Always converts the input into a .op file and opens the .op design in the managed OpenPencil editor rather than opening raw HTML or .fig directly. Requires Session Workspace Write permission.",
+      "Import an existing HTML file (.html/.htm/.zip), web page URL, Figma file (.fig/.fig.json), Figma design link (https://www.figma.com/design|file/...), SVG file (.svg), or web snapshot (.json) and convert it into a new editable .op design document in the workspace. This dedicated user-source import is independent of new-design funnel stages and does not change an existing POC or draft. Always converts the input into a .op file and opens the .op design in the managed OpenPencil editor rather than opening raw HTML or .fig directly. Requires Session Workspace Write permission.",
     parameters: {
       source:
         "Local file path (.html, .htm, .zip, .fig, .svg, .json) or HTTP/HTTPS URL (web page or figma.com design link) to import.",

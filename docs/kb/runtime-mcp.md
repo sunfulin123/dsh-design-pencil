@@ -139,6 +139,7 @@ revision，`plan_design_canvas` 消费结构化 `platform` 与宽高参数，主
 引擎的质量结果含 `contentIssues`（阻断）与 `spacingLeads`（纵向容器下同级分组标题缩进/间距、小尺寸角标贴边，仅作线索）。过期 revision 拒绝
 组装，不能仅用目录摘要替代风格正文。无文档时可在隔离 host 查询，但用户资产目录必须
 与真实宿主一致。`get_design_capabilities` 使用实际 schema，未知或外部操作默认 sensitive。
+统一 Skill 将用户提供来源的独立导入与从零设计阶段区分：宿主专用导入创建新文档，不借用通用敏感工具分发，也不改变已有 POC/草稿状态；这不放宽来源、写入和认证检查。
 统一设计 Skill 和 HTML POC Skill 均随运行时分发；后者的截图脚本、共享 `judgement.md` 及引用资料也是必需文件。Cobalt companion 与 `cobalt-project.mjs` 属于同一 Skill 资源，完整组件/设计参考内容由 Skill 资源目录内的 `cobalt-reference` 提供；其固定 shell 快照与自有模板随 runtime 文件哈希清单分发，不新增 MCP 引擎工具。生成的 React 原型先编译到静态 delivery 再交接，业务 iframe 与完整 shell 的浏览器验收分别记录。
 运行时同时分发无宿主耦合的设计领域模块（`selection-visual-evidence.mjs`、`png-rgba-codec.mjs`、
 `device-frame.mjs`、`design-code-context.mjs`、`design-discovery-gate.mjs`、`draft-canvas-contract.mjs`、`draft-quality-gate.mjs`、
@@ -197,8 +198,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "af26c3aa-b8dc-4ddc-b30c-2261b1bd28f6",
-  "verified_at": "2026-11-17T08:05:05.944795+00:00",
+  "task_id": "383bf9ac-1a52-42e7-b4ae-b30823d0dce1",
+  "verified_at": "2026-11-17T12:46:22.542915+00:00",
   "sources": {
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
@@ -234,7 +235,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "74d3302244cde8170051c6413ba66ce29d5568deb85a7bef114e17b5ab2c68ef",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "30661ddf0c8e972b05afd8eb435dce5f0a7f4a6a401ea2931ca02f9d1832748e",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -349,8 +350,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
   },
-  "reason": "The lock changes only the local runtime version to 0.8.5-synapse.7; QuickJS versions and WASM/MCP execution and packaging boundaries are unchanged.",
-  "evidence": "node --test packages/dsh-node-runtime/package.test.mjs scripts/check-dsh-runtime.test.mjs: 17 passed; node scripts/check-dsh-runtime-dependencies.mjs: 168 packages passed."
+  "reason": "Clarify dedicated host import boundary while preserving sensitive generic dispatch and source/write access checks.",
+  "evidence": "Reviewed Skill and model tool text; no runtime API or capability access classification changed."
 }
 ```
 
