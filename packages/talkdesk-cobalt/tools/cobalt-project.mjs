@@ -195,6 +195,7 @@ async function createProject(out, spec) {
       'tools/verify-workspace-shell.mjs',
       await readFile(new URL('./verify-workspace-shell.mjs', import.meta.url)),
     );
+    await put(stage, 'tools/inspect-business-source.mjs', await readFile(new URL('./inspect-business-source.mjs', import.meta.url)));
     await writeSourceResources(library, stage);
     const sourceDependencies = JSON.parse(
       await readFile(join(library, 'components/extensions/dependencies.json'), 'utf8'),
@@ -254,7 +255,8 @@ async function createProject(out, spec) {
         packageManager: 'pnpm@11.7.0',
         scripts: {
           dev: 'vite --host 127.0.0.1',
-          build: 'node tools/verify-workspace-shell.mjs && vite build',
+          check: 'node tools/verify-workspace-shell.mjs && node tools/inspect-business-source.mjs && tsc --noEmit',
+          build: 'node tools/verify-workspace-shell.mjs && node tools/inspect-business-source.mjs && vite build',
           preview: 'vite preview --host 127.0.0.1',
         },
         dependencies: {
@@ -389,7 +391,7 @@ async function main() {
       status: 'ready',
       project: out,
       registry: join(out, 'talkdesk-prototype.json'),
-      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. In the generated project directory, run pnpm install, then pnpm run dev through shell/process tools; retain the process handle, read the actual localhost URL and verify HTTP readiness. Complete the requested business UI and review the live URL with Browser Use when available; retain the headless fallback. An empty SS service list is not a blocker. Build delivery/index.html before POC handoff.',
+      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. In the generated project directory, SS tasks use synapse_design_prototype install/check for registry diagnostics and confirmed network retry, then pnpm run dev through shell/process tools; outside SS install only in this project and diagnose registry failures before an explicit retry; retain the process handle, read the actual localhost URL and verify HTTP readiness. Complete the requested business UI and review the live URL with Browser Use when available; retain the headless fallback. An empty SS service list is not a blocker. Build delivery/index.html before POC handoff.',
     }),
   );
 }

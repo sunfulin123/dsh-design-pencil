@@ -50,7 +50,14 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 - 颜色：Chromium 序列化 `color-mix()` 时会输出 CSS Color 4 的 `none` 分量
   （如 `oklch(0.19 0.006 none / 0.14)`），[color.rs](../../crates/op-html/src/color.rs) 按 0 处理，
   否则边框退化为不透明黑色。
+- macOS 隔离捕获 profile 使用 basic password store 和 mock keychain，不读取或等待用户的 login keychain；私有 HOME 的本地 HTTP 导航仍可运行。该设置仅属于临时 headless 浏览器，不改变用户 Browser Use、Preview 或 Electron 启动。
 - 字体：浏览器记录实际加载/失败的字体面，从 stylesheet、内联 CSS 和 `@import` 的 `@font-face` 读取来源；跨域 CSSOM 不可读时由 Node 限额读取样式表，识别不依赖 Google 域名或扩展名。优先下载源 TTF/OTF 并按 family/weight/style 注册，再按需走已有字体提供方；仅 WOFF/WOFF2、权限或网络失败仍报告警告。独立 `convertHtmlToDocument` 与插入工具都执行字体流程，缓存不只留在临时 Chrome；运行中的编辑器刷新清单，逐字体原子记录避免并发覆盖。普通文本保留源字体优先，缺少 CSS 回退时补 Inter/sans-serif；图标/连字/私用区字体不改成正文默认字体。缓存留在本机，不嵌入 `.op`；仅浏览器加载不等于画布字体注册。
+
+## 多界面导入是同一文档的累积快照
+
+`HtmlImportSession` 以结构化真实输入探索候选界面，把快照直接追加进同一 EngineSession，不拼接多份 outerHTML，不修改源页面显隐或布局。源码正文、脚本片段和浏览器 DOM 是候选证据，隐藏元素不自动等于独立屏幕；未解释的隐藏容器、未知操作和内部滚动保持缺口。检查点绑定源文件及静态引用资源；失败导入恢复到上一累计文档。同一状态重试成功后替换旧画板，未改变的状态计划保持幂等；已替代画板的资源警告不会永久阻塞后续验收。已知未解决的字体或媒体资源错误仍阻止完成，空文档不能因排除所有候选而判为完整。覆盖状态、结构检查和实际 CanvasKit 图像检查分开报告，`saved` 不证明完整。截图按原快照根区域捕获并限额缩放，不通过加高视口改变源布局。同一页面内按业务界面分行、状态分列，使用实际转换根节点的宽高避免重叠；Page/Tab 建立分组，其他状态按已捕获操作路径的最长前缀、明确的目标容器关联或基础界面继承分组。同状态重试保留分组，已有 editorMeta 扩展保存来源关系且不写入输入值；引擎重新载入和后续批次保留最终位置。探索默认 40 画板、120 操作和 600 秒，批次默认四次捕获尝试；预算用尽保持部分结果。
+
+多画板快照保留原转换器提取的颜色变量。后续画板遇到同名异值时保留已有定义，并为新值分配稳定的后缀；颜色变量合并不改写原生导入的节点、ID 或几何。
 
 ## 多断点与验收口径
 
@@ -71,15 +78,15 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 {
   "version": 1,
   "status": "verified",
-  "task_id": "bbadd090-99e6-4a40-8f8f-8b5afecb2aa5",
-  "verified_at": "2026-11-17T13:15:12.220401+00:00",
+  "task_id": "d670e193-44fa-4fc9-a519-1455aafd004d",
+  "verified_at": "2026-11-18T01:36:30.972580+00:00",
   "sources": {
     "packages/dsh-node-runtime/html-import-tool.mjs": "c83c4b54ad208661e1bf55be66dc6ba329d12d03876939a2d8712a5aacad9089",
-    "packages/dsh-node-runtime/html-browser-capture.mjs": "cc7a7134a3e34a14ea7df301a2f408e327cc7f4fd8a1154e7ecb99b527478d2d",
-    "packages/dsh-node-runtime/chrome-cdp.mjs": "848fd7514fe6ec07f8440e9606b7b1194c17dfff1cefcddbba9922157b6fd233",
+    "packages/dsh-node-runtime/html-browser-capture.mjs": "fa7baf1c2fd0550410f4e5fa9a3094aa543ce9f6f38d5018e329e30bd6229739",
+    "packages/dsh-node-runtime/chrome-cdp.mjs": "ea055a90273ae6d7b14b3fed11f688f75d7a3e87ea77d88885eefe8869b5b229",
     "packages/dsh-node-runtime/html-snapshot-augment.mjs": "50012369534a256d887cd006487e3072100c9f86f785000919527b9d7dd176f0",
     "packages/dsh-node-runtime/html-fidelity.mjs": "55c6c80512f3258d5ec0d81168dc6bd3b548145b325fb632254cdbc0f0c8b097",
-    "packages/dsh-node-runtime/html-fonts.mjs": "9969a15d196e1bd19aae25fa85f582a0c8af1cc0f19df9e49d0ddaf6b1ce8c3c",
+    "packages/dsh-node-runtime/html-fonts.mjs": "07353531c9cef3cda0f56d5fe777245712fd1ca75b689874fdb687f63cc33603",
     "crates/op-dsh-engine/src/lib.rs": "3610d050386b7a649db82f2a0701c3e10077b51f488e1f92c6bb07f9de487ddf",
     "crates/op-mcp/src/import_common.rs": "b739cbb501f4371d2273a20936a2159fd551d2659aae745d5767b41a9ae9ebc2",
     "crates/op-html/src/lib.rs": "aa9f80ddff873a62334d845dbcac283037740466981bbbde5047f4c285a7e6ad",
@@ -87,14 +94,24 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
     "crates/op-html/src/color.rs": "0edd593d19a9606b3c99f9b09c3b3691c4eac534f0cc3e7b01f0f4f0eab8c7b5",
     "crates/op-pen-loader/src/authored_geometry.rs": "64d1cb457ef5c4aab8d386811ebad6b7eb070d70f9df85571be1c40cb88b9a8d",
     "crates/op-editor-ui/src/widgets/canvas_viewport_layer_bounds.rs": "57cd63c964627896ded9c66cb5a8dd2a22918cd7086a6b2c13225c0721a1c408",
-    "packages/dsh-node-runtime/html-capture-page.mjs": "647002c03182773771978e078e62c6ed8e40fc83cfa6c237610801b85af142fb",
+    "packages/dsh-node-runtime/html-capture-page.mjs": "e6a42fb86c4214b17934ca9f83151c2b14ae015cebe27fc98db9404321f6ac69",
     "packages/dsh-node-runtime/html-font-defaults.mjs": "c7b21f10a58bb74c9131ec620ad171a938b4f167f2f11170b3ab7c78176f8671",
-    "packages/dsh-node-runtime/html-font-stylesheets.mjs": "ebb58989cdcdc87096ded6a9aadd789c8a7b1c414543729449362416365bb903",
-    "packages/dsh-node-runtime/html-import.mjs": "80ad3183c686aab78dea2442f4e644fd2e7d49606fbb3d3ee15e8c8b93f93143",
+    "packages/dsh-node-runtime/html-font-stylesheets.mjs": "d9a6afb775c8cff92e0a13b97cc7ac194e13b98a648a0d0e7365ab5cb58494a1",
+    "packages/dsh-node-runtime/html-import.mjs": "5a7ca4ef1f8758134d75d1a642cfbdf4a1e6739c3e2a7d28bd03720446d5e790",
     "packages/dsh-node-runtime/font-fetcher.mjs": "838ddc98cccc8554390fb6394fd32e2766c3250680f17348ae1dd891b5154fba",
-    "packages/dsh-node-runtime/html-fonts.test.mjs": "253e52003e303bfa39e34bf13e867b4476697917929a161c3301419360ab3fb8"
+    "packages/dsh-node-runtime/html-fonts.test.mjs": "253e52003e303bfa39e34bf13e867b4476697917929a161c3301419360ab3fb8",
+    "packages/dsh-node-runtime/html-state-input.mjs": "5d81a1a101b181f25a4c9e4253234a63651d2910a785a69db4435211975096ba",
+    "packages/dsh-node-runtime/html-state-checkpoint.mjs": "b3a6d1311324c1719733c5657982cd04d4f23e758abd793ed083f08cb7d78b49",
+    "packages/dsh-node-runtime/html-state-report.mjs": "ddc82acebce2ebe8015242d9f2d8cb419f7af89485d8367c3b70eb3c779eb64e",
+    "packages/dsh-node-runtime/html-state-discovery.mjs": "7c7dbb7ee22dcbf2f5b31968884f13e83ba01ea2adf3f7ff04014d6ad4b28a99",
+    "packages/dsh-node-runtime/html-state-actions.mjs": "1adbae6a3ba7fe5cb321f83b8a52337f168bc2b29cf8093fbcf8243ac8523bbb",
+    "packages/dsh-node-runtime/html-state-import.mjs": "92cfdaaa59dd29e8c5a4e28ef954d80dc0f8fb365d375093bf79286bfe37f814",
+    "packages/dsh-node-runtime/html-state-groups.test.mjs": "6d8d26ad5f35080f187fb5170f04a29097506a886d0d549f14c1e0e389ee5af1",
+    "packages/dsh-node-runtime/html-state-import.test.mjs": "ba9abeadab138492dd8384533fd6b3c85329965be98005acf1486820e63028ec",
+    "packages/dsh-node-runtime/html-state-visual.mjs": "2a56091139db33c016c2765cf3640ad72bcbe0e245e66ced4614466e6f9f07a4",
+    "packages/dsh-node-runtime/html-state-visual.test.mjs": "923a6b775faf10a3d9bede18b9bdd96ab97e8f45ca913761f3767e6b003bb075"
   },
-  "reason": "Standalone and live HTML imports collect original stylesheet fonts, preserve concurrent font registrations and keep icon faces while adding text fallbacks.",
-  "evidence": "65 focused runtime tests passed with real Chrome; live Google CSS probe downloaded Roboto 400/500/700 and Material Icons 400 with no warnings; generic CSS @import and extensionless-source tests passed."
+  "reason": "Retain the prior snapshot palette using the shared converter and wait for the real headless restart completion in its regression.",
+  "evidence": "Rich HTML conversion and multi-state variable, grouping, CanvasKit and isolated headless grace checks passed."
 }
 ```

@@ -10,7 +10,8 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 test('HTML and Cobalt guidance require autonomous startup instead of manual Preview configuration', async()=>{
  const guide=await readFile(join(root,'crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md'),'utf8');
  assert.match(guide,/Start the development server yourself/);
- assert.match(guide,/pnpm install/);
+ assert.match(guide,/synapse_design_prototype.*install\/check/);
+ assert.match(guide,/native VPN\/network Question/);
  assert.match(guide,/pnpm run dev/);
  assert.match(guide,/Do not stop after scaffolding/);
  assert.match(guide,/preview\.json.*not.*prerequisite/i);
@@ -21,14 +22,15 @@ test('HTML and Cobalt guidance require autonomous startup instead of manual Prev
   assert.match(text,/start.*development server yourself/i,path);
  }
 });
-test('scaffold next steps give direct install/start commands without creating Preview configuration',async t=>{
+test('scaffold next steps preserve confirmed registry recovery and autonomous startup',async t=>{
  const dir=await realpath(await mkdtemp(join(tmpdir(),'cobalt-direct-start-')));t.after(()=>rm(dir,{recursive:true,force:true}));
  const spec=join(dir,'apps.json'),project=join(dir,'project');
  await writeFile(spec,JSON.stringify({apps:[{id:'admin',title:'Admin',pages:[{id:'users',title:'Users'}]}]}));
  const result=spawnSync(process.execPath,[join(root,'packages/talkdesk-cobalt/tools/cobalt-project.mjs'),'create','--out',project,'--spec',spec],{encoding:'utf8'});
  assert.equal(result.status,0,result.stderr);
  const output=JSON.parse(result.stdout);
- assert.match(output.next,/pnpm install/);
+ assert.match(output.next,/synapse_design_prototype install\/check/);
+ assert.match(output.next,/outside SS install only.*diagnose.*explicit retry/);
  assert.match(output.next,/pnpm run dev/);
  assert.doesNotMatch(output.next,/Fill with AI|configure.*Preview/i);
  assert.equal(output.project,project);

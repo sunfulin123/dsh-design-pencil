@@ -372,3 +372,34 @@ setInterval(() => {}, 1000);
   assert.equal(attemptsAfter.length, 3);
   assert.equal(attemptsAfter[2].hasNoSandbox, true, 'cached nested sandbox skips broken first attempt');
 });
+
+test(
+  'private macOS HOME can navigate an isolated HTML capture without a login keychain',
+  {
+    skip: process.platform !== 'darwin' || process.env.DSH_E2E_CHROME !== '1',
+  },
+  async (context) => {
+    const privateHome = await mkdtemp(join(tmpdir(), 'chrome-private-home-'));
+    context.after(() => rm(privateHome, { recursive: true, force: true }));
+    const source = new URL('./html-browser-capture.mjs', import.meta.url).href;
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+    import { withBrowser, renderPage } from ${JSON.stringify(source)};
+    const text = await withBrowser({ htmlBytes: Buffer.from('<html><body>Private home capture</body></html>'), viewport: { width: 1440, height: 900 }, timeoutMs: 5000 }, async (page, network, url) => {
+      await renderPage(page, network, url, { width: 1440, height: 900 }, { timeoutMs: 5000, preserveViewport: true });
+      return await page.evaluate('document.body.innerText');
+    });
+    if (text !== 'Private home capture') throw new Error('Unexpected captured page');
+    console.log('private-home-capture-passed');
+  `,
+      ],
+      { env: { ...process.env, HOME: privateHome }, encoding: 'utf8', timeout: 20000 },
+    );
+    assert.equal(result.status, 0, result.stderr || result.error?.message);
+    assert.match(result.stdout, /private-home-capture-passed/);
+  },
+);

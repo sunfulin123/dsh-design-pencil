@@ -39,6 +39,8 @@ export function headlessArguments(url, profileDir, { platform = process.platform
   const disableSandbox = Boolean(noSandbox) || env.OPENPENCIL_CHROME_NO_SANDBOX === '1'
   return [
     '--headless=new',
+    // Temporary renderer profiles never read or wait on the macOS login keychain.
+    ...(platform === 'darwin' ? ['--password-store=basic', '--use-mock-keychain'] : []),
     ...(disableSandbox ? ['--no-sandbox'] : []),
     '--no-first-run',
     '--no-default-browser-check',

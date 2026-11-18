@@ -3,7 +3,7 @@
 // self-contained: no closures over module scope, only its argument.
 
 /** Settle a freshly loaded page: fonts, an optional ready expression, lazy media. */
-export async function settlePage({ readyExpression, waitMs, maxWaitMs }) {
+export async function settlePage({ readyExpression, waitMs, maxWaitMs, preserveScroll = false }) {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const frames = () =>
     new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -32,13 +32,13 @@ export async function settlePage({ readyExpression, waitMs, maxWaitMs }) {
     Math.max(document.body?.scrollHeight ?? 0, document.documentElement.scrollHeight);
   for (
     let y = 0, steps = 0;
-    y < bottom() && steps < 40 && Date.now() < deadline;
+    !preserveScroll && y < bottom() && steps < 40 && Date.now() < deadline;
     y += step, steps += 1
   ) {
     window.scrollTo(0, y);
     await sleep(60);
   }
-  window.scrollTo(0, 0);
+  if (!preserveScroll) window.scrollTo(0, 0);
   const pending = [...document.images].filter((image) => !image.complete);
   if (pending.length) {
     await Promise.race([

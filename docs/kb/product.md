@@ -6,6 +6,8 @@ Cobalt recipe 目录提供 Card widgets（指标/圆环、模板、空图、用�
 
 HTML 导入自动识别 stylesheet、CSS imports 与 `@font-face` 字体来源并注册可支持的原字体；普通文字保留源字体优先并补默认回退，不要求用户选择陌生字体。图标字体不能替换成正文；下载或格式限制如实报告。字体缓存由本地编辑器共享，不作为跨机器便携字体包。
 
+HTML 多界面导入先分析源和可达状态，再用实际交互捕获并在一份 `.op` 中累积多个画板；不将一个 Tab 拆成一个文件。保存状态、界面覆盖和视觉验证分别报告。未知激活路径、内部滚动和超预算内容保留缺口；无浏览器时保持低保真静态回退，不宣称完整。该流程不重新要求风格/POC 确认，也不改变 Figma/SVG 导入授权。
+
 范围：当前 DSH Rust/WASM 引擎、Node MCP host 和浏览器设计页面，不泛化为保留的上游产品。
 
 HTML POC 开发检查优先通过 Browser Use 操作已有本地服务的可见页面，确认实际提交地址及业务内容。长页面按约 80% 视口高度重叠滚动并重新读取和截图，每个目标最多 20 张；其余范围明确标记未验证。fullPage 原图只补充根文档概览，不能展开 iframe、内部表格或虚拟列表；正式验收才构建静态交付，并复用同一次浏览器采集的交互、截图和 DOM 结果。开发报告与旧历史不能作为正式交接证据，变更后人工评审保持待确认。Cobalt 新项目支持 React Fast Refresh 和按页面延迟加载，图表依赖不进入 Users 首屏。
@@ -159,6 +161,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 `import_html` / `import_html_url` 默认在 headless Chrome 中渲染页面再导入计算布局（脚本内容、
 媒体查询、Web 字体、canvas 像素、原生控件），`viewports` 一次生成多个断点画板；无 Chrome 时
 回退静态 CSS 引擎并在结果中标明 `renderMode:"static-css"`。`compare_html_fidelity` 是导入验收入口。
+同源 HTML 的可达界面与状态进入同一份设计的独立画板，按业务界面与状态分组排列并保留来源关系；未覆盖范围继续标明缺口。
 不变量与口径见 [html-import](html-import.md)，复验见 [命令入口](../../COMMANDS.md#html-导入与保真验收)。
 
 维护的八个 recipe 复用原生 TagGroup、Avatar、BadgeContainerWrapper、EmptyWidget 与复制的 ChipGroup；可见控件不使用原生 HTML 仿制。排班网格、ECharts 绘图、通话波纹和带电话头像的回调连接线属于专用组合，AI 指南记录其边界；ChipGroup 的溢出入口使用原生 Button 并支持键盘操作。
@@ -169,8 +172,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "bbadd090-99e6-4a40-8f8f-8b5afecb2aa5",
-  "verified_at": "2026-11-17T13:15:13.107140+00:00",
+  "task_id": "b3c79b1d-f975-4142-b006-540eb16d46d9",
+  "verified_at": "2026-11-17T23:58:36.584051+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -180,14 +183,14 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "85885ba13e0ba3d58c8dd4e5b1d72328f553cedde2f784b00a41ef5524525a06",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "e4a25dc069373347653c451414e0c1a72633133b2af19b923e791aaeb1a38175",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "be6adcccb12adae363d6ea87b4a5324ad7ad6304e4151474ca9c2ede1154979e",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "f917c718a10fe988110f95e0a2be65acbfd022c18065246f10136a4425e14119",
     "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "6eb8c4570fbf4a69c22b596a0560ccc2ce01aa7cbf733111bdd9f1895534ad8a",
     "crates/op-ai-skills/skills/synapse-design/review.md": "b5fb28762adab2638ca3ba9a85eb4dbea80924fba439538453e1a370c0569872",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "32f914b3104e84b4f5ef7d867ba08d6bb61fd2bba683faff1877906e78be3426",
@@ -199,13 +202,13 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/design-data/tools/catalog.mjs": "f425a059eb255b857eb94ac0dd3cf0b55b207d436367abd6938add949485b9b3",
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
-    "packages/talkdesk-cobalt/tools/export.mjs": "a7b0475adf1146f0764e3b3786b6bc42aa7e06d82fb437ba1cc2a85850bd0cbd",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "1facdf27ff36e482ffd57524f3baf653b4997c22ad26a6772a7e316a8b6da5f6",
+    "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "85a6bf590ad85dacaef5b35c6e70caf20cae98c9f0a6611762dbdbddd9f63fb1",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "89c25cebde5deb29acd02b618d1dd82bec892d624d67f6b18d4770d977f99813",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "5b7cf09f6587b82b01dd9bfd6c7b31bd725f7d53df6bb65db86e493892dac903",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
     "packages/talkdesk-cobalt/test/export.test.mjs": "cef4f733f95154705795ff754e0ed1cdba3bb55cba51e21e0d025fd25295394b",
@@ -263,10 +266,10 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
-    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
+    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "65ea0e46c681b4112decfe54157980c3e04b8cfc1c04a23c34af21b2e48fd86d"
   },
-  "reason": "Documents autonomous imported-font resolution and ordinary fallback while preserving source import authorization and design-phase boundaries.",
-  "evidence": "65 focused runtime tests passed; source Skill and runtime README reviewed against html-import.mjs, html-fonts.mjs and font-fetcher.mjs."
+  "reason": "POC startup stays autonomous without Preview configuration, while confirmed private registry recovery uses its existing native Question.",
+  "evidence": "Updated source startup assertions retain autonomous dev startup and no-preview-json guarantees while checking the new install/check gate."
 }
 ```
 

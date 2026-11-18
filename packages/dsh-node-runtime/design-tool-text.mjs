@@ -81,9 +81,23 @@ export const LIVE_TOOL_TEXT = {
         "Optional output .op path in the workspace. Omit to auto-generate <source-name>.op.",
       viewportHeight:
         "Optional CSS viewport height in pixels for HTML imports.",
+      analysisId:
+        "Continue the same session-owned HTML analysis and output document.",
+      states:
+        "State plans from analysis; preserve original ids. Exclusions require an evidence-based reason. Never supply activation scripts.",
+      expected:
+        "CSS selector for the expected visible state.",
+      continue:
+        "Advance or resume another bounded capture batch in the same document.",
+      cancel:
+        "Cancel owned capture while retaining checkpoints and saved boards.",
       figmaToken:
         "Optional Figma Personal Access Token when importing a figma.com URL (falls back to FIGMA_TOKEN).",
     },
+  },
+  importAnalyze: {
+    description:
+      "Analyze an HTML source before import: discover screen/state candidates, resource evidence and safe interaction plans. Does not create or complete a design.",
   },
   render: {
     description:
@@ -132,6 +146,10 @@ export const LIVE_TOOL_TEXT = {
 };
 
 export const LIVE_NOTE = {
+  htmlImportSaved:
+    "Saved HTML boards. Coverage and visual verification are separate from file creation; inspect both before claiming completion.",
+  htmlImportProgress:
+    "HTML capture is not a completed design. Continue with this analysisId and the same source.",
   appliedToCanvas: 'Applied to the active design canvas.',
   // Creating a file is not reviewing it; the note says which of the two happened.
   createdDocument: (path) => `Created and saved ${path}; visual verification was not performed.`,

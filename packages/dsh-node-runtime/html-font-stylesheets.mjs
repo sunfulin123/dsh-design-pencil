@@ -4,9 +4,9 @@ import { validateExternalUrl } from './html-sources.mjs';
 const MAX_CSS_BYTES = 1024 * 1024;
 
 /** Bounded, validated downloads; redirects cannot escape the external-URL policy. */
-export async function fetchFontResource(rawUrl, maxBytes, fetchImpl = globalThis.fetch, headers) {
+export async function fetchFontResource(rawUrl, maxBytes, fetchImpl = globalThis.fetch, headers, externalSignal) {
   let url = validateExternalUrl(rawUrl);
-  const signal = AbortSignal.timeout(15_000);
+  const signal = externalSignal ? AbortSignal.any([externalSignal,AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000);
   for (let redirects = 0; redirects < 5; redirects++) {
     // oxlint-disable-next-line no-await-in-loop -- each redirect depends on the preceding response
     const response = await fetchImpl(url.href, { redirect: 'manual', signal, headers });
@@ -80,7 +80,7 @@ function stylesheetImports(css, baseUrl) {
 }
 
 /** Bounded stylesheet graph, including @import; no provider or extension assumptions. */
-export async function linkedFontSources(captures, fetchImpl) {
+export async function linkedFontSources(captures, fetchImpl, signal) {
   let queue = [...new Set(captures.flatMap((capture) => capture.fontStylesheets ?? []))];
   const seen = new Set();
   const sources = [];
@@ -96,11 +96,12 @@ export async function linkedFontSources(captures, fetchImpl) {
         try {
           const response = await fetchFontResource(url, MAX_CSS_BYTES, fetchImpl, {
             'User-Agent': 'Mozilla/5.0',
-          });
+          },signal);
           const css = response.bytes.toString('utf8');
           const imports = stylesheetImports(css, response.url);
           return { sources: stylesheetFontSources(css, response.url), imports };
         } catch (error) {
+          signal?.throwIfAborted();
           warnings.push(`Linked font stylesheet could not be loaded: ${error.message}`);
           return { sources: [], imports: [] };
         }

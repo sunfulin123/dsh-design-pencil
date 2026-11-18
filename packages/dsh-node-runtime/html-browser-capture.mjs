@@ -143,7 +143,7 @@ export async function renderPage(page, network, url, viewport, options) {
   const measured = Math.ceil(Number(settled?.height) || viewport.height);
   const fullHeight = Math.min(Math.max(measured, viewport.height), MAX_PAGE_HEIGHT);
   if (measured > MAX_PAGE_HEIGHT) warnings.push(`page truncated at ${MAX_PAGE_HEIGHT}px tall`);
-  if (fullHeight > viewport.height) {
+  if (fullHeight > viewport.height && options.preserveViewport !== true) {
     await setViewport(page, viewport.width, fullHeight);
     await network.wait(Math.min(deadline + 2000, Date.now() + 3000));
     await page.evaluate('new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))', {
@@ -155,6 +155,17 @@ export async function renderPage(page, network, url, viewport, options) {
 
 async function captureViewport(page, network, url, viewport, options, extractorScript) {
   const { fullHeight, warnings } = await renderPage(page, network, url, viewport, options);
+  return captureCurrentPage(page, viewport, fullHeight, warnings, options, extractorScript);
+}
+
+export async function captureCurrentPage(
+  page,
+  viewport,
+  fullHeight,
+  warnings = [],
+  options = { pixelMedia: true },
+  extractorScript = DesignEngine.snapshot_extractor_script(),
+) {
   const facts = await page.evaluate(pageCall(describePage, { maxMedia: MAX_MEDIA }));
   const json = await page.evaluate(
     `(() => { globalThis.openpencilSnapshotOptions = { returnOnly: true };
@@ -259,4 +270,27 @@ export async function captureHtmlSnapshotWithBrowser({
   } catch {
     return null;
   }
+}
+
+/** Capture the snapshot root without resizing the source viewport or changing layout. */
+export async function captureBoardScreenshot(page, snapshot, viewport) {
+  const rect = snapshot.root?.rect;
+  const fullBoard = Boolean(rect && rect.w > 0 && rect.h > 0 && rect.x >= 0 && rect.y >= 0);
+  const clip = fullBoard
+    ? {
+        x: rect.x,
+        y: rect.y,
+        width: rect.w,
+        height: rect.h,
+        scale: Math.min(1, 4096 / Math.max(rect.w, rect.h)),
+      }
+    : { x: 0, y: 0, width: viewport.width, height: viewport.height, scale: 1 };
+  const shot = await page.send('Page.captureScreenshot', {
+    format: 'png',
+    clip,
+    captureBeyondViewport: true,
+  });
+  if (Buffer.byteLength(shot.data, 'base64') > 20 * 1024 * 1024)
+    throw new Error('Source screenshot exceeds the 20 MiB capture limit');
+  return { shot, clip, fullBoard };
 }

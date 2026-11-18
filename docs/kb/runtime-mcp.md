@@ -91,6 +91,10 @@ CanvasKit 在选择发生时记录有界历史；宿主可使用提交时间请�
 `cargo test -p op-host-web --lib --features canvaskit selection_`；
 `DSH_E2E_CHROME=1 node --test packages/dsh-node-runtime/property-panel-browser.test.mjs`。
 
+## Cobalt prototype authoring boundary
+
+Confirmed Cobalt HTML applications prepare a task-owned canonical Workspace before business authoring. The host validates native user intent, task ownership and standalone exceptions, while `prototype-authoring.mjs` owns canonical files, bounded pnpm diagnostics and source inspection. Registry network failure pauses through the native Question; authentication and certificate failures are separate. Preparation does not mean completed UI. Existing authored pages are retained, local pinned component documentation is the default MCP fallback, and source guard results do not replace build or browser evidence. The source/runtime owner contract is in [the runtime README](../../packages/dsh-node-runtime/README.md).
+
 ## 截图等待不能锁住 renderer bootstrap
 
 范围：Node host 请求调度。
@@ -98,6 +102,8 @@ CanvasKit 在选择发生时记录有界历史；宿主可使用提交时间请�
 sample_color、compare_figma_fidelity、compare_html_fidelity 归为 render-wait（由
 [host-render-tools](../../packages/dsh-node-runtime/host-render-tools.mjs) 应答）；它们不能持有 mutation queue，
 否则 headless renderer 的 sync-reset/document pull 排在截图后面，会互相等待。
+
+临时 macOS CanvasKit renderer profile 使用 basic password store 和 mock keychain，私有 HOME 下无需用户 login keychain 即可加载 loopback 编辑器并返回真实截图。该配置和 HTML 源捕获 profile 分别验证，不改变 Preview、Browser Use 或 Electron 生产启动。
 
 默认 CanvasKit 截图优先选择活动页首个允许作为预览页的可见画板，跳过设备装饰和普通组件主定义；
 无此类画板时回退到首个可见根节点。显式 `nodeId` 可截图组件主定义，`page` 可截图整页。
@@ -198,9 +204,16 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "bbadd090-99e6-4a40-8f8f-8b5afecb2aa5",
-  "verified_at": "2026-11-17T13:18:07.610918+00:00",
+  "task_id": "d670e193-44fa-4fc9-a519-1455aafd004d",
+  "verified_at": "2026-11-18T01:38:03.565660+00:00",
   "sources": {
+    "packages/dsh-node-runtime/prototype-authoring.mjs": "22dc3fd28dbf385553330e1cc6edec5243d0e3aa38c9207aaf2a7cc845584b53",
+    "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
+    "packages/dsh-node-runtime/prototype-standalone.mjs": "de0e9b8aae0d38c64bab1a05873b10a37cd176a7f280b353fcd521ec396ef2fe",
+    "packages/dsh-node-runtime/prototype-authoring.test.mjs": "a42782c914321f08510f5e21c8a4eef9171c82db5c395e53bf05956575ae703f",
+    "packages/talkdesk-cobalt/tools/inspect-business-source.mjs": "62cbf360cbd4efff14340fa431763218a66ac89d058f97a54ee777eb06d937f4",
+    "packages/dsh-node-runtime/headless-renderer.mjs": "60750070ecd164d232417acc47c9d6ef5cbef16e022547aadf762fb59956fd76",
+    "packages/dsh-node-runtime/headless-renderer.test.mjs": "a15a19e97cf7afa781615a4869a2d482af8e4caf893422cb86604ac3e7eabeaa",
     "Cargo.toml": "8c00d949437236a529939a00b979ff2a55a2ee30af0e8f47835420b1681673d1",
     "crates/op-host-web/Cargo.toml": "5cd71a376c7fe79f0336458740d40829dbe87f81705b2ee19d920e7896f72d05",
     "packages/dsh-node-runtime/build-web.sh": "596d045386c43ec612f77c97ba2d2a752f3614b24cbbff301df75f950a76684f",
@@ -215,7 +228,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "188f2c25edb00951464ed94ddb9b9816f36b7c98e59ee74bbd3a02561471e93b",
+    "packages/bun.lock": "2be41da3502a4597e314eaeaa057668e06601f21974cc5e106f96f9a8aa02f79",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -235,7 +248,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "85885ba13e0ba3d58c8dd4e5b1d72328f553cedde2f784b00a41ef5524525a06",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "e4a25dc069373347653c451414e0c1a72633133b2af19b923e791aaeb1a38175",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -293,13 +306,13 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/design-data/tools/catalog.mjs": "f425a059eb255b857eb94ac0dd3cf0b55b207d436367abd6938add949485b9b3",
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
-    "packages/talkdesk-cobalt/tools/export.mjs": "a7b0475adf1146f0764e3b3786b6bc42aa7e06d82fb437ba1cc2a85850bd0cbd",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "1facdf27ff36e482ffd57524f3baf653b4997c22ad26a6772a7e316a8b6da5f6",
+    "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "85a6bf590ad85dacaef5b35c6e70caf20cae98c9f0a6611762dbdbddd9f63fb1",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "89c25cebde5deb29acd02b618d1dd82bec892d624d67f6b18d4770d977f99813",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "5b7cf09f6587b82b01dd9bfd6c7b31bd725f7d53df6bb65db86e493892dac903",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
     "packages/talkdesk-cobalt/test/export.test.mjs": "cef4f733f95154705795ff754e0ed1cdba3bb55cba51e21e0d025fd25295394b",
@@ -348,10 +361,10 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
-    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "fe9619fe496d6e265a7e7ea5836f7fdfc8950b87950ceb2af9411d0c57f5022d"
+    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "65ea0e46c681b4112decfe54157980c3e04b8cfc1c04a23c34af21b2e48fd86d"
   },
-  "reason": "The imported-font Skill paragraph adds source acquisition guidance; it does not change renderer evidence, fontResolution reporting, POC phase gates or import authorization.",
-  "evidence": "Reviewed synapse-design Imported Fonts and runtime-mcp fontResolution/real-renderer contracts; 65 focused runtime tests passed."
+  "reason": "Review the runtime workspace version bump and the renderer restart test synchronization. Locked dependencies, renderer grace thresholds, production launch behavior and build contracts remain unchanged.",
+  "evidence": "17 package and release tests, 168-package WASM dependency policy, and the isolated renderer grace regression passed. The test observes the completed owned operation without an arbitrary sleep."
 }
 ```
 

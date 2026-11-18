@@ -58,6 +58,7 @@ export async function convertHtmlToDocument({
   documentName,
   preferBrowser = true,
   allowLocalUrl = false,
+  discoverStates = true,
 } = {}) {
   let sourceBytes;
   let resolvedName = documentName;
@@ -95,6 +96,19 @@ export async function convertHtmlToDocument({
     viewportWidth === undefined || viewportWidth === null || viewportWidth === ''
       ? 1440
       : Number(viewportWidth);
+
+  if (preferBrowser && !isZip && discoverStates) {
+    const { HtmlImportSession } = await import('./html-state-import.mjs');
+    const session = new HtmlImportSession({ html, htmlPath, url, viewportWidth: width, viewportHeight: height, allowLocalUrl });
+    try {
+      let result = await session.capture();
+      while (!result.done) result = await session.capture();
+      if (resolvedName) result.document.name = resolvedName;
+      return { ok: true, ...result, renderMode: result.renderMode || 'browser-snapshot', ...summarizeImportedDocument(result.document) };
+    } catch (error) {
+      if (!/Chromium browser is required/.test(error.message)) throw error;
+    } finally { session.close(); }
+  }
 
   if (preferBrowser && !isZip) {
     const capture = await captureHtmlPage({

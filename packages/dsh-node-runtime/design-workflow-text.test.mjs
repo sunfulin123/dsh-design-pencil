@@ -82,7 +82,7 @@ test('a publication report keeps saved, verified and delivered capability apart'
 test('live tool wording and the loadable guidance sections are defined by the runtime', async () => {
   const { ALLOWED_PROMPT_SECTIONS, LIVE_NOTE, LIVE_TOOL_TEXT, LIVE_TOOL_TEXT_VERSION } = await import('./design-tool-text.mjs');
   assert.equal(LIVE_TOOL_TEXT_VERSION, WORKFLOW_TEXT_VERSION);
-  assert.deepEqual(Object.keys(LIVE_TOOL_TEXT), ['selection', 'create', 'edit', 'new', 'import', 'render', 'codeContext', 'search', 'call']);
+  assert.deepEqual(Object.keys(LIVE_TOOL_TEXT), ['selection', 'create', 'edit', 'new', 'import', 'importAnalyze', 'render', 'codeContext', 'search', 'call']);
   for (const [tool, text] of Object.entries(LIVE_TOOL_TEXT)) {
     assert.ok(text.description.length > 20, `${tool} description`);
     for (const value of leafStrings(text.parameters ?? {})) assert.ok(value.trim().length > 0, tool);

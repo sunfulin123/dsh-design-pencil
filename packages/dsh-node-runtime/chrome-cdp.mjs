@@ -257,6 +257,8 @@ async function launchSingleHeadlessAttempt({
       chromeBinary,
       [
         '--headless=new',
+        // This throwaway profile must not wait on or read the user's macOS login keychain.
+        ...(process.platform === 'darwin' ? ['--password-store=basic', '--use-mock-keychain'] : []),
         ...(noSandbox ? ['--no-sandbox'] : []),
         ...(softwareWebGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
         '--no-first-run',

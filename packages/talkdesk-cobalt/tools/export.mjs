@@ -29,6 +29,7 @@ export async function exportCobalt(destination) {
   await copy(join(root, 'skill/references'), join(destination, 'references'));
   for (const name of [
     'cobalt-project.mjs',
+    'inspect-business-source.mjs',
     'verify-workspace-shell.mjs',
     'cobalt-shell-adapter.mjs',
     'cobalt-lookup.mjs',

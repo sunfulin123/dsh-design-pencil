@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import { existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { HeadlessRenderer, findChrome, headlessArguments } from './headless-renderer.mjs'
 import { captureScreenshot } from './host-render-tools.mjs'
@@ -18,6 +23,8 @@ test('findChrome honours DSH_CHROME_PATH, then platform locations, then PATH', (
 test('headless arguments open the render-only editor in an isolated profile and avoid macOS SwiftShader unless forced', () => {
   const macArgs = headlessArguments('http://127.0.0.1:9/?renderer=headless', '/tmp/profile', { platform: 'darwin', env: {} })
   assert.ok(macArgs.includes('--headless=new'))
+  assert.ok(macArgs.includes('--password-store=basic'))
+  assert.ok(macArgs.includes('--use-mock-keychain'))
   assert.ok(macArgs.includes('--user-data-dir=/tmp/profile'))
   assert.equal(macArgs.includes('--use-angle=swiftshader'), false)
   assert.equal(macArgs.includes('--enable-unsafe-swiftshader'), false)
@@ -32,6 +39,8 @@ test('headless arguments open the render-only editor in an isolated profile and 
 
   const linuxArgs = headlessArguments('http://127.0.0.1:9/?renderer=headless', '/tmp/profile', { platform: 'linux', env: {} })
   assert.ok(linuxArgs.includes('--use-angle=swiftshader'))
+  assert.equal(linuxArgs.includes('--password-store=basic'), false)
+  assert.equal(linuxArgs.includes('--use-mock-keychain'), false)
   assert.ok(linuxArgs.includes('--enable-unsafe-swiftshader'))
 })
 
@@ -99,10 +108,9 @@ test('captureScreenshot restarts an unresponsive headless Chrome after startup g
   // Once startupGraceMs has elapsed and headless still has not polled, captureScreenshot restarts Chrome with a fresh profile.
   now += 15_000
   const secondPromise = captureScreenshot({ screenshots, headless }, session, {})
-  await new Promise(resolve => setTimeout(resolve, 10))
+  await secondPromise
   assert.equal(calls.length, 2, 'stuck headless Chrome must be restarted')
   assert.equal(existsSync(firstProfile), false, 'stuck profile directory must be cleaned up on restart')
-  await secondPromise
 })
 
 test('HeadlessRenderer immediately restarts with --no-sandbox when Chrome stderr reports nested sandbox init failure', async context => {
@@ -126,4 +134,33 @@ test('HeadlessRenderer immediately restarts with --no-sandbox when Chrome stderr
   assert.equal(calls.length, 2, 'expected immediate restart after nested sandbox stderr')
   assert.equal(calls[1].args.includes('--no-sandbox'), true, 'restarted Chrome must include --no-sandbox')
   assert.equal(existsSync(firstProfile), false, 'first profile directory must be cleaned up')
+})
+
+
+test('private macOS renderer produces real CanvasKit pixels without a login keychain', {
+  skip: process.platform !== 'darwin' || process.env.DSH_E2E_CHROME !== '1',
+}, async context => {
+  const privateHome = await mkdtemp(join(tmpdir(), 'renderer-private-home-'))
+  context.after(() => rm(privateHome, { recursive: true, force: true }))
+  const runtime = fileURLToPath(new URL('.', import.meta.url))
+  const hostModule = new URL('./node-host.mjs', import.meta.url).href
+  const clientModule = new URL('./managed-mcp-client.mjs', import.meta.url).href
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import { startNodeHost } from ${JSON.stringify(hostModule)};
+    import { callOpenPencilMcp } from ${JSON.stringify(clientModule)};
+    const host = await startNodeHost({
+      document: { version: '0.8.5', children: [{ id: 'board', type: 'frame', name: 'Renderer check', width: 320, height: 180, fill: '#ffffff', children: [] }] },
+      webRoot: ${JSON.stringify(join(runtime, 'web-bundle'))},
+      canvaskitRoot: ${JSON.stringify(join(runtime, 'web-bundle/canvaskit'))},
+      headless: true,
+    });
+    try {
+      const shot = await callOpenPencilMcp({ baseUrl: host.baseUrl, token: host.token, tool: 'get_screenshot', arguments: { nodeId: 'board', isolate: true }, timeoutMs: 12000 });
+      if (shot.value?.renderer !== 'canvaskit-headless' || !shot.images.some(image => image.mimeType === 'image/png'))
+        throw new Error('Real CanvasKit output unavailable: ' + JSON.stringify(shot.value));
+      console.log('private-renderer-passed');
+    } finally { await host.close(); }
+  `], { env: { ...process.env, HOME: privateHome }, encoding: 'utf8', timeout: 25000 })
+  assert.equal(result.status, 0, result.stderr || result.error?.message)
+  assert.match(result.stdout, /private-renderer-passed/)
 })

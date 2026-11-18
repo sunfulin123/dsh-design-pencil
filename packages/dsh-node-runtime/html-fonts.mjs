@@ -58,12 +58,12 @@ async function readLocalFont(url, baseDir) {
   return readFile(candidate);
 }
 
-async function fontBytes(url, baseDir, fetchImpl) {
+async function fontBytes(url, baseDir, fetchImpl, signal) {
   const parsed = new URL(url);
   const bytes =
     parsed.hostname === "127.0.0.1"
       ? await readLocalFont(url, baseDir)
-      : (await fetchFontResource(url, MAX_FONT_BYTES, fetchImpl)).bytes;
+      : (await fetchFontResource(url, MAX_FONT_BYTES, fetchImpl, undefined, signal)).bytes;
   if (!bytes || bytes.length > MAX_FONT_BYTES) throw new Error("font file missing or too large");
   return bytes;
 }
@@ -74,9 +74,10 @@ async function fontBytes(url, baseDir, fetchImpl) {
  */
 export async function registerPageFonts(
   captures,
-  { fetcher, baseDir, fetchImpl = globalThis.fetch },
+  { fetcher, baseDir, fetchImpl = globalThis.fetch, signal },
 ) {
-  const linked = await linkedFontSources(captures, fetchImpl);
+  if (loadedFaces(captures).length === 0) return {faces:[],warnings:[]};
+  const linked = await linkedFontSources(captures, fetchImpl, signal);
   const sources = [...linked.sources, ...captures.flatMap((capture) => capture.fontSources ?? [])];
   const faces = loadedFaces(captures);
   const warnings = [...linked.warnings];
@@ -87,13 +88,14 @@ export async function registerPageFonts(
     if (url && typeof fetcher.addFace === 'function') {
       try {
         // oxlint-disable-next-line no-await-in-loop -- faces register one at a time into one cache
-        const outcome = await fetcher.addFace(face, await fontBytes(url, baseDir, fetchImpl));
+        const outcome = await fetcher.addFace(face, await fontBytes(url, baseDir, fetchImpl, signal));
         if (outcome.available) {
           results.push({ ...outcome, source: 'page' });
           continue;
         }
         warnings.push(`Page font ${face.family} ${face.weight} was rejected: ${outcome.error}`);
       } catch (error) {
+        signal?.throwIfAborted();
         warnings.push(
           `Page font ${face.family} ${face.weight} could not be loaded: ${error.message}`,
         );
@@ -103,8 +105,9 @@ export async function registerPageFonts(
   }
   let outcomes = [];
   try {
-    outcomes = remote.length ? await fetcher.ensure(remote.map((item) => item.face)) : [];
+    outcomes = remote.length ? await fetcher.ensure(remote.map((item) => item.face),{signal}) : [];
   } catch (error) {
+    signal?.throwIfAborted();
     warnings.push(
       `Font download failed: ${error instanceof Error ? error.message : String(error)}`,
     );
