@@ -11,18 +11,20 @@ test('HTML and Cobalt guidance require autonomous startup instead of manual Prev
  const guide=await readFile(join(root,'crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md'),'utf8');
  assert.match(guide,/Start the development server yourself/);
  assert.match(guide,/synapse_design_prototype.*install\/check/);
- assert.match(guide,/native VPN\/network Question/);
+ assert.match(guide,/The install action runs pnpm in the prepared project/);
+ assert.doesNotMatch(guide,/VPN\/network Question|registry probe/);
  assert.match(guide,/pnpm run dev/);
  assert.match(guide,/Do not stop after scaffolding/);
  assert.match(guide,/preview\.json.*not.*prerequisite/i);
  const cobalt=await readFile(join(root,'packages/talkdesk-cobalt/skill/references/cobalt-workspace.md'),'utf8');
- assert.doesNotMatch(cobalt,/Use SS Preview \*\*Fill with AI\*\*|Preview owns dependency installation/);
+ assert.doesNotMatch(cobalt,/native VPN|private-registry probe|Use SS Preview \*\*Fill with AI\*\*|Preview owns dependency installation/);
  for(const path of ['crates/op-ai-skills/skills/synapse-design-html/SKILL.md','crates/op-ai-skills/skills/synapse-design/SKILL.md']){
   const text=await readFile(join(root,path),'utf8');
   assert.match(text,/start.*development server yourself/i,path);
+  assert.doesNotMatch(text,/VPN\/network Question|private-registry network failure/,path);
  }
 });
-test('scaffold next steps preserve confirmed registry recovery and autonomous startup',async t=>{
+test('scaffold next steps guide autonomous startup after direct installation',async t=>{
  const dir=await realpath(await mkdtemp(join(tmpdir(),'cobalt-direct-start-')));t.after(()=>rm(dir,{recursive:true,force:true}));
  const spec=join(dir,'apps.json'),project=join(dir,'project');
  await writeFile(spec,JSON.stringify({apps:[{id:'admin',title:'Admin',pages:[{id:'users',title:'Users'}]}]}));

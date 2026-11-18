@@ -9,7 +9,6 @@ const runtime = fileURLToPath(new URL('.', import.meta.url));
 const toolkit = existsSync(join(runtime, '../talkdesk-cobalt/tools/cobalt-project.mjs'))
   ? resolve(runtime, '../talkdesk-cobalt/tools')
   : join(runtime, 'skills/synapse-design-html/scripts');
-const registry = 'https://hub.talkdeskapp.com:8443/repository/talkdesk-npm';
 const canonical = (path) =>
   process.platform === 'darwin'
     ? resolve(path).replace(/^\/(var|tmp)(?=\/|$)/, '/private/$1')
@@ -215,44 +214,6 @@ export async function inspectPrototype({ taskRoot, styleId, signal, mode = 'work
     };
   }
 }
-export async function probePrototypeRegistry({ project, signal }) {
-  await binding(project);
-  const configuration = await readFile(join(project, '.npmrc'), 'utf8');
-  if (!configuration.split('\n').some((line) => line.trim() === '@talkdesk:registry=' + registry))
-    throw new Error('Canonical registry configuration changed');
-  try {
-    const result = await child(
-      'pnpm',
-      [
-        'view',
-        '@talkdesk/cobalt-react-button@3.3.1',
-        'version',
-        '--json',
-        '--fetch-retries=0',
-        '--fetch-timeout=8000',
-        '--registry=' + registry,
-      ],
-      project,
-      signal,
-      12000,
-    );
-    const text = result.output;
-    return {
-      status:
-        result.code === 0
-          ? 'reachable'
-          : /E401|E403|401|403|AUTH|UNAUTHORIZED|FORBIDDEN/i.test(text)
-            ? 'authentication_required'
-            : /CERT|TLS|SSL|SELF_SIGNED|certificate/i.test(text)
-              ? 'certificate_error'
-              : 'network_unavailable',
-    };
-  } catch (error) {
-    signal?.throwIfAborted();
-    if (error.code === 'ENOENT') throw new Error('pnpm is unavailable');
-    return { status: 'network_unavailable' };
-  }
-}
 export async function installPrototype({ project, signal }) {
   await binding(project);
   await noLinks(join(project, 'node_modules'));
@@ -287,9 +248,6 @@ export const PROTOTYPE_TOOL_TEXT = {
   },
 };
 export const PROTOTYPE_NOTE = {
-  networkQuestion:
-    'The private component registry cannot be reached. Connect the company VPN/network, then confirm to retry.',
-  networkAnswers: ['Connected; retry', 'Keep pending'],
   prepared:
     'Canonical Cobalt prototype prepared. Author the planned business pages using the local pinned documentation and recipes.',
   inspectFailed:

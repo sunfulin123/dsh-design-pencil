@@ -172,8 +172,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "b3c79b1d-f975-4142-b006-540eb16d46d9",
-  "verified_at": "2026-11-17T23:58:36.584051+00:00",
+  "task_id": "e941973e-a9a4-467d-8ecc-3f84e08ac743",
+  "verified_at": "2026-11-18T04:04:35.645321+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -190,7 +190,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "f917c718a10fe988110f95e0a2be65acbfd022c18065246f10136a4425e14119",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "19c236d28ec350e289537c4e66d312314689c801f54d568909843ec16b5a5cc6",
     "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "6eb8c4570fbf4a69c22b596a0560ccc2ce01aa7cbf733111bdd9f1895534ad8a",
     "crates/op-ai-skills/skills/synapse-design/review.md": "b5fb28762adab2638ca3ba9a85eb4dbea80924fba439538453e1a370c0569872",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "32f914b3104e84b4f5ef7d867ba08d6bb61fd2bba683faff1877906e78be3426",
@@ -203,7 +203,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "85a6bf590ad85dacaef5b35c6e70caf20cae98c9f0a6611762dbdbddd9f63fb1",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "ea4affed93e8392179240b2434754d75009173064c686d7fbea60cad8ef4b618",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
@@ -266,10 +266,10 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
-    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "65ea0e46c681b4112decfe54157980c3e04b8cfc1c04a23c34af21b2e48fd86d"
+    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "POC startup stays autonomous without Preview configuration, while confirmed private registry recovery uses its existing native Question.",
-  "evidence": "Updated source startup assertions retain autonomous dev startup and no-preview-json guarantees while checking the new install/check gate."
+  "reason": "The shipped Skill uses direct install while preserving task-local Workspace preparation, component reuse and owned Vite startup.",
+  "evidence": "crates/op-ai-skills/skills/synapse-design-html/SKILL.md; packages/dsh-node-runtime/poc-startup-guidance.test.mjs"
 }
 ```
 

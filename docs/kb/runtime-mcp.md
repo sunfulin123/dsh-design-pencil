@@ -93,7 +93,7 @@ CanvasKit 在选择发生时记录有界历史；宿主可使用提交时间请�
 
 ## Cobalt prototype authoring boundary
 
-Confirmed Cobalt HTML applications prepare a task-owned canonical Workspace before business authoring. The host validates native user intent, task ownership and standalone exceptions, while `prototype-authoring.mjs` owns canonical files, bounded pnpm diagnostics and source inspection. Registry network failure pauses through the native Question; authentication and certificate failures are separate. Preparation does not mean completed UI. Existing authored pages are retained, local pinned component documentation is the default MCP fallback, and source guard results do not replace build or browser evidence. The source/runtime owner contract is in [the runtime README](../../packages/dsh-node-runtime/README.md).
+Confirmed Cobalt HTML applications prepare a task-owned canonical Workspace before business authoring. The host validates native user intent, task ownership and standalone exceptions, while `prototype-authoring.mjs` owns canonical files, bounded pnpm installation and source inspection. The install action reports the actual redacted pnpm error and keeps the task project available for retry. Preparation does not mean completed UI. Existing authored pages are retained, local pinned component documentation is the default MCP fallback, and source guard results do not replace build or browser evidence. The source/runtime owner contract is in [the runtime README](../../packages/dsh-node-runtime/README.md).
 
 ## 截图等待不能锁住 renderer bootstrap
 
@@ -204,13 +204,13 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "f8f9e662-a047-4534-bd26-8e34c90cdbbe",
-  "verified_at": "2026-11-18T01:48:46.257819+00:00",
+  "task_id": "2157e549-b2c0-4418-b7f6-c6a846f953a1",
+  "verified_at": "2026-11-18T06:29:42.114665+00:00",
   "sources": {
-    "packages/dsh-node-runtime/prototype-authoring.mjs": "22dc3fd28dbf385553330e1cc6edec5243d0e3aa38c9207aaf2a7cc845584b53",
+    "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
     "packages/dsh-node-runtime/prototype-standalone.mjs": "de0e9b8aae0d38c64bab1a05873b10a37cd176a7f280b353fcd521ec396ef2fe",
-    "packages/dsh-node-runtime/prototype-authoring.test.mjs": "72bc959d71b0681e084a8c8ef20e7e82e7a1e28639598f47189d3e0a767f1f3c",
+    "packages/dsh-node-runtime/prototype-authoring.test.mjs": "192b248a11005da2dfaae17accd8fce07f62b8c65da48a79e1cc840873c6d6da",
     "packages/talkdesk-cobalt/tools/inspect-business-source.mjs": "62cbf360cbd4efff14340fa431763218a66ac89d058f97a54ee777eb06d937f4",
     "packages/dsh-node-runtime/headless-renderer.mjs": "60750070ecd164d232417acc47c9d6ef5cbef16e022547aadf762fb59956fd76",
     "packages/dsh-node-runtime/headless-renderer.test.mjs": "a15a19e97cf7afa781615a4869a2d482af8e4caf893422cb86604ac3e7eabeaa",
@@ -228,7 +228,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "34278faaf819cdf7c2605a2277e67aa384bb78860555432969a97090fc2d0b51",
+    "packages/bun.lock": "72f78a9ca5dc37a77d84bd57ef003cd43bc8af8ac97148db22bd01ecc8878db0",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -307,7 +307,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "85a6bf590ad85dacaef5b35c6e70caf20cae98c9f0a6611762dbdbddd9f63fb1",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "ea4affed93e8392179240b2434754d75009173064c686d7fbea60cad8ef4b618",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
@@ -361,10 +361,10 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
-    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "65ea0e46c681b4112decfe54157980c3e04b8cfc1c04a23c34af21b2e48fd86d"
+    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "The test resolves TypeScript from the public workspace and owns declaration-only fixture metadata. The runtime packaging boundaries and locked interpreter dependencies remain unchanged.",
-  "evidence": "Targeted AST inspection, 17 package and release tests, and 168-package WASM dependency policy passed."
+  "reason": "Only the runtime workspace version changes in the lockfile. Dependency versions and archive verification are unchanged.",
+  "evidence": "packages/bun.lock and packages/dsh-node-runtime/package.json version diff"
 }
 ```
 

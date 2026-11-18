@@ -165,50 +165,51 @@ test('owned subprocess timeout and cancellation terminate child groups', async (
   await assert.rejects(promise);
 });
 
-test('registry diagnostics use owned pnpm auth configuration and redact install failures', async (t) => {
-  const { chmod, mkdir } = await import('node:fs/promises');
-  const { probePrototypeRegistry, installPrototype } = await import('./prototype-authoring.mjs');
-  const taskRoot = await mkdtemp(join(tmpdir(), 'prototype-registry-'));
+test('pnpm installs in the prepared project, reports redacted failures and can retry', async (t) => {
+  const { mkdir } = await import('node:fs/promises');
+  const { installPrototype } = await import('./prototype-authoring.mjs');
+  const taskRoot = await mkdtemp(join(tmpdir(), 'prototype-install-'));
   t.after(() => rm(taskRoot, { recursive: true, force: true }));
   const result = await preparePrototype({
     taskRoot,
     styleId: 'talkdesk-cobalt',
-    markdown: '# Registry',
+    markdown: '# Install',
     screens: ['Overview'],
   });
   const bin = join(taskRoot, 'bin');
   await mkdir(bin);
-  const command = join(bin, 'pnpm');
+  const retryMarker = join(taskRoot, 'first-attempt');
   await writeFile(
-    command,
-    `#!/usr/bin/env node
-if(process.argv[2]==='view'){ const status=process.env.PROTOTYPE_TEST_REGISTRY; if(status==='reachable')console.log('3.3.1');else{console.error(status==='authentication_required'?'ERR_PNPM_FETCH_401':status==='certificate_error'?'SELF_SIGNED_CERT_IN_CHAIN':'ETIMEDOUT');process.exitCode=1}}else{console.error('ERR_PNPM_FETCH_401 _authToken=private-secret https://user:password@example.test/');process.exitCode=1}`,
+    join(bin, 'pnpm'),
+    `#!${process.execPath}
+const fs = require('node:fs');
+if (process.cwd() !== ${JSON.stringify(result.project)} ||
+    JSON.stringify(process.argv.slice(2)) !== '["install"]' ||
+    !fs.existsSync('.npmrc')) process.exit(2);
+const marker = ${JSON.stringify(retryMarker)};
+if (!fs.existsSync(marker)) {
+  fs.writeFileSync(marker, '');
+  console.error('ERR_PNPM_FETCH_401 _authToken=private-secret https://user:password@example.test/');
+  process.exitCode = 1;
+}
+`,
+    { mode: 0o755 },
   );
-  await chmod(command, 0o755);
-  const path = process.env.PATH,
-    mode = process.env.PROTOTYPE_TEST_REGISTRY;
+  const path = process.env.PATH;
   process.env.PATH = bin + ':' + path;
-  t.after(() => {
-    process.env.PATH = path;
-    if (mode === undefined) delete process.env.PROTOTYPE_TEST_REGISTRY;
-    else process.env.PROTOTYPE_TEST_REGISTRY = mode;
-  });
-  for (const status of [
-    'reachable',
-    'network_unavailable',
-    'authentication_required',
-    'certificate_error',
-  ]) {
-    process.env.PROTOTYPE_TEST_REGISTRY = status;
-    assert.equal((await probePrototypeRegistry({ project: result.project })).status, status);
-  }
+  t.after(() => { process.env.PATH = path; });
   const failed = await installPrototype({ project: result.project });
   assert.equal(failed.status, 'failed');
+  assert.match(failed.message, /ERR_PNPM_FETCH_401/);
   assert.doesNotMatch(failed.message, /private-secret|password|example\.test/);
+  const retried = await installPrototype({ project: result.project });
+  assert.equal(retried.status, 'installed');
+  assert.equal(retried.project, failed.project);
   const controller = new AbortController();
   controller.abort();
   await assert.rejects(
-    probePrototypeRegistry({ project: result.project, signal: controller.signal }),
+    installPrototype({ project: result.project, signal: controller.signal }),
+    { name: 'AbortError' },
   );
 });
 
