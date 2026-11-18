@@ -204,13 +204,13 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "d670e193-44fa-4fc9-a519-1455aafd004d",
-  "verified_at": "2026-11-18T01:38:03.565660+00:00",
+  "task_id": "f8f9e662-a047-4534-bd26-8e34c90cdbbe",
+  "verified_at": "2026-11-18T01:48:46.257819+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "22dc3fd28dbf385553330e1cc6edec5243d0e3aa38c9207aaf2a7cc845584b53",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
     "packages/dsh-node-runtime/prototype-standalone.mjs": "de0e9b8aae0d38c64bab1a05873b10a37cd176a7f280b353fcd521ec396ef2fe",
-    "packages/dsh-node-runtime/prototype-authoring.test.mjs": "a42782c914321f08510f5e21c8a4eef9171c82db5c395e53bf05956575ae703f",
+    "packages/dsh-node-runtime/prototype-authoring.test.mjs": "72bc959d71b0681e084a8c8ef20e7e82e7a1e28639598f47189d3e0a767f1f3c",
     "packages/talkdesk-cobalt/tools/inspect-business-source.mjs": "62cbf360cbd4efff14340fa431763218a66ac89d058f97a54ee777eb06d937f4",
     "packages/dsh-node-runtime/headless-renderer.mjs": "60750070ecd164d232417acc47c9d6ef5cbef16e022547aadf762fb59956fd76",
     "packages/dsh-node-runtime/headless-renderer.test.mjs": "a15a19e97cf7afa781615a4869a2d482af8e4caf893422cb86604ac3e7eabeaa",
@@ -228,7 +228,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "2be41da3502a4597e314eaeaa057668e06601f21974cc5e106f96f9a8aa02f79",
+    "packages/bun.lock": "34278faaf819cdf7c2605a2277e67aa384bb78860555432969a97090fc2d0b51",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -363,8 +363,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "65ea0e46c681b4112decfe54157980c3e04b8cfc1c04a23c34af21b2e48fd86d"
   },
-  "reason": "Review the runtime workspace version bump and the renderer restart test synchronization. Locked dependencies, renderer grace thresholds, production launch behavior and build contracts remain unchanged.",
-  "evidence": "17 package and release tests, 168-package WASM dependency policy, and the isolated renderer grace regression passed. The test observes the completed owned operation without an arbitrary sleep."
+  "reason": "The test resolves TypeScript from the public workspace and owns declaration-only fixture metadata. The runtime packaging boundaries and locked interpreter dependencies remain unchanged.",
+  "evidence": "Targeted AST inspection, 17 package and release tests, and 168-package WASM dependency policy passed."
 }
 ```
 

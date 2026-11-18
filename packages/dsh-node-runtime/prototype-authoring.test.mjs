@@ -92,20 +92,27 @@ test('source parser sees actual reachable UI rather than imports', async (t) => 
   );
   assert.equal((await inspectPrototype(args)).status, 'unavailable');
   await mkdir(join(result.project, 'node_modules'), { recursive: true });
-  const require = createRequire(new URL('../talkdesk-cobalt/package.json', import.meta.url));
+  const require = createRequire(new URL('../package.json', import.meta.url));
   const parser = await realpath(require.resolve('typescript/package.json'));
   await cp(
     parser.slice(0, -'/package.json'.length),
     join(result.project, 'node_modules/typescript'),
     { recursive: true },
   );
-  const typography = await realpath(
-    require.resolve('@talkdesk/cobalt-react-typography/package.json'),
+  // This is module-resolution metadata, not a component implementation or rendering double.
+  const typography = join(result.project, 'node_modules/@talkdesk/cobalt-react-typography');
+  await mkdir(typography, { recursive: true });
+  await writeFile(
+    join(typography, 'package.json'),
+    JSON.stringify({
+      name: '@talkdesk/cobalt-react-typography',
+      version: '0.0.0-fixture',
+      types: 'index.d.ts',
+    }),
   );
-  await cp(
-    typography.slice(0, -'/package.json'.length),
-    join(result.project, 'node_modules/@talkdesk/cobalt-react-typography'),
-    { recursive: true },
+  await writeFile(
+    join(typography, 'index.d.ts'),
+    'export declare function Heading(props: unknown): unknown;\n',
   );
   assert.equal((await inspectPrototype(args)).status, 'pass');
   await writeFile(
