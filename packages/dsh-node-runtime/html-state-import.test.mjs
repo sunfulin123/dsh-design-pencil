@@ -293,6 +293,7 @@ test('known unresolved resource failures block coverage and visual approval', ()
     'Page font Custom 400 could not be loaded: denied',
     'Linked font stylesheet could not be loaded: denied',
     'Linked font stylesheet discovery reached its 8-sheet limit',
+    'Unresolved icon glyphs from Original Icon Font remain without captured pixels',
   ]) {
     const result = htmlStateResult(
       {
@@ -394,5 +395,99 @@ test(
     assert.ok(values.includes('#ff0000'));
     assert.ok(values.includes('#0000ff'));
     assert.equal(second.boards.length, 2);
+  },
+);
+
+test('frame scopes are validated as bounded selector chains', () => {
+  assert.throws(
+    () =>
+      validateHtmlStatePlan([
+        {
+          id: 'frame',
+          steps: [{ type: 'click', selector: '#details', framePath: ['#frame', 3] }],
+        },
+      ]),
+    /frame path/i,
+  );
+  assert.throws(
+    () =>
+      validateHtmlStatePlan([
+        {
+          id: 'frame',
+          expected: '#details',
+          expectedFramePath: 'root',
+        },
+      ]),
+    /frame path/i,
+  );
+  assert.doesNotThrow(() =>
+    validateHtmlStatePlan([
+      {
+        id: 'frame',
+        expected: '#details',
+        expectedFramePath: ['#frame'],
+        steps: [
+          {
+            type: 'click',
+            locator: { role: 'button', name: 'Open details' },
+            framePath: ['#frame'],
+          },
+        ],
+      },
+    ]),
+  );
+});
+
+test(
+  'scoped analysis distinguishes same-named controls and replays stable nested-frame locators',
+  { skip: process.env.DSH_E2E_CHROME !== '1' },
+  async (t) => {
+    const dir = await mkdtemp(join(tmpdir(), 'frame-import-'));
+    t.after(() => rm(dir, { recursive: true, force: true }));
+    const entry = join(dir, 'index.html');
+    await writeFile(
+      entry,
+      '<!doctype html><button onclick="document.body.dataset.wrong=1">Open details</button><iframe data-testid="outer" title="Workspace" src="frame.html"></iframe><iframe title="unreadable" sandbox="" srcdoc="<p>Restricted</p>"></iframe>',
+    );
+    await writeFile(
+      join(dir, 'frame.html'),
+      '<!doctype html><iframe data-testid="inner" title="Requests" src="business.html"></iframe>',
+    );
+    await writeFile(
+      join(dir, 'business.html'),
+      `<!doctype html><button onclick="details.hidden=false">Open details</button><section id="details" hidden>Nested request details</section><script>document.querySelector('button').id='react-aria-'+Math.random()</script>`,
+    );
+    const session = new HtmlImportSession({ htmlPath: entry });
+    t.after(() => session.close());
+    const analysis = await session.analyze();
+    const candidates = analysis.candidates.filter(
+      (candidate) => candidate.label === 'Open details',
+    );
+    assert.equal(candidates.length, 2);
+    const nested = candidates.find((candidate) => candidate.steps[0].framePath?.length === 2);
+    assert.deepEqual(nested.steps[0].locator, { role: 'button', name: 'Open details' });
+    assert.ok(analysis.frames.some((frame) => frame.status === 'restricted'));
+    const checkpoints = [];
+    const phases = [];
+    const result = await session.capture({
+      states: [
+        {
+          id: nested.id,
+          expected: '#details',
+          expectedFramePath: nested.steps[0].framePath,
+          steps: nested.steps,
+        },
+      ],
+      maxStates: 2,
+      onCheckpoint: (checkpoint) => checkpoints.push(checkpoint.boards.length),
+      onProgress: ({ phase }) => phases.push(phase),
+    });
+    assert.deepEqual(checkpoints, [1, 2]);
+    assert.ok(phases.includes('replaying'));
+    assert.match(
+      result.boards.find((board) => board.id === nested.id)?.evidence?.text,
+      /Nested request details/,
+    );
+    assert.equal(result.coverage.complete, false);
   },
 );

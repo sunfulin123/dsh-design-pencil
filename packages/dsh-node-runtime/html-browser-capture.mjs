@@ -3,6 +3,7 @@ import { launchHeadlessPage } from './chrome-cdp.mjs';
 import { describePage, isolateMedia, pageCall, settlePage } from './html-capture-page.mjs';
 import { startLocalHtmlServer } from './html-local-server.mjs';
 import { augmentSnapshot } from './html-snapshot-augment.mjs';
+import { captureFrameSnapshots } from './html-frame-snapshot.mjs';
 
 const require = createRequire(import.meta.url);
 const { DesignEngine } = require('./wasm/op_dsh_engine.js');
@@ -166,6 +167,12 @@ export async function captureCurrentPage(
   options = { pixelMedia: true },
   extractorScript = DesignEngine.snapshot_extractor_script(),
 ) {
+  if (options.includeFrames) {
+    const result = await captureFrameSnapshots(page, extractorScript, {
+      maxMedia: MAX_MEDIA, pixelMedia: options.pixelMedia, warnings,
+    });
+    return { width: viewport.width, height: fullHeight, ...result, warnings };
+  }
   const facts = await page.evaluate(pageCall(describePage, { maxMedia: MAX_MEDIA }));
   const json = await page.evaluate(
     `(() => { globalThis.openpencilSnapshotOptions = { returnOnly: true };

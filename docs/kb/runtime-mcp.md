@@ -146,6 +146,8 @@ revision，`plan_design_canvas` 消费结构化 `platform` 与宽高参数，主
 组装，不能仅用目录摘要替代风格正文。无文档时可在隔离 host 查询，但用户资产目录必须
 与真实宿主一致。`get_design_capabilities` 使用实际 schema，未知或外部操作默认 sensitive。
 统一 Skill 将用户提供来源的独立导入与从零设计阶段区分：宿主专用导入创建新文档，不借用通用敏感工具分发，也不改变已有 POC/草稿状态；这不放宽来源、写入和认证检查。
+Figma REST 部分结果返回进度及未导入项目；可编辑文件的保存由宿主负责。Skill 用本次保存回执定位产物，调用中断时核查明确请求的目标和来源证明。
+HTML 多状态导入工具按会话保存检查点；运行中查询可读取当前阶段，先保存已捕获画板，再继续同一分析与输出。取消或失败后，可独立请求保存已有画板。framePath 路径用于定位可访问的同源 iframe 中的操作和预期节点。
 统一设计 Skill 和 HTML POC Skill 均随运行时分发；后者的截图脚本、共享 `judgement.md` 及引用资料也是必需文件。Cobalt companion 与 `cobalt-project.mjs` 属于同一 Skill 资源，完整组件/设计参考内容由 Skill 资源目录内的 `cobalt-reference` 提供；其固定 shell 快照与自有模板随 runtime 文件哈希清单分发，不新增 MCP 引擎工具。生成的 React 原型先编译到静态 delivery 再交接，业务 iframe 与完整 shell 的浏览器验收分别记录。
 运行时同时分发无宿主耦合的设计领域模块（`selection-visual-evidence.mjs`、`png-rgba-codec.mjs`、
 `device-frame.mjs`、`design-code-context.mjs`、`design-discovery-gate.mjs`、`draft-canvas-contract.mjs`、`draft-quality-gate.mjs`、
@@ -175,8 +177,11 @@ UI 与 MCP 共用 [AssetTools](../../packages/dsh-node-runtime/asset-tools.mjs)�
 UI 持久化动作未确认不能提前发布；预设异步读取必须保持顺序、整体发布。
 文档未同步时资产保存/应用明确拒绝，避免保存旧版本或覆盖正在编辑的设计。
 主题预设加载走 Node 设计事务与 draft autosave，再由常规同步拉回浏览器。
-嵌入式编辑器遇到同步冲突时将决定权交给宿主，不自动接受远端覆盖本地画布；
-独立浏览器的服务器权威同步仍使用既有恢复逻辑。
+嵌入式编辑器遇到同步冲突时将决定权交给宿主，不自动接受远端覆盖本地画布。宿主可请求 `op-bridge/snapshot` 的 `recovery` 用途，读取浏览器当前画布及版本，即使处于冲突状态。回执沿用 `snapshot-result`；读取不推送守护进程、不解除冲突，也不写入源文件。独立浏览器的服务器权威同步仍使用既有恢复逻辑。
+
+The runtime [task path helpers](../../packages/dsh-node-runtime/document-file.mjs) derive new artifact paths from the business name and the task identity. The workspace-relative task directory has a safe business slug and twelve hexadecimal digits of the SHA-256 task hash. OP publication uses the slug as its basename. Existing-file operations use the saved path.
+
+A managed `.op` editor opts in to the refresh bridge through `managedRefresh` on initialization. The accessible refresh button sits left of Palette on the CanvasKit top bar. It sends `op-shell/refresh-canvas`; the host supplies busy and result feedback through `op-bridge/refresh-state`. `op-bridge/refresh-canvas` pulls once over the existing daemon channel. The browser rechecks the document revision and local dirty state before applying, and returns the status and applied canvas identity to the requesting host. The host may send `savedVersion` only for a confirmed disk-and-daemon update; the browser acknowledges the exact matching synced revision as saved. Managed pulls retain viewport, page identity, and valid selection, and page or camera changes alone do not write back to the daemon. A managed save snapshot returns `daemonVersion` for its exact synchronized revision, allowing the host to reject a stale file write. The `recovery` snapshot reports whether its captured revision was dirty. See [the refresh implementation](../../crates/op-host-web/src/live_sync_apply.rs).
 
 主题控制不同于文档主题变量。[broker](../../packages/dsh-node-runtime/editor-control.mjs)
 只在 editor ack 后报告 effective/preference/hostOverride；
@@ -204,8 +209,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "f63729ae-bda9-45d6-913f-e79a87efd2b4",
-  "verified_at": "2026-11-18T06:51:48.918343+00:00",
+  "task_id": "4c1def60-9ee2-4252-88e5-691ff369c53d",
+  "verified_at": "2026-11-18T12:17:41.368453+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
@@ -228,7 +233,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "251c03d913f3acca8296c6fa1c3fd6ac6e087bc4936e90e2861b71608fdfae81",
+    "packages/bun.lock": "b6d549b7f67552d3688e9987e31ae87a9ddee5c1ecb5951bae174a0e4cfa35b5",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -243,12 +248,14 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/asset-browser.test.mjs": "8f6db793c69a259589e49618c3125902f7fc911bd945110a99ab14594952138d",
     "crates/op-host-web/src/managed_assets_sync.rs": "a4e4b0beeadd128ca933ccaa37b3d53984ce7a5311ad85664e43e99d6be316ec",
     "crates/op-host-web/src/live_sync_conflict.rs": "3ac9cb92125e3f7bfa0520060fd61ace2120af3b6bb0196192fe6b4e1224897f",
-    "crates/op-host-web/src/live_sync_glue.rs": "b9f40e8fa63bd2a15a3da359444ccac9f919ee7b4e980dc72040a22689d7f0b0",
+    "crates/op-host-web/src/canvaskit/refresh_toolbar.rs": "d3cd89630e845ad92d07f14edf69c735442a2c4e826df0135d2604c47ce1f002",
+    "crates/op-host-web/src/live_sync_apply.rs": "e030c986ef59fb038f894503d7b4317ae4419c35ffd8c4286ed31af5b974f566",
+    "crates/op-host-web/src/live_sync_glue.rs": "4c0e9e6f39a63cc9eee8a9a0f9d08484004431b9502a78a8415560de3dd8233c",
     "crates/op-editor-core/src/variables_resolve/evaluation.rs": "63949c106e12b274f5f7a095f30a58e531ca4d520a4dc077dc0708313edd89ac",
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "aa71e21aa11fe61021cf114de84833a9076225ba501d082224edbe02dffc1529",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "4ade5f181d0eb3bc04c6b58cc1ec988c11460e755d23e7e85b91c3afd1ebeda3",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "3cca33419ca621571d6f22dc2e5b7489d6908ba575f1178ce25e84fec886011f",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -276,9 +283,10 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/script-prelude.mjs": "f93cf95742f25d7bc18fd039404cfd626b146e41b61d7b7b0a21e37126bfa057",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-host-web/src/vscode_bridge.rs": "c946a25829b0fee6890c63ef47b820c2e5cb3c0bca351560dc4dfde72604669b",
+    "crates/op-host-web/src/vscode_bridge_snapshot.rs": "255a9ee42bb21a47786d261db9782d5ae04a1566eaa27435022beedbe0d5f9b8",
+    "crates/op-host-web/src/vscode_bridge.rs": "6c597a1d77b380ec41e974db99c237a18b510797ba748fc932441eb810f6a36c",
     "crates/op-host-web/src/canvaskit/mount_keyboard.rs": "14733985448414a0eeaa03eecc167cf2b364b658b2c36f15f2c730fcf63b98ad",
-    "crates/op-editor-core/src/bridge_protocol.rs": "7797cc7ac863d799a8358049a334dfbfea052fbd78e56eb4aa2bad55aec409be",
+    "crates/op-editor-core/src/bridge_protocol.rs": "5fd7696ddc93d57db1a187faf765617604708d81804d9660a7458286f7278ab9",
     "crates/op-dsh-engine/src/quality_variables.rs": "a609755711312f70becd1602b5ab1af179962eb2b0b69366a45fd889de501209",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "e3158b307af38cf7198bb93668de601d05032159d09416c1ab6e436510f6c225",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/resolve-theme.mjs": "45978c4de0de9de54e12a77ccd1f67df649ed94c48feee68719634423c012206",
@@ -300,6 +308,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/canvaskit-scene-env.mjs": "6d8ce6115d9d6ca0605289f8b672bc39cb4229d9e6d00616a5f128c5294e9131",
     "packages/dsh-node-runtime/device-frame.mjs": "dd38bfa8577554ad9be31ff6a4e29110d992603214be70be4b50890c64ed11ea",
     "packages/dsh-node-runtime/draft-quality-gate.mjs": "0a1bf50c9e769c11802e6a6f345ac69a3ed7ee325e78b9b2616103da3e10ce2a",
+    "packages/dsh-node-runtime/document-file.mjs": "ffc461fcf75719d5530643cc82398bae9b65e08aca20c7d0d33ac0f5f0419465",
     "packages/dsh-node-runtime/managed-mcp-client.mjs": "786ecf166cd5f6d31a02f313f20d5215c76e68fb05263c70430fb2a2474779b6",
     "packages/dsh-node-runtime/managed-daemon-client.mjs": "4477fa8eb6cce9aa5148b19e80cb446e0787cd336db476f87efee784ac1b2ca4",
     "packages/dsh-node-runtime/plugin-domain-migration.test.mjs": "593b5f2dfb9c085a8ebdb88f925efb399a1d73bfe89be0188150d07e3ab9a444",
@@ -363,8 +372,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "The runtime workspace receives an immutable release version for the English authoring change. Dependencies and release verification remain unchanged.",
-  "evidence": "Version-only changes in packages/bun.lock and packages/dsh-node-runtime/package.json"
+  "reason": "Record current workspace artifact naming, managed canvas, and source import behavior.",
+  "evidence": "Runtime task path and import tests, managed bridge tests, and local Electron acceptance."
 }
 ```
 

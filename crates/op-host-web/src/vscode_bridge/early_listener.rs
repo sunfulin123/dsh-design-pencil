@@ -147,6 +147,7 @@ mod tests {
             BridgeInbound::Init {
                 token: "first".into(),
                 mcp_url: None,
+                managed_refresh: false,
             },
         );
         inbox.push(
@@ -154,6 +155,7 @@ mod tests {
             BridgeInbound::Init {
                 token: "second".into(),
                 mcp_url: Some("http://127.0.0.1:9/mcp".into()),
+                managed_refresh: false,
             },
         );
 
@@ -166,14 +168,16 @@ mod tests {
                     "https://host.example".to_string(),
                     BridgeInbound::Init {
                         token: "first".into(),
-                        mcp_url: None
+                        mcp_url: None,
+                        managed_refresh: false,
                     }
                 ),
                 (
                     "https://host.example".to_string(),
                     BridgeInbound::Init {
                         token: "second".into(),
-                        mcp_url: Some("http://127.0.0.1:9/mcp".into())
+                        mcp_url: Some("http://127.0.0.1:9/mcp".into()),
+                        managed_refresh: false,
                     }
                 ),
             ]

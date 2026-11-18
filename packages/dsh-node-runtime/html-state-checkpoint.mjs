@@ -1,9 +1,16 @@
 /** Source-bound continuation updates; successful retries replace a state atomically. */
 import { hash, validateHtmlStatePlan } from './html-state-input.mjs';
 const clone = (value) => JSON.parse(JSON.stringify(value));
+const frameKey = ({ framePath, label }) => JSON.stringify([framePath, label]);
 // JSON object order is irrelevant; every allowed action field participates in identity.
 const actionKeys = (steps = []) =>
-  steps.map(({ type, selector, value, x, y }) => hash([type, selector, value, x, y]));
+  steps.map(({ type, selector, value, x, y, framePath, locator }) =>
+    hash(
+      framePath?.length || locator
+        ? [type, selector, value, x, y, framePath || [], locator?.role, locator?.name]
+        : [type, selector, value, x, y],
+    ),
+  );
 
 export function applyHtmlStatePlan(state, states) {
   for (const update of validateHtmlStatePlan(states)) {
@@ -26,13 +33,17 @@ export function applyHtmlStatePlan(state, states) {
     }
     const changed =
       (update.steps && hash(actionKeys(candidate.steps)) !== hash(actionKeys(update.steps))) ||
-      (update.expected !== undefined && update.expected !== candidate.expected);
+      (update.expected !== undefined && update.expected !== candidate.expected) ||
+      (update.expectedFramePath !== undefined &&
+        hash(update.expectedFramePath) !== hash(candidate.expectedFramePath || []));
     if (update.steps) {
       candidate.sourceKind ||= candidate.kind;
       candidate.kind = 'planned';
       candidate.steps = clone(update.steps);
       candidate.safe = true;
     }
+    if (update.expectedFramePath !== undefined)
+      candidate.expectedFramePath = clone(update.expectedFramePath);
     if (changed || candidate.status === 'failed') candidate.status = 'pending';
     if (update.expected) candidate.expected = update.expected;
     if (update.label) candidate.label = update.label;
@@ -82,6 +93,18 @@ export function commitHtmlStateCapture(state, candidate, board, document, eviden
   candidate.status = 'captured';
   candidate.boardId = board.rootId;
   candidate.evidence = { ...candidate.evidence, ...board.evidence };
+  if (candidate.expected)
+    for (const item of state.candidates)
+      if (
+        item.kind === 'hidden' &&
+        item.status === 'pending' &&
+        item.expected === candidate.expected &&
+        hash(item.expectedFramePath || []) === hash(candidate.expectedFramePath || [])
+      ) {
+        item.status = 'captured';
+        item.boardId = board.rootId;
+        item.evidence = { resolvedBy: candidate.id };
+      }
   for (const captured of state.boards)
     if (previous && captured.sourceRelation?.parentBoardId === previous.rootId)
       captured.sourceRelation.parentBoardId = board.rootId;
@@ -94,7 +117,13 @@ function sourceRelation(candidate) {
     candidateId: candidate.id,
     kind: candidate.sourceKind || candidate.kind,
     expected: candidate.expected,
-    steps: (candidate.steps || []).map(({ type, selector }) => ({ type, selector })),
+    expectedFramePath: candidate.expectedFramePath,
+    steps: (candidate.steps || []).map(({ type, selector, locator, framePath }) => ({
+      type,
+      selector,
+      locator,
+      framePath,
+    })),
     stepKeys: actionKeys(candidate.steps),
   };
 }
@@ -123,12 +152,15 @@ function associateGroup(state, board, candidate, previous) {
     })
     .sort((a, b) => b.sourceRelation.stepKeys.length - a.sourceRelation.stepKeys.length);
   const expected = board.sourceRelation.expected;
+  const framePath = hash(board.sourceRelation.expectedFramePath || []);
+  const sharesExpected = (item) =>
+    item?.expected === expected && hash(item.expectedFramePath || []) === framePath;
   const related =
     expected &&
     peers.filter(
       (item) =>
-        item.sourceRelation?.expected === expected ||
-        state.candidates.some((c) => c.boardId === item.rootId && c.expected === expected),
+        sharesExpected(item.sourceRelation) ||
+        state.candidates.some((c) => c.boardId === item.rootId && sharesExpected(c)),
     );
   const parent =
     ancestors[0] ||
@@ -190,4 +222,74 @@ export function mergeHtmlImportVariables(document, variables = {}) {
     merged[target] = definition;
   }
   if (Object.keys(merged).length) document.variables = merged;
+}
+
+/** Merge replay scopes and observations without using transient content as candidate identity. */
+export function recordHtmlDiscovery(state, discovered, prefix = []) {
+  const ids = new Set(state.candidates.map(({ id }) => id));
+  for (const item of discovered.candidates) {
+    const { framePath, selector, locator, expected, route } = item;
+    const id = hash([
+      route,
+      framePath,
+      selector,
+      locator,
+      expected,
+      !selector && !locator ? item.label : undefined,
+    ]).slice(0, 24);
+    if (ids.has(id)) continue;
+    ids.add(id);
+    state.candidates.push({
+      id,
+      label: item.label,
+      kind: item.kind,
+      steps:
+        selector || locator ? [...prefix, { type: 'click', selector, locator, framePath }] : [],
+      expected,
+      expectedFramePath: expected && framePath.length ? framePath : undefined,
+      status: 'pending',
+      safe: item.safe,
+      reason: item.reason,
+      evidence: { framePath, selector, locator, options: item.options },
+    });
+  }
+  for (const hidden of discovered.hidden) {
+    const scope = JSON.stringify(hidden.framePath);
+    if (
+      hidden.selector &&
+      state.candidates.some(
+        (candidate) =>
+          candidate.expected === hidden.selector &&
+          JSON.stringify(candidate.expectedFramePath || []) === scope,
+      )
+    )
+      continue;
+    const id = hash([
+      'hidden',
+      hidden.framePath,
+      hidden.selector || [hidden.label, hidden.role, hidden.index],
+    ]).slice(0, 24);
+    if (ids.has(id)) continue;
+    ids.add(id);
+    state.candidates.push({
+      id,
+      label: hidden.label,
+      kind: 'hidden',
+      steps: [],
+      expected: hidden.selector,
+      expectedFramePath: hidden.framePath,
+      status: 'pending',
+      safe: false,
+      reason: 'Hidden interface has no verified activation route',
+    });
+  }
+  const frames = new Map((state.frames || []).map((frame) => [frameKey(frame), frame]));
+  for (const frame of discovered.frames) {
+    const key = frameKey(frame);
+    if (!frames.has(key) || frame.status === 'available') frames.set(key, frame);
+  }
+  state.frames = [...frames.values()];
+  state.resources = discovered.resources;
+  state.hidden = discovered.hidden;
+  state.scrollContainers = discovered.scrollContainers;
 }

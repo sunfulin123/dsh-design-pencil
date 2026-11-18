@@ -1,6 +1,26 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { open, readFile, rename, stat, unlink } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
+
+function businessSlug(name) {
+  const normalized = name.normalize('NFKC').toLowerCase().trim().replace(/^\/synapse-design(?:\s+|$)/u, '')
+  const slug = normalized.replace(/[^\p{Letter}\p{Mark}\p{Number}]+/gu, '-').replace(/^-|-$/gu, '')
+  return Array.from(slug).slice(0, 56).join('').replace(/-$/u, '') || 'design'
+}
+
+/** Derive a workspace-relative directory from the business name and immutable task identity. */
+export function designTaskDirectory(kind, name, taskId) {
+  if (kind !== 'html-design' && kind !== 'op-design') throw new TypeError('Invalid design task kind')
+  if (typeof taskId !== 'string' || taskId.length === 0) throw new TypeError('A generated design requires a task identity')
+  const hash = createHash('sha256').update(taskId).digest('hex').slice(0, 12)
+  return join('.synapse', kind, 'tasks', `${businessSlug(name)}-${hash}`)
+}
+
+/** Place a new OP in its task directory. Use literal paths for existing files. */
+export function generatedOpPath(name, taskId) {
+  const title = /\.op$/iu.test(name) ? basename(name).slice(0, -3) : name
+  return join(designTaskDirectory('op-design', title, taskId), `${businessSlug(title)}.op`)
+}
 
 export async function readDocumentFile(sourcePath) {
   try {

@@ -57,6 +57,10 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 
 `HtmlImportSession` 以结构化真实输入探索候选界面，把快照直接追加进同一 EngineSession，不拼接多份 outerHTML，不修改源页面显隐或布局。源码正文、脚本片段和浏览器 DOM 是候选证据，隐藏元素不自动等于独立屏幕；未解释的隐藏容器、未知操作和内部滚动保持缺口。检查点绑定源文件及静态引用资源；失败导入恢复到上一累计文档。同一状态重试成功后替换旧画板，未改变的状态计划保持幂等；已替代画板的资源警告不会永久阻塞后续验收。已知未解决的字体或媒体资源错误仍阻止完成，空文档不能因排除所有候选而判为完整。覆盖状态、结构检查和实际 CanvasKit 图像检查分开报告，`saved` 不证明完整。截图按原快照根区域捕获并限额缩放，不通过加高视口改变源布局。同一页面内按业务界面分行、状态分列，使用实际转换根节点的宽高避免重叠；Page/Tab 建立分组，其他状态按已捕获操作路径的最长前缀、明确的目标容器关联或基础界面继承分组。同状态重试保留分组，已有 editorMeta 扩展保存来源关系且不写入输入值；引擎重新载入和后续批次保留最终位置。探索默认 40 画板、120 操作和 600 秒，批次默认四次捕获尝试；预算用尽保持部分结果。
 
+状态导入在可访问的同源 iframe 文档内发现候选、执行真实浏览器操作和验证预期节点。选择器按 frame 路径查找，优先使用稳定标记或唯一角色与无障碍名称；动态生成的 ID 不作为首选。捕获以当前滚动位置映射每个 iframe 的可编辑子树，保留外层页面并按 iframe 可视区裁剪。跨域、不可访问、裁剪范围及预算限制进入覆盖报告。每张已合并的画板产生检查点，运行进度分别报告当前阶段及已捕获数量。
+
+图标字体优先使用源页面已声明的字形。对于无法注册的原始字库，可以用唯一匹配的 Chromium 图标像素保留外观；没有实际可见字形时保持资源缺口。图标像素回退保留同一位置的外层控件和可访问名称。
+
 多画板快照保留原转换器提取的颜色变量。后续画板遇到同名异值时保留已有定义，并为新值分配稳定的后缀；颜色变量合并不改写原生导入的节点、ID 或几何。
 
 ## 多断点与验收口径
@@ -78,15 +82,15 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
 {
   "version": 1,
   "status": "verified",
-  "task_id": "d670e193-44fa-4fc9-a519-1455aafd004d",
-  "verified_at": "2026-11-18T01:36:30.972580+00:00",
+  "task_id": "4c1def60-9ee2-4252-88e5-691ff369c53d",
+  "verified_at": "2026-11-18T12:17:42.048169+00:00",
   "sources": {
     "packages/dsh-node-runtime/html-import-tool.mjs": "c83c4b54ad208661e1bf55be66dc6ba329d12d03876939a2d8712a5aacad9089",
-    "packages/dsh-node-runtime/html-browser-capture.mjs": "fa7baf1c2fd0550410f4e5fa9a3094aa543ce9f6f38d5018e329e30bd6229739",
+    "packages/dsh-node-runtime/html-browser-capture.mjs": "d84ab7aa8bb104133d3dd83fc176460b0e296d53154c45fe17abc9812ab81548",
     "packages/dsh-node-runtime/chrome-cdp.mjs": "ea055a90273ae6d7b14b3fed11f688f75d7a3e87ea77d88885eefe8869b5b229",
     "packages/dsh-node-runtime/html-snapshot-augment.mjs": "50012369534a256d887cd006487e3072100c9f86f785000919527b9d7dd176f0",
     "packages/dsh-node-runtime/html-fidelity.mjs": "55c6c80512f3258d5ec0d81168dc6bd3b548145b325fb632254cdbc0f0c8b097",
-    "packages/dsh-node-runtime/html-fonts.mjs": "07353531c9cef3cda0f56d5fe777245712fd1ca75b689874fdb687f63cc33603",
+    "packages/dsh-node-runtime/html-fonts.mjs": "3ee0a23fa536b94242e4bd625de78b8e6594b88ef5bef80893d15245e8be6998",
     "crates/op-dsh-engine/src/lib.rs": "3610d050386b7a649db82f2a0701c3e10077b51f488e1f92c6bb07f9de487ddf",
     "crates/op-mcp/src/import_common.rs": "b739cbb501f4371d2273a20936a2159fd551d2659aae745d5767b41a9ae9ebc2",
     "crates/op-html/src/lib.rs": "aa9f80ddff873a62334d845dbcac283037740466981bbbde5047f4c285a7e6ad",
@@ -94,24 +98,28 @@ CSS 引擎，结果 `renderMode:"static-css"` 并带警告；`renderMode:"browse
     "crates/op-html/src/color.rs": "0edd593d19a9606b3c99f9b09c3b3691c4eac534f0cc3e7b01f0f4f0eab8c7b5",
     "crates/op-pen-loader/src/authored_geometry.rs": "64d1cb457ef5c4aab8d386811ebad6b7eb070d70f9df85571be1c40cb88b9a8d",
     "crates/op-editor-ui/src/widgets/canvas_viewport_layer_bounds.rs": "57cd63c964627896ded9c66cb5a8dd2a22918cd7086a6b2c13225c0721a1c408",
-    "packages/dsh-node-runtime/html-capture-page.mjs": "e6a42fb86c4214b17934ca9f83151c2b14ae015cebe27fc98db9404321f6ac69",
-    "packages/dsh-node-runtime/html-font-defaults.mjs": "c7b21f10a58bb74c9131ec620ad171a938b4f167f2f11170b3ab7c78176f8671",
-    "packages/dsh-node-runtime/html-font-stylesheets.mjs": "d9a6afb775c8cff92e0a13b97cc7ac194e13b98a648a0d0e7365ab5cb58494a1",
+    "packages/dsh-node-runtime/html-capture-page.mjs": "afd942a92ef43337a32136dc8456fe91beded3badee2bb6c5533fd5e5b358ca4",
+    "packages/dsh-node-runtime/html-font-defaults.mjs": "b8449adf30f0257f864d1b6b5ceb42e0b77c49786389a008cb182229f26cde8a",
+    "packages/dsh-node-runtime/html-font-stylesheets.mjs": "b0f449b2d03f1b085031f2e1839a3de72a40d158acb0be71b56e76ccc03836b2",
     "packages/dsh-node-runtime/html-import.mjs": "5a7ca4ef1f8758134d75d1a642cfbdf4a1e6739c3e2a7d28bd03720446d5e790",
     "packages/dsh-node-runtime/font-fetcher.mjs": "838ddc98cccc8554390fb6394fd32e2766c3250680f17348ae1dd891b5154fba",
-    "packages/dsh-node-runtime/html-fonts.test.mjs": "253e52003e303bfa39e34bf13e867b4476697917929a161c3301419360ab3fb8",
-    "packages/dsh-node-runtime/html-state-input.mjs": "5d81a1a101b181f25a4c9e4253234a63651d2910a785a69db4435211975096ba",
-    "packages/dsh-node-runtime/html-state-checkpoint.mjs": "b3a6d1311324c1719733c5657982cd04d4f23e758abd793ed083f08cb7d78b49",
-    "packages/dsh-node-runtime/html-state-report.mjs": "ddc82acebce2ebe8015242d9f2d8cb419f7af89485d8367c3b70eb3c779eb64e",
-    "packages/dsh-node-runtime/html-state-discovery.mjs": "7c7dbb7ee22dcbf2f5b31968884f13e83ba01ea2adf3f7ff04014d6ad4b28a99",
-    "packages/dsh-node-runtime/html-state-actions.mjs": "1adbae6a3ba7fe5cb321f83b8a52337f168bc2b29cf8093fbcf8243ac8523bbb",
-    "packages/dsh-node-runtime/html-state-import.mjs": "92cfdaaa59dd29e8c5a4e28ef954d80dc0f8fb365d375093bf79286bfe37f814",
+    "packages/dsh-node-runtime/html-fonts.test.mjs": "445fa93e63748aebb0b1ebe16af05f4bafc52bcd2af39c5352fd2bf109dbcb0a",
+    "packages/dsh-node-runtime/html-state-input.mjs": "857caf9117b36435116513c7ab2ab44308fe06b7aaeff3a163079feaea58406b",
+    "packages/dsh-node-runtime/html-state-checkpoint.mjs": "9ec218611e9c0c5c784229124c905518ea303d66150de19a25adbe998d73293d",
+    "packages/dsh-node-runtime/html-state-report.mjs": "6b7994cee132e675eb62e002e8b17efaf25f403f016dac6c460e959c6389f576",
+    "packages/dsh-node-runtime/html-frame-context.mjs": "6c2bc5f4516b10b0ecbd0eeea93d9dc59bfab516d2b7b0f0b5c9e88e6efa7779",
+    "packages/dsh-node-runtime/html-frame-snapshot.mjs": "d621ee53bf0829dd94f1e28a54b7a8dace2759282a5811500209346dc7769fc8",
+    "packages/dsh-node-runtime/html-state-resources.mjs": "be78ab22b8a0b510f8716c7a507e17252b40db3389a8a2425ee82c90a3a5b05d",
+    "packages/dsh-node-runtime/html-frame-snapshot.test.mjs": "b8f6936331df607aef4ca67fd97f75765cc7c2db76545b87a9afd81773e2e7b3",
+    "packages/dsh-node-runtime/html-state-discovery.mjs": "e95f6403c81d0c6fb30dcfa4e26c5c9d2d8cb9e9dfcd9c07f3f72247c5a7629b",
+    "packages/dsh-node-runtime/html-state-actions.mjs": "69cebeddcbccb6e1f99e3121efdb40c2663e59ee47708a295364121cbdcb3eab",
+    "packages/dsh-node-runtime/html-state-import.mjs": "17c0a1508d7139fbe5155fcbb25cd2759c39757c170aadf50ebc04e3b235fb23",
     "packages/dsh-node-runtime/html-state-groups.test.mjs": "6d8d26ad5f35080f187fb5170f04a29097506a886d0d549f14c1e0e389ee5af1",
-    "packages/dsh-node-runtime/html-state-import.test.mjs": "ba9abeadab138492dd8384533fd6b3c85329965be98005acf1486820e63028ec",
+    "packages/dsh-node-runtime/html-state-import.test.mjs": "7865a2d0626aed66a7b8c80d914d0ec761e087eba8d7c3a5e83f1f04d53c1d2a",
     "packages/dsh-node-runtime/html-state-visual.mjs": "2a56091139db33c016c2765cf3640ad72bcbe0e245e66ced4614466e6f9f07a4",
     "packages/dsh-node-runtime/html-state-visual.test.mjs": "923a6b775faf10a3d9bede18b9bdd96ab97e8f45ca913761f3767e6b003bb075"
   },
-  "reason": "Retain the prior snapshot palette using the shared converter and wait for the real headless restart completion in its regression.",
-  "evidence": "Rich HTML conversion and multi-state variable, grouping, CanvasKit and isolated headless grace checks passed."
+  "reason": "Record current workspace artifact naming, managed canvas, and source import behavior.",
+  "evidence": "Runtime task path and import tests, managed bridge tests, and local Electron acceptance."
 }
 ```

@@ -10,7 +10,7 @@
 ## 1. Conflict Resolution Rules in This Domain
 
 1. **Code-First UI Boundary (`imagegen` Wins Over `gpt-image-2` UI Mockups):** UI chrome, buttons, dashboards, charts, diagrams, and icons must ALWAYS be built in live HTML/CSS/SVG. Never generate raster screenshots of fake UI chrome.
-2. **Task-local assets:** Save generated or licensed POC images within the current `.synapse/html-design/tasks/<taskId>/` directory; do not modify business project assets without a separate request.
+2. **Task-local assets:** Save generated or licensed POC images within the `taskDirectory` returned by confirmed HTML discovery; do not modify business project assets without a separate request.
 3. **Clear provenance:** Include required credits and explanatory captions where appropriate for the actual content and license.
 
 ---

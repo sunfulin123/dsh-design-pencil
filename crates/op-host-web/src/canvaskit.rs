@@ -31,6 +31,7 @@ mod measure;
 mod mount;
 mod mount_keyboard;
 mod ops;
+pub(crate) mod refresh_toolbar;
 mod render_queue;
 mod render_sampling;
 mod render_screenshot;

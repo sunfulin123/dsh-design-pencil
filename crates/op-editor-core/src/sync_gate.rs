@@ -85,7 +85,13 @@ impl SyncGate {
     }
 
     pub fn is_synced(&self, current: (u64, u64)) -> bool {
-        self.last_synced == Some(current) && !self.open_pending() && self.conflict.is_none()
+        self.matches_content_baseline(current) && self.conflict.is_none()
+    }
+
+    /// Whether this content still matches the negotiated daemon baseline, even if
+    /// an editor metadata push encountered a conflict.
+    pub fn matches_content_baseline(&self, current: (u64, u64)) -> bool {
+        self.last_synced == Some(current) && !self.open_pending()
     }
 
     /// Accept-remote resolution: forget the baseline, clear the conflict

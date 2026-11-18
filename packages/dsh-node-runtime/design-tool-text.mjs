@@ -19,7 +19,7 @@ export const LIVE_TOOL_TEXT = {
   },
   create: {
     description:
-      "Apply design operations, variables and themes to the active canvas.",
+      "Apply design operations, variables and themes to the active canvas. For an existing .op, use its exact path in the current chat to edit the open canvas live.",
     parameters: {
       path:
         "Optional active document path.",
@@ -62,7 +62,7 @@ export const LIVE_TOOL_TEXT = {
       "Create a new document with a single transactional design script after a confirmed style selection.",
     parameters: {
       path:
-        "New workspace-relative or absolute .op path. Choose a useful filename without asking when the user omitted one. Existing targets are never overwritten.",
+        "New workspace-relative or absolute .op path. Choose a useful filename without asking when the user omitted one. The runtime places new files in a business-named design task directory. Use the actual saved path from the receipt. Existing targets are never overwritten.",
       script:
         "A sandboxed runtime design script.",
       discovery:
@@ -73,31 +73,33 @@ export const LIVE_TOOL_TEXT = {
   },
   import: {
     description:
-      "Import an existing HTML file (.html/.htm/.zip), web page URL, Figma file (.fig/.fig.json), Figma design link (https://www.figma.com/design|file/...), SVG file (.svg), or web snapshot (.json) and convert it into a new editable .op design document in the workspace. This dedicated user-source import is independent of new-design funnel stages and does not change an existing POC or draft. Always converts the input into a .op file and opens the .op design in the managed OpenPencil editor rather than opening raw HTML or .fig directly. Requires Session Workspace Write permission.",
+      "Import an existing HTML file (.html/.htm/.zip), web page URL, Figma file (.fig/.fig.json), Figma design link (https://www.figma.com/design|file/...), SVG file (.svg), or web snapshot (.json) and convert it into a new editable .op design document in the workspace. This dedicated user-source import is independent of new-design funnel stages and does not change an existing POC or draft. A saved receipt identifies the editable .op to open. Partial Figma conversion can save the editable items and report what is missing. After interruption, verify only the exact requested target and its import provenance before using it or retrying. Never substitute an existing workspace design. Requires Session Workspace Write permission.",
     parameters: {
       source:
         "Local file path (.html, .htm, .zip, .fig, .svg, .json) or HTTP/HTTPS URL (web page or figma.com design link) to import.",
       path:
-        "Optional output .op path in the workspace. Omit to auto-generate <source-name>.op.",
+        "Optional output .op path in the workspace. Omit to derive the basename from the source. New output is placed in a business-named design task directory. Keep the saved path from the receipt for subsequent operations.",
       viewportHeight:
         "Optional CSS viewport height in pixels for HTML imports.",
       analysisId:
-        "Continue the same session-owned HTML analysis and output document.",
+        "Identify the session-owned HTML analysis and output. Poll an active batch with the same source and this ID.",
       states:
         "State plans from analysis; preserve original ids. Exclusions require an evidence-based reason. Never supply activation scripts.",
       expected:
-        "CSS selector for the expected visible state.",
+        "Expected visible CSS selector, with expectedFramePath when it is inside a same-origin frame.",
       continue:
-        "Advance or resume another bounded capture batch in the same document.",
+        "Advance another bounded batch once prior boards are saved. A needsContinuation response confirms the saved checkpoint; repeat the continuation to advance.",
       cancel:
         "Cancel owned capture while retaining checkpoints and saved boards.",
+      savePartial:
+        "Save the latest captured boards after an idle incomplete, failed or cancelled batch. Use separately from continue, states and cancel.",
       figmaToken:
         "Optional Figma Personal Access Token when importing a figma.com URL (falls back to FIGMA_TOKEN).",
     },
   },
   importAnalyze: {
     description:
-      "Analyze an HTML source before import: discover screen/state candidates, resource evidence and safe interaction plans. Does not create or complete a design.",
+      "Analyze an HTML source before import: discover screen/state candidates in the top page and reachable same-origin frames, resource evidence and safe interaction plans. Does not create or complete a design.",
   },
   render: {
     description:
@@ -149,8 +151,15 @@ export const LIVE_NOTE = {
   htmlImportSaved:
     "Saved HTML boards. Coverage and visual verification are separate from file creation; inspect both before claiming completion.",
   htmlImportProgress:
-    "HTML capture is not a completed design. Continue with this analysisId and the same source.",
+    "Poll an active batch with this analysisId and the same source. Save captured boards before advancing to another batch.",
+  htmlImportContinuation:
+    "Saved the captured boards. Send the continuation or state plan again to start the next batch.",
+  htmlImportEditorPending:
+    "Captured boards are ready. Finish saving or resolve the changes in the open editor, then query this import again to publish.",
+  htmlImportPartialRequired:
+    "Save the captured boards with savePartial before continuing.",
   appliedToCanvas: 'Applied to the active design canvas.',
+  liveEditSaved: 'Applied to the active design canvas and saved to the design file.',
   // Creating a file is not reviewing it; the note says which of the two happened.
   createdDocument: (path) => `Created and saved ${path}; visual verification was not performed.`,
   importedDocument: ({ source, filename, nodeCount }) =>

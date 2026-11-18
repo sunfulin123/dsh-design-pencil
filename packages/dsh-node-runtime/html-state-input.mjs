@@ -2,11 +2,37 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
+import { MAX_HTML_FRAME_DEPTH } from './html-frame-context.mjs';
 import { collectLocalHtmlResources, fetchRemoteHtmlWithResources } from './html-sources.mjs';
 export const hash = (value) =>
   createHash('sha256')
     .update(typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(value))
     .digest('hex');
+
+function validateFramePath(framePath) {
+  if (
+    framePath !== undefined &&
+    (!Array.isArray(framePath) ||
+      framePath.length > MAX_HTML_FRAME_DEPTH ||
+      framePath.some((part) => typeof part !== 'string' || !part.trim() || part.length > 2000))
+  )
+    throw new Error('Invalid frame path');
+}
+
+function validateLocator(locator) {
+  if (locator === undefined) return;
+  if (
+    !locator ||
+    typeof locator !== 'object' ||
+    Object.keys(locator).some((key) => !['role', 'name'].includes(key)) ||
+    typeof locator.role !== 'string' ||
+    !/^[a-z][a-z0-9-]{0,39}$/.test(locator.role) ||
+    typeof locator.name !== 'string' ||
+    !locator.name.trim() ||
+    locator.name.length > 160
+  )
+    throw new Error('Invalid action locator');
+}
 
 export function validateHtmlStatePlan(states) {
   if (!Array.isArray(states) || states.length > 40)
@@ -24,6 +50,7 @@ export function validateHtmlStatePlan(states) {
       (typeof state.expected !== 'string' || state.expected.length > 2000)
     )
       throw new Error('Invalid expected interface selector');
+    validateFramePath(state.expectedFramePath);
     if (state.steps !== undefined) {
       if (!Array.isArray(state.steps) || state.steps.length > 120)
         throw new Error('Invalid state steps');
@@ -31,14 +58,21 @@ export function validateHtmlStatePlan(states) {
         if (
           !step ||
           !['click', 'select', 'fill', 'hover', 'key', 'scroll', 'wait'].includes(step.type) ||
-          Object.keys(step).some((key) => !['type', 'selector', 'value', 'x', 'y'].includes(key))
+          Object.keys(step).some(
+            (key) => !['type', 'selector', 'locator', 'framePath', 'value', 'x', 'y'].includes(key),
+          )
         )
           throw new Error('Unsupported state step');
+        validateFramePath(step.framePath);
+        validateLocator(step.locator);
+        if (step.selector !== undefined && step.locator !== undefined)
+          throw new Error('Use one action selector or locator');
         if (
           ['click', 'hover', 'fill', 'select'].includes(step.type) &&
+          !step.locator &&
           (typeof step.selector !== 'string' || !step.selector.trim())
         )
-          throw new Error('Action selector is required');
+          throw new Error('Action selector or locator is required');
         if (['fill', 'select', 'key'].includes(step.type) && typeof step.value !== 'string')
           throw new Error('Action value is required');
         if (

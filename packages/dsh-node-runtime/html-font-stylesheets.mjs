@@ -76,7 +76,10 @@ export function stylesheetFontSources(css, baseUrl) {
 function stylesheetImports(css, baseUrl) {
   const pattern = /@import\s+(?:url\(\s*(?:"([^"]+)"|'([^']+)'|([^\s)]+))\s*\)|"([^"]+)"|'([^']+)')/gi;
   return [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(pattern)]
-    .map(match => new URL(match.slice(1).find(Boolean), baseUrl).href);
+    .flatMap((match) => {
+      const value = match.slice(1).find(Boolean);
+      return URL.canParse(value, baseUrl) ? [new URL(value, baseUrl).href] : [];
+    });
 }
 
 /** Bounded stylesheet graph, including @import; no provider or extension assumptions. */
@@ -86,7 +89,7 @@ export async function linkedFontSources(captures, fetchImpl, signal) {
   const sources = [];
   const warnings = [];
   while (queue.length && seen.size < 8) {
-    const pending = queue.filter((url) => !seen.has(url));
+    const pending = [...new Set(queue)].filter((url) => !seen.has(url));
     const urls = pending.slice(0, 8 - seen.size);
     if (!urls.length) break;
     urls.forEach((url) => seen.add(url));

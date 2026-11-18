@@ -53,6 +53,7 @@ pub enum BridgeInbound {
         /// instead of the daemon-internal port. Optional: older hosts
         /// don't send it.
         mcp_url: Option<String>,
+        managed_refresh: bool,
     },
     Theme {
         color_scheme: ThemeMode,
@@ -75,6 +76,13 @@ pub enum BridgeInbound {
         purpose: String,
         request_id: String,
     },
+    RefreshCanvas {
+        request_id: String,
+        saved_version: Option<u64>,
+    },
+    RefreshState {
+        status: RefreshState,
+    },
     CaptureSelection {
         request_id: String,
         before: f64,
@@ -87,6 +95,43 @@ pub enum BridgeInbound {
         mode: ConflictMode,
         request_id: String,
     },
+}
+
+/// Feedback presented by the host-owned file refresh operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RefreshState {
+    Idle,
+    Refreshing,
+    Updated,
+    Current,
+    Blocked,
+    Failed,
+}
+
+impl RefreshState {
+    pub fn wire(self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Refreshing => "refreshing",
+            Self::Updated => "updated",
+            Self::Current => "current",
+            Self::Blocked => "blocked",
+            Self::Failed => "failed",
+        }
+    }
+
+    fn from_wire(status: &str) -> Option<Self> {
+        [
+            Self::Idle,
+            Self::Refreshing,
+            Self::Updated,
+            Self::Current,
+            Self::Blocked,
+            Self::Failed,
+        ]
+        .into_iter()
+        .find(|candidate| candidate.wire() == status)
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -119,7 +164,12 @@ impl BridgeInbound {
                     .get("mcpUrl")
                     .and_then(Value::as_str)
                     .map(str::to_string);
-                Some(BridgeInbound::Init { token, mcp_url })
+                Some(BridgeInbound::Init {
+                    token,
+                    mcp_url,
+                    managed_refresh: value.get("managedRefresh").and_then(Value::as_bool)
+                        == Some(true),
+                })
             }
             "op-bridge/theme" => {
                 let color_scheme = color_scheme_from_wire(value.get("colorScheme")?.as_str()?)?;
@@ -146,6 +196,23 @@ impl BridgeInbound {
                 Some(BridgeInbound::Snapshot {
                     purpose,
                     request_id,
+                })
+            }
+            "op-bridge/refresh-state" => Some(BridgeInbound::RefreshState {
+                status: RefreshState::from_wire(value.get("status")?.as_str()?)?,
+            }),
+            "op-bridge/refresh-canvas" => {
+                let request_id = value.get("requestId")?.as_str()?;
+                if request_id.is_empty() || request_id.len() > 128 {
+                    return None;
+                }
+                let saved_version = match value.get("savedVersion") {
+                    Some(version) => Some(version.as_u64()?),
+                    None => None,
+                };
+                Some(BridgeInbound::RefreshCanvas {
+                    request_id: request_id.into(),
+                    saved_version,
                 })
             }
             "op-bridge/capture-selection" if value.as_object()?.len() == 3 => {
@@ -265,10 +332,54 @@ pub fn event_snapshot_result(
     generation: u64,
     revision: u64,
 ) -> String {
+    snapshot_result(request_id, doc_json, generation, revision).to_string()
+}
+
+/// Returns the daemon version matching the exact canvas snapshot being saved.
+pub fn event_managed_save_snapshot_result(
+    request_id: &str,
+    doc_json: &str,
+    generation: u64,
+    revision: u64,
+    daemon_version: u64,
+) -> String {
+    let mut result = snapshot_result(request_id, doc_json, generation, revision);
+    result["daemonVersion"] = Value::from(daemon_version);
+    result.to_string()
+}
+
+pub fn event_recovery_snapshot_result(
+    request_id: &str,
+    doc_json: &str,
+    generation: u64,
+    revision: u64,
+    dirty: bool,
+) -> String {
+    let mut result = snapshot_result(request_id, doc_json, generation, revision);
+    result["dirty"] = Value::Bool(dirty);
+    result.to_string()
+}
+
+fn snapshot_result(request_id: &str, doc_json: &str, generation: u64, revision: u64) -> Value {
     serde_json::json!({
         "type": "op-bridge/snapshot-result",
         "requestId": request_id,
         "docJson": doc_json,
+        "generation": generation,
+        "revision": revision,
+    })
+}
+
+/// Completes a refresh only for the requesting host and canvas revision.
+pub fn event_refresh_result(
+    request_id: &str,
+    status: &str,
+    (generation, revision): (u64, u64),
+) -> String {
+    serde_json::json!({
+        "type": "op-bridge/refresh-result",
+        "requestId": request_id,
+        "status": status,
         "generation": generation,
         "revision": revision,
     })
@@ -325,12 +436,55 @@ mod tests {
     }
 
     #[test]
+    fn refresh_identifies_its_request_and_accepts_only_valid_saved_versions() {
+        assert_eq!(
+            BridgeInbound::parse(
+                r#"{"type":"op-bridge/refresh-canvas","requestId":"one","savedVersion":8}"#
+            ),
+            Some(BridgeInbound::RefreshCanvas {
+                request_id: "one".into(),
+                saved_version: Some(8)
+            }),
+        );
+        assert!(BridgeInbound::parse(
+            r#"{"type":"op-bridge/refresh-canvas","requestId":"one","savedVersion":"8"}"#
+        )
+        .is_none());
+        assert!(matches!(
+            BridgeInbound::parse(
+                r#"{"type":"op-bridge/init","token":"host","managedRefresh":true}"#
+            ),
+            Some(BridgeInbound::Init {
+                managed_refresh: true,
+                ..
+            })
+        ));
+        assert_eq!(
+            BridgeInbound::parse(r#"{"type":"op-bridge/refresh-state","status":"current"}"#),
+            Some(BridgeInbound::RefreshState {
+                status: RefreshState::Current
+            })
+        );
+        assert!(
+            BridgeInbound::parse(r#"{"type":"op-bridge/refresh-state","status":"invalid"}"#)
+                .is_none()
+        );
+        let reply: Value =
+            serde_json::from_str(&event_refresh_result("one", "updated", (7, 8))).unwrap();
+        assert_eq!(
+            reply,
+            serde_json::json!({ "type":"op-bridge/refresh-result", "requestId":"one", "status":"updated", "generation":7, "revision":8 })
+        );
+    }
+
+    #[test]
     fn parse_inbound_messages() {
         assert_eq!(
             BridgeInbound::parse(r#"{"type":"op-bridge/init","token":"t0k"}"#),
             Some(BridgeInbound::Init {
                 token: "t0k".into(),
-                mcp_url: None
+                mcp_url: None,
+                managed_refresh: false,
             })
         );
         assert_eq!(
@@ -339,7 +493,8 @@ mod tests {
             ),
             Some(BridgeInbound::Init {
                 token: "t0k".into(),
-                mcp_url: Some("http://127.0.0.1:9/mcp".into())
+                mcp_url: Some("http://127.0.0.1:9/mcp".into()),
+                managed_refresh: false,
             })
         );
         assert_eq!(

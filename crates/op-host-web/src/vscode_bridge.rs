@@ -40,6 +40,7 @@ mod selection_history;
 mod startup;
 
 pub(crate) use early_listener::install_early;
+pub(crate) use helpers::post_to_parent;
 pub(crate) use selection_history::record_selection;
 pub(crate) use startup::{await_init, emit_ready, in_iframe, register_late_init_hook};
 
@@ -59,11 +60,8 @@ use op_editor_core::bridge_protocol::{
 };
 use op_editor_core::web_sync::WebSyncClient;
 
-use document_snapshot::BridgeDocumentSnapshot;
-use helpers::{
-    acquire_push_busy, post_to_parent, read_triple, release_push_busy, schedule_once,
-    snapshot_state,
-};
+use document_snapshot::{handle_snapshot, BridgeDocumentSnapshot};
+use helpers::{acquire_push_busy, read_triple, release_push_busy, schedule_once, snapshot_state};
 
 /// Tick cadence for the outbound-event observer. Latency only: the gate's edge
 /// latches never lose an event between ticks (a fast rise+fall is still drained
@@ -211,7 +209,15 @@ fn route_message<C: RepaintContext + 'static>(
     }
 
     match msg {
-        BridgeInbound::Init { token, mcp_url } => handle_init(inner, token, mcp_url),
+        BridgeInbound::Init {
+            token,
+            mcp_url,
+            managed_refresh,
+        } => {
+            sync.borrow_mut().managed_refresh = managed_refresh;
+            crate::canvaskit::refresh_toolbar::enable(managed_refresh);
+            handle_init(inner, token, mcp_url);
+        }
         BridgeInbound::Theme {
             color_scheme,
             palette,
@@ -222,17 +228,30 @@ fn route_message<C: RepaintContext + 'static>(
             handle_ui_scale(inner, request_id, Some(scale))
         }
         BridgeInbound::OpenDocument { json } => handle_open_document(inner, sync, json),
-        BridgeInbound::Snapshot { request_id, .. } => handle_snapshot(inner, sync, request_id),
+        BridgeInbound::Snapshot {
+            purpose,
+            request_id,
+        } => handle_snapshot(inner, sync, &purpose, request_id),
+        BridgeInbound::RefreshCanvas {
+            request_id,
+            saved_version,
+        } => {
+            crate::live_sync_glue::refresh_canvas(inner, sync, request_id, saved_version);
+        }
+        BridgeInbound::RefreshState { status } => {
+            crate::canvaskit::refresh_toolbar::feedback(status)
+        }
         BridgeInbound::CaptureSelection { request_id, before } => {
             selection_history::capture_selection(inner, request_id, before)
         }
         BridgeInbound::SaveCommitted {
             generation,
             revision,
-        } => handle_save_committed(inner, generation, revision),
-        BridgeInbound::ResolveConflict { mode, request_id } => {
-            handle_resolve_conflict(inner, sync, mode, request_id)
-        }
+        } => document_snapshot::handle_save_committed(inner, generation, revision),
+        BridgeInbound::ResolveConflict { mode, request_id } => match mode {
+            ConflictMode::UseLocal => resolve_use_local(inner, sync, request_id),
+            ConflictMode::AcceptRemote => resolve_accept_remote(inner, sync, request_id),
+        },
     }
 }
 
@@ -377,72 +396,6 @@ fn handle_open_document<C: RepaintContext + 'static>(
     drive_open_push(sync.clone(), base, snapshot);
 }
 
-/// `snapshot`: independent of the tick. Conflict pending → reply
-/// `snapshot-conflict` at once (host must resolve first). Otherwise capture the
-/// pair + bytes atomically; if a push is due, send it over the uncapped
-/// snapshot channel (respecting `push_busy` serialization) and reply on
-/// confirmation; if nothing is due, reply immediately with the current bytes.
-fn handle_snapshot<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    sync: &SharedSync,
-    request_id: String,
-) {
-    if let Some(server_v) = sync.try_borrow().ok().and_then(|s| s.gate.conflict()) {
-        post_to_parent(&event_snapshot_conflict(&request_id, server_v));
-        return;
-    }
-    let Some(snapshot) = snapshot_state(inner) else {
-        return;
-    };
-    let pair = snapshot.pair();
-    let needs_push = sync
-        .try_borrow()
-        .map(|s| s.gate.needs_push(pair))
-        .unwrap_or(false);
-    if !needs_push {
-        post_to_parent(&event_snapshot_result(
-            &request_id,
-            &snapshot.externalized_json(),
-            pair.0,
-            pair.1,
-        ));
-        return;
-    }
-    let base = crate::daemon_base::daemon_base();
-    drive_snapshot_push(sync.clone(), base, request_id, snapshot);
-}
-
-/// `save-committed`: mark the reported revision saved. A stale generation
-/// (the host acked a save for a document already replaced) returns `false` and
-/// is silently dropped. The resulting dirty-flag flip is reported by the
-/// observer as `dirty-changed`, not here.
-fn handle_save_committed<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    generation: u64,
-    revision: u64,
-) {
-    let Ok(mut b) = inner.try_borrow_mut() else {
-        return;
-    };
-    let _ = b
-        .host_mut()
-        .editor_state_mut()
-        .mark_saved_revision_at(generation, revision);
-    let _ = b.repaint();
-}
-
-fn handle_resolve_conflict<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    sync: &SharedSync,
-    mode: ConflictMode,
-    request_id: String,
-) {
-    match mode {
-        ConflictMode::UseLocal => resolve_use_local(inner, sync, request_id),
-        ConflictMode::AcceptRemote => resolve_accept_remote(inner, sync, request_id),
-    }
-}
-
 /// `resolve-conflict: use-local`: re-push the local document over the snapshot
 /// channel using the conflict's server version as `baseVersion`. Success →
 /// `mark_pushed` + `note_synced` (clears the conflict, and any pending open,
@@ -577,72 +530,6 @@ fn open_push_attempt(
         })
     };
     if !live_sync::get(&version_url, on_version) {
-        release_push_busy(&sync);
-    }
-}
-
-/// Acquire `push_busy` (waiting via self-reschedule), then push the snapshot.
-fn drive_snapshot_push(
-    sync: SharedSync,
-    base: String,
-    request_id: String,
-    snapshot: BridgeDocumentSnapshot,
-) {
-    if !acquire_push_busy(&sync) {
-        schedule_once(PUSH_BUSY_RETRY_MS, move || {
-            drive_snapshot_push(sync, base, request_id, snapshot)
-        });
-        return;
-    }
-    snapshot_push_attempt(sync, base, request_id, snapshot);
-}
-
-/// Snapshot-channel push with `baseVersion = last_version()` (the established
-/// baseline). Confirm → `mark_pushed` + `note_synced` + `snapshot-result`.
-/// Conflict → `note_conflict` (observer will report `sync-conflict`) +
-/// `snapshot-conflict` reply.
-fn snapshot_push_attempt(
-    sync: SharedSync,
-    base: String,
-    request_id: String,
-    snapshot: BridgeDocumentSnapshot,
-) {
-    let base_version = sync
-        .try_borrow()
-        .map(|s| s.client.last_version())
-        .unwrap_or(0);
-    let push_body = snapshot.push_body(base_version);
-    let doc_url = format!("{base}/api/mcp/document");
-    let on_resp: Rc<dyn Fn(String)> = {
-        let sync = sync.clone();
-        Rc::new(move |resp: String| {
-            if let Some(server_v) = WebSyncClient::parse_push_conflict(&resp) {
-                if let Ok(mut s) = sync.try_borrow_mut() {
-                    s.gate.note_conflict(server_v);
-                    s.push_busy = false;
-                }
-                post_to_parent(&event_snapshot_conflict(&request_id, server_v));
-                return;
-            }
-            if let Some(version) = WebSyncClient::parse_push_response(&resp) {
-                let pair = snapshot.pair();
-                if let Ok(mut s) = sync.try_borrow_mut() {
-                    snapshot.mark_pushed(&mut s.client, version);
-                    s.gate.note_synced(pair.0, pair.1);
-                    s.push_busy = false;
-                }
-                post_to_parent(&event_snapshot_result(
-                    &request_id,
-                    &snapshot.externalized_json(),
-                    pair.0,
-                    pair.1,
-                ));
-                return;
-            }
-            release_push_busy(&sync);
-        })
-    };
-    if !live_sync::post_json(&doc_url, &push_body, Some(on_resp)) {
         release_push_busy(&sync);
     }
 }

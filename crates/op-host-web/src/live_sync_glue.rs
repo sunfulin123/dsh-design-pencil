@@ -54,7 +54,8 @@ fn push_reasons(
 ) -> PushReasons {
     PushReasons {
         content: sync.gate.needs_push(pair),
-        editor_meta: sync.gate.is_synced(pair)
+        editor_meta: !sync.managed_refresh
+            && sync.gate.is_synced(pair)
             && (sync
                 .client
                 .editor_meta_needs_push(active_page_index, preserve_authored_geometry)
@@ -126,7 +127,7 @@ fn poll_version<C: RepaintContext + 'static>(
     fetch_busy: &Rc<Cell<bool>>,
     last_selection_key: &Rc<RefCell<Option<String>>>,
 ) {
-    if fetch_busy.get() {
+    if fetch_busy.get() || sync.borrow().refresh_busy {
         return;
     }
     let pair = current_pair(&*inner.borrow());
@@ -304,187 +305,10 @@ fn maybe_auto_resolve_conflict_in_session<C: RepaintContext + 'static>(
     }
 }
 
-/// Apply a document response. UI hints always force acknowledgement, including
-/// unchanged scales and dirty content; only visual changes require repaint.
-/// Applies a pulled document (or page patch). Returns `true` when a page
-/// patch could not be applied and the caller must fetch the full document.
-fn apply_document_response<C: RepaintContext + 'static>(
-    inner: &Rc<RefCell<C>>,
-    body: &str,
-    sync: &SharedSync,
-    last_selection_key: &Rc<RefCell<Option<String>>>,
-    request_epoch: u64,
-    patch: bool,
-) -> bool {
-    if patch && !body.contains("\"full\":false") {
-        return true;
-    }
-    let Ok(mut inner_mut) = inner.try_borrow_mut() else {
-        return false;
-    };
-    let inner_ref = &mut *inner_mut;
-    let scale_update = sync
-        .try_borrow_mut()
-        .map(|mut controller| {
-            let version = controller.client.last_version();
-            controller
-                .ui_scale_pull
-                .apply(inner_ref.host_mut().editor_state_mut(), body, version)
-        })
-        .unwrap_or_default();
-    if scale_update.needs_ack {
-        *last_selection_key.borrow_mut() = None;
-    }
-    if scale_update.visual_changed {
-        inner_ref.host_mut().mark_editor_state_dirty();
-        let _ = inner_ref.repaint();
-    }
-    // Apply-time re-check: a local edit may have landed while the fetch was
-    // in flight; re-read the CURRENT pair and re-run `pull_allowed` before
-    // taking any mutable borrow of the controller. Borrow ends at the end of
-    // this statement (plain `if`, not `if let` — the condition's temporary
-    // does not extend into the body).
-    if !sync.borrow().document_pull_ready(
-        current_pair(inner_ref),
-        inner_ref.host().editor_state().viewport,
-        request_epoch,
-    ) {
-        return false; // a local edit landed while the fetch was in flight — abort apply
-    }
-    let force_view = !sync.borrow().gate.is_synced(current_pair(inner_ref));
-    // Captured BEFORE sync() flips it on the first apply: the
-    // mount-time pull (starter doc → daemon doc) must NOT become an
-    // undo step; every later external apply (AI turn, MCP client) must.
-    let undoable = sync
-        .try_borrow()
-        .map(|s| s.client.initialized())
-        .unwrap_or(false);
-    // The `WebSyncClient::sync_with_view_state` closure runs while `sync` is held
-    // mutably borrowed (via `s` below) — it must never itself touch `sync`;
-    // it only touches `inner_ref`, which is a separate RefCell.
-    let local = patch.then(|| inner_ref.host().editor_state().doc.clone());
-    let mut needs_full = false;
-    let applied = sync
-        .try_borrow_mut()
-        .ok()
-        .and_then(|mut s| {
-            let apply_next = |next: op_editor_core::web_sync::WebSyncDocument| {
-                let host = inner_ref.host_mut();
-                let previous_selection = host.capture_sync_selection();
-                let content_changed = host.editor_state().doc != next.document;
-                // A daemon-authored camera (saved or set_viewport) wins;
-                // otherwise unseen new content is framed below.
-                let explicit_view = next.viewport_changed && next.viewport.is_some();
-                if content_changed {
-                    host.replace_document_from_sync(next.document, undoable);
-                }
-                // A daemon new enough to send `scenario` is the
-                // authority (the browser boots with `None`, and a deck
-                // must present as a deck). An older daemon omits the
-                // field — keep whatever the open document already had
-                // rather than letting every sync erase its tag.
-                let scenario = next.scenario.or(host.editor_state().editor_ui.scenario);
-                let pinned_style_guide = host.editor_state().editor_ui.pinned_style_guide.clone();
-                op_pen_loader::apply_editor_meta(
-                    host.editor_state_mut(),
-                    op_pen_loader::EditorMeta {
-                        active_page_index: next.active_page_index,
-                        preserve_authored_geometry: next.preserve_authored_geometry,
-                        scenario,
-                        pinned_style_guide,
-                        viewport: (next.viewport_changed || force_view)
-                            .then(|| next.viewport.unwrap_or(op_editor_core::Viewport::IDENTITY)),
-                    },
-                );
-                host.mark_editor_state_dirty();
-                // The mount-time pull also re-checks a saved camera: one
-                // left between boards would otherwise open on nothing.
-                if content_changed && (!explicit_view || !undoable) {
-                    host.fit_if_content_offscreen();
-                }
-                if content_changed && undoable {
-                    host.restore_sync_selection(previous_selection);
-                }
-                inner_ref.repaint().is_ok()
-            };
-            match local.as_ref() {
-                Some(local) => {
-                    match s
-                        .client
-                        .sync_page_patch_force(body, local, force_view, apply_next)
-                    {
-                        Ok(op_editor_core::web_sync::PagePatchOutcome::Applied(applied)) => {
-                            Some(applied)
-                        }
-                        _ => {
-                            needs_full = true;
-                            None
-                        }
-                    }
-                }
-                None => s
-                    .client
-                    .sync_with_view_state_force_with_loader(
-                        body,
-                        force_view,
-                        live_sync_document::load_compatible,
-                        apply_next,
-                    )
-                    .ok(),
-            }
-        })
-        .unwrap_or(false);
-    if applied {
-        // Every id in this document came from the daemon, so it is the set an
-        // active session will accept a push against. Recording it here is what
-        // lets the push gate tell an edited node from an invented one.
-        crate::collab_sync::note_daemon_document(inner_ref.host().editor_state());
-        // Baseline = OUR serialization of the just-applied document, so the
-        // push tick compares apples to apples (serde normalization differs
-        // from the daemon's wire bytes).
-        let state = inner_ref.host().editor_state();
-        let active_page_index = state.ui.active_page_index;
-        let preserve_authored_geometry = state.editor_ui.preserve_authored_geometry;
-        let serialized = serialize_sync_document(&state.doc);
-        if let Ok(mut s) = sync.try_borrow_mut() {
-            // Always baseline the two scalar fields. Oversized documents skip
-            // their byte hash, but must not look metadata-dirty forever.
-            s.client
-                .note_applied_editor_meta(active_page_index, preserve_authored_geometry);
-            if let SyncDocumentJson::Ready(json) = serialized {
-                s.client.note_applied_snapshot_with_editor_meta(
-                    &json,
-                    active_page_index,
-                    preserve_authored_geometry,
-                );
-            }
-        }
-        if let Ok(mut last_selection_key) = last_selection_key.try_borrow_mut() {
-            *last_selection_key = None;
-        }
-        // Commit the sync-gate baseline AFTER the apply closure has returned
-        // (its mutable borrow above is released) and using the POST-apply pair.
-        //
-        // An external post-bootstrap apply (`undoable` — an AI turn or an MCP
-        // client write) is an UNSAVED daemon-side edit: the tab must read dirty
-        // so closing it prompts to save (spec: MCP edits mark the tab dirty).
-        // That dirtiness is already established by construction:
-        // `replace_document_with_undo` runs `history_push_past`, which bumps the
-        // content revision via `mark_document_changed` — so no manual bump is
-        // needed here (it would only be a redundant second revision tick).
-        // `note_synced` records this post-bump pair as the gate baseline, so the
-        // very next push tick sees current == baseline (no spurious echo-push of
-        // the just-applied doc back to the daemon) while `is_dirty()` stays true
-        // (revision != saved 0). The bootstrap apply (`undoable == false`, the
-        // mount-time starter→daemon pull) goes through the plain
-        // `replace_document`, which resets revision to 0 and stays clean.
-        let post_apply = current_pair(inner_ref);
-        sync.borrow_mut()
-            .gate
-            .note_synced(post_apply.0, post_apply.1);
-    }
-    needs_full
-}
+#[path = "live_sync_apply.rs"]
+mod document_apply;
+use document_apply::apply_document_response;
+pub(crate) use document_apply::refresh_canvas;
 
 /// Serialize + conditionally push the local document. Content changes are
 /// gated by `SyncGate::needs_push`; the two editor-metadata fields have their
@@ -500,7 +324,10 @@ fn push_document_if_changed<C: RepaintContext + 'static>(
     if crate::render_mode::render_only() {
         return;
     }
-    let busy = sync.borrow().push_busy;
+    let busy = {
+        let sync = sync.borrow();
+        sync.push_busy || sync.refresh_busy
+    };
     if busy {
         return;
     }

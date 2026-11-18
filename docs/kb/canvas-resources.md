@@ -66,11 +66,11 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
 {
   "version": 1,
   "status": "verified",
-  "task_id": "59e60cab-d63f-490b-8fbc-144f1b7867c8",
-  "verified_at": "2026-11-10T04:43:24.408226+00:00",
+  "task_id": "4c1def60-9ee2-4252-88e5-691ff369c53d",
+  "verified_at": "2026-11-18T12:17:42.666690+00:00",
   "sources": {
     "crates/op-host-web/src/op_ck_bridge.js": "0d64f916a1c08d196ac558b290ee92ff753e0989e1030e288bcaeacdfc3452ab",
-    "crates/op-host-web/src/canvaskit/inner.rs": "c3605933aeedc32e5acd0db1c7f6ff98002e7f87cdc16398692f67502e86252b",
+    "crates/op-host-web/src/canvaskit/inner.rs": "6482879780c2b52121926450404342be63c53956576a4d6126422ab92869b98e",
     "crates/op-host-web/src/preview_host/paint.rs": "95c04f36d6c121bf586f8989ce5fe2fc36bf32193d8d0c6c03eb05ff9afd3e96",
     "crates/op-host-web/src/widget_host/canvas_tiles.rs": "d07d96e7f153efa7b0c072d9a0755fbf31df9d83f52fae8b424f509ed9e24ee6",
     "crates/op-host-web/src/widget_host/canvas_tiles_host.rs": "4cd5f6eac913da31300cad53dcde7eebc7b0a91cf8ab652fa0021e95d612acc9",
@@ -80,7 +80,7 @@ Preview 模式的单瓦片快照上限为 4096×4096 设备像素；当画板 `c
     "crates/op-host-web/src/widget_host/text_edit_pointer.rs": "e7cd2499632ae81ef735c79631a25ddeeef1e6eba0ff5d7e61da48f5eccead1c",
     "crates/op-editor-ui/src/widgets/canvas_viewport_text.rs": "25df6837e4b19062c3cd976bd8894d5ab125821a4159a9a1f8e2b402ec97231b"
   },
-  "reason": "Review editor-only root outlines and authored page background precedence.",
-  "evidence": "CanvasViewport editor versus scene preview regression and host screenshot paint inspection."
+  "reason": "Record current workspace artifact naming, managed canvas, and source import behavior.",
+  "evidence": "Runtime task path and import tests, managed bridge tests, and local Electron acceptance."
 }
 ```

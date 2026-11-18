@@ -21,6 +21,8 @@ pub(crate) struct SyncController {
     pub gate: SyncGate,
     pub client: WebSyncClient,
     pub push_busy: bool,
+    pub(super) refresh_busy: bool,
+    pub(crate) managed_refresh: bool,
     pub ui_scale_pull: crate::ui_scale_sync::UiScalePull,
     /// A document identity already measured above the periodic push limit.
     /// WASM linear memory does not shrink after a giant temporary JSON string,
@@ -34,6 +36,8 @@ impl SyncController {
             gate: SyncGate::default(),
             client: WebSyncClient::new(),
             push_busy: false,
+            refresh_busy: false,
+            managed_refresh: false,
             ui_scale_pull: Default::default(),
             oversize_identity: None,
         }
@@ -53,7 +57,8 @@ impl SyncController {
     ) -> bool {
         // A render-only mirror never pushes, so local camera / page metadata
         // that differs from the daemon must not hold captures back.
-        let meta_settled = crate::render_mode::render_only()
+        let meta_settled = self.managed_refresh
+            || crate::render_mode::render_only()
             || !self
                 .client
                 .editor_meta_needs_push(active_page_index, preserve_authored_geometry);
@@ -71,9 +76,11 @@ impl SyncController {
         request_epoch: u64,
     ) -> bool {
         !self.push_busy
+            && !self.refresh_busy
             && self.client.viewport_epoch() == request_epoch
             && self.gate.pull_allowed(pair)
-            && (crate::render_mode::render_only()
+            && (self.managed_refresh
+                || crate::render_mode::render_only()
                 || !self.gate.is_synced(pair)
                 || !self.client.viewport_needs_push(viewport))
     }
@@ -99,7 +106,7 @@ pub(crate) fn daemon_synced_version(state: &op_editor_core::EditorState) -> Opti
             (state.document_generation(), state.document_revision()),
             state.ui.active_page_index,
             state.editor_ui.preserve_authored_geometry,
-        ) && !sync.client.viewport_needs_push(state.viewport))
+        ) && (sync.managed_refresh || !sync.client.viewport_needs_push(state.viewport)))
         .then_some(version)
     })
 }

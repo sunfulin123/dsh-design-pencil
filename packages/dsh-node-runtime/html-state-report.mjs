@@ -5,15 +5,23 @@ export function htmlStateResult(state, checkpoint) {
   const pendingCount = candidates.filter(
     (c) => !['captured', 'excluded'].includes(c.status),
   ).length;
-  const limitations = state.warnings.filter((warning) => {
+  const limitations = [...new Set(state.warnings)].filter((warning) => {
     const recoveredFont = (state.fonts || []).some(
       (face) => face.available && warning.startsWith(`Page font ${face.family} ${face.weight} `),
     );
     if (recoveredFont) return false;
-    return /blocked|Internal scroll|truncat|budget exhausted|missing font|font.*(?:failed|rejected|could not|limit|unavailable|unsupported)|pixels skipped|resources may be missing/i.test(
+    return /blocked|Internal scroll|truncat|budget exhausted|missing font|font.*(?:failed|rejected|could not|limit|unavailable|unsupported)|pixels skipped|unresolved icon glyphs|could not locate some captured .* glyphs|resources may be missing|Frame .*(?:transformed viewport|produced no editable snapshot|could not be matched|raster evidence reached)/i.test(
       warning,
     );
   });
+  const frames = state.frames || [];
+  for (const frame of frames) {
+    if (frame.status === 'available') continue;
+    const path = frame.framePath.join(' > ');
+    limitations.push(
+      `${frame.label || 'Embedded frame'}${path ? ` (${path})` : ''}: ${frame.reason}`,
+    );
+  }
   const structureComplete =
     state.boards.length > 0 &&
     pendingCount === 0 &&
@@ -39,6 +47,7 @@ export function htmlStateResult(state, checkpoint) {
       visualComplete,
       limitations,
       states: candidates,
+      frames,
       pendingCount,
     },
     checkpoint: checkpoint,

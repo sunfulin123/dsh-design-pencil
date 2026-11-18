@@ -17,6 +17,7 @@ pub(super) struct CkInner {
     pub(super) settings_fingerprint: Option<crate::web_settings::Fingerprint>,
     pub(super) credential_fingerprint: crate::web_settings::CredentialFingerprint,
     pub(super) canvas: web_sys::HtmlCanvasElement,
+    pub(super) refresh_toolbar: Option<super::refresh_toolbar::RefreshToolbar>,
     /// Hidden ARIA DOM mirror (#57) — kept in sync after every paint so a
     /// screen reader can read the opaque CanvasKit surface. `None` only if
     /// the DOM container couldn't be created (non-browser host).
@@ -79,6 +80,13 @@ impl CkInner {
         }
         let placements = self.host.preview_video_overlay_placements(w, h);
         self.video_overlay.sync(&self.canvas, w, h, &placements);
+        super::refresh_toolbar::sync(
+            &mut self.refresh_toolbar,
+            &self.canvas,
+            &self.host.editor_state().editor_ui,
+            w,
+            h,
+        );
         self.sync_a11y();
         self.host.frame_perf.mark("a11y");
         if let Some(report) = self.host.frame_perf.end_frame() {

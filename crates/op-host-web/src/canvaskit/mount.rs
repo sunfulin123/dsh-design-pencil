@@ -123,6 +123,7 @@ pub(super) async fn mount_ck(canvas_id: String) -> Result<(), JsValue> {
         settings_fingerprint,
         credential_fingerprint,
         canvas: canvas.clone(),
+        refresh_toolbar: None,
         a11y,
         ime,
         cursor_before_eyedropper: None,

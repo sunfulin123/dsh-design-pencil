@@ -184,3 +184,43 @@ fn viewport_pull_preserves_new_local_camera_and_applies_remote_view_without_undo
     assert_eq!(context.repaints, 1);
     assert!(sync.borrow().client.metadata_only_push_supported());
 }
+
+#[test]
+fn managed_content_pull_retains_page_camera_and_surviving_node_selection() {
+    let mut host = WidgetHost::new();
+    let document = op_pen_loader::load_canonical(r#"{"version":"1.0.0","pages":[{"id":"one","name":"First","children":[]},{"id":"two","name":"Second","children":[{"type":"rectangle","id":"kept","width":40,"height":20}]}]}"#).unwrap().value;
+    let state = host.editor_state_mut();
+    state.replace_document(document.clone());
+    state.ui.active_page_index = 1;
+    state.viewport.pan_x = 141.25;
+    state.viewport.zoom = 1.25;
+    let camera = state.viewport;
+    state.toggle_selection(op_editor_core::NodeId::new("kept"));
+    let inner = Rc::new(RefCell::new(TestContext { host, repaints: 0 }));
+    let sync = Rc::new(RefCell::new(SyncController::new()));
+    let pair = current_pair(&*inner.borrow());
+    sync.borrow_mut().managed_refresh = true;
+    sync.borrow_mut().client.mark_applied(7);
+    sync.borrow_mut().gate.note_synced(pair.0, pair.1);
+    let mut next = document;
+    next.pages.as_mut().unwrap().reverse();
+    let body = serde_json::json!({"document":next,"version":8,"activePageIndex":1,"viewport":Viewport::IDENTITY}).to_string();
+    let epoch = sync.borrow().client.viewport_epoch();
+    assert!(!apply_document_response(
+        &inner,
+        &body,
+        &sync,
+        &Rc::new(RefCell::new(None)),
+        epoch,
+        false
+    ));
+    let inner = inner.borrow();
+    let state = inner.host.editor_state();
+    assert_eq!(state.ui.active_page_index, 0);
+    assert_eq!(state.viewport, camera);
+    assert_eq!(
+        state.selection.set,
+        vec![op_editor_core::NodeId::new("kept")]
+    );
+    assert_eq!(sync.borrow().client.last_version(), 8);
+}

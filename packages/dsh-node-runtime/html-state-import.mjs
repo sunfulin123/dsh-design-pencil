@@ -1,5 +1,4 @@
 /** Resumable, source-bound HTML state import. No destination file writes occur here. */
-import { join } from 'node:path';
 import {
   withBrowser,
   clampViewport,
@@ -9,17 +8,17 @@ import {
 } from './html-browser-capture.mjs';
 import { pageCall, settlePage } from './html-capture-page.mjs';
 import { discoverInterfaces, inspectState } from './html-state-discovery.mjs';
+import { framePageCall } from './html-frame-context.mjs';
 import { performSteps } from './html-state-actions.mjs';
 import {
   applyHtmlStatePlan,
   commitHtmlStateCapture,
+  recordHtmlDiscovery,
   mergeHtmlImportVariables,
 } from './html-state-checkpoint.mjs';
 import { validateExternalUrl } from './html-sources.mjs';
-import { registerPageFonts } from './html-fonts.mjs';
+import { prepareHtmlStateFonts } from './html-state-resources.mjs';
 import { withHtmlFontDefaults } from './html-font-defaults.mjs';
-import { FontFetcher } from './font-fetcher.mjs';
-import { defaultFigmaCacheDir } from './figma-import-jobs.mjs';
 
 import { hash, readHtmlStateSource, sourceEvidence } from './html-state-input.mjs';
 export { validateHtmlStatePlan } from './html-state-input.mjs';
@@ -56,42 +55,6 @@ export class HtmlImportSession {
     this.#state.sourceFingerprint = source.fingerprint;
     return source;
   }
-  #add(discovered, prefix = []) {
-    const context = hash([discovered.url, discovered.text, discovered.visibleContainers]);
-    for (const item of discovered.candidates) {
-      const id = hash([context, item.selector, item.expected || '', item.label]).slice(0, 24);
-      if (this.#state.candidates.some((c) => c.id === id)) continue;
-      this.#state.candidates.push({
-        id,
-        label: item.label,
-        kind: item.kind,
-        steps: [...prefix, { type: 'click', selector: item.selector }],
-        expected: item.expected,
-        status: 'pending',
-        safe: item.safe,
-        reason: item.reason,
-        evidence: { selector: item.selector, options: item.options },
-      });
-    }
-    for (const hidden of discovered.hidden) {
-      if (this.#state.candidates.some((c) => c.expected === hidden.selector)) continue;
-      const id = hash(['hidden', hidden.selector]).slice(0, 24);
-      if (!this.#state.candidates.some((c) => c.id === id))
-        this.#state.candidates.push({
-          id,
-          label: hidden.label,
-          kind: 'hidden',
-          steps: [],
-          expected: hidden.selector,
-          status: 'pending',
-          safe: false,
-          reason: 'Hidden interface has no verified activation route',
-        });
-    }
-    this.#state.resources = discovered.resources;
-    this.#state.hidden = discovered.hidden;
-    this.#state.scrollContainers = discovered.scrollContainers;
-  }
   async #page(source, signal, fn) {
     signal?.throwIfAborted();
     const viewport = clampViewport(
@@ -101,19 +64,23 @@ export class HtmlImportSession {
     const result = await withBrowser(
       { ...source, viewport, timeoutMs: 20000 },
       async (page, network, url) => {
-        const stops = [];
+        const { frameTree } = await page.send('Page.getFrameTree');
+        const rootFrameId = frameTree.frame.id;
+        const entry = new URL(url);
         const stop = page.on('Fetch.requestPaused', (event) => {
           let permitted = ['GET', 'HEAD', 'OPTIONS'].includes(event.request.method);
           try {
-            if (new URL(event.request.url).origin !== new URL(url).origin)
-              validateExternalUrl(event.request.url);
+            const dest = new URL(event.request.url);
+            if (dest.origin !== entry.origin) validateExternalUrl(event.request.url);
+            if (
+              event.resourceType === 'Document' &&
+              (dest.origin !== entry.origin ||
+                !event.frameId ||
+                (event.frameId === rootFrameId && dest.pathname !== entry.pathname))
+            )
+              permitted = false;
           } catch {
             permitted = false;
-          }
-          if (event.resourceType === 'Document') {
-            const dest = new URL(event.request.url),
-              entry = new URL(url);
-            if (dest.origin !== entry.origin || dest.pathname !== entry.pathname) permitted = false;
           }
           if (!permitted)
             this.#state.warnings.push(
@@ -127,7 +94,6 @@ export class HtmlImportSession {
             })
             .catch(() => {});
         });
-        stops.push(stop);
         try {
           await page.send('Network.setBlockedURLs', { urls: ['ws://*', 'wss://*'] });
           await page.send('Page.addScriptToEvaluateOnNewDocument', {
@@ -153,7 +119,7 @@ export class HtmlImportSession {
             signal?.removeEventListener('abort', aborted);
           }
         } finally {
-          stops.forEach((stop) => stop());
+          stop();
         }
       },
     );
@@ -164,17 +130,37 @@ export class HtmlImportSession {
     }
     return result.value;
   }
-  async #load({ page, url, viewport, network }, steps, signal) {
+  async #load({ page, url, viewport, network }, steps, signal, onReplay) {
     const loaded = await renderPage(page, network, url, viewport, {
       timeoutMs: 10000,
       preserveViewport: true,
     });
     if (loaded.warnings.some((w) => /did not become idle|did not become true/.test(w)))
       throw new Error('Source did not become ready before capture');
-    await performSteps(page, steps, signal);
+    if (steps.length) {
+      await onReplay?.();
+      await performSteps(page, steps, signal);
+    }
     if (!(await network.wait(Date.now() + 3000))) throw new Error('State resources did not settle');
     await page.evaluate(
-      `Promise.race([Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))),new Promise(r=>setTimeout(r,1500))])`,
+      framePageCall(async (_args, context) => {
+        const scopes = context.inventory().filter(({ status }) => status === 'available');
+        const docs = scopes.map(({ framePath }) => context.resolve(framePath).doc);
+        await Promise.race([
+          Promise.all(
+            docs.flatMap((doc) => [
+              doc.fonts.ready,
+              ...doc
+                .getAnimations()
+                .filter(
+                  (animation) => animation.effect?.getComputedTiming().iterations !== Infinity,
+                )
+                .map((animation) => animation.finished.catch(() => {})),
+            ]),
+          ),
+          new Promise((resolve) => setTimeout(resolve, 1500)),
+        ]);
+      }),
       { awaitPromise: true },
     );
     await page.evaluate(
@@ -187,25 +173,27 @@ export class HtmlImportSession {
   async analyze({ signal } = {}) {
     if (this.#closed) throw new Error('HTML import session closed');
     const source = await this.#source();
-    if (this.#state.analyzed) return this.#analysis();
+    if (this.#state.analyzed && this.#state.frames) return this.#analysis();
     try {
       await this.#page(source, signal, async (page, url, viewport, network) => {
         await this.#load({ page, url, viewport, network }, [], signal);
-        const inventory = await page.evaluate(pageCall(discoverInterfaces, {}));
-        this.#state.candidates.push({
-          id: 'base',
-          label: 'Initial page',
-          kind: 'page',
-          steps: [],
-          status: 'pending',
-          safe: true,
-        });
-        this.#add(inventory);
+        const inventory = await page.evaluate(framePageCall(discoverInterfaces));
+        if (!this.#state.candidates.some(({ id }) => id === 'base'))
+          this.#state.candidates.push({
+            id: 'base',
+            label: 'Initial page',
+            kind: 'page',
+            steps: [],
+            status: 'pending',
+            safe: true,
+          });
+        recordHtmlDiscovery(this.#state, inventory);
         this.#state.sourceEvidence = sourceEvidence(source, this.#options, inventory.text);
         if (
-          this.#state.sourceEvidence.bodyTruncated ||
-          this.#state.sourceEvidence.scriptsTruncated ||
-          this.#state.sourceEvidence.externalScripts.length
+          !this.#state.candidates.some(({ id }) => id === 'source-coverage') &&
+          (this.#state.sourceEvidence.bodyTruncated ||
+            this.#state.sourceEvidence.scriptsTruncated ||
+            this.#state.sourceEvidence.externalScripts.length)
         ) {
           this.#state.candidates.push({
             id: 'source-coverage',
@@ -222,6 +210,7 @@ export class HtmlImportSession {
     } catch (error) {
       if (error.code !== 'HTML_BROWSER_UNAVAILABLE') throw error;
       this.#state.staticFallback = true;
+      this.#state.frames = [];
       this.#state.candidates = [
         {
           id: 'base',
@@ -251,6 +240,7 @@ export class HtmlImportSession {
     return clone({
       sourceFingerprint: this.#state.sourceFingerprint,
       candidates: this.#state.candidates,
+      frames: this.#state.frames,
       resources: this.#state.resources,
       hidden: this.#state.hidden,
       scrollContainers: this.#state.scrollContainers,
@@ -258,7 +248,14 @@ export class HtmlImportSession {
       warnings: this.#state.warnings,
     });
   }
-  async capture({ states, maxStates = 4, signal, renewBudget = false } = {}) {
+  async capture({
+    states,
+    maxStates = 4,
+    signal,
+    renewBudget = false,
+    onCheckpoint,
+    onProgress,
+  } = {}) {
     if (typeof renewBudget !== 'boolean') throw new Error('renewBudget must be a boolean');
     if (renewBudget && this.#state.budgetExhausted) {
       this.#state.actions = 0;
@@ -273,6 +270,16 @@ export class HtmlImportSession {
       for (const state of this.#state.candidates)
         if (state.status === 'failed' && state.safe) state.status = 'pending';
     const started = Date.now();
+    const progress = (phase, candidate) =>
+      onProgress?.({
+        phase,
+        candidate: candidate?.id,
+        capturedCount: this.#state.boards.length,
+        pendingCount: this.#state.candidates.filter(
+          ({ status }) => status !== 'captured' && status !== 'excluded',
+        ).length,
+      });
+    await progress('loading');
     await this.analyze({ signal });
     if (this.#state.staticFallback) {
       const { convertHtmlToDocument } = await import('./html-import.mjs');
@@ -292,7 +299,9 @@ export class HtmlImportSession {
           visual: { status: 'unverified', reason: 'Static CSS fallback' },
         },
       ];
-      return { ...this.#result(), renderMode: 'static-css', done: true };
+      const result = { ...this.#result(), renderMode: 'static-css', done: true };
+      await onCheckpoint?.(result);
+      return result;
     }
     if (states) applyHtmlStatePlan(this.#state, states);
     const source = await this.#source();
@@ -311,14 +320,15 @@ export class HtmlImportSession {
           this.#state.warnings.push('Interface exploration budget exhausted');
           break;
         }
+        const pending = this.#state.candidates.filter(
+          (item) => item.status === 'pending' && item.safe,
+        );
         const candidate =
-          this.#state.candidates.find(
-            (c) => c.status === 'pending' && c.safe && c.kind === 'planned',
-          ) ||
-          this.#state.candidates.find(
-            (c) => c.status === 'pending' && c.safe && ['page', 'tab'].includes(c.kind),
-          ) ||
-          this.#state.candidates.find((c) => c.status === 'pending' && c.safe);
+          pending.find(({ kind }) => kind === 'planned') ||
+          pending.find(({ id }) => id === 'base') ||
+          pending.find(({ kind }) => kind === 'tab') ||
+          pending.find((item) => item.evidence?.framePath?.length) ||
+          pending[0];
         if (!candidate) break;
         if (this.#state.actions + candidate.steps.length > 120) {
           this.#state.budgetExhausted = true;
@@ -327,18 +337,26 @@ export class HtmlImportSession {
         }
         this.#state.actions += candidate.steps.length;
         captured++;
+        await progress('loading', candidate);
         try {
-          await this.#load({ page, url, viewport, network }, candidate.steps, signal);
+          await this.#load({ page, url, viewport, network }, candidate.steps, signal, () =>
+            progress('replaying', candidate),
+          );
           const evidence = await page.evaluate(
-            pageCall(inspectState, { expected: candidate.expected }),
+            framePageCall(inspectState, {
+              expected: candidate.expected,
+              expectedFramePath: candidate.expectedFramePath,
+            }),
           );
           if (!evidence.expectedVisible)
             throw new Error('Expected interface did not become uniquely visible');
-          const inventory = await page.evaluate(pageCall(discoverInterfaces, {}));
+          const inventory = await page.evaluate(framePageCall(discoverInterfaces));
           evidence.pageText = inventory.text;
-          this.#add(inventory, candidate.steps);
+          recordHtmlDiscovery(this.#state, inventory, candidate.steps);
+          await progress('capturing', candidate);
           const capture = await captureCurrentPage(page, viewport, viewport.height, [], {
             pixelMedia: true,
+            includeFrames: true,
           });
           const snapshot = JSON.parse(capture.snapshot);
           const {
@@ -374,6 +392,12 @@ export class HtmlImportSession {
             candidate.boardId = duplicate.rootId;
             continue;
           }
+          await progress('resources', candidate);
+          const fonts = await prepareHtmlStateFonts(snapshot, capture, this.#state.fonts, {
+            baseDir: source.baseDir,
+            signal,
+          });
+          this.#state.fonts = fonts.faces;
           withHtmlFontDefaults(snapshot);
           snapshot.title = candidate.label;
           const palette = (await convertSnapshotToDocument({ snapshot: JSON.stringify(snapshot) }))
@@ -391,30 +415,7 @@ export class HtmlImportSession {
           const root = document.children.find((n) => !before.has(n.id));
           if (!root || !root.children?.length)
             throw new Error('Captured interface produced an empty board');
-          const fonts = await registerPageFonts(
-            [
-              {
-                ...capture,
-                fonts: capture.fonts.filter(
-                  (f) =>
-                    !(this.#state.fonts || []).some(
-                      (known) =>
-                        known.available &&
-                        known.family.toLowerCase() === f.family.toLowerCase() &&
-                        String(known.weight) === String(f.weight) &&
-                        known.italic === (f.style !== 'normal'),
-                    ),
-                ),
-              },
-            ],
-            {
-              fetcher: new FontFetcher(join(defaultFigmaCacheDir(), 'fonts')),
-              baseDir: source.baseDir,
-              signal,
-            },
-          );
-          this.#state.warnings.push(...fonts.warnings, ...capture.warnings);
-          this.#state.fonts = [...(this.#state.fonts || []), ...fonts.faces];
+
           if (inventory.scrollContainers.length)
             this.#state.warnings.push(
               'Internal scroll containers require separate coverage; snapshot retains clipping',
@@ -440,6 +441,7 @@ export class HtmlImportSession {
             visual: { status: 'unverified', reason: 'Converted-render comparison required' },
           };
           commitHtmlStateCapture(this.#state, candidate, board, document, evidenceSize);
+          this.#state.warnings.push(...fonts.warnings, ...capture.warnings);
           this.#engine.restoreDocument(this.#state.document, this.#engine.snapshot().version);
         } catch (error) {
           signal?.throwIfAborted();
@@ -447,12 +449,15 @@ export class HtmlImportSession {
           this.#engine = new EngineSession(this.#state.document);
           candidate.status = 'failed';
           candidate.reason = error.message;
+          continue;
         }
+        await onCheckpoint?.(this.#result(Date.now() - started));
       }
     });
     if (this.#options.verifyVisual === true && this.#state.boards.length) {
       const remaining = 600000 - this.#state.elapsedMs - (Date.now() - started);
       if (remaining > 0) {
+        await progress('verifying');
         const { verifyHtmlBoards } = await import('./html-state-visual.mjs');
         const budgetSignal = AbortSignal.timeout(Math.max(1, remaining));
         const combined = signal ? AbortSignal.any([signal, budgetSignal]) : budgetSignal;
@@ -466,8 +471,9 @@ export class HtmlImportSession {
     this.#state.elapsedMs += Date.now() - started;
     return this.#result();
   }
-  #result() {
-    return htmlStateResult(this.#state, this.checkpoint());
+  #result(batchElapsed = 0) {
+    const state = { ...this.#state, elapsedMs: this.#state.elapsedMs + batchElapsed };
+    return htmlStateResult(state, state);
   }
   checkpoint() {
     return clone(this.#state);

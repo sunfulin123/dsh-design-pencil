@@ -64,20 +64,21 @@ export async function settlePage({ readyExpression, waitMs, maxWaitMs, preserveS
  * controls (their state and accent colour), media boxes whose pixels must
  * be captured from the compositor, and the font faces the page loaded.
  */
-export function describePage({ maxMedia }) {
+export function describePage({ maxMedia }, view = window, iconGlyph) {
+  const { document, CSSRule } = view;
   const round = (value) => Math.round(value * 100) / 100;
   const pageRect = (element) => {
     const rect = element.getBoundingClientRect();
     return {
-      x: round(rect.left + window.scrollX),
-      y: round(rect.top + window.scrollY),
+      x: round(rect.left + view.scrollX),
+      y: round(rect.top + view.scrollY),
       w: round(rect.width),
       h: round(rect.height),
     };
   };
   const visible = (element) => {
     const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
+    const style = view.getComputedStyle(element);
     return (
       rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
     );
@@ -86,7 +87,7 @@ export function describePage({ maxMedia }) {
   const controls = [];
   for (const element of document.querySelectorAll('input, progress, meter, select')) {
     if (!visible(element)) continue;
-    const style = getComputedStyle(element);
+    const style = view.getComputedStyle(element);
     const tag = element.tagName.toLowerCase();
     const type = tag === 'input' ? (element.type || 'text').toLowerCase() : tag;
     if (!['range', 'checkbox', 'radio', 'progress', 'meter', 'select'].includes(type)) continue;
@@ -119,7 +120,7 @@ export function describePage({ maxMedia }) {
       rect: pageRect(element),
       index: media.length,
     });
-    element.setAttribute('data-op-media-capture', String(media.length - 1));
+    if (!iconGlyph) element.setAttribute('data-op-media-capture', String(media.length - 1));
   }
   const fonts = [];
   if (document.fonts) {
@@ -177,8 +178,43 @@ export function describePage({ maxMedia }) {
     };
     visitRules(rules);
   };
-  for (const sheet of document.styleSheets) visitSheet(sheet);
-  return { controls, media, fonts, fontSources: sources, fontStylesheets };
+  for (const sheet of [...document.styleSheets, ...document.adoptedStyleSheets]) visitSheet(sheet);
+  const icons = [];
+  if (iconGlyph) {
+    const loadedFamilies = new Set([...document.fonts].filter(face => face.status === 'loaded')
+      .map(face => face.family.replace(/^['"]|['"]$/g, '').toLowerCase()));
+    const compositorVisible = element => {
+      const rect = element.getBoundingClientRect();
+      let x = rect.left + rect.width / 2;
+      let y = rect.top + rect.height / 2;
+      let target = element;
+      for (let doc = document; doc; ) {
+        const hit = doc.elementFromPoint(x, y);
+        if (!hit || (!target.contains(hit) && !hit.contains(target))) return false;
+        const frame = doc.defaultView.frameElement;
+        if (!frame) return true;
+        const bounds = frame.getBoundingClientRect();
+        x += bounds.left + frame.clientLeft;
+        y += bounds.top + frame.clientTop;
+        target = frame;
+        doc = frame.ownerDocument;
+      }
+      return false;
+    };
+    for (const element of document.querySelectorAll('i,span,[data-icon],[class*="icon" i]')) {
+      if (icons.length === 64) break;
+      if (element.childElementCount || !visible(element)) continue;
+      const text = element.textContent.trim();
+      const style = view.getComputedStyle(element);
+      const family = style.fontFamily.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+      if (!iconGlyph(family, text)) continue;
+      const weight = style.fontWeight;
+      const fontStyle = style.fontStyle;
+      const loaded = loadedFamilies.has(family.toLowerCase()) && compositorVisible(element);
+      icons.push({ family, weight, style: fontStyle, text, loaded, rect: pageRect(element) });
+    }
+  }
+  return { controls, media, fonts, fontSources: sources, fontStylesheets, icons };
 }
 
 /** Show only one captured media element so its screenshot has no overlays. */
