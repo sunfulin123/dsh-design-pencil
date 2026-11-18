@@ -62,11 +62,10 @@ member — load it unpacked from `chrome://extensions`.
   page's process). The manifest declares `'wasm-unsafe-eval'` in
   `content_security_policy.extension_pages`, which is what MV3 requires to
   instantiate a bundled `.wasm`; no code is fetched from outside the package.
-- The capture engine is `vendor/snapshot-extractor.js`, a **byte-identical copy**
-  of `crates/op-html/assets/snapshot-extractor.js` (the contract
-  `op_html::import_snapshot` parses). `bun run lint` runs
-  `op-chrome-extension/scripts/check-extractor-sync.sh`, which fails on drift;
-  `--fix` re-copies the canonical asset. Never edit the copy.
+- The capture engine is `vendor/snapshot-extractor.js`, generated in the same
+  source order as the Rust snapshot extractor. `bun run lint` uses
+  `op-chrome-extension/scripts/check-extractor-sync.sh` to detect bundle drift.
+  Regenerate the bundle with `--fix` after changing the Rust extractor sources.
 - The live MCP endpoint exposes two extension-scoped REST capabilities. Snapshot
   import uses `POST /api/import/web-snapshot` (insert-only and open to a
   well-formed `chrome-extension://` origin unless explicitly pinned), with a

@@ -400,3 +400,58 @@ test('unavailable icon text without a usable crop stays visible as a coverage ga
   ]);
   assert.equal(text.text, 'settings');
 });
+
+test('browser captures a dynamically constructed font and registers its declared TTF alternative', {
+  skip: process.env.DSH_E2E_CHROME !== '1',
+}, async (t) => {
+  const { captureCurrentPage, renderPage, withBrowser } = await import('./html-browser-capture.mjs');
+  const directory = await mkdtemp(join(tmpdir(), 'dynamic-font-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, 'symbols.ttf'), sfnt);
+  await writeFile(join(directory, 'app.html'), `
+    <span style="font: italic 700 24px 'Fixture Symbols'">A</span>
+    <script>
+      const family = ['Fixture', 'Symbols'].join(' ');
+      const face = new FontFace(family,
+        'url("symbols.woff2") format("woff2"), url("symbols.ttf") format("truetype")',
+        { weight: '700', style: 'italic' });
+      document.fonts.add(face);
+      face.load();
+    </script>`);
+  const viewport = { width: 640, height: 480 };
+  const checked = await withBrowser({
+    htmlBytes: Buffer.from('<iframe title="Application" src="/app.html"></iframe>'),
+    baseDir: directory,
+    viewport,
+  }, async (page, network, url) => {
+    await renderPage(page, network, url, viewport, { timeoutMs: 10000, preserveViewport: true });
+    const capture = await captureCurrentPage(page, viewport, viewport.height, [], {
+      includeFrames: true, pixelMedia: false,
+    });
+    assert.deepEqual(capture.fontSources.find(font => font.family === 'Fixture Symbols'), {
+      family: 'Fixture Symbols', weight: '700', style: 'italic',
+      urls: [new URL('symbols.woff2', url).href, new URL('symbols.ttf', url).href],
+    });
+    const registered = await registerPageFonts([capture], {
+      baseDir: directory, fetcher: new FontFetcher(join(directory, 'cache')),
+    });
+    assert.deepEqual(registered.faces, [{
+      family: 'Fixture Symbols', weight: 700, italic: true, available: true, source: 'page', icon: true,
+    }]);
+    return true;
+  });
+  assert.equal(checked, true);
+});
+
+test('uses captured ligature paint even when the source font is registered', () => {
+  const family = 'Fixture Icons';
+  const rect = { x: 5, y: 10, w: 20, h: 20 };
+  const text = { kind: 'text', rect, text: 'search', styles: { 'font-family': family } };
+  const snapshot = { root: { kind: 'element', children: [text] } };
+  const src = 'data:image/png;base64,cGl4ZWxz';
+  const capture = { iconPixels: [{ family, rect, text: 'search', ligature: true, src }] };
+  applyUnresolvedIconFallbacks(snapshot, capture, [{ family, weight: 400, italic: false, icon: true, available: true }]);
+  assert.equal(text.src, src);
+  assert.equal(text.kind, 'image');
+  assert.equal(text.text, undefined);
+});

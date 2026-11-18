@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { encodeRgbaPng } from './png-encode.mjs';
 import { compareCapturedBoard, verifyHtmlBoards } from './html-state-visual.mjs';
 
@@ -118,4 +119,50 @@ test('incomplete source evidence remains unverified without starting a renderer'
   const result = await verifyHtmlBoards({ document: {}, boards: [{ rootId: 'none' }] });
   assert.equal(result[0].visual.status, 'unverified');
   assert.match(result[0].visual.reason, /Full source pixels/);
+});
+
+test('HTML import retains iframe controls, inset selection paint and rounded asymmetric borders', {
+  skip: process.env.DSH_E2E_CHROME !== '1',
+  timeout: 60000,
+}, async (t) => {
+  const { HtmlImportSession } = await import('./html-state-import.mjs');
+  const { startNodeHost } = await import('./node-host.mjs');
+  const { callOpenPencilMcp } = await import('./managed-mcp-client.mjs');
+  const { decodePng } = await import('./png-diff.mjs');
+  const content = [
+    '<body style="margin:0;background:white">',
+    '<div style="height:30px;box-shadow:inset 3px 0 #5405bd">Selected request</div>',
+    '<input aria-label="Search" placeholder="Search for a request" style="margin:0;width:85px;height:24px;border:0;padding:0;font:12px sans-serif">',
+    '<style>input::placeholder{color:rgb(145,156,170);opacity:1}</style>',
+  ].join('');
+  const session = new HtmlImportSession({
+    html: `<body style="margin:0;background:white;padding:20px"><div style="width:200px;height:120px;overflow:hidden;border:4px solid black;border-right-width:2px;border-radius:14px"><iframe title="Requests" style="display:block;border:0;width:100%;height:100%" srcdoc="${content.replaceAll('"', '&quot;')}"></iframe></div></body>`,
+    viewportWidth: 640,
+    viewportHeight: 480,
+  });
+  t.after(() => session.close());
+  const result = await session.capture({ maxStates: 1 });
+  const [board] = result.boards;
+  const host = await startNodeHost({
+    document: result.document, headless: true,
+    webRoot: fileURLToPath(new URL('web-bundle/', import.meta.url)),
+    canvaskitRoot: fileURLToPath(new URL('web-bundle/canvaskit/', import.meta.url)),
+  });
+  t.after(() => host.close());
+  const shot = await callOpenPencilMcp({
+    baseUrl: host.baseUrl, token: host.token, tool: 'get_screenshot',
+    arguments: { nodeId: board.rootId, isolate: true, background: 'canvas', scale: 1 },
+    timeoutMs: 30000,
+  });
+  const source = decodePng(Buffer.from(board.sourceScreenshot.base64, 'base64'));
+  const imported = decodePng(shot.images[0].bytes);
+  const pixel = (image, x, y) => [...image.pixels.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 3)];
+  const stripe = pixel(source, 25, 50);
+  const corner = pixel(source, 20, 20);
+  assert.deepEqual(stripe, [84, 5, 189]);
+  assert.deepEqual(corner, [255, 255, 255]);
+  assert.deepEqual([pixel(imported, 25, 50), pixel(imported, 20, 20)], [stripe, corner]);
+  const text = JSON.stringify(result.document);
+  assert.match(text, /Search for a request/);
+  assert.match(text, /#919caa/);
 });

@@ -37,7 +37,7 @@ mod snapshot_controls;
 
 const MAX_SNAPSHOT_BYTES: usize = 48 * 1024 * 1024;
 
-pub const SNAPSHOT_EXTRACTOR_JS: &str = include_str!("../assets/snapshot-extractor.js");
+pub use crate::snapshot_bundle::SNAPSHOT_EXTRACTOR_JS;
 
 pub fn import_snapshot(json: &str, opts: &HtmlImportOptions) -> HtmlImportResult {
     match import_snapshot_inner(json, opts) {

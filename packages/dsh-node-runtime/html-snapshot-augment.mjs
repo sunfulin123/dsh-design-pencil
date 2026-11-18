@@ -54,3 +54,49 @@ export function augmentSnapshot(snapshot, { controls = [], mediaPixels = [] } = 
   });
   return { controls: appliedControls, media: appliedMedia };
 }
+
+/** Replace the masked box with its composited pixels, keeping surrounding nodes editable. */
+export function applyMaskedPixels(snapshot, masks) {
+  const matched = new Map(masks.map(mask => [mask, []]));
+  walk(snapshot.root, node => {
+    if (node.kind !== 'element' && node.kind !== 'image') return;
+    for (const mask of masks) {
+      if (node.tag === mask.tag && sameRect(node.rect, mask.nodeRect) &&
+          (node.kind === 'image' ||
+            ((node.attrs?.id || '') === mask.id && (node.attrs?.class || '') === mask.className))) {
+        matched.get(mask).push(node);
+      }
+    }
+  });
+  let applied = 0;
+  for (const [mask, nodes] of matched) {
+    if (nodes.length !== 1) continue;
+    const [node] = nodes;
+    const position = node.styles?.position;
+    for (const key of ['children', 'd', 'fill', 'fillRule', 'vectorRect', 'tainted']) delete node[key];
+    Object.assign(node, {
+      kind: 'image', src: mask.src, styles: position ? { position } : {},
+    });
+    applied++;
+  }
+  return applied;
+}
+
+/** Match only images the browser extractor could not embed, using its selected source. */
+export function remoteImageTargets(snapshot, facts) {
+  const bySource = new Map();
+  for (const candidate of facts) {
+    if (!bySource.has(candidate.src)) bySource.set(candidate.src, []);
+    bySource.get(candidate.src).push(candidate);
+  }
+  const targets = [];
+  let count = 0;
+  walk(snapshot.root, node => {
+    if (node.kind !== 'image' || node.tag !== 'img' || !node.tainted || !/^https?:\/\//.test(node.src)) return;
+    count++;
+    const candidates = bySource.get(node.src);
+    const matched = candidates?.filter(candidate => sameRect(candidate.nodeRect, node.rect));
+    if (matched?.length === 1) targets.push({ rect: matched[0].rect, painted: matched[0].painted, node });
+  });
+  return { count, targets };
+}

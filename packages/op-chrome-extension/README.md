@@ -4,8 +4,7 @@ Capture the **rendered** state of any web page and import it into OpenPencil as
 editable design nodes, or extract a reusable `design.md` design-system summary.
 
 The extension is deliberately thin: it runs the canonical OpenPencil DOM
-extractor — `crates/op-html/assets/snapshot-extractor.js`, the same script the
-`op` CLI and the MCP `import_web_snapshot` tool consume — inside the active tab
+extractor from `crates/op-html/assets/` inside the active tab
 and hands the resulting JSON to a running OpenPencil. Because the extractor
 reads `getComputedStyle` + `getBoundingClientRect`, JS-heavy pages capture the
 way they actually look, not the way their HTML source reads.
@@ -75,7 +74,7 @@ cargo test -p op-chrome-extension-core
 | `picker.js`                    | The hover/click overlay, likewise injected into the page. Pure DOM work, no rules to share.                                                                                                                   |
 | `core-registry.js`             | The one live core instance, and nothing else. Imports nothing — see below.                                                                                                                                    |
 | `wasm-core.js`                 | The **popup's** loader. Dynamic import, so an unbuilt checkout still renders an actionable error instead of a blank window.                                                                                   |
-| `vendor/snapshot-extractor.js` | The canonical extractor, a verbatim copy of the Rust asset (see below). Never edited.                                                                                                                         |
+| `vendor/snapshot-extractor.js` | The canonical extractor, generated from the Rust extractor sources (see below).                                                                                                                         |
 
 **Why the core has two loaders.** `import()` is disallowed on
 `ServiceWorkerGlobalScope` by the HTML specification
@@ -515,31 +514,29 @@ IPv6 loopback endpoints are deliberately not accepted: Chrome cannot grant the
 required host permission for that literal form, and the live MCP service binds
 IPv4 loopback. Use `127.0.0.1:<port>` or the `localhost:<port>` alias.
 
-## The bundled extractor is a verbatim copy
+## The bundled extractor matches the runtime script
 
-`vendor/snapshot-extractor.js` must stay byte-identical to
-`crates/op-html/assets/snapshot-extractor.js`. Chrome's "Load unpacked" reads
-the directory as plain files, so a symlink would not survive — hence a copy plus
-a drift check:
+`vendor/snapshot-extractor.js` is the ordered concatenation of
+`crates/op-html/assets/snapshot-extractor.js` and
+`crates/op-html/assets/snapshot-extractor-decorations.js`. Rust embeds the same
+source order. Use the bundled script for console capture or Chrome's "Load unpacked"
+and regenerate it after editing the sources.
 
 ```bash
 scripts/check-extractor-sync.sh          # verify (exit 1 on drift, prints a diff)
-scripts/check-extractor-sync.sh --fix    # re-copy the canonical asset
+scripts/check-extractor-sync.sh --fix    # regenerate the bundled script
 ```
 
 Run the check after touching anything under `crates/op-html/assets/`.
 
-The extractor is a console-oriented IIFE: it returns nothing, copies its output
-to the clipboard, and triggers a `snapshot.json` download. `capture.js` runs it
+The assembled extractor runs as a single script. Console capture copies its output
+to the clipboard and triggers a `snapshot.json` download. `capture.js` runs it
 between two tiny harness injections that patch `URL.createObjectURL`,
 `HTMLAnchorElement.prototype.click` and `navigator.clipboard.writeText` **in the
 extension's isolated world only** (the page never sees the patches), grabs the
-Blob the extractor builds, and restores the originals. The extractor file itself
-is never edited or wrapped from this side — changes go to the Rust asset, and
-the copy is refreshed with `--fix`.
+Blob the extractor builds, and restores the originals. Edit the Rust extractor sources and regenerate the bundle with `--fix`.
 
-Its IIFE takes one optional argument, read off
-`globalThis.openpencilSnapshotOptions`: `{ root: <element> }` narrows the
+The script reads optional settings from `globalThis.openpencilSnapshotOptions`: `{ root: <element> }` narrows the
 capture to that element's subtree. With the global unset — which is how the
 script behaves when pasted into a devtools console, and how `capture.js` leaves
 it for a full-page capture — it captures `document.body` and emits byte-for-byte
@@ -577,7 +574,7 @@ i18n.js                          Message loader + $1 substitution + the locale l
 wasm-core.js                     The popup's dynamic loader for the core
 wasm/                            Build product of scripts/build-wasm.sh (gitignored)
 dist/                            Store archives from scripts/package-extension.sh (gitignored)
-vendor/snapshot-extractor.js     Verbatim copy of the Rust asset (do not edit)
+vendor/snapshot-extractor.js     Bundle generated from the Rust extractor sources
 scripts/build-wasm.sh            Builds crates/op-chrome-extension-core → wasm/
 scripts/package-extension.sh     Builds, verifies and zips a store submission
 scripts/check-extractor-sync.sh  Drift check for the extractor copy

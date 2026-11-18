@@ -1,12 +1,15 @@
-(function (options) {
+// The Rust constant and Chrome extension bundle append the decorations factory.
+// oxlint-disable-next-line no-unused-expressions -- invoked by the appended factory argument
+(function (createDecorations) {
   "use strict";
 
   // `options.root` narrows the capture to one element's subtree instead of
-  // the whole page; anything else (including no argument at all, which is how
-  // this file is pasted into a console) captures `document.body`. The emitted
+  // the whole page; without that option, the bundle captures `document.body`.
+  // The emitted
   // JSON has the same shape either way: `snapshot.root` is a node object with
   // page-absolute `rect` coordinates, and the importer places whatever it
   // finds there at the document origin with its descendants relative to it.
+  var options = typeof globalThis === "undefined" ? null : globalThis.openpencilSnapshotOptions;
   var requestedRoot =
     options && options.root && options.root.nodeType === 1 ? options.root : null;
 
@@ -1173,6 +1176,10 @@
     return hasAny ? attrs : null;
   }
 
+  var decorations = createDecorations(
+    takeNode, pageRect, textPaintStyles, TEXT_STYLE_KEYS, document, window
+  );
+
   function buildElementBody(element, tag, computed, rect) {
     if (MEDIA_TAGS[tag]) {
       var mediaNode = buildImage(element, computed, rect);
@@ -1223,44 +1230,14 @@
     }
     Array.prototype.forEach.call(element.childNodes, collect);
     flushRun();
-    // Form input/textarea/select value or placeholder fallback when DOM has no text child
-    if (
-      children.length === 0 &&
-      (tag === "input" || tag === "textarea" || tag === "select")
-    ) {
-      var inputText = "";
-      if (tag === "select" && element.selectedOptions && element.selectedOptions.length > 0) {
-        inputText = (element.selectedOptions[0].textContent || "").trim();
-      } else if (typeof element.value === "string" && element.value.trim()) {
-        inputText = element.value.trim();
-      } else if (element.getAttribute && element.getAttribute("placeholder")) {
-        inputText = element.getAttribute("placeholder").trim();
-      }
-      if (inputText && takeNode()) {
-        var padLeft = parseFloat(computed.getPropertyValue("padding-left")) || 12;
-        var padTop = parseFloat(computed.getPropertyValue("padding-top")) || 8;
-        var fontSize = parseFloat(computed.getPropertyValue("font-size")) || 14;
-        var textH = Math.min(rect.height, Math.max(fontSize * 1.35, 16));
-        var textY = rect.top + Math.max(padTop, (rect.height - textH) / 2);
-        children.push({
-          kind: "text",
-          rect: pageRect({
-            left: rect.left + padLeft,
-            top: textY,
-            width: Math.max(16, rect.width - padLeft * 2),
-            height: textH,
-          }),
-          text: inputText,
-          lines: 1,
-          styles: textPaintStyles(computed, TEXT_STYLE_KEYS),
-        });
-      }
-    }
+    decorations.captureFormText(element, tag, computed, rect, children);
+    var styles = elementStyles(computed);
+    decorations.captureSharpInsetAccents(styles, rect, children);
     var out = {
       kind: "element",
       tag: tag,
       rect: pageRect(rect),
-      styles: elementStyles(computed),
+      styles: styles,
       children: children,
     };
     var attrs = extractSemanticAttrs(element);
@@ -1352,8 +1329,6 @@
     truncated: truncated,
   });
   return snapshot;
-  // The argument is optional on purpose. Pasted into a devtools console the
-  // global is undefined and this captures the whole page, exactly as before;
-  // a host that wants a subtree sets `{ root: <element> }` on the global
-  // first (the Chrome extension does, in its own isolated world).
-})(typeof globalThis === "undefined" ? null : globalThis.openpencilSnapshotOptions);
+  // The bundle reads the optional root from globalThis.openpencilSnapshotOptions.
+  // The extension sets it in the tab's isolated world for subtree capture.
+})

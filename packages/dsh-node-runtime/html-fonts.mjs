@@ -208,13 +208,13 @@ export async function registerPageFonts(
 const iconRectMatches = (a, b) =>
   a && b && ['x', 'y', 'w', 'h'].every((key) => Math.abs(a[key] - b[key]) <= 1.5);
 
-/** Replace unavailable icon glyphs with their source rendering, leaving the containing UI editable. */
+/** Preserve captured ligatures and unavailable glyphs without flattening their parent controls. */
 export function applyUnresolvedIconFallbacks(snapshot, capture, registered) {
   const pixels = capture.iconPixels ?? [];
   const known = new Map(registered.map((face) => [faceKey(face), face]));
   const active = pixels.filter(
     (icon) =>
-      known.get(
+      icon.ligature || known.get(
         faceKey({
           family: icon.family,
           weight: weightOf(icon.weight),
@@ -225,7 +225,14 @@ export function applyUnresolvedIconFallbacks(snapshot, capture, registered) {
   const unavailable = new Set(
     [...known.values()].filter((face) => face.icon && !face.available).map(faceKey),
   );
-  if (!unavailable.size) return [];
+  const expectedLigatures = new Map();
+  for (const icon of capture.iconFonts ?? []) {
+    if (!icon.ligature) continue;
+    const key = faceKey({ family: icon.family, weight: weightOf(icon.weight), italic: italicOf(icon.style) });
+    if (!expectedLigatures.has(key)) expectedLigatures.set(key, new Set());
+    expectedLigatures.get(key).add(icon.text);
+  }
+  if (!active.length && !unavailable.size && !expectedLigatures.size) return [];
 
   const matches = new Map(active.map((icon) => [icon, []]));
   const observed = new Map();
@@ -239,8 +246,11 @@ export function applyUnresolvedIconFallbacks(snapshot, capture, registered) {
         .replace(/^['"]|['"]$/g, '');
       const weight = weightOf(styles?.['font-weight']);
       const italic = italicOf(styles?.['font-style']);
-      if (family && node.text?.trim() && unavailable.has(faceKey({ family, weight, italic })))
-        observed.set(node, family);
+      const text = node.text?.trim();
+      if (family && text) {
+        const key = faceKey({ family, weight, italic });
+        if (unavailable.has(key) || expectedLigatures.get(key)?.has(text)) observed.set(node, family);
+      }
       for (const icon of active) {
         if (family?.toLowerCase() !== icon.family.toLowerCase() || node.text?.trim() !== icon.text)
           continue;

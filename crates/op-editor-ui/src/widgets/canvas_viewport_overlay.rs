@@ -180,7 +180,22 @@ pub(crate) fn paint_node_stroke(
             .sides
             .filter(|sides| !stroke_sides_are_uniform(*sides))
         {
+            // Side strokes paint as lines. Clip inside strokes to the rounded
+            // silhouette so their square ends cannot fill the cut-off corners.
+            let clipped =
+                stroke.align == SceneStrokeAlign::Inside && (use_round || per_corner.is_some());
+            if clipped {
+                cx.backend.save();
+                if let Some(radii) = per_corner {
+                    cx.backend.clip_round_rect_per_corner(world_rect, radii);
+                } else {
+                    cx.backend.clip_round_rect(world_rect, r);
+                }
+            }
             paint_sided_rect_stroke(cx, world_rect, stroke.color, sides, zoom);
+            if clipped {
+                cx.backend.restore();
+            }
         } else {
             let w = stroke.width * zoom;
             let (rect, r) = align_stroke_rect(world_rect, r, w, stroke.align);

@@ -79,6 +79,8 @@ export const LIVE_TOOL_TEXT = {
         "Local file path (.html, .htm, .zip, .fig, .svg, .json) or HTTP/HTTPS URL (web page or figma.com design link) to import.",
       path:
         "Optional output .op path in the workspace. Omit to derive the basename from the source. New output is placed in a business-named design task directory. Keep the saved path from the receipt for subsequent operations.",
+      viewportWidth:
+        "Optional CSS viewport width in pixels for HTML imports, including the shell around any embedded application. Use the source viewport width when matching a reference. The analysis binds this width for all capture batches.",
       viewportHeight:
         "Optional CSS viewport height in pixels for HTML imports.",
       analysisId:

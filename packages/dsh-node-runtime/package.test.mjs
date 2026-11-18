@@ -44,7 +44,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
     const path = join(runtime, file)
     await mkdir(dirname(path), { recursive: true })
     await writeFile(path, file === 'package.json' ? JSON.stringify({
-      name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.12',
+      name: '@sunfulin123/dsh-design-pencil-runtime', version: '0.8.5-synapse.13',
       type: 'commonjs', engines: { node: '>=24' },
       dependencies: { 'quickjs-emscripten-core': '0.32.0', '@jitl/quickjs-wasmfile-release-sync': '0.32.0' },
     }) : file)
@@ -71,7 +71,7 @@ test('stages only the Node/WASM runtime and required browser assets', async cont
   assert.equal(manifest.entrypoint, 'cli.mjs')
   assert.ok(manifest.files['offline-cli.mjs'])
   assert.equal(manifest.node, '>=24')
-  assert.equal(manifest.openPencilVersion, '0.8.5-synapse.12')
+  assert.equal(manifest.openPencilVersion, '0.8.5-synapse.13')
   assert.ok(manifest.files['wasm/op_dsh_engine_bg.wasm'])
   assert.ok(manifest.files['wasm/design-skill.md'])
   assert.ok(manifest.files['skills/synapse-design-html/scripts/capture-poc.mjs'])
@@ -150,4 +150,25 @@ test('the staged real runtime starts a managed host with every imported module',
   assert.equal(JSON.parse(line).ok, true)
   child.stdin.end()
   assert.equal((await exited)[0], 0, diagnostics)
+})
+
+test('managed CLI reports the schema error when a WASM document load throws a string', async context => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-invalid-op-'))
+  context.after(() => rm(root, { recursive: true, force: true }))
+  const source = join(root, 'invalid.op')
+  await writeFile(source, JSON.stringify({
+    version: '0.8.5',
+    children: [{ type: 'image', id: 'image', src: 'data:image/png;base64,', objectFit: 'contain', width: 24, height: 24 }],
+  }))
+  const child = spawn(process.execPath, [
+    fileURLToPath(new URL('cli.mjs', import.meta.url)),
+    '--serve-web', '--managed', '--port', '0', '--file', source,
+    '--draft-dir', join(root, 'drafts'), '--asset-dir', join(root, 'assets'), '--no-headless',
+  ], { stdio: ['pipe', 'pipe', 'pipe'] })
+  context.after(() => { if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL') })
+  let stderr = ''
+  child.stderr.setEncoding('utf8').on('data', data => { stderr += data })
+  const [code] = await once(child, 'close', { signal: AbortSignal.timeout(10000) })
+  assert.equal(code, 1)
+  assert.match(stderr, /JSON parse error: unknown variant `contain`/)
 })

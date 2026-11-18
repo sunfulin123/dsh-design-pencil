@@ -1,9 +1,11 @@
 import { createRequire } from 'node:module';
 import { launchHeadlessPage } from './chrome-cdp.mjs';
-import { describePage, isolateMedia, pageCall, settlePage } from './html-capture-page.mjs';
+import { describePage, isolateMedia, pageCall, settlePage, trackDynamicFontSources } from './html-capture-page.mjs';
 import { startLocalHtmlServer } from './html-local-server.mjs';
 import { augmentSnapshot } from './html-snapshot-augment.mjs';
-import { captureFrameSnapshots } from './html-frame-snapshot.mjs';
+import { observeSvgDownloads } from './html-svg-assets.mjs';
+import { isIconFontGlyph } from './html-font-defaults.mjs';
+import { captureFrameSnapshots, captureRootFallbacks } from './html-frame-snapshot.mjs';
 
 const require = createRequire(import.meta.url);
 const { DesignEngine } = require('./wasm/op_dsh_engine.js');
@@ -173,7 +175,8 @@ export async function captureCurrentPage(
     });
     return { width: viewport.width, height: fullHeight, ...result, warnings };
   }
-  const facts = await page.evaluate(pageCall(describePage, { maxMedia: MAX_MEDIA }));
+  const optionsJson = JSON.stringify({ maxMedia: MAX_MEDIA, pixelMedia: options.pixelMedia, markMedia: true });
+  const facts = await page.evaluate(`(${describePage})(${optionsJson}, window, ${isIconFontGlyph})`);
   const json = await page.evaluate(
     `(() => { globalThis.openpencilSnapshotOptions = { returnOnly: true };
       const snap = ${extractorScript}; return snap ? JSON.stringify(snap) : null; })()`,
@@ -185,11 +188,14 @@ export async function captureCurrentPage(
     ? await captureMediaPixels(page, facts?.media ?? [], warnings)
     : [];
   augmentSnapshot(snapshot, { controls: facts?.controls ?? [], mediaPixels });
+  const iconPixels = options.pixelMedia ? await captureRootFallbacks(page, snapshot, facts, warnings) : [];
   return {
     width: viewport.width,
     height: fullHeight,
     snapshot: JSON.stringify(snapshot),
-    fonts: facts?.fonts ?? [],
+    iconPixels,
+    iconFonts: facts.icons.map(({ family, weight, style, ligature, text }) => ({ family, weight, style, ligature, text })),
+    fonts: facts.fonts,
     fontSources: facts?.fontSources ?? [],
     fontStylesheets: facts?.fontStylesheets ?? [],
     warnings,
@@ -206,15 +212,21 @@ export async function withBrowser({ htmlBytes, baseDir, targetUrl, viewport, tim
   if (!page) return null;
   let localServer = null;
   let network = null;
+  let stopSvgDownloads;
   try {
     const url = targetUrl ?? (localServer = await startLocalHtmlServer(htmlBytes, baseDir)).url;
     network = trackNetworkIdle(page);
+    stopSvgDownloads = observeSvgDownloads(page);
     await page.send('Page.enable');
     await page.send('Runtime.enable');
     await page.send('Network.enable');
+    await page.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: pageCall(trackDynamicFontSources),
+    });
     return await fn(page, network, url);
   } finally {
     network?.stop();
+    stopSvgDownloads?.();
     await page.close();
     await localServer?.close().catch(() => {});
   }

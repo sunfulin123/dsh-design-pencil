@@ -27,6 +27,7 @@ mod project_zip;
 mod project_zip_range;
 pub mod resources;
 pub mod snapshot;
+mod snapshot_bundle;
 pub mod special;
 pub(crate) mod srcset;
 mod stylesheets;

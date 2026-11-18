@@ -2,16 +2,14 @@
  * Capture pipeline: run the canonical OpenPencil DOM extractor in the active
  * tab and pull its JSON back into the extension.
  *
- * The extractor (`vendor/snapshot-extractor.js`, a byte-for-byte copy of
- * `crates/op-html/assets/snapshot-extractor.js`) is a console-oriented IIFE:
- * it returns nothing, copies its output to the clipboard, and triggers a
+ * The bundle (`vendor/snapshot-extractor.js`) uses the same source order as
+ * the Rust extractor. In console mode it copies its output and triggers a
  * `snapshot.json` download. We therefore run it between two small harness
  * injections that patch `URL.createObjectURL`, `HTMLAnchorElement.click` and
  * `navigator.clipboard.writeText` in the extension's ISOLATED world (the page
  * never sees those patches), capture the Blob the extractor builds, and
- * restore the originals. The extractor file itself is never modified — a
- * drift check (`scripts/check-extractor-sync.sh`) fails the moment the copy
- * and the Rust asset disagree.
+ * restore the originals. The drift check (`scripts/check-extractor-sync.sh`)
+ * verifies the bundle against the ordered Rust sources.
  *
  * The extractor reads geometry and styles through `getComputedStyle` /
  * `getBoundingClientRect`, which the isolated world can do, so no MAIN-world

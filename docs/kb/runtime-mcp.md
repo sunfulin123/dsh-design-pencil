@@ -209,8 +209,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "4c1def60-9ee2-4252-88e5-691ff369c53d",
-  "verified_at": "2026-11-18T12:17:41.368453+00:00",
+  "task_id": "caaf8276-a871-4ea0-8af7-b22a24884143",
+  "verified_at": "2026-11-18T15:10:05.274891+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
@@ -233,7 +233,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "b6d549b7f67552d3688e9987e31ae87a9ddee5c1ecb5951bae174a0e4cfa35b5",
+    "packages/bun.lock": "6e37d894bea05c9f3d5a5225e0d838c585590c104ec0f15238eb686da53f962b",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -372,8 +372,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "Record current workspace artifact naming, managed canvas, and source import behavior.",
-  "evidence": "Runtime task path and import tests, managed bridge tests, and local Electron acceptance."
+  "reason": "The runtime package version increments without changing the build or dependency contract.",
+  "evidence": "The package version and release tag validation use the same version; the Bun lock dependency entries are otherwise unchanged."
 }
 ```
 

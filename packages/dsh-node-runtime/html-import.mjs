@@ -9,7 +9,7 @@ import {
   VIRTUAL_PROJECT_ORIGIN,
 } from './html-sources.mjs';
 
-import { registerPageFonts } from './html-fonts.mjs';
+import { applyUnresolvedIconFallbacks, registerPageFonts } from './html-fonts.mjs';
 import { FontFetcher } from './font-fetcher.mjs';
 import { defaultFigmaCacheDir } from './figma-import-jobs.mjs';
 import { withHtmlFontDefaults } from './html-font-defaults.mjs';
@@ -125,22 +125,25 @@ export async function convertHtmlToDocument({
     }).catch(() => null);
     const snapshotJson = capture?.captures?.[0]?.snapshot;
     if (snapshotJson) {
+      const fonts = await registerPageFonts(capture.captures, {
+        fetcher: new FontFetcher(join(defaultFigmaCacheDir(), 'fonts')),
+        baseDir,
+      });
+      const board = capture.captures[0];
+      const snapshot = JSON.parse(snapshotJson);
+      const iconWarnings = applyUnresolvedIconFallbacks(snapshot, board, fonts.faces);
       let parsed;
       try {
-        parsed = JSON.parse(DesignEngine.convert_snapshot_document(snapshotJson));
+        parsed = JSON.parse(DesignEngine.convert_snapshot_document(JSON.stringify(snapshot)));
       } catch {
         // An unsupported browser snapshot can still use the static importer.
       }
       if (parsed?.ok && parsed.document) {
         if (resolvedName) parsed.document.name = resolvedName;
-        const fonts = await registerPageFonts(capture.captures, {
-          fetcher: new FontFetcher(join(defaultFigmaCacheDir(), 'fonts')),
-          baseDir,
-        });
         withHtmlFontDefaults(parsed.document);
         return {
           ...parsed,
-          warnings: [...(parsed.warnings ?? []), ...fonts.warnings],
+          warnings: [...(parsed.warnings ?? []), ...board.warnings, ...fonts.warnings, ...iconWarnings],
           renderMode: 'browser-snapshot',
           fonts: fonts.faces,
           ...summarizeImportedDocument(parsed.document),

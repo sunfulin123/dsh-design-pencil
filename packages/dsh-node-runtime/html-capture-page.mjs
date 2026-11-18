@@ -2,6 +2,33 @@
 // the captured page through `Runtime.evaluate`, so it must stay
 // self-contained: no closures over module scope, only its argument.
 
+/** Retain constructor sources that the FontFace API does not expose after creation. */
+export function trackDynamicFontSources() {
+  const sources = new WeakMap();
+  const key = Symbol.for('openpencil.htmlImport.fontSources');
+  Object.defineProperty(window, key, { value: face => sources.get(face) });
+  window.FontFace = new Proxy(window.FontFace, {
+    construct(target, args, newTarget) {
+      const face = Reflect.construct(target, args, newTarget);
+      const source = args[1];
+      if (typeof source === 'string' && source.length <= 16 * 1024) {
+        const urls = [...source.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)]
+          .slice(0, 16)
+          .flatMap(([, doubleQuoted, singleQuoted, unquoted]) => {
+            try {
+              const url = new URL(doubleQuoted ?? singleQuoted ?? unquoted, document.baseURI);
+              return url.protocol === 'http:' || url.protocol === 'https:' ? [url.href] : [];
+            } catch {
+              return [];
+            }
+          });
+        if (urls.length) sources.set(face, urls);
+      }
+      return face;
+    },
+  });
+}
+
 /** Settle a freshly loaded page: fonts, an optional ready expression, lazy media. */
 export async function settlePage({ readyExpression, waitMs, maxWaitMs, preserveScroll = false }) {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -64,7 +91,7 @@ export async function settlePage({ readyExpression, waitMs, maxWaitMs, preserveS
  * controls (their state and accent colour), media boxes whose pixels must
  * be captured from the compositor, and the font faces the page loaded.
  */
-export function describePage({ maxMedia }, view = window, iconGlyph) {
+export function describePage({ maxMedia, pixelMedia = false, markMedia = false }, view = window, iconGlyph) {
   const { document, CSSRule } = view;
   const round = (value) => Math.round(value * 100) / 100;
   const pageRect = (element) => {
@@ -120,20 +147,24 @@ export function describePage({ maxMedia }, view = window, iconGlyph) {
       rect: pageRect(element),
       index: media.length,
     });
-    if (!iconGlyph) element.setAttribute('data-op-media-capture', String(media.length - 1));
+    if (markMedia) element.setAttribute('data-op-media-capture', String(media.length - 1));
   }
   const fonts = [];
+  const sources = [];
+  const dynamicSources = view[Symbol.for('openpencil.htmlImport.fontSources')];
   if (document.fonts) {
     for (const face of document.fonts) {
       if (face.status !== 'loaded' && face.status !== 'error') continue;
-      fonts.push({
+      const descriptor = {
         family: face.family.replace(/^['"]|['"]$/g, ''),
         weight: face.weight,
         style: face.style,
-      });
+      };
+      fonts.push(descriptor);
+      const urls = dynamicSources?.(face);
+      if (urls) sources.push({ ...descriptor, urls });
     }
   }
-  const sources = [];
   const fontStylesheets = [];
   const seenSheets = new Set();
   const visitSheet = (sheet) => {
@@ -179,28 +210,63 @@ export function describePage({ maxMedia }, view = window, iconGlyph) {
     visitRules(rules);
   };
   for (const sheet of [...document.styleSheets, ...document.adoptedStyleSheets]) visitSheet(sheet);
+  const compositorVisible = element => {
+    const rect = element.getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top + rect.height / 2;
+    let target = element;
+    for (let doc = document; doc; ) {
+      const hit = doc.elementFromPoint(x, y);
+      if (!hit || (!target.contains(hit) && !hit.contains(target))) return false;
+      const frame = doc.defaultView.frameElement;
+      if (!frame) return true;
+      const bounds = frame.getBoundingClientRect();
+      x += bounds.left + frame.clientLeft;
+      y += bounds.top + frame.clientTop;
+      target = frame;
+      doc = frame.ownerDocument;
+    }
+    return false;
+  };
+  const snapshotRect = (element, rect) => {
+    for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+      if (view.getComputedStyle(ancestor).position === 'fixed')
+        return { ...rect, x: rect.x - view.scrollX, y: rect.y - view.scrollY };
+    }
+    return rect;
+  };
+  const remoteImages = [];
+  if (pixelMedia) {
+    for (const image of document.images) {
+      const src = image.currentSrc || image.src;
+      if (!/^https?:\/\//.test(src) || !image.complete || !image.naturalWidth ||
+          !visible(image)) continue;
+      const rect = pageRect(image);
+      remoteImages.push({ src, rect, nodeRect: snapshotRect(image, rect), painted: compositorVisible(image) });
+    }
+  }
+  const masks = [];
+  let maskCount = 0;
+  for (const element of pixelMedia ? document.body?.querySelectorAll('*') ?? [] : []) {
+    if (element.ownerSVGElement) continue;
+    const style = view.getComputedStyle(element);
+    if (!style.maskImage.includes('url(') &&
+        !(element.localName === 'svg' && element.querySelector('mask') && element.querySelector('[mask]'))) continue;
+    if (!visible(element)) continue;
+    maskCount++;
+    if (masks.length >= 64 || !compositorVisible(element)) continue;
+    const rect = pageRect(element);
+    const nodeRect = snapshotRect(element, rect);
+    masks.push({
+      tag: element.localName, rect, nodeRect,
+      id: element.id.length <= 64 ? element.id.trim() : '',
+      className: (element.getAttribute('class') || '').trim().slice(0, 200),
+    });
+  }
   const icons = [];
   if (iconGlyph) {
     const loadedFamilies = new Set([...document.fonts].filter(face => face.status === 'loaded')
       .map(face => face.family.replace(/^['"]|['"]$/g, '').toLowerCase()));
-    const compositorVisible = element => {
-      const rect = element.getBoundingClientRect();
-      let x = rect.left + rect.width / 2;
-      let y = rect.top + rect.height / 2;
-      let target = element;
-      for (let doc = document; doc; ) {
-        const hit = doc.elementFromPoint(x, y);
-        if (!hit || (!target.contains(hit) && !hit.contains(target))) return false;
-        const frame = doc.defaultView.frameElement;
-        if (!frame) return true;
-        const bounds = frame.getBoundingClientRect();
-        x += bounds.left + frame.clientLeft;
-        y += bounds.top + frame.clientTop;
-        target = frame;
-        doc = frame.ownerDocument;
-      }
-      return false;
-    };
     for (const element of document.querySelectorAll('i,span,[data-icon],[class*="icon" i]')) {
       if (icons.length === 64) break;
       if (element.childElementCount || !visible(element)) continue;
@@ -211,10 +277,14 @@ export function describePage({ maxMedia }, view = window, iconGlyph) {
       const weight = style.fontWeight;
       const fontStyle = style.fontStyle;
       const loaded = loadedFamilies.has(family.toLowerCase()) && compositorVisible(element);
-      icons.push({ family, weight, style: fontStyle, text, loaded, rect: pageRect(element) });
+      const rect = pageRect(element);
+      const ligature = /^[a-z0-9_][a-z0-9_-]+$/i.test(text);
+      icons.push({ family, weight, style: fontStyle, text, loaded, ligature, rect, nodeRect: snapshotRect(element, rect) });
     }
   }
-  return { controls, media, fonts, fontSources: sources, fontStylesheets, icons };
+  return { controls, media, fonts, fontSources: sources, fontStylesheets, icons, masks, maskCount, remoteImages,
+    viewport: { x: view.scrollX, y: view.scrollY, w: view.innerWidth, h: view.innerHeight },
+  };
 }
 
 /** Show only one captured media element so its screenshot has no overlays. */

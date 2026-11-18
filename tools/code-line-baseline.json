@@ -148,7 +148,7 @@
     "crates/op-host-web/src/widget_host/overlay_cursor.rs": 572,
     "crates/op-host-web/src/widget_host/paint.rs": 517,
     "crates/op-host-web/src/widget_host/preview_frame.rs": 643,
-    "crates/op-html/assets/snapshot-extractor.js": 1017,
+    "crates/op-html/assets/snapshot-extractor.js": 992,
     "crates/op-html/src/color.rs": 594,
     "crates/op-html/src/css/cascade.rs": 734,
     "crates/op-html/src/css/declarations.rs": 730,

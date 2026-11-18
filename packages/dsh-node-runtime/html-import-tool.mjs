@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { basename, dirname, extname, resolve } from 'node:path';
 import { captureHtmlPage, clampViewport } from './html-browser-capture.mjs';
 import { withHtmlFontDefaults } from './html-font-defaults.mjs';
-import { registerPageFonts } from './html-fonts.mjs';
+import { applyUnresolvedIconFallbacks, registerPageFonts } from './html-fonts.mjs';
 import { fetchRemoteHtmlWithResources, validateExternalUrl } from './html-sources.mjs';
 
 const BOARD_GAP = 200;
@@ -120,7 +120,7 @@ async function staticFallback(name, args, deps, warning) {
   return toolResult({ ...result.structuredContent, renderMode: 'static-css', warnings });
 }
 
-async function importCaptures(captures, args, deps, sourceName) {
+async function importCaptures(captures, args, deps, sourceName, fonts) {
   const boards = [];
   const warnings = [];
   let nodeCount = 0;
@@ -128,6 +128,7 @@ async function importCaptures(captures, args, deps, sourceName) {
   const y = Number(args.y) || 0;
   for (const capture of captures) {
     const snapshot = JSON.parse(capture.snapshot);
+    warnings.push(...applyUnresolvedIconFallbacks(snapshot, capture, fonts));
     withHtmlFontDefaults(snapshot);
     if (sourceName && !snapshot.title) snapshot.title = sourceName;
     if (captures.length > 1)
@@ -201,12 +202,12 @@ async function runImport(name, args, deps) {
       `Browser render unavailable (${reason}); used the static CSS importer, which cannot run scripts and approximates layout`,
     );
   }
-  const imported = await importCaptures(capture.captures, args, deps, source.name);
-  if (imported.error) return imported.error;
   const fonts =
     args.fetchFonts === false || args.fetchFonts === 'false' || !deps.fonts
       ? { faces: [], warnings: [] }
       : await registerPageFonts(capture.captures, { fetcher: deps.fonts, baseDir: source.baseDir });
+  const imported = await importCaptures(capture.captures, args, deps, source.name, fonts.faces);
+  if (imported.error) return imported.error;
   const warnings = [...new Set([...imported.warnings, ...fonts.warnings].filter(Boolean))];
   return toolResult({
     wrote: 'true',
