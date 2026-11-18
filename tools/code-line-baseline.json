@@ -41,7 +41,7 @@
     "crates/op-editor-core/src/command_apply.rs": 717,
     "crates/op-editor-core/src/command_layout_prop.rs": 556,
     "crates/op-editor-core/src/command_node/state_ops.rs": 549,
-    "crates/op-editor-core/src/command_node_attrs/semantics_ops.rs": 798,
+    "crates/op-editor-core/src/command_node_attrs/semantics_ops.rs": 795,
     "crates/op-editor-core/src/command_node_attrs/state_ops.rs": 586,
     "crates/op-editor-core/src/command_refine.rs": 687,
     "crates/op-editor-core/src/command_style_replace.rs": 581,

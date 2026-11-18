@@ -204,8 +204,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "2157e549-b2c0-4418-b7f6-c6a846f953a1",
-  "verified_at": "2026-11-18T06:29:42.114665+00:00",
+  "task_id": "f63729ae-bda9-45d6-913f-e79a87efd2b4",
+  "verified_at": "2026-11-18T06:51:48.918343+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
@@ -228,7 +228,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "72f78a9ca5dc37a77d84bd57ef003cd43bc8af8ac97148db22bd01ecc8878db0",
+    "packages/bun.lock": "251c03d913f3acca8296c6fa1c3fd6ac6e087bc4936e90e2861b71608fdfae81",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -247,8 +247,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-editor-core/src/variables_resolve/evaluation.rs": "63949c106e12b274f5f7a095f30a58e531ca4d520a4dc077dc0708313edd89ac",
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
-    "crates/op-ai-skills/src/synapse_op_design.rs": "0caf24dc6772dc67e1c6b50e68151ab323b3da4ddd59822d00e7721e5a17bb89",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "e4a25dc069373347653c451414e0c1a72633133b2af19b923e791aaeb1a38175",
+    "crates/op-ai-skills/src/synapse_op_design.rs": "aa71e21aa11fe61021cf114de84833a9076225ba501d082224edbe02dffc1529",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "4ade5f181d0eb3bc04c6b58cc1ec988c11460e755d23e7e85b91c3afd1ebeda3",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -363,8 +363,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "Only the runtime workspace version changes in the lockfile. Dependency versions and archive verification are unchanged.",
-  "evidence": "packages/bun.lock and packages/dsh-node-runtime/package.json version diff"
+  "reason": "The runtime workspace receives an immutable release version for the English authoring change. Dependencies and release verification remain unchanged.",
+  "evidence": "Version-only changes in packages/bun.lock and packages/dsh-node-runtime/package.json"
 }
 ```
 

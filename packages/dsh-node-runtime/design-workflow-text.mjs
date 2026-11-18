@@ -29,7 +29,7 @@ export const TOOL_TEXT = {
         'Substantive (>= 40 chars) user-visible summary of understood requirements after reading relevant context: who the user is, the task they complete, and what counts as success.',
       sourceReferences: 'Relevant conversation, project, or document sources actually consulted.',
       openQuestions: 'Material unanswered questions; ask the user before proceeding.',
-      screens: `Planned screens ({ name, states? } where name is in English unless another UI language was explicitly requested, and states are optional values from ${CONTENT_STATE_LIST}); required and non-empty once openQuestions is empty.`,
+      screens: `Planned screens ({ name, states? } where new OP screen names are in English and states are optional values from ${CONTENT_STATE_LIST}); required and non-empty once openQuestions is empty.`,
       route: 'Explicit user-stated workflow route ("html" for HTML POC first, "synapse" for direct high-fidelity canvas); omit unless explicitly chosen by the user.',
       platform: 'Target viewport family ("web" or "mobile").',
       canvasWidth: 'Optional explicit root canvas width in pixels (240..3840).',
@@ -50,7 +50,7 @@ export const TOOL_TEXT = {
     },
   },
   batch: {
-    description: 'Apply a sandboxed design script to the private draft through the current design runtime. Write all authored UI text inside the design in English unless the user explicitly requested another target UI language.',
+    description: 'Apply a sandboxed design script to the private draft through the current design runtime. Write all generated OP content and design prompts in English, including visible copy, names, component descriptions, interaction hints, accessibility labels and design notes. Give every authored node a descriptive name and purpose note. Fill applicable semantic fields as each node is authored.',
   },
   context: {
     description:

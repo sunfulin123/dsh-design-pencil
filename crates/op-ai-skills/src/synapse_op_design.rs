@@ -125,7 +125,7 @@ mod tests {
         assert!(build.contains("fit_content"));
         assert!(build.contains("textGrowth"));
         assert!(build.contains("Noto Sans SC"));
-        assert!(build.contains("English by default"));
+        assert!(build.contains("English OP content"));
         assert!(skill.contains("in English"));
         assert!(!build.contains("#F8FAFC"));
         let judgement =
@@ -158,7 +158,34 @@ mod tests {
         assert!(html.contains("judgement.md"));
         assert!(resource("../../secret").is_none());
         assert!(!skill.contains("Three.js"));
-        assert!(!skill.contains("DOM"));
+        assert!(skill.contains("read relevant DOM and handler/script blocks"));
+    }
+
+    #[test]
+    fn op_guidance_requires_english_metadata_and_has_no_han_text() {
+        for guidance in [SKILL, BUILD, REVIEW] {
+            for field in [
+                "component descriptions",
+                "interaction hints",
+                "accessibility labels",
+                "design notes",
+            ] {
+                assert!(
+                    guidance.contains(field),
+                    "missing language rule for {field}"
+                );
+            }
+        }
+        assert!(SKILL.contains("as you create each node"));
+        assert!(BUILD.contains("Metadata on every authored node"));
+        assert!(REVIEW.contains("Read every authored or changed node"));
+        for section in RESOURCES {
+            let guidance = resource(section).unwrap();
+            assert!(
+                !guidance.chars().any(|c| matches!(c, '\u{3400}'..='\u{9fff}' | '\u{f900}'..='\u{faff}' | '\u{20000}'..='\u{323af}')),
+                "Han text in design prompt {section}"
+            );
+        }
     }
 
     #[test]

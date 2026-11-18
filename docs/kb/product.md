@@ -14,6 +14,8 @@ HTML POC 开发检查优先通过 Browser Use 操作已有本地服务的可见�
 
 ## AI 设计风格
 
+New OP designs use English for copy, node names and metadata. The authoring guide asks the model to provide a name and design note for every node, with purpose, accessibility and interaction details where applicable. The inspector uses English for inferred metadata and preserves supplied metadata. The build and review prompts describe the per-node checks.
+
 Form page 的 Scheduling and preferences 组合本地 Extensions DatePicker、TimeSelectInput、DateRangePicker、Choice（checkbox/radio）和 MultiDropdown。受控值随 onSave 的 profile.controlExamples 返回，日期为本地日历值，时间为午夜起分钟数。Add callback 的 Time 复用 TimeSelectInput，默认 09:00，提交时转为 HH:mm；日期仍必填。AI 文档使用实际导出名，不提供虚构的 TimePicker 包或导出。
 
 Active call recipe 以本地源码模板提供通话中的 Conversations 页面：会话队列、通话质量/录音、Snapshot/Notes/Callbacks、回拨空状态与两条历史、固定底部完整通话操作。控件、图标和主题均复用 Cobalt；Hold/Mute/Recording、拨号盘、回拨和结束确认是内存中的样例交互，未接入真实通话。Tab 下使用 Cobalt Divider；Notes 的表单与操作保持独立间距，Snapshot 的标题与元数据分组。通话头像仅在通话中显示由内向外扩散的双波纹，并尊重系统减少动态效果设置。AI lookup 和 SS 打包内容包含全部支持源码及交互限制。
@@ -172,8 +174,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "e941973e-a9a4-467d-8ecc-3f84e08ac743",
-  "verified_at": "2026-11-18T04:04:35.645321+00:00",
+  "task_id": "99512af4-64cc-4a13-ab03-e5e36adf450b",
+  "verified_at": "2026-11-18T06:41:42.698945+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -183,7 +185,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "e4a25dc069373347653c451414e0c1a72633133b2af19b923e791aaeb1a38175",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "4ade5f181d0eb3bc04c6b58cc1ec988c11460e755d23e7e85b91c3afd1ebeda3",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
@@ -192,7 +194,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
     "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "19c236d28ec350e289537c4e66d312314689c801f54d568909843ec16b5a5cc6",
     "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "6eb8c4570fbf4a69c22b596a0560ccc2ce01aa7cbf733111bdd9f1895534ad8a",
-    "crates/op-ai-skills/skills/synapse-design/review.md": "b5fb28762adab2638ca3ba9a85eb4dbea80924fba439538453e1a370c0569872",
+    "crates/op-ai-skills/skills/synapse-design/review.md": "75353657e71282157fda2cdd39897e2f78b24c2b4d3c3840c184ce726b351f2a",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "32f914b3104e84b4f5ef7d867ba08d6bb61fd2bba683faff1877906e78be3426",
     "packages/dsh-node-runtime/selection-visual-evidence.mjs": "25f99b077d23174e6390fe61378ae02a384d737548739b8177cab6c0103a7f2d",
     "packages/dsh-node-runtime/device-frame.mjs": "dd38bfa8577554ad9be31ff6a4e29110d992603214be70be4b50890c64ed11ea",
@@ -268,8 +270,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "The shipped Skill uses direct install while preserving task-local Workspace preparation, component reuse and owned Vite startup.",
-  "evidence": "crates/op-ai-skills/skills/synapse-design-html/SKILL.md; packages/dsh-node-runtime/poc-startup-guidance.test.mjs"
+  "reason": "English is required for generated OP content and design prompts, with a per-node metadata review.",
+  "evidence": "cargo test -p op-ai-skills synapse_op_design::tests; cargo test -p op-editor-core --test semantic_metadata"
 }
 ```
 
