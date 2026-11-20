@@ -13,7 +13,7 @@ permissions:
 
 env:
   RUSTUP_TOOLCHAIN: '1.96.0'
-  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.14'
+  OPENPENCIL_DSH_RUNTIME_VERSION: '0.8.5-synapse.15'
 
 jobs:
   runtime:
@@ -62,7 +62,7 @@ jobs:
       - name: Build embedded editor WASM
         run: bash packages/dsh-node-runtime/build-web.sh
       - name: Verify Node runtime and package whitelist
-        run: node --test packages/dsh-node-runtime/*.test.mjs
+        run: node --test --test-concurrency=1 packages/dsh-node-runtime/*.test.mjs
       - name: Stage checksummed runtime
         run: node scripts/stage-dsh-runtime.mjs
       - uses: actions/upload-artifact@v4

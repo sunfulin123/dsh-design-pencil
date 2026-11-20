@@ -397,7 +397,7 @@ async function main() {
       status: 'ready',
       project: out,
       registry: join(out, 'talkdesk-prototype.json'),
-      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. In SS use synapse_design_prototype install and check. Outside SS run pnpm install in the generated project. Report any actual install failure and retain the project for retry. Start pnpm run dev through owned shell/process tools and open the URL Vite prints. Verify the expected business UI inside the Workspace iframe using Browser Use or the headless fallback. Build delivery/index.html before POC handoff.',
+      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. Use synapse_design_prototype install/check in SS and outside SS install only in the generated project with pnpm. If installation fails, diagnose the actual error and retain the same project for an explicit retry. Start pnpm run dev through owned shell/process tools and open the URL Vite prints. Verify the expected business UI inside the Workspace iframe using Browser Use or the headless fallback. Build delivery/index.html before POC handoff.',
     }),
   );
 }

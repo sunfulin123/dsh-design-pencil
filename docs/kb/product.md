@@ -178,8 +178,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "7190b729-4200-4a52-8e1f-8f410f1f2ed3",
-  "verified_at": "2026-11-20T07:36:54.132740+00:00",
+  "task_id": "ff92a0e9-0451-4973-9d5a-81a4d493be60",
+  "verified_at": "2026-11-20T07:58:51.519837+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -214,7 +214,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "f04e8f0a12a496ee0d3296aefcf4ab368290038181253da2f1c170323f029f79",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "0afca37fe5afeb903689c081fccda510eaf4101a452bb00703c1df0277ddd289",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
     "packages/talkdesk-cobalt/test/export.test.mjs": "466f57bb27141539fa5c31076f99fbdad1f169c2e6ef9f400d4ee672546fb731",
@@ -274,8 +274,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "The official-first behavior and Schedule page title recorded in this entry stay current; the prompt now links the canonical AI index.",
-  "evidence": "Reviewed the Workspace companion and the generated index source."
+  "reason": "The scaffold guidance keeps the same autonomous and project-local installation contract while restoring the expected tool action names.",
+  "evidence": "Reviewed the scaffold continuation and passed poc-startup-guidance.test.mjs."
 }
 ```
 
