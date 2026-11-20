@@ -95,6 +95,8 @@ CanvasKit 在选择发生时记录有界历史；宿主可使用提交时间请�
 
 Confirmed Cobalt HTML applications prepare a task-owned canonical Workspace before business authoring. The host validates native user intent, task ownership and standalone exceptions, while `prototype-authoring.mjs` owns canonical files, bounded pnpm installation and source inspection. The install action reports the actual redacted pnpm error and keeps the task project available for retry. Preparation does not mean completed UI. Existing authored pages are retained, local pinned component documentation is the default MCP fallback, and source guard results do not replace build or browser evidence. The source/runtime owner contract is in [the runtime README](../../packages/dsh-node-runtime/README.md).
 
+The Cobalt authoring guide requires each business route to consume `usePrototypeScenario()` and render all six toolbar states. The handoff check selects them in the shell, verifies the business content and available actions inside the iframe, and confirms that Reset restores Ready.
+
 ## 截图等待不能锁住 renderer bootstrap
 
 范围：Node host 请求调度。
@@ -209,8 +211,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "ff92a0e9-0451-4973-9d5a-81a4d493be60",
-  "verified_at": "2026-11-20T07:57:45.044871+00:00",
+  "task_id": "b14804a3-32e0-4a72-8733-0b25566a61b1",
+  "verified_at": "2026-11-20T09:16:26.665227+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
@@ -255,7 +257,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-dsh-engine/src/asset_semantics.rs": "e824cc1cae2126e23c8c556a521a01a70a5858d4ce8739df4086ca1dda6ffdae",
     "packages/dsh-node-runtime/ai-design-loop.test.mjs": "036abb2cb44f0734fd800c67a76e06350bc903366ead9cacc1e254b375f96233",
     "crates/op-ai-skills/src/synapse_op_design.rs": "aa71e21aa11fe61021cf114de84833a9076225ba501d082224edbe02dffc1529",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "3cca33419ca621571d6f22dc2e5b7489d6908ba575f1178ce25e84fec886011f",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "ab6455e4826a8ccef5a3f826572f258e97a029f4ce412de044a2313f3eb9a1fd",
     "crates/op-dsh-engine/src/tool_catalog/ai_prompt_catalog.rs": "001400e5d2ba40d26fbcca1c4f402f5f73378ac807d80fab18b0d7d0456a8d73",
     "crates/op-dsh-engine/src/asset_catalog.rs": "0ccc4df25086e05e929cc9e2f359a95f8eadc611cd4053043bb0f4f8651e365d",
     "crates/op-mcp/src/design_agent_prompt_tool.rs": "2fccbe503a95c1d44a47fab5b37180daee3807930d41095000a7ed4e0fa9dd8b",
@@ -316,7 +318,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "b7ce89b4c36077939d4af0e116dc60f10c1023106c30e80e1b3208cfc6e1c7e9",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "fb644a58d926c25e676e5463df62b0a3bdcd45f1da31e1926655f5c54f9d71c5",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
@@ -372,8 +374,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "Restore the existing scoped installation and retry wording and increment the distribution version with the same dependency and staging contracts.",
-  "evidence": "The guidance and release workflow tests passed and the runtime package dependency policy passed."
+  "reason": "Document the six toolbar states and the iframe acceptance check for Cobalt business routes.",
+  "evidence": "Cobalt guide and HTML skill checked against the scenario hook and browser review instructions. Cobalt docs and browser guidance tests passed."
 }
 ```
 

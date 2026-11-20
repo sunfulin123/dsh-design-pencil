@@ -26,6 +26,8 @@ Active call recipe 以本地源码模板提供通话中的 Conversations 页面�
 
 普通 HTML POC 的顶部 Size、Page state、Reset 来自独立 `packages/html-prototype-review/` 固定源码库，工具按原样复制并写入 SHA-256；没有 Feature flags、Cobalt/React 或私有 registry 依赖。业务页通过适配器实现声明的状态，尺寸调整使用真实 iframe 视口。Design/HTML Skill 提醒必须使用代码库；POC 转高保真时排除预览控件和外框，仅保留业务内容、实际导航及已确认的 Workspace 外壳。
 
+The Design skills require the author to identify state transitions in source designs and references before finalizing the screen plan. HTML prototypes wire each exposed state to business content and verify it in the browser. Editable designs preserve the referenced states as boards or component variants and check the content reached by each transition.
+
 
 通知历史使用紧凑样例列表；顶部 Phone 预设固定为 390 × 844。ListPage 使用 AppPageHeader 和扩展 Typography page-title/body 对齐标题组和操作区，Filters 通过扩展 SidePanel 编辑草稿；BasicTable 的 minTableWidth 仅影响可滚动表格，分页始终留在受限高度和宽度内。Echart insights recipe 用 Apache echarts 6.0.0、Cobalt 控件和本地扩展源码组合日期范围、Agent 多选筛选、双轴预测线、图例与缩放；指标和筛选数据为本地示例，真实服务需要接入。AI recipe 索引包含支持源码的依赖和 CSS。Insights 使用原生 SelectionGroup 单选 Day/Week/Month，日期区域保持 8px 间距，Agent 筛选复用可搜索 MultiDropdown；普通和计数筛选 Tag 同为 small。SidePanel 使用局部 Cobalt portal，避免旧 marketplace 弹层被模态面板遮住。 Insights 标题右侧提供原生 SplitButton/Popover 导出样例摘要，以及 Ask Copilot 聊天侧栏；聊天复用 ModalPanel、ChatBubble 与固定 Textarea 输入区，Enter 发送、Shift+Enter 换行，回复仅为本地示例；Ask Copilot 以原生透明按钮置于 Export 左侧，用户消息在右侧按内容收缩并带尾随头像。
 
@@ -178,8 +180,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "ff92a0e9-0451-4973-9d5a-81a4d493be60",
-  "verified_at": "2026-11-20T07:58:51.519837+00:00",
+  "task_id": "b14804a3-32e0-4a72-8733-0b25566a61b1",
+  "verified_at": "2026-11-20T09:16:26.083281+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -189,14 +191,14 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "crates/op-editor-core/src/text_selection_summary.rs": "adb1df6ef6b63d135351fbfc3ce91f26e16e58b35ff57547f2d9bae2280f6609",
     "crates/op-editor-core/src/text_insertion.rs": "666f8cd67867e665045a403d65d7fc0353b42f62e4b733c2aa084d4c5d39ec2d",
     "crates/op-host-web/src/web_clipboard.rs": "99a5719ff1cda613df019fe36ddbb6268f6c2400ec91da6ac5923c2f140b166b",
-    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "3cca33419ca621571d6f22dc2e5b7489d6908ba575f1178ce25e84fec886011f",
+    "crates/op-ai-skills/skills/synapse-design/SKILL.md": "ab6455e4826a8ccef5a3f826572f258e97a029f4ce412de044a2313f3eb9a1fd",
     "crates/op-editor-core/src/prototype/graph.rs": "7351bbf8dceb35feda8f323d97e274f6ff5c7539e12774f8df0002a4b9f900e5",
     "packages/dsh-node-runtime/design-style-plan.mjs": "0cce1c3a4cb801a5a369cc5843bf6b7449b22313e6aed4bc96d60d3a1c841255",
     "packages/dsh-node-runtime/asset-tools.mjs": "0fd1fcabdc68a4f1fb628816f5a38c93f5a2052d6347b59987d0048605b1cd9b",
     "packages/dsh-node-runtime/asset-directory.mjs": "17d2e60ce7cbdf3f262a0c4009b9acf619add933e7fb47db2a0edaa37eec79e7",
     "crates/op-host-web/src/selection_push_queue.rs": "ba3cfdb9f516b8b72aa6da19a2ddedc098946ca1cc4c736d2fe2ef413bc290ca",
     "crates/op-host-web/src/vscode_bridge/selection_history.rs": "b01c377d4f0190dfed5bf430df2a6bd97d360565d20dcb3bc9f096e49047c6c6",
-    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "c025ed2cb42f874e25544461d2b21bbedd063ff1165d9b5beafcc03d4d97ddd4",
+    "crates/op-ai-skills/skills/synapse-design-html/SKILL.md": "21014f31feb3aab1fba647ac008770b80f2a13b54d22c483758606e9695b66ce",
     "crates/op-ai-skills/skills/synapse-design-html/migration-manifest.json": "6eb8c4570fbf4a69c22b596a0560ccc2ce01aa7cbf733111bdd9f1895534ad8a",
     "crates/op-ai-skills/skills/synapse-design/review.md": "75353657e71282157fda2cdd39897e2f78b24c2b4d3c3840c184ce726b351f2a",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/capture-poc.mjs": "32f914b3104e84b4f5ef7d867ba08d6bb61fd2bba683faff1877906e78be3426",
@@ -209,7 +211,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "b7ce89b4c36077939d4af0e116dc60f10c1023106c30e80e1b3208cfc6e1c7e9",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "fb644a58d926c25e676e5463df62b0a3bdcd45f1da31e1926655f5c54f9d71c5",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
@@ -274,8 +276,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "The scaffold guidance keeps the same autonomous and project-local installation contract while restoring the expected tool action names.",
-  "evidence": "Reviewed the scaffold continuation and passed poc-startup-guidance.test.mjs."
+  "reason": "Record discovery and verification of referenced states for both HTML and editable canvas authoring.",
+  "evidence": "HTML skill source and runtime copy match. Node guidance tests passed (19) and op-ai-skills synapse_op_design tests passed (4)."
 }
 ```
 
