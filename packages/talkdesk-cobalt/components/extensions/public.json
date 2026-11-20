@@ -1,0 +1,11 @@
+[
+  "extensions.basic-table",
+  "extensions.date-picker",
+  "extensions.date-range-picker",
+  "extensions.dialog",
+  "extensions.form-field",
+  "extensions.side-panel",
+  "extensions.time-select-input",
+  "extensions.timezone-dropdown",
+  "extensions.upload-file"
+]

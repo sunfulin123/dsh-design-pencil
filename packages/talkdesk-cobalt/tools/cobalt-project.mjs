@@ -175,19 +175,25 @@ async function createProject(out, spec) {
   const stage = await mkdtemp(join(dirname(out), '.cobalt-project-'));
   try {
     for (const [path, content] of shell) await put(stage, `src/workspace-shell/${path}`, content);
-    for (const name of await readdir(join(template, 'project'))) {
-      // Runtime templates are a small, explicit flat set, independent from upstream files.
-      const paths = {
-        'main.tsx': 'src/main.tsx',
-        'dock-registry.ts': 'src/prototype-runtime/dock-registry.ts',
-        'apps.ts': 'src/prototype-runtime/apps.ts',
-        'app.tsx': 'src/prototype-runtime/app.tsx',
-        'scenarios.tsx': 'src/prototype-runtime/scenarios.tsx',
-        'review-toolbar.tsx': 'src/prototype-runtime/review-toolbar.tsx',
-        'review-toolbar.css': 'src/prototype-runtime/review-toolbar.css',
-        'review-dropdown.tsx': 'src/prototype-runtime/review-dropdown.tsx',
-      };
-      await put(stage, paths[name] ?? name, await readFile(join(template, 'project', name)));
+    // Iterate required inputs so an incomplete export fails before the stage can be published.
+    const paths = {
+      '.gitignore': '.gitignore',
+      '.npmrc': '.npmrc',
+      'index.html': 'index.html',
+      'pnpm-workspace.yaml': 'pnpm-workspace.yaml',
+      'tsconfig.json': 'tsconfig.json',
+      'vite.config.ts': 'vite.config.ts',
+      'main.tsx': 'src/main.tsx',
+      'dock-registry.ts': 'src/prototype-runtime/dock-registry.ts',
+      'apps.ts': 'src/prototype-runtime/apps.ts',
+      'app.tsx': 'src/prototype-runtime/app.tsx',
+      'scenarios.tsx': 'src/prototype-runtime/scenarios.tsx',
+      'review-toolbar.tsx': 'src/prototype-runtime/review-toolbar.tsx',
+      'review-toolbar.css': 'src/prototype-runtime/review-toolbar.css',
+      'review-dropdown.tsx': 'src/prototype-runtime/review-dropdown.tsx',
+    };
+    for (const [name, destination] of Object.entries(paths)) {
+      await put(stage, destination, await readFile(join(template, 'project', name)));
     }
     await put(stage, 'src/prototype-runtime/review-chrome.css', await readFile(reviewChrome));
     await put(
@@ -391,7 +397,7 @@ async function main() {
       status: 'ready',
       project: out,
       registry: join(out, 'talkdesk-prototype.json'),
-      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. In the generated project directory, SS tasks use synapse_design_prototype install/check for registry diagnostics and confirmed network retry, then pnpm run dev through shell/process tools; outside SS install only in this project and diagnose registry failures before an explicit retry; retain the process handle, read the actual localhost URL and verify HTTP readiness. Complete the requested business UI and review the live URL with Browser Use when available; retain the headless fallback. An empty SS service list is not a blocker. Build delivery/index.html before POC handoff.',
+      next: 'Read the copied component implementations, types, styles and recipes; adapt local source and replace scaffold pages. Never install @openpencil/cobalt-extensions. In SS use synapse_design_prototype install and check. Outside SS run pnpm install in the generated project. Report any actual install failure and retain the project for retry. Start pnpm run dev through owned shell/process tools and open the URL Vite prints. Verify the expected business UI inside the Workspace iframe using Browser Use or the headless fallback. Build delivery/index.html before POC handoff.',
     }),
   );
 }

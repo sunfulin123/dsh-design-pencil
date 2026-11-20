@@ -2,10 +2,10 @@
 import Page from '../../layouts/Page.astro';
 import Example from '../../components/Example.astro';
 import registry from '../../../../registry/authoring.json';
-import { recipeTitles, recipeHref } from '../../lib/catalog';
+import { recipeHref } from '../../lib/catalog';
 export function getStaticPaths() { return registry.recipes.map(recipe => ({ params: { id: recipeHref(recipe.id).split('/')[2] }, props: { recipe } })); }
 const { recipe } = Astro.props;
-const title = recipeTitles[recipe.id] ?? recipe.id;
+const { title } = recipe;
 ---
 <Page title={title} section={`Recipes / ${title}`}>
   <div class="page-heading" data-enter><h1>{title}</h1><p>Run the composition below or switch to Code to inspect the complete React source.</p></div>

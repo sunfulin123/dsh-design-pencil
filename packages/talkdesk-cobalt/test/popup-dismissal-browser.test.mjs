@@ -94,7 +94,7 @@ test('single dropdown, calendar, range and overflow popup keep native selection 
   await p.keyboard.press('Escape');
   await nativePopup.waitFor({ state: 'hidden' });
   await p.waitForFunction((node) => node === document.activeElement, await trigger.elementHandle());
-  await p.getByRole('heading', { name: 'Team Schedule', exact: true }).click();
+  await p.getByRole('heading', { name: 'Schedule page', exact: true }).click();
   await p.goto(server.url + '/demos/?entry=recipes/form-page.tsx');
   for (const id of ['form-start-date', 'form-availability']) {
     const input = p.locator(`[data-qa="${id}"] input`);

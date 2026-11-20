@@ -287,7 +287,7 @@
     "limits": "Synthetic series reproduce the screenshot shapes; these are not production WFM forecasts. No service, authentication, hooks or stores from WFM are bundled. The sample histories have empty series, as in the reference."
   },
   "team-schedule.tsx": {
-    "title": "Team Schedule",
+    "title": "Schedule page",
     "description": "A Cobalt reference composition for a team day schedule: native responsive Toolbar, badge anchors, searchable timezone selector, metrics and agent timeline.",
     "keywords": [
       "team schedule",

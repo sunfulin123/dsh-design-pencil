@@ -26,7 +26,7 @@ export function ScheduleHeader({
     <header className="schedule-header">
       <div>
         <div className="schedule-title">
-          <Heading level={1}>Team Schedule</Heading>
+          <Heading level={1}>Schedule page</Heading>
           <div className="schedule-timezone" role="group" aria-label="Schedule timezone">
             <TimezoneDropdown
               customInput={

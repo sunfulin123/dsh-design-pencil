@@ -109,6 +109,12 @@ test('exported source templates create a self-contained project with local impor
     JSON.parse(await readFile(join(skill, 'cobalt-reference/bundle.json'))).revision,
   );
   const library = join(skill, 'cobalt-reference');
+  const aiIndex = await readFile(join(library, 'AI-INDEX.md'), 'utf8');
+  const companion = await readFile(join(skill, 'references/cobalt-workspace.md'), 'utf8');
+  assert.match(aiIndex, /For new controls, start with the published Cobalt core or marketplace API/);
+  assert.match(aiIndex, /The recommended extensions for new UI are BasicTable, DatePicker, DateRangePicker, Dialog, FormField, SidePanel, TimeSelectInput, TimezoneDropdown, UploadFile\./);
+  assert.match(aiIndex, /### Schedule page/);
+  assert.match(companion, /Schedule page source recipes/);
   for (const path of [
     'components/extensions/src/index.ts',
     'components/extensions/src/basic-table/basic-table.tsx',
@@ -146,6 +152,7 @@ test('exported source templates create a self-contained project with local impor
   const cli = join(skill, 'scripts/cobalt-project.mjs');
   const result = run(cli, ['create', '--out', project, '--spec', spec]);
   assert.equal(result.status, 0, result.stderr);
+  assert.match(JSON.parse(result.stdout).next, /expected business UI inside the Workspace iframe/);
   const pkg = JSON.parse(await readFile(join(project, 'package.json')));
   assert.equal(pkg.packageManager, 'pnpm@11.7.0');
   assert.match(await readFile(join(project, 'pnpm-workspace.yaml'), 'utf8'), /autoInstallPeers: false/);
@@ -196,6 +203,13 @@ test('exported source templates create a self-contained project with local impor
   ]);
   assert.equal(incomplete.status, 1);
   assert.match(incomplete.stderr, /Unresolved local source import/);
+
+  const missingTemplateProject = join(root, 'missing-template-project');
+  await rm(join(skill, 'templates/cobalt/project/.npmrc'));
+  const missingTemplate = run(cli, ['create', '--out', missingTemplateProject, '--spec', spec]);
+  assert.equal(missingTemplate.status, 1, missingTemplate.stdout);
+  assert.match(missingTemplate.stderr, /project\/\.npmrc/);
+  await assert.rejects(access(missingTemplateProject), { code: 'ENOENT' });
 });
 
 test('copy-source supports standalone apps without a shell, manifest edits or replacement of existing source', async (t) => {

@@ -1,4 +1,4 @@
-# Team Schedule
+# Schedule page
 
 <!-- Generated from recipes/catalog.json and recipe source imports. -->
 

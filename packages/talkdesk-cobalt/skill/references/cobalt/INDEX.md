@@ -188,4 +188,4 @@ The current generated shell is documented in `references/cobalt/workspace-chrome
 - Space and viewports: `workspace/space-and-viewports/space-and-viewports.md`
 - Title bar: `workspace/title-bar/title-bar.md`
 
-For component discovery, read `cobalt-reference/components/extensions/INDEX.md` or search `registry/authoring.json` by name, keywords and description. Each component source folder has a generated `README.md` linking purpose, exports, API guidance and runnable examples; read the closest example before coding. The generated project keeps these indexes and linked docs locally.
+For component discovery, follow the official component selection rule and recommended extension list in `cobalt-reference/AI-INDEX.md`. Search `registry/authoring.json` by name or purpose and read the selected API or local source and example before coding.

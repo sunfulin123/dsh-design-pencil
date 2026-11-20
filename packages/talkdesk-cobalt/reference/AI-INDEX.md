@@ -6,7 +6,9 @@ Use these fixed-version local resources if Cobalt MCP is unavailable. Ask to pau
 
 1. Read references/cobalt-workspace.md from the parent HTML Skill for build mode, shell setup and delivery workflow.
 2. Search [registry/authoring.json](registry/authoring.json) by purpose, keywords or exact ID. Read only the matching component and recipe docs; this index does not replace API documentation.
-3. Read the complete relevant [Cobalt source templates](components/extensions/INDEX.md), including implementation, types, CSS and local dependencies; copy them to src/components/cobalt-extensions/, then adapt and import local modules. Never install @openpencil/cobalt-extensions or import/alias that package name. Official @talkdesk/* packages remain normal dependencies. Otherwise read the matching core/marketplace entry and its exact import/version in [content/registry.json](content/registry.json). Duplicate names such as Button, Table and DatePicker are separate APIs; qualify the library and import. Reuse existing controls for tags, badges, avatars and empty states before adding UI. Retain specialized chart/schedule layouts and requested motion as composition, and document any missing component capability.
+3. For new controls, start with the published Cobalt core or marketplace API. Use the exact import and pinned version from [content/registry.json](content/registry.json). Qualify duplicate names by their library. Reuse official controls for tags, badges, avatars and empty states.
+   The recommended extensions for new UI are BasicTable, DatePicker, DateRangePicker, Dialog, FormField, SidePanel, TimeSelectInput, TimezoneDropdown, UploadFile. Use one when it provides needed behavior, or when the selected recipe specifies it. Keep other copied components as source dependencies of the recipes that use them.
+   Read the relevant [Cobalt source template](components/extensions/INDEX.md), including its types, CSS and local imports. Adapt it in src/components/cobalt-extensions/ and use local imports. Published @talkdesk/* packages remain normal dependencies. Keep specialized chart and schedule layouts as recipe composition.
 4. Use lookup --id <component-ID> --read-source to inspect full source before reuse. Workspace creation copies all templates; standalone/existing apps use cobalt-project.mjs copy-source --out <project>. Read the recipe integration contract, then the actual TSX. Extend the source and connect required callbacks instead of copying old inline snippets from migrated pages.
 5. Preserve source qualifications. Migrated examples marked check.ok=false or “Doesn’t compile” are not executable templates. The maintained recipes/examples are checked separately; their build success does not validate all migrated snippets.
 6. Test the requested states, callbacks, keyboard behavior, themes and target Workspace app widths. Keep prototype controls in the host toolbar.
@@ -77,7 +79,7 @@ A user-management list with selection, search, filters, pagination, an Extension
 - Default export: `ListPage`; states: success, loading, empty, error, permission, partial, create validation, create submission, import file selection, submission failure.
 - Limits: No backend or durable storage is provided. Local creation resets on remount; CSV selection is not a completed server import. The host owns duplicate/persistence validation across sessions and refreshes supplied users after successful creation. BasicTable owns rendering and pagination; the page sorts and slices data. Selection persists across pages/filters. The 48px filter Toolbar reserves space, search moves below it on small viewports, and the wide table scrolls internally. Pagination stays within the host width and height; only table rows and columns scroll.
 
-### Team Schedule
+### Schedule page
 
 A Cobalt reference composition for a team day schedule: native responsive Toolbar, badge anchors, searchable timezone selector, metrics and agent timeline.
 

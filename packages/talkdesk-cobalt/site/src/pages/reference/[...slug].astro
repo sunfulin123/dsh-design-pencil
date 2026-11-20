@@ -1,9 +1,9 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import Page from '../../layouts/Page.astro';
 import Example from '../../components/Example.astro';
-import { documentTitle } from '../../lib/catalog';
-export async function getStaticPaths() { return (await getCollection('reference')).map(entry => ({ params: { slug: entry.id }, props: { entry } })); }
+import { documentTitle, publicReference } from '../../lib/catalog';
+export async function getStaticPaths() { return (await publicReference()).map(entry => ({ params: { slug: entry.id }, props: { entry } })); }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const title = documentTitle(entry);

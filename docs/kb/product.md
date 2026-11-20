@@ -2,7 +2,7 @@
 
 HTML and Workspace preview controls share fixed visual source: a 44px bar, 32px desktop buttons, 36px narrow buttons, identical arrows/Reset and light/dark colors. Only Workspace exposes Feature flags. Built-in Dock icons and shell metadata are preserved by canonical merging and checked before builds; business pages and copied Extensions remain editable. Popup wrappers close on innermost Escape, outside interaction, focus leaving their region or business-frame blur while retaining internal search, selection and parent modals.
 
-Cobalt recipe 目录提供 Card widgets（指标/圆环、模板、空图、用例、情绪、关键词和班次分布）、ECharts gallery（预测/历史、双图预测与情景比较）和 Team Schedule（24 小时时间轴、六行 staffing 指标、代理行、事件与固定分页；331px 业务 iframe 下分页换行保持可见，手机指标行随表格滚动以露出代理行）。精简 Users list 示例由 Card widgets 取代；完整 List page 保留。图表使用真实 Apache ECharts，控件、图标及主题来自 Cobalt/复制的 Extensions；排班网格为自有组合布局。WFM 源文件 revision/哈希记录在 recipe 的 support/recipe-sources.json，不引入其服务、鉴权或 store。数据与保存均为本地演示，日期/时区不代表真实查询或转换；Card 编辑角标不提供拖拽缩放。Add callback 的 Note 使用三行 Cobalt Textarea 并保留换行。
+Cobalt recipe 目录提供 Card widgets（指标/圆环、模板、空图、用例、情绪、关键词和班次分布）、ECharts gallery（预测/历史、双图预测与情景比较）和 Schedule page（24 小时时间轴、六行 staffing 指标、代理行、事件与固定分页；331px 业务 iframe 下分页换行保持可见，手机指标行随表格滚动以露出代理行）。精简 Users list 示例由 Card widgets 取代；完整 List page 保留。图表使用真实 Apache ECharts，控件、图标及主题来自 Cobalt/复制的 Extensions；排班网格为自有组合布局。WFM 源文件 revision/哈希记录在 recipe 的 support/recipe-sources.json，不引入其服务、鉴权或 store。数据与保存均为本地演示，日期/时区不代表真实查询或转换；Card 编辑角标不提供拖拽缩放。Add callback 的 Note 使用三行 Cobalt Textarea 并保留换行。
 
 HTML 导入自动识别 stylesheet、CSS imports 与 `@font-face` 字体来源并注册可支持的原字体；普通文字保留源字体优先并补默认回退，不要求用户选择陌生字体。图标字体不能替换成正文；下载或格式限制如实报告。字体缓存由本地编辑器共享，不作为跨机器便携字体包。
 
@@ -178,8 +178,8 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
 {
   "version": 1,
   "status": "verified",
-  "task_id": "4c1def60-9ee2-4252-88e5-691ff369c53d",
-  "verified_at": "2026-11-18T12:17:40.723098+00:00",
+  "task_id": "7190b729-4200-4a52-8e1f-8f410f1f2ed3",
+  "verified_at": "2026-11-20T07:36:54.132740+00:00",
   "sources": {
     "ARCHITECTURE.md": "1d44414fabc3d7c3cc0c1938f43862b8bbe9f820db65f029fbd215e783b73c7e",
     "DEVELOPMENT.md": "6d171c6a706eb67581bb03b8f1d19f07ee8a639fd166c9e06e76c93280ccfb0e",
@@ -209,22 +209,22 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "ea4affed93e8392179240b2434754d75009173064c686d7fbea60cad8ef4b618",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "b7ce89b4c36077939d4af0e116dc60f10c1023106c30e80e1b3208cfc6e1c7e9",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "5b7cf09f6587b82b01dd9bfd6c7b31bd725f7d53df6bb65db86e493892dac903",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "f04e8f0a12a496ee0d3296aefcf4ab368290038181253da2f1c170323f029f79",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
-    "packages/talkdesk-cobalt/test/export.test.mjs": "cef4f733f95154705795ff754e0ed1cdba3bb55cba51e21e0d025fd25295394b",
-    "packages/talkdesk-cobalt/test/site-browser.test.mjs": "784d406aa82e61d8f78c307df3d1800747a1f2e12fef73e062ea2bd82d3c475c",
-    "packages/talkdesk-cobalt/tools/authoring-index.mjs": "46c9f9b6817d89e1c05040705533b033b0c3fb81d979be794a9a90b7b98dbee2",
+    "packages/talkdesk-cobalt/test/export.test.mjs": "466f57bb27141539fa5c31076f99fbdad1f169c2e6ef9f400d4ee672546fb731",
+    "packages/talkdesk-cobalt/test/site-browser.test.mjs": "76f88c5ef9e1ec166a0f6d08404ecc397ef9e1e2082193d56a3ba63469d7c861",
+    "packages/talkdesk-cobalt/tools/authoring-index.mjs": "2f8914dc7fffa90d2da6188c3a6bfb180d469dd700a5ed04f9e4afc920ec5f6d",
     "packages/talkdesk-cobalt/tools/cobalt-lookup.mjs": "e0851b36e8c8b10a1bbe6e1548c4aaeecdac9535e054869262b05eeadde407ee",
-    "packages/talkdesk-cobalt/recipes/catalog.json": "18943147dbea06dfad0f4310f750e85f003078a8212d2462fbbfb93b86c3dd73",
+    "packages/talkdesk-cobalt/recipes/catalog.json": "0de0b2a9f833412747c5cb2a8ff251878a7fb612e95c22472a0e46d4cb8fc030",
     "packages/talkdesk-cobalt/recipes/list-page.tsx": "6b20341a78b8371b500d486bd738fe654f3d73727fca488230b7937cea473586",
     "packages/talkdesk-cobalt/recipes/list-page-data.ts": "f5c55bdece74fb250ae7d29f120d0b0e5c147ac0f0b54ccd3593c337b2b75343",
-    "packages/talkdesk-cobalt/skill/references/cobalt/INDEX.md": "53267d06781ed6cc5a699f057b4614c0fedd59207846557c479345e27198f6c9",
+    "packages/talkdesk-cobalt/skill/references/cobalt/INDEX.md": "a415d2098d08adc112dec61eb6a5f7d372b14b25b894627219193c713a79c7c5",
     "packages/talkdesk-cobalt/tools/cobalt-source-templates.mjs": "5df71ea6d76e40cc59a51ba2baaddab43efcb035342fc9b5e1644212760b513f",
     "packages/talkdesk-cobalt/recipes/support/list-page-dialogs.tsx": "05fad0774d1ef661b216bf83536cc58217bd8f2beefb782874c54ff877f230a0",
     "packages/talkdesk-cobalt/recipes/support/list-user-fields.tsx": "21838a42f97e6582831103d8edcbf57c649b1ca6827c648181b51eb8c79b69b6",
@@ -252,7 +252,7 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/recipes/team-schedule.tsx": "416fd94b7b677a0958c31eca6460990aeea89a840301fc0777151d734dfc0966",
     "packages/talkdesk-cobalt/recipes/support/reference-charts.tsx": "0fc6686944d0824dc6f526c0cb8c1a1558a6747c6c83066bb759292c73199050",
     "packages/talkdesk-cobalt/recipes/support/schedule-timeline.tsx": "a9154cf1b53c92a968f8c57501dfd3a1cc32bc4721f43813fa935dd70cc2d001",
-    "packages/talkdesk-cobalt/recipes/support/schedule-header.tsx": "1a354fb3dd88a40eb98e231f11115c74e8c71ed8a369afc4799e669d3e010914",
+    "packages/talkdesk-cobalt/recipes/support/schedule-header.tsx": "8d00b0d55bda432b84ba09cde09a66204718defcaf6e8acadce406d635db2c29",
     "packages/talkdesk-cobalt/recipes/support/schedule-data.ts": "e6f14ae1e965f7eedcba571d1182585ae897b9e6c8541faf8663f9e6f12dea2b",
     "packages/talkdesk-cobalt/recipes/support/widget-patterns.tsx": "a5acb61620bd41ccb562cc63f0246351fddb0207a6090eaf3769ce1c1549c2aa",
     "packages/talkdesk-cobalt/recipes/support/team-schedule.css": "f9b9130e2fc5c84cc07ae5ac0272acf6887874dabba11741300dc90bd00cc2a2",
@@ -274,11 +274,11 @@ flows、reactions、overflow/scrollBehavior；AI 通过 `get_prototype`、`set_p
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "Record current workspace artifact naming, managed canvas, and source import behavior.",
-  "evidence": "Runtime task path and import tests, managed bridge tests, and local Electron acceptance."
+  "reason": "The official-first behavior and Schedule page title recorded in this entry stay current; the prompt now links the canonical AI index.",
+  "evidence": "Reviewed the Workspace companion and the generated index source."
 }
 ```
 
 Users 列表标题使用 Cobalt 原生 medium 档位（24px/32px），与 body 描述以 gap 0 成组并保留 h1 语义；筛选按钮使用 40px，已应用条件使用 24px Tag；FormField 在标签下留 8px，直接控件容器恢复 20px 行高，防止 Checkbox 从 Box 继承 0 行高后布局高度归零。标题/描述采用扩展 Typography，避免以自行覆盖字号代替已有语义组件。
 
-Cobalt recipes 是供 AI 选取、组合和调整的视觉/交互参考，示例数据和操作不构成完整业务规格。Team Schedule 以原生 Toolbar/StartContent/EndContent 显示日期/周期/搜索与已应用筛选；空间不足时组内与组间换行，自适应高度，控件不超出业务视口；agent 搜索框固定 160px，不随剩余空间拉伸，移除 Select 与 intraday adherence。请求和 Filters 角标由 BadgeContainerWrapper 的 NE/NW、gapX=0、gapY=8 贴住按钮右上角；tiny 角标向内展开并重叠顶部。时区入口保持地球/城市/箭头胶囊按钮，通过本地 TimezoneDropdown 的 customInput 复用分组搜索弹层、IANA 值与 300px 弹层宽度。卡片/图表内容滚动区使用局部定位，避免原生隐藏表单节点撑出外层空白；ECharts dataZoom 底部预留 16px 以完整显示手柄。
+Cobalt recipes 是供 AI 选取、组合和调整的视觉/交互参考，示例数据和操作不构成完整业务规格。 新增控件在固定版本的官方组件满足要求时优先复用官方 API，recipe 依赖的特定布局、焦点或弹层行为仍由对应扩展提供。Schedule page 以原生 Toolbar/StartContent/EndContent 显示日期/周期/搜索与已应用筛选；空间不足时组内与组间换行，自适应高度，控件不超出业务视口；agent 搜索框固定 160px，不随剩余空间拉伸，移除 Select 与 intraday adherence。请求和 Filters 角标由 BadgeContainerWrapper 的 NE/NW、gapX=0、gapY=8 贴住按钮右上角；tiny 角标向内展开并重叠顶部。时区入口保持地球/城市/箭头胶囊按钮，通过本地 TimezoneDropdown 的 customInput 复用分组搜索弹层、IANA 值与 300px 弹层宽度。卡片/图表内容滚动区使用局部定位，避免原生隐藏表单节点撑出外层空白；ECharts dataZoom 底部预留 16px 以完整显示手柄。

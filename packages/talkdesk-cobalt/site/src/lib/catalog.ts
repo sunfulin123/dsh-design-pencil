@@ -1,6 +1,7 @@
 /** Derive documentation navigation from the discovered article collection. */
 import { getCollection, type CollectionEntry } from 'astro:content';
 import registry from '../../../registry/authoring.json';
+import publicExtensionIds from '../../../components/extensions/public.json';
 
 export interface NavigationItem {
   title: string;
@@ -10,6 +11,21 @@ export interface NavigationItem {
 export interface NavigationGroup {
   title: string;
   items: NavigationItem[];
+}
+
+const extensionPrefix = 'components/extensions/';
+export const publicExtensions = registry.components.filter((component) =>
+  publicExtensionIds.includes(component.id),
+);
+const publicExtensionPaths = new Set(
+  publicExtensions.map((component) => component.documentation.replace(/\.mdx$/, '')),
+);
+
+export function publicReference() {
+  return getCollection(
+    'reference',
+    ({ id }) => !id.startsWith(extensionPrefix) || publicExtensionPaths.has(id),
+  );
 }
 
 export function documentTitle(entry: CollectionEntry<'reference'>): string {
@@ -24,21 +40,11 @@ export function documentTitle(entry: CollectionEntry<'reference'>): string {
   return title.charAt(0).toUpperCase() + title.slice(1);
 }
 
-export const recipeTitles: Record<string, string> = {
-  'recipe.list-page': 'List page',
-  'recipe.active-call': 'Active call',
-  'recipe.detail-page': 'Detail page',
-  'recipe.form-page': 'Form page',
-  'recipe.card-widgets': 'Card widgets',
-  'recipe.echarts-gallery': 'ECharts gallery',
-  'recipe.echart-insights': 'Echart insights',
-  'recipe.team-schedule': 'Team Schedule',
-};
 export const recipeHref = (id: string) =>
   '/recipes/' + id.replace(/^recipe\./, '').replaceAll('.', '-') + '/';
 
 export async function documentationNavigation(): Promise<NavigationGroup[]> {
-  const entries = await getCollection('reference');
+  const entries = await publicReference();
   const groups: NavigationGroup[] = [
     {
       title: 'Getting started',
@@ -50,14 +56,14 @@ export async function documentationNavigation(): Promise<NavigationGroup[]> {
     {
       title: 'Recipes',
       items: registry.recipes.map((recipe) => ({
-        title: recipeTitles[recipe.id] ?? recipe.id,
+        title: recipe.title,
         href: recipeHref(recipe.id),
-        search: recipe.id + ' ' + recipeTitles[recipe.id],
+        search: recipe.id + ' ' + recipe.title,
       })),
     },
   ];
   for (const [title, prefix] of [
-    ['Cobalt Extensions', 'components/extensions/'],
+    ['Cobalt Extensions', extensionPrefix],
     ['Cobalt core', 'components/core/'],
     ['Cobalt marketplace', 'components/marketplace/'],
     ['Foundations', 'foundations/'],

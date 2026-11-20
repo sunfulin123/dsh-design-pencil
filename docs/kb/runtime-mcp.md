@@ -197,7 +197,7 @@ managed_assets_tests，以及构建后的隔离 Chrome 资产和 AI 截图闭环
 
 recipe 审计覆盖全部 TSX 支持文件和 CSS，而不只检查页面入口。删除筛选条件使用原生 TagGroup，不能以带 onClick 的 Icon 拼出删除按钮；只读队列使用 ChipGroup 的共享溢出实现。通话空状态/计数/头像分别由 EmptyWidget、BadgeContainerWrapper、Avatar 提供；Callback thread 的外表面复用 Card，连接线保留为截图布局，因为 marketplace Timeline API 没有自定义 marker 插槽。ModalPanel 入场动画归位后再比较聊天气泡和头像边界，避免跨两帧测量造成伪失败。
 
-原生 TagGroup 是默认满宽的字段，嵌入已应用条件栏时必须显式 width auto、flex none，并验证标签与计数的中心线；仅检查页面没有横向溢出会遗漏多行回归。Insights 条件栏保持 48px 单行，窄屏只在该栏内滚动；Team Schedule 工具栏按业务视口换行，不能用固定 min-width 与横向滚动藏住操作。
+原生 TagGroup 是默认满宽的字段，嵌入已应用条件栏时必须显式 width auto、flex none，并验证标签与计数的中心线；仅检查页面没有横向溢出会遗漏多行回归。Insights 条件栏保持 48px 单行，窄屏只在该栏内滚动；Schedule page 工具栏按业务视口换行，不能用固定 min-width 与横向滚动藏住操作。
 
 POC 开发检查优先使用 SS Browser Use 打开实际本地 URL、读取 framePath 和新鲜引用并操作可见页面。验收截图显式请求 `quality: "original"`，保留完整视口的原始 PNG 文件和像素尺寸、CSS 视口、字节数及哈希；供模型显示的图片仍可能被附件服务缩小。原图模式不改变页面视口，不能冒充指定宽度检查。fullPage 与显式 viewport/annotated 互斥，仅捕获当前根文档；物理像素上限为 3200 万、最长边 32768px、PNG 20 MiB，超限分屏查看。browser_open 成功回执区分实际 url 和 requestedUrl，不能把地址栏文字当成成功；恢复时检查服务是否仍存活并复用已返回的 surfaceId；严格多视口、DOM 采集或静态证据要求仍由现有 headless fallback 满足。Browser Use 不可用或能力不足时保留旧 runner，已执行或结果不明的业务操作不自动重放。
 
@@ -209,8 +209,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "caaf8276-a871-4ea0-8af7-b22a24884143",
-  "verified_at": "2026-11-18T15:10:05.274891+00:00",
+  "task_id": "ee29d36e-e8ef-42cd-8738-6890f478b346",
+  "verified_at": "2026-11-20T07:44:55.596237+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
@@ -233,7 +233,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "6e37d894bea05c9f3d5a5225e0d838c585590c104ec0f15238eb686da53f962b",
+    "packages/bun.lock": "e44b6579dd946966e34835d5021e059d4fe0e6e3f3e5ad30509939b6993690b6",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -316,22 +316,22 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
     "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "ea4affed93e8392179240b2434754d75009173064c686d7fbea60cad8ef4b618",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "b7ce89b4c36077939d4af0e116dc60f10c1023106c30e80e1b3208cfc6e1c7e9",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
     "packages/talkdesk-cobalt/tools/component-index.mjs": "1ee6e21def1544c27d0eb73cff59d71c43f06c9c7a1913206e6b0ffcd164d44b",
-    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "5b7cf09f6587b82b01dd9bfd6c7b31bd725f7d53df6bb65db86e493892dac903",
+    "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "f04e8f0a12a496ee0d3296aefcf4ab368290038181253da2f1c170323f029f79",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
-    "packages/talkdesk-cobalt/test/export.test.mjs": "cef4f733f95154705795ff754e0ed1cdba3bb55cba51e21e0d025fd25295394b",
-    "packages/talkdesk-cobalt/test/site-browser.test.mjs": "784d406aa82e61d8f78c307df3d1800747a1f2e12fef73e062ea2bd82d3c475c",
-    "packages/talkdesk-cobalt/tools/authoring-index.mjs": "46c9f9b6817d89e1c05040705533b033b0c3fb81d979be794a9a90b7b98dbee2",
+    "packages/talkdesk-cobalt/test/export.test.mjs": "466f57bb27141539fa5c31076f99fbdad1f169c2e6ef9f400d4ee672546fb731",
+    "packages/talkdesk-cobalt/test/site-browser.test.mjs": "76f88c5ef9e1ec166a0f6d08404ecc397ef9e1e2082193d56a3ba63469d7c861",
+    "packages/talkdesk-cobalt/tools/authoring-index.mjs": "2f8914dc7fffa90d2da6188c3a6bfb180d469dd700a5ed04f9e4afc920ec5f6d",
     "packages/talkdesk-cobalt/tools/cobalt-lookup.mjs": "e0851b36e8c8b10a1bbe6e1548c4aaeecdac9535e054869262b05eeadde407ee",
-    "packages/talkdesk-cobalt/recipes/catalog.json": "18943147dbea06dfad0f4310f750e85f003078a8212d2462fbbfb93b86c3dd73",
+    "packages/talkdesk-cobalt/recipes/catalog.json": "0de0b2a9f833412747c5cb2a8ff251878a7fb612e95c22472a0e46d4cb8fc030",
     "packages/talkdesk-cobalt/recipes/list-page.tsx": "6b20341a78b8371b500d486bd738fe654f3d73727fca488230b7937cea473586",
     "packages/talkdesk-cobalt/recipes/list-page-data.ts": "f5c55bdece74fb250ae7d29f120d0b0e5c147ac0f0b54ccd3593c337b2b75343",
-    "packages/talkdesk-cobalt/skill/references/cobalt/INDEX.md": "53267d06781ed6cc5a699f057b4614c0fedd59207846557c479345e27198f6c9",
+    "packages/talkdesk-cobalt/skill/references/cobalt/INDEX.md": "a415d2098d08adc112dec61eb6a5f7d372b14b25b894627219193c713a79c7c5",
     "packages/talkdesk-cobalt/tools/cobalt-source-templates.mjs": "5df71ea6d76e40cc59a51ba2baaddab43efcb035342fc9b5e1644212760b513f",
     "packages/talkdesk-cobalt/recipes/support/list-page-dialogs.tsx": "05fad0774d1ef661b216bf83536cc58217bd8f2beefb782874c54ff877f230a0",
     "packages/talkdesk-cobalt/recipes/support/list-user-fields.tsx": "21838a42f97e6582831103d8edcbf57c649b1ca6827c648181b51eb8c79b69b6",
@@ -350,7 +350,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/recipes/team-schedule.tsx": "416fd94b7b677a0958c31eca6460990aeea89a840301fc0777151d734dfc0966",
     "packages/talkdesk-cobalt/recipes/support/reference-charts.tsx": "0fc6686944d0824dc6f526c0cb8c1a1558a6747c6c83066bb759292c73199050",
     "packages/talkdesk-cobalt/recipes/support/schedule-timeline.tsx": "a9154cf1b53c92a968f8c57501dfd3a1cc32bc4721f43813fa935dd70cc2d001",
-    "packages/talkdesk-cobalt/recipes/support/schedule-header.tsx": "1a354fb3dd88a40eb98e231f11115c74e8c71ed8a369afc4799e669d3e010914",
+    "packages/talkdesk-cobalt/recipes/support/schedule-header.tsx": "8d00b0d55bda432b84ba09cde09a66204718defcaf6e8acadce406d635db2c29",
     "packages/talkdesk-cobalt/recipes/support/schedule-data.ts": "e6f14ae1e965f7eedcba571d1182585ae897b9e6c8541faf8663f9e6f12dea2b",
     "packages/talkdesk-cobalt/recipes/support/widget-patterns.tsx": "a5acb61620bd41ccb562cc63f0246351fddb0207a6090eaf3769ce1c1549c2aa",
     "packages/talkdesk-cobalt/recipes/support/team-schedule.css": "f9b9130e2fc5c84cc07ae5ac0272acf6887874dabba11741300dc90bd00cc2a2",
@@ -372,12 +372,12 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
   },
-  "reason": "The runtime package version increments without changing the build or dependency contract.",
-  "evidence": "The package version and release tag validation use the same version; the Bun lock dependency entries are otherwise unchanged."
+  "reason": "The Bun lock changes the runtime workspace version while keeping the build, dependency and staging contract.",
+  "evidence": "Reviewed the Bun lock diff and ran the dependency policy and release package tests."
 }
 ```
 
-Cobalt 运行时资源由 `packages/talkdesk-cobalt/tools/export.mjs` 输出到原 HTML Skill 路径；`cobalt-reference/registry/authoring.json` 索引 Cobalt Extensions 组件、示例与 recipe，`bundle.json` 记录内容 revision 和哈希。Astro 站点只负责展示同一份来源，不参与 MCP 路由。项目脚手架将完整 Cobalt 扩展源码复制到 `src/components/cobalt-extensions/` 并重写 recipe/示例为本地相对导入；不生成扩展 package.json、npm/file 依赖或包名别名，普通设计会话不访问外部文档 checkout。组件 INDEX、目录 README、recipe 说明和 AI-INDEX 由同一作者源生成；cobalt-lookup.mjs 提供有界搜索及按 ID 解析实际 API/源码路径，--read-source 读取完整实现、类型、CSS 和递归本地依赖。copy-source 支持独立页面，不安装依赖或修改已有 package.json。禁止安装 `@openpencil/cobalt-extensions`。recipe 记录默认导出、支持源码、依赖、覆盖状态和接入限制，项目副本保留完整文档与调整后的路径。完整 ListPage 组合扩展 BasicTable、SidePanel 和 marketplace Toolbar，选择提示通过 BasicTable 的 messageComponent 放在列头下方、数据行上方；不提供旧包名、资源路径或项目的兼容适配。
+Cobalt 运行时资源由 `packages/talkdesk-cobalt/tools/export.mjs` 输出到原 HTML Skill 路径；公开文档和 AI 新界面推荐共用扩展名单，recipe 依赖仍可通过源码索引解析；`cobalt-reference/registry/authoring.json` 索引 Cobalt Extensions 组件、示例与 recipe，`bundle.json` 记录内容 revision 和哈希。Astro 站点只负责展示同一份来源，不参与 MCP 路由。项目脚手架将完整 Cobalt 扩展源码复制到 `src/components/cobalt-extensions/` 并重写 recipe/示例为本地相对导入；不生成扩展 package.json、npm/file 依赖或包名别名，普通设计会话不访问外部文档 checkout。组件 INDEX、目录 README、recipe 说明和 AI-INDEX 由同一作者源生成；cobalt-lookup.mjs 提供有界搜索及按 ID 解析实际 API/源码路径，--read-source 读取完整实现、类型、CSS 和递归本地依赖。copy-source 支持独立页面，不安装依赖或修改已有 package.json。禁止安装 `@openpencil/cobalt-extensions`。recipe 记录默认导出、支持源码、依赖、覆盖状态和接入限制，项目副本保留完整文档与调整后的路径。完整 ListPage 组合扩展 BasicTable、SidePanel 和 marketplace Toolbar，选择提示通过 BasicTable 的 messageComponent 放在列头下方、数据行上方；不提供旧包名、资源路径或项目的兼容适配。
 
 Workspace 脚手架固定 pnpm 11.7.0，并生成独立的 pnpm-workspace.yaml 以保留 React 18、显示旧 Cobalt peer 警告并允许 esbuild。shell/shell.css 的居中适配只写入项目副本；BasicTable 源码、完整 List page recipe、组件 API、集成说明与 Cobalt 提示词共同约束表格无外框、无圆角和无左右包裹留白。
 
@@ -399,7 +399,7 @@ Copilot 消息的内容列使用 width auto 与非增长 flex，发送气泡靠�
 
 普通 HTML review 库由独立模块导出到 HTML Skill 资源，不在提示词中重建 HTML/CSS/JS。项目副本校验静态文件哈希；新增控制库不引入 Host/Client 或 MCP 协议。状态通过业务页 URL/适配器切换，HTTP 本地多页导航保留当前业务入口；Reset 不清理业务存储。截图与 DOM 检查进入 businessEntry，完整来源指纹包含 preview 与 prototype-review 资源，避免 iframe 外层空 DOM 误判为通过。主 Skill、构建指南和 pocResolved 指令明确排除高保真中的预览专用控件，严格复刻也适用。
 
-Card widgets、ECharts gallery 与 Team Schedule 通过同一 recipe/source-copy 导出链分发，支持文件包含共享 ECharts 渲染器、样例指标/事件和局部 CSS。主题和视口观察器在卸载时释放。静态原型的菜单注册由宿主项目配置控制；recipe 的可发现性不自动修改已有项目的 Dock 或页面路由。
+Card widgets、ECharts gallery 与 Schedule page 通过同一 recipe/source-copy 导出链分发，支持文件包含共享 ECharts 渲染器、样例指标/事件和局部 CSS。主题和视口观察器在卸载时释放。静态原型的菜单注册由宿主项目配置控制；recipe 的可发现性不自动修改已有项目的 Dock 或页面路由。
 
 TimezoneDropdown 的可选 customInput 由原生 marketplace Dropdown 连接点击/ref；本地触发器桥同步 disabled 与 aria-expanded。默认字段模式保留。该适配、角标、工具栏和图表布局均属于复制到项目的源码，不更改 upstream、MCP 或 SS Host/Client 合约。
 
@@ -407,4 +407,4 @@ Workspace adapter 7 merges built-in Dock entries by canonical ID, preserving off
 
 Copied Extensions use a private popup-dismiss-boundary with native close callbacks for innermost Escape, outside pointer/focus and business-frame blur. React portal ownership is checked after propagation; native exit animations require aria-expanded reactivation. Legacy MultiDropdown close renders can remove tabindex, so the labelled trigger preserves keyboard focus. Non-search dropdowns also accept Escape when focus remains on body. StatefulPopup keeps a normal target: changing it to a function switches to its controlled visible mode.
 
-Component copy filters operate relative to the component source root, including installed runtime ancestors named node_modules/test/dist. Staging verifies registry-declared files and copied bytes before promotion. POC waitFor stable waits for finite target/ancestor motion and stable bounds without changing CSS; Browser Use settle supplies the visible-page equivalent. DOM inspection excludes ancestor-hidden/clipped controls and deduplicates identical observations. Local revisions use selected development sessions; whole-source/PNG fingerprints still gate final evidence, so cross-revision dependency-based reuse is not claimed. Fixed-version bundled Cobalt documentation is the default when MCP is unavailable unless the user explicitly requires MCP.
+Component copy filters operate relative to the component source root, including installed runtime ancestors named node_modules/test/dist. Staging verifies registry-declared files and copied bytes before promotion. Workspace creation also requires the complete project template, including the scoped registry configuration and pnpm settings, before publishing a project. POC waitFor stable waits for finite target/ancestor motion and stable bounds without changing CSS; Browser Use settle supplies the visible-page equivalent. DOM inspection excludes ancestor-hidden/clipped controls and deduplicates identical observations. Local revisions use selected development sessions; whole-source/PNG fingerprints still gate final evidence, so cross-revision dependency-based reuse is not claimed. Fixed-version bundled Cobalt documentation is the default when MCP is unavailable unless the user explicitly requires MCP.

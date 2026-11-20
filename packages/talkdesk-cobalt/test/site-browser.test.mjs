@@ -24,6 +24,34 @@ test('every generated documentation and recipe page is reachable from navigation
   for (const href of links) await access(root + href.replace(/^\//, '') + 'index.html');
 });
 
+test('Schedule page uses its public label at the existing recipe URL', async () => {
+  const href = '/recipes/team-schedule/';
+  const index = await readFile(root + 'recipes/index.html', 'utf8');
+  const page = await readFile(root + href.slice(1) + 'index.html', 'utf8');
+  assert.match(index, /href="\/recipes\/team-schedule\/"[^>]*><h2>Schedule page<\/h2>/);
+  assert.match(page, /<h1>Schedule page<\/h1>/);
+});
+
+test('the documentation links only to the nine shared Cobalt extensions', async () => {
+  const home = await readFile(root + 'index.html', 'utf8');
+  const paths = new Set(
+    [...home.matchAll(/href="\/reference\/components\/extensions\/([^/]+)\/"/g)].map(
+      (match) => match[1],
+    ),
+  );
+  assert.deepEqual([...paths].sort(), [
+    'basictable',
+    'datepicker',
+    'daterangepicker',
+    'dialog',
+    'formfield',
+    'sidepanel',
+    'timeselectinput',
+    'timezonedropdown',
+    'uploadfile',
+  ]);
+});
+
 test(
   'documentation shell supports navigation, persistent appearance and accessible mobile controls',
   { timeout: 90000 },
