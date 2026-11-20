@@ -20,7 +20,7 @@
     },
     "dsh-node-runtime": {
       "name": "@sunfulin123/dsh-design-pencil-runtime",
-      "version": "0.8.5-synapse.15",
+      "version": "0.8.5-synapse.16",
       "dependencies": {
         "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
         "quickjs-emscripten-core": "0.32.0",
