@@ -211,8 +211,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "81eb519c-78b1-4711-a0cf-8aaeed6b9508",
-  "verified_at": "2026-11-26T09:51:22.228634+00:00",
+  "task_id": "5f43d911-459b-4160-b8f0-bb6fbebb15b5",
+  "verified_at": "2026-11-26T12:47:49.966644+00:00",
   "sources": {
     "packages/dsh-node-runtime/prototype-authoring.mjs": "6c2abf55c8d61e81b959cbe090e0209f3bd7da6497c442c573fc4c4eed75ee6c",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
@@ -235,7 +235,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/quickjs-script-sandbox.mjs": "1012ea01eb238e74858f867ecdca50e1ff75299a1f6d03d80c1c3df4508cdd96",
     "packages/dsh-node-runtime/script-expansion.test.mjs": "54ffbc142a37c8631733cd847b182130452a78001ee678be5c0ce9ff0fcb3685",
     "crates/op-design-lint/src/detectors/widget_a11y.rs": "2adc20f6bc58b4420b303241e297b4af21162ad9ccec7b7c7487a7223844cca0",
-    "packages/bun.lock": "7c14fc251ab67efa0d750b10661689816c296383638e3ec15d6fca040aed207f",
+    "packages/bun.lock": "172ca0ad423e68b37d32be8bc10bf4b26c5981580c23d2fc540548c0f73163f6",
     "packages/dsh-node-runtime/selection-text-context.mjs": "d25443a5ba4ddc044de587272ed7f8e348f02d1f81ad9d5cd09c399f0fa13314",
     "packages/dsh-node-runtime/selection-text-context.test.mjs": "fadf9278e702f359bd366e9ae17f8f776a3f25ff0bd135e2f3fd8a4232915862",
     "crates/op-mcp/src/text_design_tools.rs": "39a5c1850bf046f9b43ca8824e8f0e9db7abe711735ecdce49fc9531e6ae4b40",
@@ -374,8 +374,8 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
     "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "a8566147ac73bff754f772534585b5601a2b90ca49768b64c7ce11088863d842"
   },
-  "reason": "Cobalt export now clears and copies the cobalt-workspace section folder.",
-  "evidence": "node --test packages/talkdesk-cobalt/test/export.test.mjs: 3 pass"
+  "reason": "packages/bun.lock changed only the runtime workspace version to 0.8.5-synapse.17; no dependency or documented behaviour changed.",
+  "evidence": "git diff a7ab3b0b -- packages/bun.lock: one version line"
 }
 ```
 
