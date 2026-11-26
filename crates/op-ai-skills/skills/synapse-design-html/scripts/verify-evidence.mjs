@@ -101,6 +101,14 @@ export function checkEvidenceLedger(report, reportDir) {
     }
   }
 
+  // Optional: which rows of the Skill's reference-loading table were applied. Older ledgers omit it.
+  if (report.contextSelection !== undefined) {
+    const rows = report.contextSelection;
+    const valid = Array.isArray(rows) && rows.every(item => isObj(item) && nonEmptyText(item.row)
+      && ['B', 'C', 'D'].includes(item.stage) && Array.isArray(item.files) && item.files.every(nonEmptyText));
+    if (!valid) errors.push('contextSelection must list applied loading-table rows as {row, stage: "B"|"C"|"D", files: [paths]}');
+  }
+
   return errors;
 }
 

@@ -2,11 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, access } from 'node:fs/promises';
+import { readGuide } from './guide-text.test-helper.mjs';
 
 const base = new URL('../../crates/op-ai-skills/skills/', import.meta.url);
 
 test('POC guidance prefers Browser Use and distinguishes original capture evidence from display images', async () => {
-  const guide = await readFile(new URL('synapse-design-html/references/poc-review.md', base), 'utf8');
+  const guide = await readGuide(new URL('synapse-design-html/references/poc-review.md', base));
   assert.match(guide, /Prefer Browser Use/);
   assert.match(guide, /browser_open/);
   assert.match(guide, /quality: "original"/);

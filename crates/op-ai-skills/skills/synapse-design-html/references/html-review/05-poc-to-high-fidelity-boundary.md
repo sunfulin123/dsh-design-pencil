@@ -1,0 +1,3 @@
+## POC to high-fidelity boundary
+
+Size, Page state, Reset, Feature flags and the outer preview frame are review tools, never high-fidelity business content, including in strict-fidelity mode. Do not reproduce their controls, dimensions, neutral toolbar palette or wrapper padding as canvas nodes. Read the preview’s `prototype-review-config` JSON to resolve its `entry` relative to the preview HTML when the business entry is not already known. Use the original business source and business-only captures; retain real navigation, business actions and requested Workspace title bar/Dock/app menus. Dropping review chrome is not a missing screen or a scope deviation.

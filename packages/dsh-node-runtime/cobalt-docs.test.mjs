@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFile, access } from 'node:fs/promises'
 import { test } from 'node:test'
 import { EngineSession } from './engine-session.mjs'
+import { readGuide } from './guide-text.test-helper.mjs'
 
 const base = new URL('../talkdesk-cobalt/skill/', import.meta.url)
 const read = path => readFile(new URL(path, base), 'utf8')
@@ -23,7 +24,7 @@ test('the production WASM returns the migrated Cobalt design contract as the sel
 })
 
 test('Cobalt Design uses bundled component guidance without a docs checkout workflow', async () => {
-  const guide = await read('references/cobalt-workspace.md')
+  const guide = await readGuide(new URL('references/cobalt-workspace.md', base))
   assert.doesNotMatch(guide, /git clone|git -C|pull --ff-only|cobalt-ai-docs\/SKILL/)
   assert.match(guide, /references\/cobalt\/INDEX.md/)
   assert.match(await read('references/cobalt/INDEX.md'), /registry.json/)

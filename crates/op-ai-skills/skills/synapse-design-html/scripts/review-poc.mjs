@@ -16,7 +16,7 @@ import {
 } from "./poc-review-evidence.mjs";
 import { collectSourceFiles, inferSurfaceScope } from "./verify-source.mjs";
 const usage =
-  "review-poc.mjs dev|final --source <task-directory> --out <task-directory> [--url <local-dev-url> | --entry <static-html>] [--project <pnpm-project>] [--steps <plan.json>] [--sessions main,dialog,drawer] [--viewports 1440,390] [--scheme light|dark] [--scope app|page]";
+  "review-poc.mjs dev|final --source <task-directory> --out <task-directory> [--temp <temporary-directory>] [--url <local-dev-url> | --entry <static-html>] [--project <pnpm-project>] [--steps <plan.json>] [--sessions main,dialog,drawer] [--viewports 1440,390] [--scheme light|dark] [--scope app|page]";
 const scripts = path.dirname(fileURLToPath(import.meta.url));
 function parse(argv) {
   const [mode, ...args] = argv;
@@ -26,6 +26,7 @@ function parse(argv) {
   const flags = [
     "source",
     "out",
+    "temp",
     "url",
     "entry",
     "project",
@@ -60,6 +61,24 @@ function parse(argv) {
       "Final review requires static --entry or --project, and always covers the full required viewport set",
     );
   return options;
+}
+/** Canonical spelling of a path that may not exist yet: its deepest existing ancestor, realpath-resolved. */
+function canonicalPath(target) {
+  const missing = [];
+  let current = target;
+  while (!fs.existsSync(current)) {
+    missing.unshift(path.basename(current));
+    current = path.dirname(current);
+  }
+  return path.join(fs.realpathSync(current), ...missing);
+}
+/** Remove earlier final runs beside `keep`; their images were copied to history when this run started. */
+function pruneEarlierEvidence(directory, keep) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const candidate = path.join(directory, entry.name);
+    if (entry.isDirectory() && !entry.isSymbolicLink() && candidate !== keep)
+      fs.rmSync(candidate, { recursive: true, force: true });
+  }
 }
 function command(program, args, cwd, timeout = 120000) {
   const start = performance.now();
@@ -198,12 +217,20 @@ async function review(options) {
     entry !== path.join(project, "delivery/index.html")
   )
     throw new Error("Project review must capture its delivery/index.html");
+  // With --temp, development runs and history go to the temporary directory and the final run
+  // stays beside its ledger under evidence/; without it every run stays under --out/review.
+  const temp = options.temp ? canonicalPath(path.resolve(options.temp)) : null;
+  if (temp && (within(source, temp) || within(temp, out)))
+    throw new Error("--temp must be outside the task directory");
+  if (temp) fs.mkdirSync(temp, { recursive: true });
+  const reviewRoot = temp ?? out;
   const preflight = await preflightReview(source, out);
   if (options.mode === "final" && fs.existsSync(path.join(out, "evidence-report.json"))) {
     const prior = JSON.parse(fs.readFileSync(path.join(out, "evidence-report.json"), "utf8"));
     const history = archiveEvidence(
       out,
       "A new final review started; the previous record remains historical.",
+      path.join(reviewRoot, "review/history"),
     );
     fs.writeFileSync(
       path.join(out, "evidence-report.json"),
@@ -239,7 +266,10 @@ async function review(options) {
   const files = snapshotSources(source, out),
     scope = inferSurfaceScope(collectSourceFiles(source, out), out, options.scope);
   const id = new Date().toISOString().replaceAll(":", "-") + "-" + randomUUID();
-  const runDir = path.join(out, "review", options.mode, id);
+  const runDir =
+    temp && options.mode === "final"
+      ? path.join(out, "evidence", id)
+      : path.join(reviewRoot, "review", options.mode, id);
   fs.mkdirSync(runDir, { recursive: true });
   let server;
   try {
@@ -301,7 +331,7 @@ async function review(options) {
         findings,
       };
       fs.writeFileSync(
-        path.join(out, "review/dev-report.json"),
+        path.join(reviewRoot, "review/dev-report.json"),
         JSON.stringify(report, null, 2) + "\n",
       );
       console.log(
@@ -312,7 +342,7 @@ async function review(options) {
           browserLaunches: capture.browserLaunches,
           screenshots: capture.screenshots.length,
           elapsedMs: result.elapsedMs,
-          report: path.join(out, "review/dev-report.json"),
+          report: path.join(reviewRoot, "review/dev-report.json"),
         }),
       );
       return report.status === "fail" ? 1 : 0;
@@ -349,6 +379,8 @@ async function review(options) {
           "Final verification failed before publishing a current ledger",
       );
     fs.copyFileSync(ledger, path.join(runDir, "report-snapshot.json"));
+    // The published ledger references only this run; earlier final runs were archived to history.
+    if (temp) pruneEarlierEvidence(path.dirname(runDir), runDir);
     console.log(
       JSON.stringify({
         mode: "final",

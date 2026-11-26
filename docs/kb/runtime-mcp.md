@@ -93,7 +93,7 @@ CanvasKit 在选择发生时记录有界历史；宿主可使用提交时间请�
 
 ## Cobalt prototype authoring boundary
 
-Confirmed Cobalt HTML applications prepare a task-owned canonical Workspace before business authoring. The host validates native user intent, task ownership and standalone exceptions, while `prototype-authoring.mjs` owns canonical files, bounded pnpm installation and source inspection. The install action reports the actual redacted pnpm error and keeps the task project available for retry. Preparation does not mean completed UI. Existing authored pages are retained, local pinned component documentation is the default MCP fallback, and source guard results do not replace build or browser evidence. The source/runtime owner contract is in [the runtime README](../../packages/dsh-node-runtime/README.md).
+Confirmed Cobalt HTML applications prepare a task-owned canonical Workspace before business authoring. The host validates native user intent, task ownership and standalone exceptions, while `prototype-authoring.mjs` owns canonical files, bounded pnpm installation and source inspection. The install action reports the actual redacted pnpm error and keeps the task project available for retry. Its tool description, the HTML Skill and the review guide forbid shell `pnpm`/`npm`/`yarn` installs while the action is available, because a sandboxed shell leaves a `.pnpm-store/` directory that the host refuses. The Cobalt exporter copies `references/cobalt-workspace.md` with its section folder `references/cobalt-workspace/`, clearing both first. Preparation does not mean completed UI. Existing authored pages are retained, local pinned component documentation is the default MCP fallback, and source guard results do not replace build or browser evidence. The source/runtime owner contract is in [the runtime README](../../packages/dsh-node-runtime/README.md).
 
 The Cobalt authoring guide requires each business route to consume `usePrototypeScenario()` and render all six toolbar states. The handoff check selects them in the shell, verifies the business content and available actions inside the iframe, and confirms that Reset restores Ready.
 
@@ -181,7 +181,7 @@ UI 持久化动作未确认不能提前发布；预设异步读取必须保持�
 主题预设加载走 Node 设计事务与 draft autosave，再由常规同步拉回浏览器。
 嵌入式编辑器遇到同步冲突时将决定权交给宿主，不自动接受远端覆盖本地画布。宿主可请求 `op-bridge/snapshot` 的 `recovery` 用途，读取浏览器当前画布及版本，即使处于冲突状态。回执沿用 `snapshot-result`；读取不推送守护进程、不解除冲突，也不写入源文件。独立浏览器的服务器权威同步仍使用既有恢复逻辑。
 
-The runtime [task path helpers](../../packages/dsh-node-runtime/document-file.mjs) derive new artifact paths from the business name and the task identity. The workspace-relative task directory has a safe business slug and twelve hexadecimal digits of the SHA-256 task hash. OP publication uses the slug as its basename. Existing-file operations use the saved path.
+The runtime [task path helpers](../../packages/dsh-node-runtime/document-file.mjs) derive new artifact paths from the business name and the task identity. The folder name is a safe business slug and twelve hexadecimal digits of the SHA-256 task hash. `designTaskDirectory` places deliverables in `.synapse/<kind>/artifacts/<folder>`, `designTempDirectory` places temporary review data in `.synapse/<kind>/temp/<folder>`, and `legacyDesignTaskDirectory` names the `.synapse/<kind>/tasks/<folder>` an earlier release used, so a host can continue a task created there. OP publication uses the slug as its basename. Existing-file operations use the saved path. With `--temp`, [`review-poc.mjs`](../../crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs) writes development runs, review plans and history outside the task directory and keeps only the current final run in `<task>/evidence/`, which the source inventory excludes; without it every run stays in `<task>/review/`.
 
 A managed `.op` editor opts in to the refresh bridge through `managedRefresh` on initialization. The accessible refresh button sits left of Palette on the CanvasKit top bar. It sends `op-shell/refresh-canvas`; the host supplies busy and result feedback through `op-bridge/refresh-state`. `op-bridge/refresh-canvas` pulls once over the existing daemon channel. The browser rechecks the document revision and local dirty state before applying, and returns the status and applied canvas identity to the requesting host. The host may send `savedVersion` only for a confirmed disk-and-daemon update; the browser acknowledges the exact matching synced revision as saved. Managed pulls retain viewport, page identity, and valid selection, and page or camera changes alone do not write back to the daemon. A managed save snapshot returns `daemonVersion` for its exact synchronized revision, allowing the host to reject a stale file write. The `recovery` snapshot reports whether its captured revision was dirty. See [the refresh implementation](../../crates/op-host-web/src/live_sync_apply.rs).
 
@@ -211,10 +211,10 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
 {
   "version": 1,
   "status": "verified",
-  "task_id": "433afe4c-3402-44f2-94f7-58ae46149908",
-  "verified_at": "2026-11-20T09:29:24.716094+00:00",
+  "task_id": "81eb519c-78b1-4711-a0cf-8aaeed6b9508",
+  "verified_at": "2026-11-26T09:51:22.228634+00:00",
   "sources": {
-    "packages/dsh-node-runtime/prototype-authoring.mjs": "72d050a9d2f9ef52b754ee77f6d2c5683bb14bb4189ad3a3372827c05803ada1",
+    "packages/dsh-node-runtime/prototype-authoring.mjs": "6c2abf55c8d61e81b959cbe090e0209f3bd7da6497c442c573fc4c4eed75ee6c",
     "packages/dsh-node-runtime/prototype-process.mjs": "380d7565451642de4e413eb7e0045714869e0c1caeff4558ce4e2ff62995824d",
     "packages/dsh-node-runtime/prototype-standalone.mjs": "de0e9b8aae0d38c64bab1a05873b10a37cd176a7f280b353fcd521ec396ef2fe",
     "packages/dsh-node-runtime/prototype-authoring.test.mjs": "192b248a11005da2dfaae17accd8fce07f62b8c65da48a79e1cc840873c6d6da",
@@ -290,7 +290,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "crates/op-host-web/src/canvaskit/mount_keyboard.rs": "14733985448414a0eeaa03eecc167cf2b364b658b2c36f15f2c730fcf63b98ad",
     "crates/op-editor-core/src/bridge_protocol.rs": "5fd7696ddc93d57db1a187faf765617604708d81804d9660a7458286f7278ab9",
     "crates/op-dsh-engine/src/quality_variables.rs": "a609755711312f70becd1602b5ab1af179962eb2b0b69366a45fd889de501209",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "e3158b307af38cf7198bb93668de601d05032159d09416c1ab6e436510f6c225",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/verify-evidence.mjs": "60daae9140979baa10eb3f422fd43f9df30ef9b2b1192f3d745a816cee8ecbfd",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/resolve-theme.mjs": "45978c4de0de9de54e12a77ccd1f67df649ed94c48feee68719634423c012206",
     "packages/dsh-node-runtime/html-skill-migration.test.mjs": "8cf16b450633883576e9466c3ef5820d9ad78b04aecd45cb6a39a0d8bf61bd1c",
     "packages/dsh-node-runtime/html-skill-browser.test.mjs": "215b53b2725e63e8f3757cd49914b2306a0485493b3e14967ccbf6a7ea9f268b",
@@ -310,15 +310,15 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/dsh-node-runtime/canvaskit-scene-env.mjs": "6d8ce6115d9d6ca0605289f8b672bc39cb4229d9e6d00616a5f128c5294e9131",
     "packages/dsh-node-runtime/device-frame.mjs": "dd38bfa8577554ad9be31ff6a4e29110d992603214be70be4b50890c64ed11ea",
     "packages/dsh-node-runtime/draft-quality-gate.mjs": "0a1bf50c9e769c11802e6a6f345ac69a3ed7ee325e78b9b2616103da3e10ce2a",
-    "packages/dsh-node-runtime/document-file.mjs": "ffc461fcf75719d5530643cc82398bae9b65e08aca20c7d0d33ac0f5f0419465",
+    "packages/dsh-node-runtime/document-file.mjs": "6597b4f3fac86513142eef9d19c8ff154724ec33925e6dad192f6e303da39add",
     "packages/dsh-node-runtime/managed-mcp-client.mjs": "786ecf166cd5f6d31a02f313f20d5215c76e68fb05263c70430fb2a2474779b6",
     "packages/dsh-node-runtime/managed-daemon-client.mjs": "4477fa8eb6cce9aa5148b19e80cb446e0787cd336db476f87efee784ac1b2ca4",
     "packages/dsh-node-runtime/plugin-domain-migration.test.mjs": "593b5f2dfb9c085a8ebdb88f925efb399a1d73bfe89be0188150d07e3ab9a444",
     "packages/design-data/tools/catalog.mjs": "f425a059eb255b857eb94ac0dd3cf0b55b207d436367abd6938add949485b9b3",
     "packages/design-data/styles/talkdesk-cobalt/DESIGN.md": "c50257bfebfa010868ddb0cff1c4f62146b4421f65aacf4f94567a0ebea2dd32",
     "packages/talkdesk-cobalt/reference/source.json": "ea71c4addd8d64bbb1eee1b6cbea3afd290c7ed90e65e5ae56ecb6564d7ae508",
-    "packages/talkdesk-cobalt/tools/export.mjs": "9f2c0390df7fa16443eb24182fd90b7cc2f9390d05d6d020d52452fa5eaf3e57",
-    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "fb644a58d926c25e676e5463df62b0a3bdcd45f1da31e1926655f5c54f9d71c5",
+    "packages/talkdesk-cobalt/tools/export.mjs": "9cf0350c644af65733dcbbf29aa4cd63ce691054f382f9af39c03402ed54497b",
+    "packages/talkdesk-cobalt/skill/references/cobalt-workspace.md": "804b04cdbe0ae4cddf143152a7a4203cc342b43feea29db1b156be1ce5d0abea",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/table-layout-measure.ts": "f068186339c999ee80f4a435fea70a13bb1c9de539e5f43037c4942cc3ae6c8c",
     "packages/talkdesk-cobalt/components/extensions/src/basic-table/basic-table.module.css": "548c6bb1153e4d666fa3d83ae65faae86aee858de3f3c4c68668e146accee983",
     "packages/talkdesk-cobalt/tools/content.mjs": "d7b9c84eb1a57fdeac983af4ae1156ea5062d5c11a1eec133672458ba397aaef",
@@ -326,7 +326,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/tools/cobalt-project.mjs": "0afca37fe5afeb903689c081fccda510eaf4101a452bb00703c1df0277ddd289",
     "packages/talkdesk-cobalt/site/src/layouts/Page.astro": "39dbea09c84b7c947d837072632f8fcee3f3b38dcb1aae05ab3fe09db5064988",
     "packages/talkdesk-cobalt/site/src/scripts/docs-shell.ts": "699079dd1436cb79f32895a5da0b0ad28d4da17add6e762b01b820e7c57917bc",
-    "packages/talkdesk-cobalt/test/export.test.mjs": "466f57bb27141539fa5c31076f99fbdad1f169c2e6ef9f400d4ee672546fb731",
+    "packages/talkdesk-cobalt/test/export.test.mjs": "81978c97193f3e1657f0c91d65251160554a90802338a373138b6fa64f6ec699",
     "packages/talkdesk-cobalt/test/site-browser.test.mjs": "76f88c5ef9e1ec166a0f6d08404ecc397ef9e1e2082193d56a3ba63469d7c861",
     "packages/talkdesk-cobalt/tools/authoring-index.mjs": "2f8914dc7fffa90d2da6188c3a6bfb180d469dd700a5ed04f9e4afc920ec5f6d",
     "packages/talkdesk-cobalt/tools/cobalt-lookup.mjs": "e0851b36e8c8b10a1bbe6e1548c4aaeecdac9535e054869262b05eeadde407ee",
@@ -346,7 +346,7 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/html-prototype-review/scripts/html-review/review.js": "14f546e4facb31f548bf526bb80850a860171e45b63f22706ea7a17e6caf9fff",
     "packages/html-prototype-review/scripts/html-review/page.js": "280733ad82cd7e1381afcc5a236096900c555e7578b4035f010ced14c33dfaf9",
     "packages/html-prototype-review/tools/export.mjs": "2f31aac86a2e429212ce43045ffb670b1db71b0e7325587f537dcc120efab75e",
-    "crates/op-ai-skills/skills/synapse-design-html/references/html-review.md": "e15f080c88d4e06d174ce217cc70e2b32d661e79750c437ac23818a6f3124e6d",
+    "crates/op-ai-skills/skills/synapse-design-html/references/html-review.md": "1199b61b423c71b57b2ec94d0037e262bd195eec2c821071b11c5ffd1691fa92",
     "packages/talkdesk-cobalt/recipes/card-widgets.tsx": "59efa6de48c184edca0be1a80013662b99a58e9e77047a5201c4d06974522783",
     "packages/talkdesk-cobalt/recipes/echarts-gallery.tsx": "e646abb507aa5087f38745c974501e68d0831893cbe5d0c78c6435e50eb5af8d",
     "packages/talkdesk-cobalt/recipes/team-schedule.tsx": "416fd94b7b677a0958c31eca6460990aeea89a840301fc0777151d734dfc0966",
@@ -363,19 +363,19 @@ POC review 的开发和正式模式共用有界 Chromium runner：开发模式�
     "packages/talkdesk-cobalt/content/components/extensions/timezonedropdown.mdx": "f316d12e54dfe896e2170471734b951902b4ea3188a12ef49e7a4145ca5c0a96",
     "packages/talkdesk-cobalt/recipes/support/filter-button.tsx": "c62bb83168efb253664d55e044479df56daaeeff4db0ff2926f460d0c0e4af42",
     "packages/talkdesk-cobalt/recipes/support/insights-chart.tsx": "26856c854ea12d13609c432a7996cb94e6cde63aa13ab509e46571ac42bc1ff0",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "2e4b3db7273f39d264fc89b8da3626c1e4632c838788bfc492cf5145812f606a",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/review-poc.mjs": "0fbb8ba3d26562b0352b7c7ee5d48a9e0dc228a3cfcfe3d0403d31b8f259fcd1",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-browser-actions.mjs": "1433ae1a1abd96041355621e4a77754008e130c11ff21afc4b12c5536378e66f",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-capture-plan.mjs": "b1a211b156d570fbfc7826b047fa49be67744ab65cac6bb2adc8de1fb4150f0c",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-review-evidence.mjs": "bcceaa942ff1ebdba2dffe7a8d57a1312794fd9b0a2ee260b9826a7cedf051b3",
-    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-source-inventory.mjs": "51cae6bd081f6ff4f17b4311c4127c8a7686470cfb40f697e625949ccd35bb2e",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-review-evidence.mjs": "b8f96b9f54578d23046ec5831197e8b9ac9d194b0610c8c19d4cb28b4827936f",
+    "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-source-inventory.mjs": "272e947e882f5503e27e12cc7df53b7c4f22d1cb24114a209b548b0544746dc9",
     "crates/op-ai-skills/skills/synapse-design-html/scripts/poc-surface-inspection.mjs": "f29c2dd4d11a880ce2aaa97260d3aa1b9197a943765feb0713dd723fe222f5d7",
     "packages/dsh-node-runtime/poc-review-workflow.test.mjs": "6888a4d7073d871e052f9b562898adb01db421de908d6e1e3af4e7fee128a8bb",
     "packages/talkdesk-cobalt/templates/project/app.tsx": "e5371b421e92d3427170b7bed6ffdb9d63a133bdbdbb43cd1e179a49e0b297ac",
     "packages/talkdesk-cobalt/templates/project/vite.config.ts": "a4dddc7a78b286f3b1a11e4aed72164015a549c3967b3e782264d0ae2972283c",
-    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "b06d7ed0bdd60436bb10fcde6855e9d34bfe6d21ac0b8f453d3f9a7cd70ff1b8"
+    "packages/dsh-node-runtime/poc-startup-guidance.test.mjs": "a8566147ac73bff754f772534585b5601a2b90ca49768b64c7ce11088863d842"
   },
-  "reason": "The version update keeps the checksummed runtime staging and dependency contracts.",
-  "evidence": "The release workflow and runtime dependency checks passed."
+  "reason": "Cobalt export now clears and copies the cobalt-workspace section folder.",
+  "evidence": "node --test packages/talkdesk-cobalt/test/export.test.mjs: 3 pass"
 }
 ```
 

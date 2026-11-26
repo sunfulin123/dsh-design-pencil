@@ -21,6 +21,7 @@ export async function exportCobalt(destination) {
     'cobalt-reference',
     'references/cobalt',
     'references/cobalt-workspace.md',
+    'references/cobalt-workspace',
   ]) {
     await rm(join(destination, path), { recursive: true, force: true });
   }

@@ -241,7 +241,8 @@ export async function installPrototype({ project, signal }) {
 }
 export const PROTOTYPE_TOOL_TEXT = {
   description:
-    'Prepare, install or inspect the task-owned canonical Cobalt Workspace prototype. Preparation is not completed business UI.',
+    'Prepare, install or inspect the task-owned canonical Cobalt Workspace prototype. Preparation is not completed business UI. ' +
+    'Install dependencies only with action "install"; never run pnpm, npm or yarn install/add/i in a shell, which leaves a .pnpm-store/ directory that check and handoff refuse.',
   parameters: {
     action: 'prepare, install or check; retain the same task-owned project.',
     taskId: 'The confirmed HTML task identifier.',
