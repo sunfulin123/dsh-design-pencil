@@ -1,0 +1,9 @@
+## Protected shell and popup behavior
+
+The copied Shell, main entry and prototype runtime are fixed library code. Change business files under src/apps and the copied Extensions when required; register app/page data through talkdesk-prototype.json. Build runs tools/verify-workspace-shell.mjs against the protectedFiles hashes in cobalt-source.json (adapterVersion 7). Do not edit the manifest, disable this check or patch protected code to fix a business page. Use the bundled helper's verify-shell --out <project> to diagnose integrity failures. Report a missing shell capability for a library fix. add registers apps/pages without migrating an existing shell.
+
+Ordinary HTML and Workspace controls copy the same dependency-free visual source: a 44px border-box bar, 32px desktop/36px narrow triggers and shared icon masks. Workspace alone has Feature flags. These controls remain excluded from high-fidelity business design.
+
+Copied dropdown, multi-select, timezone, popup and calendar wrappers own their popup-dismiss boundary. Escape dismisses the innermost popup and returns focus to its trigger; outside click, focus leaving the complete boundary and leaving the business iframe dismiss without stealing focus. Searching, internal focus, scrolling and multi-selection stay inside the boundary. A child dropdown's Escape must not close its parent SidePanel/Dialog. Reuse these wrappers rather than app-specific document listeners or guessed open/isOpen/visible props. Read the exact pinned component API before changing overlay behavior.
+
+Business pages are lazy-loaded by the copied runtime. The generated Vite configuration separates charts and React chunks; retain these defaults instead of importing every recipe into the shell boot path. Validate real loading and navigation rather than treating a bundle warning alone as a measured regression.

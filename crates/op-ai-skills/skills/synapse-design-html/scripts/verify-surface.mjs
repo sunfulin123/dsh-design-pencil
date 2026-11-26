@@ -211,6 +211,8 @@ async function main() {
     },
     // Left unset on purpose: the primary actions must be classified by review, not defaulted.
     actions: (preserveReview && existingReport.actions) || null,
+    // Which reference-table rows guided this task; it describes the authoring, not the captured sources.
+    ...(existingReport.contextSelection ? { contextSelection: existingReport.contextSelection } : {}),
     renderedEvidence: renderResult.renderedEvidence,
     findings: allFindings,
   };

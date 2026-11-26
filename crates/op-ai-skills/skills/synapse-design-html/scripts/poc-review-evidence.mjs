@@ -40,13 +40,17 @@ export async function preflightReview(source, out) {
   }
   return { style: "verified", shells: manifests.length };
 }
-export function archiveEvidence(out, reason) {
+/**
+ * Copy the current ledger and its rendered images into a new history folder.
+ * @param historyRoot - parent of history folders; defaults to `<out>/review/history`.
+ * @returns the folder relative to `out`, or its absolute path when it lies outside `out`.
+ */
+export function archiveEvidence(out, reason, historyRoot = path.join(out, "review/history")) {
   const file = path.join(out, "evidence-report.json");
   if (!fs.existsSync(file)) return null;
   const report = JSON.parse(fs.readFileSync(file, "utf8"));
   const dir = path.join(
-    out,
-    "review/history",
+    historyRoot,
     new Date().toISOString().replaceAll(":", "-") + "-" + randomUUID(),
   );
   fs.mkdirSync(dir, { recursive: true });
@@ -79,7 +83,7 @@ export function archiveEvidence(out, reason) {
       2,
     ) + "\n",
   );
-  return path.relative(out, dir);
+  return within(out, dir) ? path.relative(out, dir) : dir;
 }
 export function readCaptureEvidence(file, { source, out, viewports, scope }) {
   const realOut = fs.realpathSync(out),

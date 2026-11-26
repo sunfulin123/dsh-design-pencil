@@ -6,9 +6,10 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
+import { readGuide } from './guide-text.test-helper.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 test('HTML and Cobalt guidance require autonomous startup instead of manual Preview configuration', async()=>{
- const guide=await readFile(join(root,'crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md'),'utf8');
+ const guide=await readGuide(join(root,'crates/op-ai-skills/skills/synapse-design-html/references/poc-review.md'));
  assert.match(guide,/Start the development server yourself/);
  assert.match(guide,/synapse_design_prototype.*install\/check/);
  assert.match(guide,/The install action runs pnpm in the prepared project/);
@@ -16,7 +17,7 @@ test('HTML and Cobalt guidance require autonomous startup instead of manual Prev
  assert.match(guide,/pnpm run dev/);
  assert.match(guide,/Do not stop after scaffolding/);
  assert.match(guide,/preview\.json.*not.*prerequisite/i);
- const cobalt=await readFile(join(root,'packages/talkdesk-cobalt/skill/references/cobalt-workspace.md'),'utf8');
+ const cobalt=await readGuide(join(root,'packages/talkdesk-cobalt/skill/references/cobalt-workspace.md'));
  assert.doesNotMatch(cobalt,/native VPN|private-registry probe|Use SS Preview \*\*Fill with AI\*\*|Preview owns dependency installation/);
  for(const path of ['crates/op-ai-skills/skills/synapse-design-html/SKILL.md','crates/op-ai-skills/skills/synapse-design/SKILL.md']){
   const text=await readFile(join(root,path),'utf8');

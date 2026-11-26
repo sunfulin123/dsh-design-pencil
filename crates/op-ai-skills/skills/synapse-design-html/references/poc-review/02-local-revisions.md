@@ -1,0 +1,5 @@
+## Local revisions
+
+For a small revision, first name the affected region, adjacent content and key interaction, then batch the related source changes. Reuse the running server and select only those development sessions with `dev --sessions <names>`; inspect a detail crop instead of repeatedly reading the entire page. A shared component, global CSS or responsive change expands the check to its consumers and required widths. Do not repeatedly run final capture while debugging. Group implementation, focused checks and final review as separate phases, and report measured build/browser/capture time separately from unmeasured model or user time.
+
+Prior evidence remains historical after a source change. The current tool binds the complete source inventory; it cannot prove a narrower dependency boundary. Reuse final artifacts only when the verifier accepts their exact source and PNG hashes, never because an agent says a screen was unaffected. Finish with one current build and required static-delivery review. Cross-revision evidence reuse requires dependency-aware tooling and is not supplied by session selection.

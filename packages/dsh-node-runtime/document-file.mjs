@@ -8,12 +8,29 @@ function businessSlug(name) {
   return Array.from(slug).slice(0, 56).join('').replace(/-$/u, '') || 'design'
 }
 
-/** Derive a workspace-relative directory from the business name and immutable task identity. */
-export function designTaskDirectory(kind, name, taskId) {
+function taskFolder(kind, name, taskId) {
   if (kind !== 'html-design' && kind !== 'op-design') throw new TypeError('Invalid design task kind')
   if (typeof taskId !== 'string' || taskId.length === 0) throw new TypeError('A generated design requires a task identity')
   const hash = createHash('sha256').update(taskId).digest('hex').slice(0, 12)
-  return join('.synapse', kind, 'tasks', `${businessSlug(name)}-${hash}`)
+  return `${businessSlug(name)}-${hash}`
+}
+
+/**
+ * Workspace-relative folder for a task's deliverables: the design, HTML sources, DESIGN.md and
+ * handoff evidence. Derived from the business name and the immutable task identity.
+ */
+export function designTaskDirectory(kind, name, taskId) {
+  return join('.synapse', kind, 'artifacts', taskFolder(kind, name, taskId))
+}
+
+/** Workspace-relative folder for the same task's temporary review data, which the host deletes after 72 hours. */
+export function designTempDirectory(kind, name, taskId) {
+  return join('.synapse', kind, 'temp', taskFolder(kind, name, taskId))
+}
+
+/** Folder an earlier release used for the same task; read only to continue a task created there. */
+export function legacyDesignTaskDirectory(kind, name, taskId) {
+  return join('.synapse', kind, 'tasks', taskFolder(kind, name, taskId))
 }
 
 /** Place a new OP in its task directory. Use literal paths for existing files. */

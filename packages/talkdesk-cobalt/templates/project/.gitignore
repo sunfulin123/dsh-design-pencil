@@ -2,3 +2,4 @@ node_modules/
 delivery/
 .cobalt-scaffold.lock
 .talkdesk-prototype.next.json
+.pnpm-store/

@@ -16,7 +16,8 @@ function taskArtifactDirs(targetRoot, outDir) {
   return new Set(
     bases.flatMap((base) => {
       const aliases = fs.existsSync(base) ? [base, fs.realpathSync(base)] : [base];
-      return aliases.flatMap((root) => [path.join(root, "review"), path.join(root, "shots")]);
+      // evidence/ holds the final review run that `review-poc.mjs --temp` keeps beside its ledger.
+      return aliases.flatMap((root) => ["review", "shots", "evidence"].map((name) => path.join(root, name)));
     }),
   );
 }

@@ -1,0 +1,11 @@
+# HTML review controls summary
+
+Stage summary of [the ordinary HTML review guide](../html-review.md) for ordinary HTML POCs and standalone pages; Workspace prototypes keep their Cobalt shell controls instead. Copy the fixed helper; never redraw, reimplement or edit its toolbar.
+
+**Business entry** ([01](01-author-the-business-entry.md)): keep the page structure and selected DESIGN; add `<script src="./prototype-review/page.js"></script>` once in `<head>` before application scripts. Mark state-specific regions with `data-prototype-state="success partial"` (shared navigation stays outside), or read `window.SynapsePrototypeReview.state` before the first render. Every listed state needs real content and a browser assertion. Keep business filters, tabs, dialogs and actions in the page; never add prototype state or size selectors there.
+
+**Review entry** ([02](02-prepare-the-review-entry.md)): after authoring, run `node <html-skill>/scripts/prepare-html-review.mjs --entry <task-dir>/index.html --states <implemented states> --default-state success`. List only implemented states; a static page declares only `success`. It copies `prototype-review/` beside the business HTML and returns `entry` (default `preview.html`), `businessEntry` and `sourceFiles`. Repeat it after source changes; never place runtime assets in `review/` or `shots/`. For a Vite page, build first and prepare the compiled entry.
+
+**Controls and capture** ([03](03-behavior-and-locators.md), [04](04-capture-and-handoff.md)): Size changes the iframe width without reloading, State reloads with `?prototypeState=<id>`, Reset restores Fill and the default state. Stable locators include `[data-testid="prototype-size-trigger"]`, `[data-testid="prototype-state-trigger"]`, `[data-testid="prototype-reset"]` and `iframe[data-testid="prototype-page"]`. Final captures target `businessEntry`; also exercise Size/State/Reset with visible-content and viewport assertions, in both themes. Keep `--source` on the whole task directory, register the generated `entry` for handoff with business and helper source files plus DESIGN.md, and record business screenshots with their actual widths.
+
+**Boundary** ([05](05-poc-to-high-fidelity-boundary.md)): Size, Page state, Reset, Feature flags and the preview frame are review tools, never high-fidelity content; dropping them is not a scope deviation.

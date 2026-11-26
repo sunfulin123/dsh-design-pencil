@@ -15,6 +15,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { buildContent, filesUnder } from '../tools/content.mjs';
 import { exportCobalt, toolkitRoot } from '../tools/export.mjs';
+import { readGuide } from '../../dsh-node-runtime/guide-text.test-helper.mjs';
 
 async function checkLinks(path) {
   const text = await readFile(path, 'utf8');
@@ -110,7 +111,7 @@ test('exported source templates create a self-contained project with local impor
   );
   const library = join(skill, 'cobalt-reference');
   const aiIndex = await readFile(join(library, 'AI-INDEX.md'), 'utf8');
-  const companion = await readFile(join(skill, 'references/cobalt-workspace.md'), 'utf8');
+  const companion = await readGuide(join(skill, 'references/cobalt-workspace.md'));
   assert.match(aiIndex, /For new controls, start with the published Cobalt core or marketplace API/);
   assert.match(aiIndex, /The recommended extensions for new UI are BasicTable, DatePicker, DateRangePicker, Dialog, FormField, SidePanel, TimeSelectInput, TimezoneDropdown, UploadFile\./);
   assert.match(aiIndex, /### Schedule page/);
